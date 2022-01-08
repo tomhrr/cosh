@@ -117,10 +117,10 @@ fn main() {
             scopes.push(RefCell::new(HashMap::new()));
             let mut functions = Vec::new();
             if !matches.opt_present("no-rt") {
-                let rtchunk_opt =
+                let mut rtchunk_opt =
                     compiler.deserialise("/usr/local/lib/cosh/rt.chc");
                 if rtchunk_opt.is_none() {
-                    let rtchunk_opt =
+                    rtchunk_opt =
                         compiler.deserialise("./rt.chc");
                     if rtchunk_opt.is_none() {
                         eprintln!("unable to deserialise runtime library");
@@ -210,10 +210,10 @@ fn main() {
                 let mut global_functions = HashMap::new();
 
                 if !matches.opt_present("no-rt") {
-                    let rtchunk_opt =
+                    let mut rtchunk_opt =
                         compiler.deserialise("/usr/local/lib/cosh/rt.chc");
                     if rtchunk_opt.is_none() {
-                        let rtchunk_opt =
+                        rtchunk_opt =
                             compiler.deserialise("./rt.chc");
                         if rtchunk_opt.is_none() {
                             eprintln!("unable to deserialise runtime library");
@@ -243,10 +243,10 @@ fn main() {
         let mut variables = HashMap::new();
 
         if !matches.opt_present("no-rt") {
-            let rtchunk_opt =
+            let mut rtchunk_opt =
                 compiler.deserialise("/usr/local/lib/cosh/rt.chc");
             if rtchunk_opt.is_none() {
-                let rtchunk_opt =
+                rtchunk_opt =
                     compiler.deserialise("./rt.chc");
                 if rtchunk_opt.is_none() {
                     eprintln!("unable to deserialise runtime library");

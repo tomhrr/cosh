@@ -120,8 +120,12 @@ fn main() {
                 let rtchunk_opt =
                     compiler.deserialise("/usr/local/lib/cosh/rt.chc");
                 if rtchunk_opt.is_none() {
-                    eprintln!("unable to deserialise runtime library");
-                    std::process::exit(1);
+                    let rtchunk_opt =
+                        compiler.deserialise("./rt.chc");
+                    if rtchunk_opt.is_none() {
+                        eprintln!("unable to deserialise runtime library");
+                        std::process::exit(1);
+                    }
                 }
                 functions.push(rtchunk_opt.unwrap());
             }
@@ -209,8 +213,12 @@ fn main() {
                     let rtchunk_opt =
                         compiler.deserialise("/usr/local/lib/cosh/rt.chc");
                     if rtchunk_opt.is_none() {
-                        eprintln!("unable to deserialise runtime library");
-                        std::process::exit(1);
+                        let rtchunk_opt =
+                            compiler.deserialise("./rt.chc");
+                        if rtchunk_opt.is_none() {
+                            eprintln!("unable to deserialise runtime library");
+                            std::process::exit(1);
+                        }
                     }
                     let rtchunk = rtchunk_opt.unwrap();
                     let functions = rtchunk.functions.borrow_mut();
@@ -238,8 +246,12 @@ fn main() {
             let rtchunk_opt =
                 compiler.deserialise("/usr/local/lib/cosh/rt.chc");
             if rtchunk_opt.is_none() {
-                eprintln!("unable to deserialise runtime library");
-                std::process::exit(1);
+                let rtchunk_opt =
+                    compiler.deserialise("./rt.chc");
+                if rtchunk_opt.is_none() {
+                    eprintln!("unable to deserialise runtime library");
+                    std::process::exit(1);
+                }
             }
             let rtchunk = rtchunk_opt.unwrap();
             let functions = rtchunk.functions.borrow_mut();

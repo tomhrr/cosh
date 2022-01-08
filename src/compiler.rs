@@ -1286,14 +1286,12 @@ impl Compiler {
                     Ok(decoded) => {
                         return Some(decoded);
                     }
-                    Err(e) => {
-                        eprintln!("unable to deserialise path {}: {}", file, e);
+                    Err(_) => {
                         return None;
                     }
                 }
             }
-            Err(e) => {
-                eprintln!("unable to read path {}: {}", file, e);
+            Err(_) => {
                 return None;
             }
         }

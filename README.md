@@ -117,4 +117,4 @@ $ {ls test-data}; {sort -r} |;
 
 ### Licence
 
-See LICENCE.
+See [LICENCE](./LICENCE).

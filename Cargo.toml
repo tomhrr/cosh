@@ -1,0 +1,29 @@
+[package]
+name = "cosh"
+version = "0.0.1"
+authors = ["Tom Harrison <tomh5908@gmail.com>"]
+
+[dependencies]
+csv = "1.0.0-beta.5"
+getopts = "0.2"
+regex = "0.2"
+time = "0.1"
+assert_cmd = "1.0.1"
+tempfile = "3.1.0"
+serde = { version = "1.0.107", features = ["derive", "rc"] }
+serde_json = "1.0.57"
+bincode = "1.0"
+rustyline = "6.2.0"
+rustyline-derive = "0.3.1"
+nix = "0.18.0"
+lazy_static = "1.4.0"
+indexmap = "1.5.1"
+roxmltree = "0.13.0"
+xml-rs = "0.8.3"
+utime = "0.3.1"
+num = "0.3.1"
+num-bigint = "0.3.1"
+sysinfo = "0.19.2"
+term_size = "0.3.2"
+termion = "1.5.2"
+ctrlc = "3.2.1"

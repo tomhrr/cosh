@@ -1,0 +1,4 @@
+#!/bin/sh
+/usr/local/bin/_cosh;
+echo "Press enter to continue";
+read UNUSED;

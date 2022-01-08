@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+
+use List::Util qw(sum);
+
+my ($event_name_str, $count, @cmd_parts) = @ARGV;
+my $cmd = join ' ', @cmd_parts;
+my @nums;
+$| = 1;
+if (-e "perf.data") {
+    my $res = system("rm perf.data");
+    if ($res != 0) {
+        die "Unable to remove perf.data";
+    }
+}
+my @event_names = split /\s*,\s*/, $event_name_str;
+my $e_args = join " ", map { "-e $_" } @event_names;
+
+for (my $i = 0; $i < $count; $i++) {
+    my $res = system("perf record -o perf.data $e_args $cmd >/dev/null 2>&1");
+    if ($res != 0) {
+        system("perf record -o perf.data $e_args $cmd");
+        die "perf record failed";
+    }
+    my ($line) = grep { /Event count/ } `perf report`;
+    my ($num) = ($line =~ / (\d+)$/);
+    push @nums, $num;
+}
+my $sum = sum(@nums);
+my $avg = $sum / @nums;
+$avg = sprintf("%.2f", $avg);
+print "$avg\n";
+
+1;

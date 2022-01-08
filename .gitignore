@@ -1,0 +1,6 @@
+*.swp
+Cargo.lock
+target
+.cosh_history
+*.chc
+bm-file.txt

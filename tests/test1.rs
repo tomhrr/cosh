@@ -480,6 +480,12 @@ fn json_test() {
 }
 
 #[test]
+fn json_file_test() {
+    basic_test("test-data/json1 f<; \"\" join; from-json;", "h(\n    \"asdf\": 1\n)");
+    basic_test("test-data/json2 f<; \"\" join; from-json;", "h(\n    \"asdf\": 1\n    \"qwer\": 2\n    \"tyui\": h(\n        \"asdf\": 5\n    )\n    \"zxcv\": (\n        3\n        4\n    )\n)");
+}
+
+#[test]
 fn xml_test() {
     basic_test("\"<e a='b'>one<a>two</a>three</e>\" from-xml; to-xml;",
         "\"<e a=\\\"b\\\">one<a>two</a>three</e>\"");

@@ -156,6 +156,10 @@ impl VM {
 
         match separator_opt {
             Some(separator) => {
+                // If the separator is an empty string, then matching
+                // it against the values to determine whether they
+                // need quoting won't work, so skip that in that case.
+                let separator_is_empty_string = separator.len() == 0;
                 let separator_regex_res = Regex::new(separator);
                 let mut final_elements = Vec::new();
                 match separator_regex_res {
@@ -183,11 +187,13 @@ impl VM {
                                 break;
                             }
                             Value::String(s, _) => {
-                                let s2 = esc_quotes.replace_all(s, "\\\"");
-                                if separator_regex.is_match(&s) || esc_quotes.is_match(&s) {
+                                if !separator_is_empty_string &&
+                                        (separator_regex.is_match(&s) ||
+                                         esc_quotes.is_match(&s)) {
+                                    let s2 = esc_quotes.replace_all(s, "\\\"");
                                     final_elements.push(format!("\"{}\"", s2));
                                 } else {
-                                    final_elements.push(s2.to_string());
+                                    final_elements.push(s.to_string());
                                 }
                             }
                             _ => {
@@ -195,14 +201,15 @@ impl VM {
                                 let element_opt = to_string_2(&element_pre);
                                 match element_opt {
                                     Some(s) => {
-                                        let s2 = esc_quotes.replace_all(s, "\\\"");
-                                        if separator_regex.is_match(&s)
-                                            || esc_quotes.is_match(&s)
-                                        {
+                                        if !separator_is_empty_string &&
+                                                (separator_regex.is_match(&s) ||
+                                                 esc_quotes.is_match(&s)) {
+                                            let s2 = esc_quotes
+                                                .replace_all(s, "\\\"");
                                             final_elements
                                                 .push(format!("\"{}\"", s2));
                                         } else {
-                                            final_elements.push(s2.to_string());
+                                            final_elements.push(s.to_string());
                                         }
                                     }
                                     _ => {

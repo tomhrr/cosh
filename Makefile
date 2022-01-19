@@ -2,10 +2,7 @@ prefix=/usr/local
 bindir=$(prefix)/bin
 libdir=$(prefix)/lib
 
-all: util.chc
-
-util.chc: target/release/cosh rt.chc
-	./target/release/cosh -c lib/util.ch -o util.chc
+all: rt.chc
 
 rt.chc: target/release/cosh
 	./target/release/cosh --no-rt -c lib/rt.ch -o rt.chc

@@ -82,7 +82,7 @@ $ test-data/csv f<; chomp map; [, split] map
         12
     )
 )
-$ : sum 0 + reduce; ::
+$ : sum 0 + foldl; ::
 $ test-data/csv f<; chomp map; [, split] map; sum map
 (
     10

@@ -228,8 +228,8 @@ fn grep_test() {
 }
 
 #[test]
-fn reduce_test() {
-    basic_test("(1 2 3) 0 [+] reduce", "6");
+fn foldl_test() {
+    basic_test("(1 2 3) 0 [+] foldl", "6");
 }
 
 #[test]
@@ -353,7 +353,7 @@ fn regex_borrow_problem() {
 
 #[test]
 fn import_test() {
-    basic_test("util.chc import; (1 2 3) sum;", "6");
+    basic_test("(1 2 3) sum;", "6");
 }
 
 #[test]
@@ -442,13 +442,13 @@ fn append_test() {
 
 #[test]
 fn coerce_to_int_test() {
-    basic_test("test-data/csv f<; [chomp] map; [, split] map; [0 [+] reduce] map; take-all;",
+    basic_test("test-data/csv f<; [chomp] map; [, split] map; [0 [+] foldl] map; take-all;",
                "(\n    10\n    26\n    42\n)");
 }
 
 #[test]
 fn coerce_to_string_test() {
-    basic_test("(1 2 3 4 5 6) '' [append] reduce;",
+    basic_test("(1 2 3 4 5 6) '' [append] foldl;",
                "123456");
 }
 
@@ -560,4 +560,10 @@ fn shift_all() {
 #[test]
 fn negative_numbers() {
     basic_test("-5 4 +; -6.5 3.2 +;", "-1\n-3.3");
+}
+
+#[test]
+fn any() {
+    basic_test("(1 2 3) [3 =] any", "1");
+    basic_test("(1 2 3) [4 =] any", "0");
 }

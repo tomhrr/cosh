@@ -289,14 +289,14 @@
         i @; 1 +; i !;
         i @; limit @; >=; until; ::
 
-: reduce
+: foldl
     rot;
     dup; is-shiftable; not; if;
-        "first reduce argument must be shiftable" error;
+        "first foldl argument must be shiftable" error;
     then;
     lst var; lst !;
     dup; is-callable; not; if;
-        "second reduce argument must be callable" error;
+        "second foldl argument must be callable" error;
     then;
     fn var; fn !;
     begin;
@@ -309,3 +309,31 @@
         0 until; ::
 
 : chomp "\n$" "" s; ::
+
+: sum 0 + foldl; ::
+
+: any
+    depth; 2 <; if;
+        "any requires two arguments" error;
+    then;
+    dup; is-callable; not; if;
+        "second any argument must be callable" error;
+    then;
+    fn var; fn !;
+    dup; is-shiftable; not; if;
+        "first any argument must be shiftable" error;
+    then;
+    lst var; lst !;
+    begin;
+        lst @;
+        dup;
+        shift;
+        nip;
+        dup; is-null; if;
+            drop;
+            0 leave;
+        then;
+        fn @; funcall; if;
+            1 leave;
+        then;
+        0 until;

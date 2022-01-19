@@ -232,7 +232,7 @@ In general, any built-in form that works on a list will also work on a
 generator, and if it operates as a transformation, then its result
 will also be a generator.
 
-### map, grep, for, reduce
+### map, grep, for, foldl
 
 `map` iterates over a list, applying a function to each element and
 collecting the results into a new list:
@@ -260,18 +260,21 @@ collecting the values for which the predicate is true into a new list:
 into a new list (i.e. the function is executed only for its
 side effects).
 
-`reduce` takes a list, a seed, and a function, applies the function to
+`foldl` takes a list, a seed, and a function, applies the function to
 the seed and the first element from the list to produce a value, and
 then continues applying the function to the resulting value and the
 next element from the list until the list is exhausted:
 
-    $ (1 2 3) 0 + reduce
+    $ (1 2 3) 0 + foldl
     6
 
 Anonymous functions can be used inline in these calls:
 
     $ (1 2 3 4) [1 +] map
     (2 3 4 5)
+
+`any` takes a list and a function, and returns a boolean indicating
+whether the function returns true for any element of the list.
 
 ### Filesystem operations
 
@@ -436,7 +439,6 @@ The output of a generator can also be piped to a command:
 
     $ {ls}; {sort -r} |; take-all;
     (
-        "util.chc\n"
         "tests\n"
         "test-data\n"
         ...

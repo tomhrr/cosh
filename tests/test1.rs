@@ -573,3 +573,8 @@ fn any() {
 fn return_test() {
     basic_test(": f ding println; return; ding println; :: f;", "ding");
 }
+
+#[test]
+fn sort_test() {
+    basic_test("(5 2 3 4 1) sort;", "(\n    1\n    2\n    3\n    4\n    5\n)");
+}

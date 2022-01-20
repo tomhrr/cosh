@@ -308,6 +308,62 @@
         fn @; funcall;
         0 until; ::
 
+: partition
+    high var; high !;
+    low var; low !;
+    lst var; lst !;
+
+    lst @; high @; nth;
+    pivot var; pivot !;
+
+    low @; 1 -;
+    i var; i !;
+
+    low @;
+    j var; j !;
+
+    swap var;
+
+    begin;
+        lst @; j @; nth; pivot @; <=; if;
+            i @; 1 +; i !;
+            lst @; i @; nth; swap !;
+            lst @; i @; lst @; j @; nth; nth!; drop;
+            lst @; j @; swap @; nth!; drop;
+        then;
+        j @; 1 +; j !;
+        j @; high @; >=; until;
+
+    i @; 1 +; i !;
+    lst @; i @; nth; swap !;
+    lst @; i @; lst @; high @; nth; nth!; drop;
+    lst @; high @; swap @; nth!; drop;
+
+    i @; ::
+
+: sort-internal
+    high var; high !;
+    low var; low !;
+    lst var; lst !;
+
+    low @; high @; >=; if;
+        return;
+    then;
+    low @; 0 <; if;
+        return;
+    then;
+
+    lst @; low @; high @; partition;
+    p var; p !;
+
+    lst @; low @; p @; 1 -;  sort-internal;
+    lst @; p @; 1 +; high @; sort-internal; ::
+
+: sort
+    take-all;
+    lst var; lst !;
+    lst @; dup; 0 swap; len; 1 -; sort-internal; lst @; ::
+
 : chomp "\n$" "" s; ::
 
 : sum 0 + foldl; ::
@@ -336,4 +392,4 @@
         fn @; funcall; if;
             1 leave;
         then;
-        0 until;
+        0 until; ::

@@ -1160,6 +1160,8 @@ impl Compiler {
                             begin_index = prev_begin_index;
                             leave_indexes = prev_leave_indexes;
                         }
+                    } else if s == "return" {
+                        chunk.add_opcode(OpCode::Return);
                     } else {
                         let s_escaped = escape_string(&s);
                         let s_rr = Rc::new(RefCell::new(Value::String(s_escaped, None)));

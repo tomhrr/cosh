@@ -42,6 +42,7 @@ pub enum OpCode {
     Open = 39,
     Readline = 40,
     Error = 41,
+    Return = 42,
     Unknown = 255,
 }
 
@@ -89,6 +90,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         39 => OpCode::Open,
         40 => OpCode::Readline,
         41 => OpCode::Error,
+        42 => OpCode::Return,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

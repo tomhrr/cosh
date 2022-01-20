@@ -1098,6 +1098,12 @@ impl VM {
                     }
                     return i + 1;
                 }
+                OpCode::Return => {
+                    if !chunk.is_generator && chunk.has_vars {
+                        scopes.pop();
+                    }
+                    return i + 1;
+                }
                 _ => {
                     eprintln!("unknown opcode in bytecode! {:?}", op);
                     std::process::abort();

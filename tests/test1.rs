@@ -568,3 +568,8 @@ fn any() {
     basic_test("(1 2 3) [3 =] any", "1");
     basic_test("(1 2 3) [4 =] any", "0");
 }
+
+#[test]
+fn return_test() {
+    basic_test(": f ding println; return; ding println; :: f;", "ding");
+}

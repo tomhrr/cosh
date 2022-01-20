@@ -353,7 +353,7 @@ impl Chunk {
                     println!("OP_DIVIDE");
                 }
                 OpCode::EndFn => {
-                    println!("OP_RETURN");
+                    println!("OP_ENDFN");
                 }
                 OpCode::Call => {
                     println!("OP_CALL");
@@ -478,6 +478,9 @@ impl Chunk {
                 }
                 OpCode::Error => {
                     println!("OP_ERROR");
+                }
+                OpCode::Return => {
+                    println!("OP_RETURN");
                 }
                 OpCode::Unknown => {
                     println!("(Unknown)");

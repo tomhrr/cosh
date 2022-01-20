@@ -108,6 +108,7 @@ lazy_static! {
         map.insert("s", VM::core_s as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("c", VM::core_c as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("nth", VM::core_nth as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("nth!", VM::core_nth_em as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("append", VM::core_append as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("push", VM::core_push as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("unshift", VM::core_unshift as fn(&mut VM, &Chunk, usize) -> i32);
@@ -116,7 +117,7 @@ lazy_static! {
         map.insert("is-dir", VM::core_is_dir as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("split", VM::core_split as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("at", VM::core_at as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("put", VM::core_put as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("at!", VM::core_at_em as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("keys", VM::core_keys as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("values", VM::core_values as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("each", VM::core_each as fn(&mut VM, &Chunk, usize) -> i32);

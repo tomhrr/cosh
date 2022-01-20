@@ -209,13 +209,20 @@ provided as the top value on the stack.
 generator object:
 
     $ gen; 2 take;
-    (0 1)
+    (
+        0
+        1
+    )
 
 `take-all` can be used to return all the elements from a generator
 object:
 
     $ gen; take-all;
-    (0 1 2)
+    (
+        0
+        1
+        2
+    )
 
 In 'immediate' mode, each generator object that remains on the stack
 after command execution is finished will be replaced with the result
@@ -271,7 +278,12 @@ next element from the list until the list is exhausted:
 Anonymous functions can be used inline in these calls:
 
     $ (1 2 3 4) [1 +] map
-    (2 3 4 5)
+    (
+	2
+	3
+	4
+	5
+    )
 
 `any` takes a list and a function, and returns a boolean indicating
 whether the function returns true for any element of the list.
@@ -364,6 +376,16 @@ are not supported.
     $ (1 2 3) 1 nth
     2
 
+`nth!` updates a specific element in a list:
+
+    $ (1 2 3 4) 2 10 nth!;
+    (
+	1
+	2
+	10
+	4
+    )
+
 `gnth` is the name of the form that does the above for generators.  It
 has a different name, because it involves reading elements from the
 generator until the specified element is reached, so its semantics are
@@ -446,28 +468,28 @@ The output of a generator can also be piped to a command:
 
 ### Hashes
 
-Hashes support `at` for retrieving a value, `put` for
+Hashes support `at` for retrieving a value, `at!` for
 updating a value, `keys` for getting a generator over the hash's keys,
 and `values` for getting a generator over the hash's values:
 
     $ h(a 1 b 2) dup; a at; swap; b at;
     1
     2
-    $ h(a 1 b 2) c 3 put; c at;
+    $ h(a 1 b 2) c 3 at!; c at;
     3
-    $ h(a 1 b 2) c 3 put; keys; take-all;
+    $ h(a 1 b 2) c 3 at!; keys; take-all;
     (
         b
         a
         c
     )
-    $ h(a 1 b 2) c 3 put; values; take-all;
+    $ h(a 1 b 2) c 3 at!; values; take-all;
     (
         2
         1
         3
     )
-    $ h(a 1 b 2) c 3 put; each; take-all;
+    $ h(a 1 b 2) c 3 at!; each; take-all;
     (
 	(
 	    b

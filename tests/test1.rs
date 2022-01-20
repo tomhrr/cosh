@@ -400,6 +400,7 @@ fn regex_tests() {
 #[test]
 fn nth_test() {
     basic_test("(1 2 3) 1 nth", "2");
+    basic_test("(1 2 3) 1 100 nth!", "(\n    1\n    100\n    3\n)");
 }
 
 #[test]
@@ -467,7 +468,7 @@ fn commands_test() {
 #[test]
 fn hash_test() {
     basic_test("h(1 2 3 4) 1 at;", "2");
-    basic_test("h(1 2 3 4) 1 5 put; 1 at;", "5");
+    basic_test("h(1 2 3 4) 1 5 at!; 1 at;", "5");
     basic_test("h(1 2 3 4) keys; take-all;", "(\n    3\n    1\n)");
     basic_test("h(1 2 3 4) values; take-all;", "(\n    4\n    2\n)");
     basic_test("h(1 2 3 4) each; take-all;", "(\n    (\n        3\n        4\n    )\n    (\n        1\n        2\n    )\n)");

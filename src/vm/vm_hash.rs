@@ -49,9 +49,9 @@ impl VM {
     /// Takes a hash value, a key string, and a value as its
     /// arguments.  Puts the value into the hash against the specified
     /// key, and puts the updated hash back onto the stack.
-    pub fn core_put(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_at_em(&mut self, chunk: &Chunk, i: usize) -> i32 {
         if self.stack.len() < 3 {
-            print_error(chunk, i, "put requires three arguments");
+            print_error(chunk, i, "at! requires three arguments");
             return 0;
         }
 
@@ -71,14 +71,14 @@ impl VM {
                     map.insert(s.to_string(), val_rr);
                 }
                 (_, Some(_)) => {
-                    print_error(chunk, i, "first put argument must be hash");
+                    print_error(chunk, i, "first at! argument must be hash");
                     return 0;
                 }
                 _ => {
                     print_error(
                         chunk,
                         i,
-                        "second put argument must be key string",
+                        "second at! argument must be key string",
                     );
                     return 0;
                 }

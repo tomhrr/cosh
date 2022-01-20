@@ -42,6 +42,42 @@ impl VM {
         return 1;
     }
 
+    /// Takes a list, an index, and a value as its arguments.  Places
+    /// the value at the given index in the list.
+    pub fn core_nth_em(&mut self, chunk: &Chunk, i: usize) -> i32 {
+        if self.stack.len() < 3 {
+            print_error(chunk, i, "nth! requires three arguments");
+            return 0;
+        }
+
+        let val_rr = self.stack.pop().unwrap();
+
+        let index_rr = self.stack.pop().unwrap();
+        let index_rrb = index_rr.borrow();
+        let index_int_opt = index_rrb.to_int();
+
+        let lst_rr = self.stack.pop().unwrap();
+
+        {
+            let mut lst_rrb = lst_rr.borrow_mut();
+            match (index_int_opt, &mut *lst_rrb) {
+                (Some(index), Value::List(lst)) => {
+                    lst[index as usize] = val_rr;
+                }
+                (Some(_), _) => {
+                    print_error(chunk, i, "first nth! argument must be list");
+                    return 0;
+                }
+                (_, _) => {
+                    print_error(chunk, i, "second nth! argument must be integer");
+                    return 0;
+                }
+            }
+        }
+        self.stack.push(lst_rr);
+        return 1;
+    }
+
     /// Takes a generator and an index as its arguments.  Gets the
     /// element at the given index from the generator and places it
     /// onto the stack.

@@ -125,6 +125,9 @@ lazy_static! {
         map.insert("to-json", VM::core_to_json as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("from-xml", VM::core_from_xml as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("to-xml", VM::core_to_xml as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("str", VM::opcode_str as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("int", VM::opcode_int as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("flt", VM::opcode_flt as fn(&mut VM, &Chunk, usize) -> i32);
         map
     };
 
@@ -161,6 +164,9 @@ lazy_static! {
         vec[OpCode::IsShiftable as usize] = Some(VM::opcode_isshiftable as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Open as usize] = Some(VM::opcode_open as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Readline as usize] = Some(VM::opcode_readline as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::Str as usize] = Some(VM::opcode_str as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::Int as usize] = Some(VM::opcode_int as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::Flt as usize] = Some(VM::opcode_flt as fn(&mut VM, &Chunk, usize) -> i32);
         vec
     };
 }

@@ -1162,6 +1162,12 @@ impl Compiler {
                         }
                     } else if s == "return" {
                         chunk.add_opcode(OpCode::Return);
+                    } else if s == "str" {
+                        chunk.add_opcode(OpCode::Str);
+                    } else if s == "int" {
+                        chunk.add_opcode(OpCode::Int);
+                    } else if s == "flt" {
+                        chunk.add_opcode(OpCode::Flt);
                     } else {
                         let s_escaped = escape_string(&s);
                         let s_rr = Rc::new(RefCell::new(Value::String(s_escaped, None)));

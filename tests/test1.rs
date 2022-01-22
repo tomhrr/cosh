@@ -579,3 +579,10 @@ fn sort_test() {
     basic_test("(5 2 3 4 1) sort;", "(\n    1\n    2\n    3\n    4\n    5\n)");
     basic_test("(5 2 3 4 1) > sortp;", "(\n    5\n    4\n    3\n    2\n    1\n)");
 }
+
+#[test]
+fn conv_test() {
+    basic_test("5 int; \"10\" int;", "5\n10");
+    basic_test("5 str; \"10\" str;", "5\n10");
+    basic_test("5 flt; \"10\" flt;", "5\n10");
+}

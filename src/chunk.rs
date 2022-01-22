@@ -482,6 +482,15 @@ impl Chunk {
                 OpCode::Return => {
                     println!("OP_RETURN");
                 }
+                OpCode::Str => {
+                    println!("OP_STR");
+                }
+                OpCode::Int => {
+                    println!("OP_INT");
+                }
+                OpCode::Flt => {
+                    println!("OP_FLT")
+                }
                 OpCode::Unknown => {
                     println!("(Unknown)");
                 }

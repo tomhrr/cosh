@@ -6,12 +6,12 @@ cosh is a concatenative command-line shell.
 
 The shell language is dynamically-typed.  The basic types are:
 
-  * Int: signed integer (32-bit)
-  * BigInt: arbitrary-precision integer
-  * Float: double-width floating-point number
-  * String: a string
-  * List: a list of values
-  * Hash: a hash map of values
+  * `Int`: signed integer (32-bit)
+  * `BigInt`: arbitrary-precision integer
+  * `Float`: double-width floating-point number
+  * `String`: a string
+  * `List`: a list of values
+  * `Hash`: a hash map of values
 
 A number with a fractional component is interpreted as a `Float`.  A
 number without a fractional component is interpreted as an `Int`, if
@@ -22,6 +22,10 @@ parentheses and preceded by an `h` character (`h(...)`) is interpreted
 as a `Hash`.  All other tokens are interpreted as `Strings`s.  (To
 construct a string that contains whitespace, use double-quote
 characters to delimit the string.)
+
+The forms `str`, `int`, and `flt` can be used to convert primitive
+values of one type to another type.  `int` will convert a value to a
+`BigInt` if required.
 
 ### Basic usage
 

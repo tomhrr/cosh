@@ -441,9 +441,7 @@
     lst var; lst !;
     begin;
         lst @;
-        dup;
         shift;
-        nip;
         dup; is-null; if;
             drop;
             0 leave;
@@ -452,3 +450,131 @@
             1 leave;
         then;
         0 until; ::
+
+: all
+    depth; 2 <; if;
+        "all requires two arguments" error;
+    then;
+    dup; is-callable; not; if;
+        "second all argument must be callable" error;
+    then;
+    fn var; fn !;
+    dup; is-shiftable; not; if;
+        "first all argument must be shiftable" error;
+    then;
+    lst var; lst !;
+    begin;
+        lst @;
+        shift;
+        dup; is-null; if;
+            drop;
+            1 leave;
+        then;
+        fn @; funcall; not; if;
+            0 leave;
+        then;
+        0 until; ::
+
+: none
+    depth; 2 <; if;
+        "none requires two arguments" error;
+    then;
+    dup; is-callable; not; if;
+        "second none argument must be callable" error;
+    then;
+    fn var; fn !;
+    dup; is-shiftable; not; if;
+        "first none argument must be shiftable" error;
+    then;
+    lst var; lst !;
+    begin;
+        lst @;
+        shift;
+        dup; is-null; if;
+            drop;
+            1 leave;
+        then;
+        fn @; funcall; if;
+            0 leave;
+        then;
+        0 until; ::
+
+: notall none; ::
+
+: first
+    depth; 2 <; if;
+        "first requires two arguments" error;
+    then;
+    dup; is-callable; not; if;
+        "second first argument must be callable" error;
+    then;
+    fn var; fn !;
+    dup; is-shiftable; not; if;
+        "first first argument must be shiftable" error;
+    then;
+    lst var; lst !;
+    begin;
+        lst @;
+        shift;
+        dup; is-null; if;
+            leave;
+        then;
+        dup; fn @; funcall; if;
+            leave;
+        then;
+        drop;
+        0 until; ::
+
+: min
+    depth; 1 <; if;
+        "min requires one argument" error;
+    then;
+    dup; is-shiftable; not; if;
+        "min argument must be shiftable" error;
+    then;
+    lst var; lst !;
+    cmin var;
+    begin;
+        lst @;
+        shift;
+        dup; is-null; if;
+            drop;
+            cmin @;
+            leave;
+        then;
+        dup; cmin @; <; if;
+            cmin !;
+        else;
+            drop;
+        then;
+        0 until; ::
+
+: max
+    depth; 1 <; if;
+        "max requires one argument" error;
+    then;
+    dup; is-shiftable; not; if;
+        "max argument must be shiftable" error;
+    then;
+    lst var; lst !;
+    cmax var;
+    begin;
+        lst @;
+        shift;
+        dup; is-null; if;
+            drop;
+            cmax @;
+            leave;
+        then;
+        dup; cmax @; >; if;
+            cmax !;
+        else;
+            drop;
+        then;
+        0 until; ::
+
+: product
+    depth; 1 <; if;
+        "product requires one argument" error;
+    then;
+    1 * foldl; ::

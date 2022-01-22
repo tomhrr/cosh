@@ -289,8 +289,19 @@ Anonymous functions can be used inline in these calls:
 	5
     )
 
+#### Miscellaneous list functions
+
 `any` takes a list and a function, and returns a boolean indicating
-whether the function returns true for any element of the list.
+whether the function returns true for any element of the list.  `all`
+takes a list and a function, and returns a boolean indicating whether
+the function returns true for all of the elements of the list.
+`none`/`notall` is like `all`, except it returns a boolean indicating
+whether the function returns false for all of the elements of the
+list.  `first` takes a list and a function, and returns the first
+element for which the function returns true.  `min` takes a list and
+returns the smallest element of that list, and `max` takes a list and
+returns the largest element of that list.  `product` multiplies all of
+the elements of the list together and returns the result.
 
 ### sort, sortp
 

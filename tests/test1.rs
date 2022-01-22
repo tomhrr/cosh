@@ -564,9 +564,18 @@ fn negative_numbers() {
 }
 
 #[test]
-fn any() {
+fn misc_lst_fns() {
     basic_test("(1 2 3) [3 =] any", "1");
     basic_test("(1 2 3) [4 =] any", "0");
+    basic_test("(1 2 3) [0 >] all", "1");
+    basic_test("(1 2 3) [100 >] all", "0");
+    basic_test("(1 2 3) [0 >] none", "0");
+    basic_test("(1 2 3) [100 >] none", "1");
+    basic_test("(1 2 3) [0 >] notall", "0");
+    basic_test("(1 2 3) [100 >] notall", "1");
+    basic_test("(1 2 3) [2 >] first", "3");
+    basic_test("(1 2 3) [100 >] first", "{{Null}}");
+    basic_test("4 range; dup; shift; drop; product", "6");
 }
 
 #[test]

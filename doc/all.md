@@ -450,7 +450,10 @@ different from `nth`, which does not alter the argument list.
 `split` splits a string based on a delimiter string:
 
     $ asdf,asdf , split
-    ["asdf" "asdf"]
+    (
+        asdf
+        asdf
+    )
 
 `join` joins a list of strings together using a delimiter string:
 
@@ -505,8 +508,13 @@ element most recently pushed onto the stack):
         ...
     )
 
-    {ls}; [{stat -c "%s" {}}; shift; swap; drop; chomp] map;
-    ("4096" "4096" "4096" ...)
+    {ls}; [{stat -c "%s" {}}; shift; chomp] map;
+    (
+        4096
+        4096
+        22813
+        ...
+    )
     $ 1 2 3 {dc -e "{0} {1} + {2} + p"} shift; chomp
     1
     2

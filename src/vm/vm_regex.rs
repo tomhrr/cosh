@@ -2,8 +2,14 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
+use regex::Regex;
+
 use chunk::{print_error, Chunk, Value};
 use vm::*;
+
+lazy_static! {
+    static ref RE_ADJUST: Regex = Regex::new(r"\\([\d+])").unwrap();
+}
 
 /// Takes a wrapped value as its single argument, and returns a
 /// wrapped value for the stringified representation of the argument.
@@ -135,7 +141,9 @@ impl VM {
 
         match (repl_str_opt, regex_opt, str_opt) {
             (Some(repl_str), Some(regex), Some(s)) => {
-                let updated_str = regex.replace_all(s, repl_str);
+                let updated_repl = RE_ADJUST.replace_all(repl_str, "$${$1}");
+                let updated_repl_str = updated_repl.to_string();
+                let updated_str = regex.replace_all(s, &updated_repl_str[..]);
                 self.stack.push(Rc::new(RefCell::new(Value::String(
                     updated_str.to_string(),
                     None,

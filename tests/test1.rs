@@ -597,3 +597,8 @@ fn conv_test() {
     basic_test("5 str; \"10\" str;", "5\n10");
     basic_test("5 flt; \"10\" flt;", "5\n10");
 }
+
+#[test]
+fn search_replace_test() {
+    basic_test("asdf \"(as)(df)\" as\\2\\1df s;", "asdfasdf");
+}

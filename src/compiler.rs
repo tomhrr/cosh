@@ -1168,6 +1168,8 @@ impl Compiler {
                         chunk.add_opcode(OpCode::Int);
                     } else if s == "flt" {
                         chunk.add_opcode(OpCode::Flt);
+                    } else if s == "rand" {
+                        chunk.add_opcode(OpCode::Rand);
                     } else {
                         let s_escaped = escape_string(&s);
                         let s_rr = Rc::new(RefCell::new(Value::String(s_escaped, None)));

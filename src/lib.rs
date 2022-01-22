@@ -3,6 +3,7 @@ extern crate lazy_static;
 extern crate nix;
 extern crate num;
 extern crate num_bigint;
+extern crate rand;
 extern crate regex;
 extern crate roxmltree;
 extern crate serde;

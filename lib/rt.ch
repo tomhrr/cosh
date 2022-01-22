@@ -578,3 +578,46 @@
         "product requires one argument" error;
     then;
     1 * foldl; ::
+
+: shuffle
+    depth; 1 <; if;
+        "shuffle requires one argument" error;
+    then;
+    take-all;
+    lst var; lst !;
+    lst @; len; lstlen var; lstlen !;
+    i var; 0 i !;
+    begin;
+        i @; lstlen @; >=; if;
+            lst @;
+            leave;
+        then;
+        rand-index var;
+        lstlen @; rand; int; rand-index !;
+        temp var;
+        lst @; i @; nth; temp !;
+        lst @; i @; lst @; rand-index @; nth; nth!;
+        rand-index @; temp @; nth!;
+        drop;
+        i @; 1 +; i !;
+        0 until; ::
+
+:~ uniq 1 1
+    drop;
+    depth; 1 <; if;
+        "uniq requires one argument" error;
+    then;
+    lst var; lst !;
+    seen var; h() seen !;
+    begin;
+        lst @; shift;
+        dup; is-null; if;
+            leave;
+        then;
+        dup; str; seen @; swap; at; is-null; if;
+            dup; str; seen @; swap; 1 at!; drop;
+            yield;
+        else;
+            drop;
+        then;
+        0 until; ::

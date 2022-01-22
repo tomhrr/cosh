@@ -491,6 +491,9 @@ impl Chunk {
                 OpCode::Flt => {
                     println!("OP_FLT")
                 }
+                OpCode::Rand => {
+                    println!("OP_RAND")
+                }
                 OpCode::Unknown => {
                     println!("(Unknown)");
                 }

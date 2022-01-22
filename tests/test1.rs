@@ -576,6 +576,8 @@ fn misc_lst_fns() {
     basic_test("(1 2 3) [2 >] first", "3");
     basic_test("(1 2 3) [100 >] first", "{{Null}}");
     basic_test("4 range; dup; shift; drop; product", "6");
+    basic_test("(1 2 5 1 2 5 3 6) uniq", "(\n    1\n    2\n    5\n    3\n    6\n)");
+    basic_test("(a b 1 b 2) uniq", "(\n    a\n    b\n    1\n    2\n)");
 }
 
 #[test]

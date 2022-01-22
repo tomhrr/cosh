@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use rand::Rng;
 
 use chunk::{print_error, Chunk, Value};
 use vm::*;
@@ -289,6 +290,31 @@ impl VM {
         if is_float {
             self.stack.push(value_rr);
         }
+        return 1;
+    }
+
+    /// Get a random floating-point value.
+    pub fn opcode_rand(&mut self, chunk: &Chunk, i: usize) -> i32 {
+        if self.stack.len() < 1 {
+            print_error(chunk, i, "rand requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let value_rrb = value_rr.borrow();
+        let value_opt = value_rrb.to_float();
+        match value_opt {
+            Some(n) => {
+                let mut rng = rand::thread_rng();
+                let rand_value = rng.gen_range(0.0..n);
+                self.stack.push(Rc::new(RefCell::new(Value::Float(rand_value))));
+            }
+            _ => {
+                print_error(chunk, i, "unable to convert argument to float");
+                return 0;
+            }
+        }
+
         return 1;
     }
 }

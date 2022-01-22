@@ -128,6 +128,7 @@ lazy_static! {
         map.insert("str", VM::opcode_str as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("int", VM::opcode_int as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("flt", VM::opcode_flt as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("rand", VM::opcode_rand as fn(&mut VM, &Chunk, usize) -> i32);
         map
     };
 
@@ -167,6 +168,7 @@ lazy_static! {
         vec[OpCode::Str as usize] = Some(VM::opcode_str as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Int as usize] = Some(VM::opcode_int as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Flt as usize] = Some(VM::opcode_flt as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::Rand as usize] = Some(VM::opcode_rand as fn(&mut VM, &Chunk, usize) -> i32);
         vec
     };
 }

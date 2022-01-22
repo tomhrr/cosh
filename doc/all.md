@@ -292,16 +292,30 @@ Anonymous functions can be used inline in these calls:
 #### Miscellaneous list functions
 
 `any` takes a list and a function, and returns a boolean indicating
-whether the function returns true for any element of the list.  `all`
-takes a list and a function, and returns a boolean indicating whether
+whether the function returns true for any element of the list.
+
+`all` takes a list and a function, and returns a boolean indicating whether
 the function returns true for all of the elements of the list.
+
 `none`/`notall` is like `all`, except it returns a boolean indicating
 whether the function returns false for all of the elements of the
-list.  `first` takes a list and a function, and returns the first
-element for which the function returns true.  `min` takes a list and
-returns the smallest element of that list, and `max` takes a list and
-returns the largest element of that list.  `product` multiplies all of
-the elements of the list together and returns the result.
+list.
+
+`first` takes a list and a function, and returns the first
+element for which the function returns true.
+
+`uniq` takes a list, and returns a generator over the unique elements
+from that list (uniqueness is determined by converting each value to a
+string and comparing the strings).
+
+`min` takes a list and returns the smallest element of that list, and
+`max` takes a list and returns the largest element of that list.
+
+`shuffle` takes a list and moves each element to a random location in
+the list.
+
+`product` multiplies all of the elements of the list together and
+returns the result.
 
 ### sort, sortp
 
@@ -551,3 +565,9 @@ and `values` for getting a generator over the hash's values:
 
 JSON and XML can be serialised and deserialised using the
 `from-json`, `to-json`, `from-xml` and `to-xml` functions.
+
+### Miscellaneous functions
+
+`rand` takes a floating-point value and returns a random value between
+zero and that floating-point value (excluding the floating-point value
+itself).

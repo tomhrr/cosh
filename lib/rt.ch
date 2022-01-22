@@ -13,7 +13,7 @@
 
 : is-integer ^\d+ m; ::
 
-:~ ls 1 0
+:~ lsh 1 0
     0 =; if; . then;
     opendir;
     dh var;
@@ -30,7 +30,12 @@
 	0 until;
     drop; ::
 
-:~ lsr 1 0
+: ls
+    depth;
+    0 =; if; . then;
+    lsh; [ "/\." m; not; ] grep; ::
+
+:~ lshr 1 0
     0 =; if; . then;
     "/" append;
     dirname var;
@@ -64,6 +69,11 @@
             then;
         then;
 	finished @; 1 =; until; ::
+
+: lsr
+    depth;
+    0 =; if; . then;
+    lshr; [ "/\." m; not; ] grep; ::
 
 :~ f< 1 1
     drop;

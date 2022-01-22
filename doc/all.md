@@ -288,6 +288,33 @@ Anonymous functions can be used inline in these calls:
 `any` takes a list and a function, and returns a boolean indicating
 whether the function returns true for any element of the list.
 
+### sort, sortp
+
+`sort` sorts a list or generator, where the values in the list are of
+primitive types:
+
+    $ (1 3 5 4 2 1) sort
+    (
+	1
+	1
+	2
+	3
+	4
+	5
+    )
+
+`sortp` accepts an additional predicate argument:
+
+    $ (1 3 5 4 2 1) > sortp
+    (
+	5
+	4
+	3
+	2
+	1
+	1
+    )
+
 ### Filesystem operations
 
 `ls` takes a directory name as its argument and returns a generator

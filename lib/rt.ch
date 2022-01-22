@@ -325,7 +325,7 @@
     swap var;
 
     begin;
-        lst @; j @; nth; pivot @; <=; if;
+        lst @; j @; nth; pivot @; <; if;
             i @; 1 +; i !;
             lst @; i @; nth; swap !;
             lst @; i @; lst @; j @; nth; nth!; drop;
@@ -363,6 +363,65 @@
     take-all;
     lst var; lst !;
     lst @; dup; 0 swap; len; 1 -; sort-internal; lst @; ::
+
+: partitionp
+    fn var; fn !;
+    high var; high !;
+    low var; low !;
+    lst var; lst !;
+
+    lst @; high @; nth;
+    pivot var; pivot !;
+
+    low @; 1 -;
+    i var; i !;
+
+    low @;
+    j var; j !;
+
+    swap var;
+
+    begin;
+        lst @; j @; nth; pivot @; fn @; funcall; if;
+            i @; 1 +; i !;
+            lst @; i @; nth; swap !;
+            lst @; i @; lst @; j @; nth; nth!; drop;
+            lst @; j @; swap @; nth!; drop;
+        then;
+        j @; 1 +; j !;
+        j @; high @; >=; until;
+
+    i @; 1 +; i !;
+    lst @; i @; nth; swap !;
+    lst @; i @; lst @; high @; nth; nth!; drop;
+    lst @; high @; swap @; nth!; drop;
+
+    i @; ::
+
+: sort-internalp
+    fn var; fn !;
+    high var; high !;
+    low var; low !;
+    lst var; lst !;
+
+    low @; high @; >=; if;
+        return;
+    then;
+    low @; 0 <; if;
+        return;
+    then;
+
+    lst @; low @; high @; fn @; partitionp;
+    p var; p !;
+
+    lst @; low @; p @; 1 -;  fn @; sort-internalp;
+    lst @; p @; 1 +; high @; fn @; sort-internalp; ::
+
+: sortp
+    fn var; fn !;
+    take-all;
+    lst var; lst !;
+    lst @; dup; 0 swap; len; 1 -; fn @; sort-internalp; lst @; ::
 
 : chomp "\n$" "" s; ::
 

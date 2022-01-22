@@ -753,6 +753,11 @@ impl VM {
                     }
                 }
                 OpCode::SetLocalVar => {
+                    if self.stack.len() < 1 {
+                        print_error(chunk, i, "! requires one argument");
+                        return 0;
+                    }
+
                     i = i + 1;
                     let var_index: u8 = data[i].try_into().unwrap();
                     let value_rr = self.stack.pop().unwrap();

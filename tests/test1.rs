@@ -577,4 +577,5 @@ fn return_test() {
 #[test]
 fn sort_test() {
     basic_test("(5 2 3 4 1) sort;", "(\n    1\n    2\n    3\n    4\n    5\n)");
+    basic_test("(5 2 3 4 1) > sortp;", "(\n    5\n    4\n    3\n    2\n    1\n)");
 }

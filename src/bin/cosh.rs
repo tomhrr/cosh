@@ -1,5 +1,6 @@
 extern crate cosh;
 extern crate ctrlc;
+extern crate dirs_next;
 extern crate getopts;
 extern crate memchr;
 extern crate regex;
@@ -8,8 +9,7 @@ extern crate rustyline_derive;
 extern crate searchpath;
 extern crate tempfile;
 
-use std::ffi::OsString;
-
+use std::borrow::Cow::{self, Borrowed};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::env;
@@ -17,11 +17,9 @@ use std::fs;
 use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::io::{Seek, SeekFrom};
+use std::path::{self, Path};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::borrow::Cow::Borrowed;
-use std::path::{self, Path};
-use std::borrow::Cow::{self, Owned};
 
 use getopts::Options;
 use memchr::memchr;
@@ -34,20 +32,20 @@ use rustyline::hint::Hinter;
 use rustyline::validate::Validator;
 use rustyline::{CompletionType, Config, Context, Result, EditMode, Editor};
 use rustyline_derive::Helper;
-use tempfile::tempfile;
 use searchpath::search_path;
+use tempfile::tempfile;
 
 use cosh::compiler::Compiler;
 use cosh::vm::VM;
 
 // Most of the code through to 'impl Completer for ShellCompleter' is
-// taken from kkawakam/rustyline#574 as at 3a41ee9.  Licence text from
-// that repository (this might need to go somewhere else):
+// taken from kkawakam/rustyline#574 as at 3a41ee9, with some small
+// changes.  Licence text from that repository:
 //
 // The MIT License (MIT)
-// 
+//
 // Copyright (c) 2015 Katsu Kawakami & Rustyline authors
-// 
+//
 // Permission is hereby granted, free of charge, to any person
 // obtaining a copy of this software and associated documentation
 // files (the "Software"), to deal in the Software without
@@ -55,10 +53,10 @@ use cosh::vm::VM;
 // modify, merge, publish, distribute, sublicense, and/or sell copies
 // of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -102,7 +100,6 @@ fn find_unclosed_quote(s: &str) -> Option<(usize, Quote)> {
                 if char == '"' {
                     mode = ScanMode::Normal;
                 } else if char == '\\' {
-                    // both windows and unix support escape in double quote
                     mode = ScanMode::EscapeInDoubleQuote;
                 }
             }
@@ -116,9 +113,9 @@ fn find_unclosed_quote(s: &str) -> Option<(usize, Quote)> {
                 if char == '"' {
                     mode = ScanMode::DoubleQuote;
                     quote_index = index;
-                } else if char == '\\' && cfg!(not(windows)) {
+                } else if char == '\\' {
                     mode = ScanMode::Escape;
-                } else if char == '\'' && cfg!(not(windows)) {
+                } else if char == '\'' {
                     mode = ScanMode::SingleQuote;
                     quote_index = index;
                 }
@@ -177,37 +174,12 @@ pub fn extract_word<'l>(
     }
 }
 
- fn should_complete_executable(path: &str, escaped_path: &str, line: &str, pos: usize) -> bool {
-     if line.starts_with("./") || line.starts_with('/') {
-         return false;
-     }
-     if if let Some((idx, quote)) = find_unclosed_quote(&line[..pos]) {
-         let start = idx + 1;
-         if quote == Quote::Double {
-             unescape(&line[start..pos], DOUBLE_QUOTES_ESCAPE_CHAR)
-         } else {
-             Borrowed(&line[start..pos])
-         }
-     } else {
-         unescape(line, ESCAPE_CHAR)
-     }
-     .starts_with(path)
-     {
-         // Check if the cursor is located inside the executable
-         if pos <= escaped_path.len() {
-             return true;
-         }
-     }
-     false
- }
-
 fn filename_complete(
     path: &str,
     esc_char: Option<char>,
     break_chars: &[u8],
     quote: Quote,
 ) -> Vec<Pair> {
-    #[cfg(feature = "with-dirs")]
     use dirs_next::home_dir;
     use std::env::current_dir;
 
@@ -219,24 +191,15 @@ fn filename_complete(
 
     let dir_path = Path::new(dir_name);
     let dir = if dir_path.starts_with("~") {
-        // ~[/...]
-        #[cfg(feature = "with-dirs")]
-        {
-            if let Some(home) = home_dir() {
-                match dir_path.strip_prefix("~") {
-                    Ok(rel_path) => home.join(rel_path),
-                    _ => home,
-                }
-            } else {
-                dir_path.to_path_buf()
+        if let Some(home) = home_dir() {
+            match dir_path.strip_prefix("~") {
+                Ok(rel_path) => home.join(rel_path),
+                _ => home,
             }
-        }
-        #[cfg(not(feature = "with-dirs"))]
-        {
+        } else {
             dir_path.to_path_buf()
         }
     } else if dir_path.is_relative() {
-        // TODO ~user[/...] (https://crates.io/crates/users)
         if let Ok(cwd) = current_dir() {
             cwd.join(dir_path)
         } else {
@@ -279,16 +242,10 @@ fn filename_complete(
 
 fn bin_complete(path: &str, esc_char: Option<char>, break_chars: &[u8], quote: Quote) -> Vec<Pair> {
      let mut entries: Vec<Pair> = Vec::new();
-     let (path_var, path_var_ext) = if cfg!(windows) {
-         ("path", "pathext")
-     } else {
-         ("PATH", "")
-     };
      for file in search_path(
          path,
-         std::env::var_os(path_var).as_deref(),
-         std::env::var_os(path_var_ext)
-             .as_deref(),
+         std::env::var_os("PATH").as_deref(),
+         None
      ) {
          entries.push(Pair {
              display: file.clone(),
@@ -304,6 +261,48 @@ pub struct ShellCompleter {
     double_quotes_special_chars: &'static [u8],
 }
 
+fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
+    // If the string prior to path comprises whitespace, then
+    // executable completion should be used (unless the path is
+    // qualified).
+    let before = &line[0..start];
+    if before.len() > 0 && before.chars().all(char::is_whitespace) {
+        if !path.contains(char::is_whitespace) {
+            return !(path.starts_with("./") || path.starts_with('/'));
+        }
+    }
+
+    // If the string prior to path includes a $ or { character,
+    // followed by (optional) whitespace, and then the path, then
+    // executable completion should be used (unless the path is
+    // qualified).
+    let mut index_opt = before.rfind("$");
+    if index_opt.is_none() {
+        index_opt = before.rfind("{");
+    }
+    if index_opt.is_none() {
+        return false;
+    }
+    let index = index_opt.unwrap();
+    let before2_chars = &mut before[index+1..start].chars();
+    let mut hit_char = false;
+    loop {
+        let c_opt = before2_chars.next();
+        if c_opt.is_none() {
+            break;
+        }
+        let c = c_opt.unwrap();
+        if c.is_whitespace() {
+            if hit_char {
+                return false;
+            }
+        } else {
+            hit_char = true;
+        }
+    }
+    return !(path.starts_with("./") || path.starts_with('/'));
+}
+
 impl ShellCompleter {
     /// Constructor
     pub fn new() -> Self {
@@ -317,7 +316,7 @@ impl ShellCompleter {
     /// returns the start position and the completion candidates for the
     /// partial path to be completed.
     pub fn complete_path(&self, line: &str, pos: usize) -> Result<(usize, Vec<Pair>)> {
-        let (start, path, escaped_path, esc_char, break_chars, quote) =
+        let (start, path, _, esc_char, break_chars, quote) =
             if let Some((idx, quote)) = find_unclosed_quote(&line[..pos]) {
                 let start = idx + 1;
                 if quote == Quote::Double {
@@ -351,72 +350,11 @@ impl ShellCompleter {
                 )
             };
 
-        // From here onwards needs tidying, and probably also needs
-        // adjusting to take account of quotes.
-        let mut matches = Vec::new();
-        let mut has_match = false;
-        if !has_match {
-            let pre = &line[0..start];
-            if pre.len() > 0 && pre.chars().all(char::is_whitespace) {
-                let post = &line[start..];
-                if !post.contains(char::is_whitespace) {
-                    if post.starts_with("./") || post.starts_with('/') {
-                        has_match = true;
-                        matches = filename_complete(&path, esc_char, break_chars,
-                        quote);
-                    } else {
-                        has_match = true;
-                        matches = bin_complete(&path, esc_char, break_chars, quote);
-                    }
-                }
-            }
-        }
-        if !has_match {
-            let pre = &line[0..start];
-            let mut index_opt = pre.rfind("$");
-            if index_opt.is_none() {
-                index_opt = pre.rfind("{");
-            }
-            if !index_opt.is_none() {
-                let index = index_opt.unwrap();
-                let pre2 = &mut pre[index+1..start].chars();
-                let mut i = 0;
-                let mut hit_char = false;
-                let mut problem = false;
-                let mut hit_char_index = 0;
-                loop {
-                    let cc = pre2.next();
-                    if cc.is_none() {
-                        break;
-                    }
-                    let c = cc.unwrap();
-                    if c.is_whitespace() {
-                        if hit_char {
-                            problem = true;
-                            break;
-                        }
-                    } else {
-                        hit_char = true;
-                        hit_char_index = i;
-                    }
-                    i = i + 1;
-                }
-                if !problem {
-                    if path.starts_with("./") || path.starts_with('/') {
-                        has_match = true;
-                        matches = filename_complete(&path, esc_char, break_chars,
-                        quote);
-                    } else {
-                        has_match = true;
-                        matches = bin_complete(&path, esc_char, break_chars, quote);
-                    }
-                }
-            }
-        }
-        if !has_match {
-            matches = filename_complete(&path, esc_char, break_chars,
-            quote);
-        }
+        let mut matches = if should_complete_executable(&path, line, start) {
+            bin_complete(&path, esc_char, break_chars, quote)
+        } else {
+            filename_complete(&path, esc_char, break_chars, quote)
+        };
 
         #[allow(clippy::unnecessary_sort_by)]
         matches.sort_by(|a, b| a.display().cmp(b.display()));

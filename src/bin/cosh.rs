@@ -13,6 +13,7 @@ use std::borrow::Cow::{self, Borrowed};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::env;
+use std::env::current_dir;
 use std::fs;
 use std::io::Write;
 use std::io::{BufRead, BufReader};
@@ -21,6 +22,7 @@ use std::path::{self, Path};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use dirs_next::home_dir;
 use getopts::Options;
 use memchr::memchr;
 use regex::Regex;
@@ -180,9 +182,6 @@ fn filename_complete(
     break_chars: &[u8],
     quote: Quote,
 ) -> Vec<Pair> {
-    use dirs_next::home_dir;
-    use std::env::current_dir;
-
     let sep = path::MAIN_SEPARATOR;
     let (dir_name, file_name) = match path.rfind(sep) {
         Some(idx) => path.split_at(idx + sep.len_utf8()),
@@ -579,6 +578,7 @@ fn main() {
                     variables.clone(),
                     &mut bufread,
                     running.clone(),
+                    "(main)"
                 );
             }
         }
@@ -607,6 +607,52 @@ fn main() {
 
         let mut vm = VM::new(true, debug);
 
+        let running = Arc::new(AtomicBool::new(true));
+        let running_clone = running.clone();
+        ctrlc::set_handler(move || {
+            running_clone.store(false, Ordering::SeqCst);
+        })
+        .unwrap();
+
+	if let Some(home) = home_dir() {
+            let coshrc_path = format!("{}/.coshrc", home.into_os_string().into_string().unwrap());
+            if Path::new(&coshrc_path).exists() {
+                let file_res = fs::File::open(coshrc_path);
+                match file_res {
+                    Ok(file) => {
+                        let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
+                        let (chunk_opt, updated_variables, mut updated_functions) = vm.interpret(
+                            global_functions,
+                            variables.clone(),
+                            &mut bufread,
+                            running.clone(),
+                            ".coshrc"
+                        );
+                        if updated_functions.len() > 0 {
+                            global_functions = updated_functions.remove(0).into_inner();
+                        } else {
+                            global_functions = HashMap::new();
+                        }
+                        for (k, v) in updated_variables.iter() {
+                            variables.insert(k.clone(), v.clone());
+                        }
+                        match chunk_opt {
+                            Some(chunk) => {
+                                let chunk_functions = chunk.functions.borrow();
+                                for (k, v) in chunk_functions.iter() {
+                                    if !k.starts_with("anon") {
+                                        global_functions.insert(k.clone(), v.clone());
+                                    }
+                                }
+                            }
+                            None => {}
+                        }
+                    }
+                    Err(_) => {}
+                }
+            }
+        }
+
         let config = Config::builder()
             .history_ignore_space(true)
             .completion_type(CompletionType::List)
@@ -621,13 +667,6 @@ fn main() {
         let mut rl = Editor::with_config(config);
         rl.set_helper(Some(helper));
         if rl.load_history(".cosh_history").is_err() {}
-
-        let running = Arc::new(AtomicBool::new(true));
-        let running_clone = running.clone();
-        ctrlc::set_handler(move || {
-            running_clone.store(false, Ordering::SeqCst);
-        })
-        .unwrap();
 
         loop {
             let cwd_res = env::current_dir();
@@ -687,6 +726,7 @@ fn main() {
                         variables.clone(),
                         &mut bufread,
                         running.clone(),
+                        "(main)"
                     );
                     if updated_functions.len() > 0 {
                         global_functions = updated_functions.remove(0).into_inner();

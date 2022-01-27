@@ -1158,13 +1158,14 @@ impl VM {
         &mut self, global_functions: HashMap<String, Chunk>,
         variables: HashMap<String, Rc<RefCell<Value>>>,
         fh: &mut Box<dyn BufRead>, running: Arc<AtomicBool>,
+        name: &str
     ) -> (
         Option<Chunk>,
         HashMap<String, Rc<RefCell<Value>>>,
         Vec<RefCell<HashMap<String, Chunk>>>,
     ) {
         let mut compiler = Compiler::new(self.debug);
-        let chunk_opt = compiler.compile(fh, "(main)");
+        let chunk_opt = compiler.compile(fh, name);
         match chunk_opt {
             None => return (None, HashMap::new(), Vec::new()),
             _ => {}

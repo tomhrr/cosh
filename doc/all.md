@@ -579,3 +579,8 @@ JSON and XML can be serialised and deserialised using the
 `rand` takes a floating-point value and returns a random value between
 zero and that floating-point value (excluding the floating-point value
 itself).
+
+### Miscellaneous
+
+On starting the shell for interactive use, the `.coshrc` file in the
+current user's home directory will be run.

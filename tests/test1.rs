@@ -478,6 +478,8 @@ fn hash_test() {
 fn json_test() {
     basic_test("'{\"3\":4,\"1\":2}' from-json; 3 at", "4");
     basic_test("h(1 2 3 4) to-json", "{\\\"3\\\":4,\\\"1\\\":2}");
+    basic_test("test-data/json-bigint f<; \"\" join; from-json;",
+        "h(\n    \"num1\": 0\n    \"num2\": 100\n    \"num3\": 123.456\n    \"num4\": -123456789123\n    \"num5\": 123456789123\n)");
 }
 
 #[test]

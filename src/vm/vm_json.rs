@@ -1,8 +1,10 @@
 use std::cell::RefCell;
 use std::collections::VecDeque;
+use std::convert::TryFrom;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
+use num_bigint::ToBigInt;
 
 use chunk::{print_error, Chunk, Value};
 use vm::*;
@@ -15,14 +17,33 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
         serde_json::value::Value::Bool(false) => Value::Int(0),
         serde_json::value::Value::Number(n) => {
             if n.is_i64() {
-                Value::Int(n.as_i64().unwrap() as i32)
+                let n_uw = n.as_i64().unwrap();
+                let n2_res = i32::try_from(n_uw);
+                match n2_res {
+                    Ok(n2) => {
+                        Value::Int(n2)
+                    }
+                    _ => {
+                        Value::BigInt(n_uw.to_bigint().unwrap())
+                    }
+                }
             } else if n.is_u64() {
-                Value::Int(n.as_u64().unwrap() as i32)
+                let n_uw = n.as_u64().unwrap();
+                let n2_res = i32::try_from(n_uw);
+                match n2_res {
+                    Ok(n2) => {
+                        Value::Int(n2)
+                    }
+                    _ => {
+                        Value::BigInt(n_uw.to_bigint().unwrap())
+                    }
+                }
             } else {
                 Value::Float(n.as_f64().unwrap())
             }
         }
         serde_json::value::Value::String(s) => {
+            eprintln!("string {}", s);
             Value::String(s.to_string(), None)
         }
         serde_json::value::Value::Array(lst) => Value::List(

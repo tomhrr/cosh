@@ -535,7 +535,7 @@ impl VM {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let res = if n1 == n2 { 1 } else { 0 };
-                self.stack.push(RValue::Ref(Rc::new(RefCell::new(Value::Int(res)))));
+                self.stack.push(RValue::Raw(Value::Int(res)));
                 return 1;
             }
             (Value::BigInt(_), Value::Int(n2)) => {

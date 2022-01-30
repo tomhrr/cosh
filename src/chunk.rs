@@ -260,21 +260,21 @@ impl Chunk {
     /// Get a constant from the current chunk.
     pub fn get_constant(&self, i: i32) -> RValue {
         let value_sd = &self.constants[i as usize];
-        let value = match value_sd {
-            ValueSD::Null => Value::Null,
-            ValueSD::Int(n) => Value::Int(*n),
-            ValueSD::Float(n) => Value::Float(*n),
+        let value_rr = match value_sd {
+            ValueSD::Null => RValue::Raw(Value::Null),
+            ValueSD::Int(n) => RValue::Raw(Value::Int(*n)),
+            ValueSD::Float(n) => RValue::Raw(Value::Float(*n)),
             ValueSD::BigInt(n) => {
                 let nn = n.parse::<num_bigint::BigInt>().unwrap();
-                Value::BigInt(nn)
+                RValue::Ref(Rc::new(RefCell::new(Value::BigInt(nn))))
             }
-            ValueSD::String(s) => Value::String(s.to_string(), None),
-            ValueSD::Command(s) => Value::Command(s.to_string()),
+            ValueSD::String(s) => RValue::Ref(Rc::new(RefCell::new(Value::String(s.to_string(), None)))),
+            ValueSD::Command(s) => RValue::Ref(Rc::new(RefCell::new(Value::Command(s.to_string())))),
             ValueSD::CommandUncaptured(s) => {
-                Value::CommandUncaptured(s.to_string())
+                RValue::Ref(Rc::new(RefCell::new(Value::CommandUncaptured(s.to_string()))))
             }
         };
-        return RValue::Ref(Rc::new(RefCell::new(value)));
+        return value_rr;
     }
 
     /// Add an opcode to the current chunk's data.

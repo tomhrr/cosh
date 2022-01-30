@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-use chunk::{print_error, Chunk, Value};
+use chunk::{print_error, Chunk, Value, RValue};
 use vm::VM;
 
 impl VM {
@@ -19,11 +19,25 @@ impl VM {
         }
 
         let index_rr = self.stack.pop().unwrap();
-        let index_rrb = index_rr.borrow();
+        let mut index_rm;
+        let index_rrb = match index_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                index_rm = v_rc.borrow();
+                &*index_rm
+            }
+        };
         let index_int_opt = index_rrb.to_int();
 
         let lst_rr = self.stack.pop().unwrap();
-        let lst_rrb = lst_rr.borrow();
+        let mut lst_rm;
+        let lst_rrb = match lst_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                lst_rm = v_rc.borrow();
+                &*lst_rm
+            }
+        };
 
         match (index_int_opt, &*lst_rrb) {
             (Some(index), Value::List(lst)) => {
@@ -53,14 +67,28 @@ impl VM {
         let val_rr = self.stack.pop().unwrap();
 
         let index_rr = self.stack.pop().unwrap();
-        let index_rrb = index_rr.borrow();
+        let mut index_rm;
+        let index_rrb = match index_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                index_rm = v_rc.borrow();
+                &*index_rm
+            }
+        }; 
         let index_int_opt = index_rrb.to_int();
 
-        let lst_rr = self.stack.pop().unwrap();
+        let mut lst_rr = self.stack.pop().unwrap();
 
         {
-            let mut lst_rrb = lst_rr.borrow_mut();
-            match (index_int_opt, &mut *lst_rrb) {
+	    let mut lst_rm;
+	    let mut lst_rrb = match lst_rr {
+		RValue::Raw(ref mut v) => v,
+		RValue::Ref(ref mut v_rc) => {
+		    lst_rm = v_rc.borrow_mut();
+		    &mut *lst_rm
+		}
+	    };
+            match (index_int_opt, lst_rrb) {
                 (Some(index), Value::List(lst)) => {
                     lst[index as usize] = val_rr;
                 }
@@ -83,9 +111,9 @@ impl VM {
     /// onto the stack.
     pub fn core_gnth(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, RValue>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>,
+        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<RValue>>>>,
         chunk: &Chunk, i: usize, line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
@@ -95,7 +123,14 @@ impl VM {
         }
 
         let index_rr = self.stack.pop().unwrap();
-        let index_rrb = index_rr.borrow();
+        let mut index_rm;
+        let index_rrb = match index_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                index_rm = v_rc.borrow();
+                &*index_rm
+            }
+        };
         let index_int_opt = index_rrb.to_int();
 
         match index_int_opt {
@@ -143,11 +178,18 @@ impl VM {
         }
 
         let element_rr = self.stack.pop().unwrap();
-        let lst_rr = self.stack.pop().unwrap();
+        let mut lst_rr = self.stack.pop().unwrap();
 
         {
-            let mut lst_rrb = lst_rr.borrow_mut();
-            match *lst_rrb {
+	    let mut lst_rm;
+	    let mut lst_rrb = match lst_rr {
+		RValue::Raw(ref mut v) => v,
+		RValue::Ref(ref mut v_rc) => {
+		    lst_rm = v_rc.borrow_mut();
+		    &mut *lst_rm
+		}
+	    };
+            match lst_rrb {
                 Value::List(ref mut lst) => {
                     lst.push_back(element_rr);
                 }
@@ -172,11 +214,18 @@ impl VM {
         }
 
         let element_rr = self.stack.pop().unwrap();
-        let lst_rr = self.stack.pop().unwrap();
+        let mut lst_rr = self.stack.pop().unwrap();
 
         {
-            let mut lst_rrb = lst_rr.borrow_mut();
-            match *lst_rrb {
+	    let mut lst_rm;
+	    let mut lst_rrb = match lst_rr {
+		RValue::Raw(ref mut v) => v,
+		RValue::Ref(ref mut v_rc) => {
+		    lst_rm = v_rc.borrow_mut();
+		    &mut *lst_rm
+		}
+	    };
+            match lst_rrb {
                 Value::List(ref mut lst) => {
                     lst.push_front(element_rr);
                 }
@@ -199,13 +248,22 @@ impl VM {
             return 0;
         }
 
-        let lst_rr = self.stack.pop().unwrap();
-        let element_rr = match *(lst_rr.borrow_mut()) {
+        let mut lst_rr = self.stack.pop().unwrap();
+	let mut lst_rm;
+	let mut lst_rrb = match lst_rr {
+	    RValue::Raw(ref mut v) => v,
+	    RValue::Ref(ref mut v_rc) => {
+		lst_rm = v_rc.borrow_mut();
+		&mut *lst_rm
+	    }
+	};
+
+        let element_rr = match lst_rrb {
             Value::List(ref mut lst) => {
                 let element_rr_opt = lst.pop_back();
                 match element_rr_opt {
                     Some(element_rr) => element_rr,
-                    None => Rc::new(RefCell::new(Value::Null)),
+                    None => RValue::Raw(Value::Null),
                 }
             }
             _ => {
@@ -222,9 +280,9 @@ impl VM {
     /// element from that object and puts it onto the stack.
     pub fn opcode_shift<'a>(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, RValue>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>,
+        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<RValue>>>>,
         chunk: &Chunk, i: usize, line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
@@ -237,9 +295,16 @@ impl VM {
         let mut stack_len = 0;
         let mut new_stack_len = 0;
 
-        let shiftable_rr = self.stack.pop().unwrap();
+        let mut shiftable_rr = self.stack.pop().unwrap();
         {
-            let mut shiftable_rrb = shiftable_rr.borrow_mut();
+	    let mut shiftable_rm;
+	    let mut shiftable_rrb = match shiftable_rr {
+		RValue::Raw(ref mut v) => v,
+		RValue::Ref(ref mut v_rc) => {
+		    shiftable_rm = v_rc.borrow_mut();
+		    &mut *shiftable_rm
+		}
+	    };
             match *shiftable_rrb {
                 Value::Generator(
                     ref mut global_vars,
@@ -254,8 +319,15 @@ impl VM {
                     let mut is_empty = false;
                     if gen_args.len() == 1 {
                         let gen_arg_rr = &gen_args[0];
-                        let gen_arg_rrb = gen_arg_rr.borrow();
-                        match &*gen_arg_rrb {
+			let mut gen_arg_rm;
+			let gen_arg_rrb = match gen_arg_rr {
+			    RValue::Raw(ref v) => v,
+			    RValue::Ref(ref v_rc) => {
+				gen_arg_rm = v_rc.borrow();
+				&*gen_arg_rm
+			    }
+			};
+                        match gen_arg_rrb {
                             Value::Null => {
                                 is_empty = true;
                             }
@@ -266,16 +338,16 @@ impl VM {
                     }
                     if is_empty {
                         gen_args.pop();
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(0))));
+                        self.stack.push(RValue::Raw(Value::Int(0)));
                     } else {
                         let gen_args_len = gen_args.len();
                         if gen_args_len > 0 {
                             while gen_args.len() > 0 {
                                 self.stack.push(gen_args.pop().unwrap());
                             }
-                            self.stack.push(Rc::new(RefCell::new(Value::Int(
+                            self.stack.push(RValue::Raw(Value::Int(
                                 gen_args_len as i32,
-                            ))));
+                            )));
                         }
                     }
 
@@ -286,7 +358,7 @@ impl VM {
                     let current_index = *index;
                     if current_index == chunk.data.borrow().len() {
                         /* At end of function: push null. */
-                        self.stack.push(Rc::new(RefCell::new(Value::Null)));
+                        self.stack.push(RValue::Raw(Value::Null));
                     } else {
                         let res = self.run(
                             scopes,
@@ -318,7 +390,7 @@ impl VM {
                         let value_rr = lst.pop_front().unwrap();
                         self.stack.push(value_rr);
                     } else {
-                        self.stack.push(Rc::new(RefCell::new(Value::Null)));
+                        self.stack.push(RValue::Raw(Value::Null));
                     }
                 }
                 Value::CommandGenerator(ref mut bufread) => {
@@ -327,12 +399,12 @@ impl VM {
                     match res {
                         Ok(bytes) => {
                             if bytes != 0 {
-                                self.stack.push(Rc::new(RefCell::new(
+                                self.stack.push(RValue::Ref(Rc::new(RefCell::new(
                                     Value::String(contents, None),
-                                )));
+                                ))));
                             } else {
                                 self.stack
-                                    .push(Rc::new(RefCell::new(Value::Null)));
+                                    .push(RValue::Raw(Value::Null));
                             }
                         }
                         Err(_) => {
@@ -344,21 +416,29 @@ impl VM {
                         }
                     }
                 }
-                Value::KeysGenerator(ref mut index, ref mut hash_rr) => {
-                    let hash_rrb = hash_rr.borrow();
-                    match &*hash_rrb {
+                Value::KeysGenerator(ref mut index, ref mut hash_rr_box) => {
+                    let hash_rr = &*hash_rr_box;
+		    let mut hash_rm;
+		    let hash_rrb = match **hash_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    hash_rm = v_rc.borrow();
+			    &*hash_rm
+			}
+		    };
+                    match hash_rrb {
                         Value::Hash(map) => {
                             let kv = map.get_index(*index);
                             match kv {
                                 Some((k, _)) => {
-                                    self.stack.push(Rc::new(RefCell::new(
+                                    self.stack.push(RValue::Ref(Rc::new(RefCell::new(
                                         Value::String(k.to_string(), None),
-                                    )));
+                                    ))));
                                 }
                                 None => {
-                                    self.stack.push(Rc::new(RefCell::new(
+                                    self.stack.push(RValue::Raw(
                                         Value::Null,
-                                    )));
+                                    ));
                                 }
                             }
                             *index = *index + 1;
@@ -371,9 +451,17 @@ impl VM {
                         }
                     }
                 }
-                Value::ValuesGenerator(ref mut index, ref mut hash_rr) => {
-                    let hash_rrb = hash_rr.borrow();
-                    match &*hash_rrb {
+                Value::ValuesGenerator(ref mut index, ref mut hash_rr_box) => {
+                    let hash_rr = &*hash_rr_box;
+		    let mut hash_rm;
+		    let hash_rrb = match **hash_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    hash_rm = v_rc.borrow();
+			    &*hash_rm
+			}
+		    };
+                    match hash_rrb {
                         Value::Hash(map) => {
                             let kv = map.get_index(*index);
                             match kv {
@@ -381,9 +469,9 @@ impl VM {
                                     self.stack.push(v.clone());
                                 }
                                 None => {
-                                    self.stack.push(Rc::new(RefCell::new(
+                                    self.stack.push(RValue::Raw(
                                         Value::Null,
-                                    )));
+                                    ));
                                 }
                             }
                             *index = *index + 1;
@@ -396,26 +484,34 @@ impl VM {
                         }
                     }
                 }
-                Value::EachGenerator(ref mut index, ref mut hash_rr) => {
-                    let hash_rrb = hash_rr.borrow();
-                    match &*hash_rrb {
+                Value::EachGenerator(ref mut index, ref mut hash_rr_box) => {
+                    let hash_rr = &*hash_rr_box;
+		    let mut hash_rm;
+		    let hash_rrb = match **hash_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    hash_rm = v_rc.borrow();
+			    &*hash_rm
+			}
+		    };
+                    match hash_rrb {
                         Value::Hash(map) => {
                             let kv = map.get_index(*index);
                             match kv {
                                 Some((k, v)) => {
                                     let mut lst = VecDeque::new();
-                                    lst.push_back(Rc::new(RefCell::new(
+                                    lst.push_back(RValue::Ref(Rc::new(RefCell::new(
                                         Value::String(k.to_string(), None),
-                                    )));
+                                    ))));
                                     lst.push_back(v.clone());
-                                    self.stack.push(Rc::new(RefCell::new(
+                                    self.stack.push(RValue::Ref(Rc::new(RefCell::new(
                                         Value::List(lst),
-                                    )));
+                                    ))));
                                 }
                                 None => {
-                                    self.stack.push(Rc::new(RefCell::new(
+                                    self.stack.push(RValue::Raw(
                                         Value::Null,
-                                    )));
+                                    ));
                                 }
                             }
                             *index = *index + 1;
@@ -436,7 +532,7 @@ impl VM {
         }
         if repush {
             if new_stack_len == stack_len {
-                self.stack.push(Rc::new(RefCell::new(Value::Null)));
+                self.stack.push(RValue::Raw(Value::Null));
             }
         }
 
@@ -448,11 +544,11 @@ impl VM {
     /// the order that they are shifted.
     pub fn core_shift_all(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, RValue>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>,
+        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<RValue>>>>,
         chunk: &Chunk, i: usize, line_col: (u32, u32),
-        running: Arc<AtomicBool>
+        running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "shift-all requires one argument");
@@ -480,8 +576,15 @@ impl VM {
             let is_null;
             {
                 let shifted_rr = &self.stack[self.stack.len() - 1];
-                let shifted_rrb = shifted_rr.borrow();
-                match &*shifted_rrb {
+		let mut shifted_rm;
+		let shifted_rrb = match shifted_rr {
+		    RValue::Raw(ref v) => v,
+		    RValue::Ref(ref v_rc) => {
+			shifted_rm = v_rc.borrow();
+			&*shifted_rm
+		    }
+		};
+                match shifted_rrb {
                     Value::Null => {
                         is_null = true;
                     }
@@ -514,8 +617,15 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
-        let res = match *value_rrb {
+        let mut value_rm;
+        let value_rrb = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        };
+        let res = match value_rrb {
             Value::List(_) => 1,
             Value::Generator(_, _, _, _, _, _, _) => 1,
             Value::CommandGenerator(_) => 1,
@@ -524,7 +634,7 @@ impl VM {
             Value::EachGenerator(_, _) => 1,
             _ => 0,
         };
-        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+        self.stack.push(RValue::Raw(Value::Int(res)));
         return 1;
     }
 }

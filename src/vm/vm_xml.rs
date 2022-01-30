@@ -13,7 +13,7 @@ fn convert_from_xml(node: &roxmltree::Node) -> Value {
     let tag_name = node.tag_name().name();
     map.insert(
         "key".to_string(),
-        Rc::new(RefCell::new(Value::String(tag_name.to_string(), None))),
+        RValue::Ref(Rc::new(RefCell::new(Value::String(tag_name.to_string(), None)))),
     );
     if node.is_text() {
         let text_opt = node.text();
@@ -22,7 +22,7 @@ fn convert_from_xml(node: &roxmltree::Node) -> Value {
             Some(s) => {
                 map.insert(
                     "text".to_string(),
-                    Rc::new(RefCell::new(Value::String(s.to_string(), None))),
+                    RValue::Ref(Rc::new(RefCell::new(Value::String(s.to_string(), None)))),
                 );
             }
         }
@@ -33,21 +33,27 @@ fn convert_from_xml(node: &roxmltree::Node) -> Value {
     for attr in node.attributes() {
         attr_map.insert(
             attr.name().to_string(),
-            Rc::new(RefCell::new(Value::String(attr.value().to_string(), None))),
+            RValue::Ref(Rc::new(RefCell::new(Value::String(attr.value().to_string(), None)))),
         );
     }
     map.insert(
         "attributes".to_string(),
-        Rc::new(RefCell::new(Value::Hash(attr_map))),
+        RValue::Ref(Rc::new(RefCell::new(Value::Hash(attr_map)))),
     );
 
     let mut child_nodes = VecDeque::new();
     for child_node in node.children() {
         let child_node_value = convert_from_xml(&child_node);
-        child_nodes.push_back(Rc::new(RefCell::new(child_node_value)));
+	let new_rr = match child_node_value {
+	    Value::Null     => RValue::Raw(child_node_value),
+	    Value::Int(_)   => RValue::Raw(child_node_value),
+	    Value::Float(_) => RValue::Raw(child_node_value),
+	    _               => RValue::Ref(Rc::new(RefCell::new(child_node_value)))
+	};
+        child_nodes.push_back(new_rr);
     }
     map.insert("value".to_string(),
-               Rc::new(RefCell::new(Value::List(child_nodes))));
+               RValue::Ref(Rc::new(RefCell::new(Value::List(child_nodes)))));
     return Value::Hash(map);
 }
 
@@ -64,8 +70,15 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             let key_opt = vm.get("key");
             match key_opt {
                 Some(value_rr) => {
-                    let value_rrb = value_rr.borrow();
-                    match &*value_rrb {
+		    let mut value_rm;
+		    let value_rrb = match value_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    value_rm = v_rc.borrow();
+			    &*value_rm
+			}
+		    };
+                    match value_rrb {
                         Value::String(s, _) => {
                             if s != "" {
                                 begin_open_element = format!("<{}", s);
@@ -82,14 +95,28 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             let attributes_opt = vm.get("attributes");
             let attributes_str = match attributes_opt {
                 Some(attributes_rr) => {
-                    let attributes_rrb = attributes_rr.borrow();
+		    let mut attributes_rm;
+		    let attributes_rrb = match attributes_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    attributes_rm = v_rc.borrow();
+			    &*attributes_rm
+			}
+		    };
                     match &*attributes_rrb {
                         Value::Hash(map) => {
                             let mut has_none = false;
                             let attributes_str_lst = map
                                 .iter()
                                 .map(|(key, value_rr)| {
-                                    let value_rrb = value_rr.borrow();
+				    let mut value_rm;
+				    let value_rrb = match value_rr {
+					RValue::Raw(ref v) => v,
+					RValue::Ref(ref v_rc) => {
+					    value_rm = v_rc.borrow();
+					    &*value_rm
+					}
+				    };
                                     let value_str_pre =
                                         value_rrb.to_string();
                                     let value_str_opt =
@@ -126,17 +153,32 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             let mut has_none = false;
             child_nodes = match value_opt {
                 Some(value_rr) => {
-                    let value_rrb = value_rr.borrow();
-                    match &*value_rrb {
+		    let mut value_rm;
+		    let value_rrb = match value_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    value_rm = v_rc.borrow();
+			    &*value_rm
+			}
+		    };
+                    match value_rrb {
                         Value::List(lst) => lst
                             .iter()
                             .map(|lst_value_rr| {
-                                let lst_value_rrb = convert_to_xml(&lst_value_rr.borrow());
-                                if lst_value_rrb.is_none() {
+				let mut lst_value_rm;
+				let lst_value_rrb = match lst_value_rr {
+				    RValue::Raw(ref v) => v,
+				    RValue::Ref(ref v_rc) => {
+					lst_value_rm = v_rc.borrow();
+					&*lst_value_rm
+				    }
+				};
+                                let lst_value_opt = convert_to_xml(lst_value_rrb);
+                                if lst_value_opt.is_none() {
                                     has_none = true;
                                     "".to_string()
                                 } else {
-                                    lst_value_rrb.unwrap()
+                                    lst_value_opt.unwrap()
                                 }
                             })
                             .collect::<Vec<_>>()
@@ -153,8 +195,15 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             let text_opt = vm.get("text");
             match text_opt {
                 Some(value_rr) => {
-                    let value_rrb = value_rr.borrow();
-                    match &*value_rrb {
+		    let mut value_rm;
+		    let value_rrb = match value_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    value_rm = v_rc.borrow();
+			    &*value_rm
+			}
+		    };
+                    match value_rrb {
                         Value::String(s, _) => {
                             text = s.to_string();
                         }
@@ -179,7 +228,14 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
+        let mut value_rm;
+        let value_rrb = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        };
         let value_pre = value_rrb.to_string();
         let value_opt = to_string_2(&value_pre);
 
@@ -198,9 +254,9 @@ impl VM {
                         doc = d;
                     }
                 }
-                let xml_rr = Rc::new(RefCell::new(convert_from_xml(
+                let xml_rr = RValue::Ref(Rc::new(RefCell::new(convert_from_xml(
                     &doc.root_element(),
-                )));
+                ))));
                 self.stack.push(xml_rr);
             }
             _ => {
@@ -221,14 +277,21 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
+        let mut value_rm;
+        let value_rrb = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        };
         let doc_opt = convert_to_xml(&value_rrb);
         if doc_opt.is_none() {
             print_error(chunk, i, "unable to convert value to XML");
             return 0;
         }
         self.stack
-            .push(Rc::new(RefCell::new(Value::String(doc_opt.unwrap(), None))));
+            .push(RValue::Ref(Rc::new(RefCell::new(Value::String(doc_opt.unwrap(), None)))));
         return 1;
     }
 }

@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::io;
 use std::io::Write;
-use std::rc::Rc;
 use std::str;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -82,7 +81,14 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
+        let mut value_rm;
+        let value_rrb = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        };
         let value_str_pre = value_rrb.to_string();
         let value_str_opt = to_string_2(&value_str_pre);
 
@@ -107,7 +113,14 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
+        let mut value_rm;
+        let value_rrb = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        };
         let value_str_pre = value_rrb.to_string();
         let value_str_opt = to_string_2(&value_str_pre);
 
@@ -132,17 +145,24 @@ impl VM {
     /// to standard output, returning the new number of lines that can
     /// be printed without waiting for user input.
     fn print_stack_value<'a>(
-        &mut self, value_rr: &Rc<RefCell<Value>>, chunk: &Chunk,
+        &mut self, value_rr: &RValue, chunk: &Chunk,
         i: usize,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, RValue>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         indent: i32, no_first_indent: bool, window_height: i32, mut lines_to_print: i32,
         running: Arc<AtomicBool>,
     ) -> i32 {
         let mut is_generator = false;
         {
-            let value_rrb = value_rr.borrow();
-            match &*value_rrb {
+	    let mut value_rm;
+	    let value_rrb = match value_rr {
+		RValue::Raw(ref v) => v,
+		RValue::Ref(ref v_rc) => {
+		    value_rm = v_rc.borrow();
+		    &*value_rm
+		}
+	    };
+            match value_rrb {
                 // The way this works is less than ideal, what with it
                 // being different from standard stringification, but
                 // it may be that having separate representations is
@@ -459,8 +479,15 @@ impl VM {
                 let is_null;
                 let value_rr = self.stack.pop().unwrap();
                 {
-                    let value_rrb = value_rr.borrow();
-                    match &*value_rrb {
+		    let mut value_rm;
+		    let value_rrb = match value_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    value_rm = v_rc.borrow();
+			    &*value_rm
+			}
+		    };
+                    match value_rrb {
                         Value::Null => {
                             is_null = true;
                         }
@@ -533,7 +560,7 @@ impl VM {
     /// the stack is printed.  Prints the stack to standard output.
     pub fn print_stack<'a>(
         &mut self, chunk: &Chunk, i: usize,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, RValue>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         running: Arc<AtomicBool>, no_remove: bool,
     ) {

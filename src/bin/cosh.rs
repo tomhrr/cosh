@@ -571,11 +571,15 @@ fn main() {
                     }
                 }
 
-                let variables = HashMap::new();
+                //let variables = HashMap::new();
                 let running = Arc::new(AtomicBool::new(true));
                 vm.interpret(
                     global_functions.clone(),
+                    /*
+                    todo: needs fixing.
                     variables.clone(),
+                    */
+                    HashMap::new(),
                     &mut bufread,
                     running.clone(),
                     "(main)"
@@ -623,7 +627,10 @@ fn main() {
                         let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                         let (chunk_opt, updated_variables, mut updated_functions) = vm.interpret(
                             global_functions,
+                            /* todo: needs fixing.
                             variables.clone(),
+                            */
+                            HashMap::new(),
                             &mut bufread,
                             running.clone(),
                             ".coshrc"
@@ -723,7 +730,10 @@ fn main() {
                     rl.add_history_entry(line.as_str());
                     let (chunk_opt, updated_variables, mut updated_functions) = vm.interpret(
                         global_functions,
+                        /* todo: needs fixing.
                         variables.clone(),
+                        */
+                        HashMap::new(),
                         &mut bufread,
                         running.clone(),
                         "(main)"

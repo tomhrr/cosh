@@ -25,21 +25,35 @@ impl VM {
             return 0;
         }
 
-        let v1 = self.stack.pop().unwrap();
-        let v1_b = v1.borrow();
-        let v2 = self.stack.pop().unwrap();
-        let v2_b = v2.borrow();
+        let v1_rr = self.stack.pop().unwrap();
+        let mut v1_rm;
+        let v1_rrb = match v1_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v1_rm = v_rc.borrow();
+                &*v1_rm
+            }
+        };
+        let v2_rr = self.stack.pop().unwrap();
+        let mut v2_rm;
+        let v2_rrb = match v2_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v2_rm = v_rc.borrow();
+                &*v2_rm
+            }
+        };
 
-        let v1_str_pre = v1_b.to_string();
+        let v1_str_pre = v1_rrb.to_string();
         let v1_str_opt = to_string_2(&v1_str_pre);
-        let v2_str_pre = v2_b.to_string();
+        let v2_str_pre = v2_rrb.to_string();
         let v2_str_opt = to_string_2(&v2_str_pre);
 
         match (v1_str_opt, v2_str_opt) {
             (Some(s1), Some(s2)) => {
                 let s3 = format!("{}{}", s2, s1);
                 self.stack
-                    .push(Rc::new(RefCell::new(Value::String(s3, None))));
+                    .push(RValue::Ref(Rc::new(RefCell::new(Value::String(s3, None)))));
             }
             (Some(_), _) => {
                 print_error(chunk, i, "second append argument must be string");
@@ -64,9 +78,23 @@ impl VM {
         }
 
         let separator_rr = self.stack.pop().unwrap();
-        let separator_rrb = separator_rr.borrow();
+        let mut separator_rm;
+        let separator_rrb = match separator_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                separator_rm = v_rc.borrow();
+                &*separator_rm
+            }
+        };
         let list_str_rr = self.stack.pop().unwrap();
-        let list_str_rrb = list_str_rr.borrow();
+        let mut list_str_rm;
+        let list_str_rrb = match list_str_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                list_str_rm = v_rc.borrow();
+                &*list_str_rm
+            }
+        };
 
         let separator_pre = separator_rrb.to_string();
         let separator_opt = to_string_2(&separator_pre);
@@ -111,12 +139,12 @@ impl VM {
 
                 let mut lst = VecDeque::new();
                 for e in final_elements.iter() {
-                    lst.push_back(Rc::new(RefCell::new(Value::String(
+                    lst.push_back(RValue::Ref(Rc::new(RefCell::new(Value::String(
                         e.to_string(),
                         None,
-                    ))));
+                    )))));
                 }
-                self.stack.push(Rc::new(RefCell::new(Value::List(lst))));
+                self.stack.push(RValue::Ref(Rc::new(RefCell::new(Value::List(lst)))));
             }
             (Some(_), _) => {
                 print_error(chunk, i, "first split argument must be string");
@@ -136,9 +164,9 @@ impl VM {
     /// resulting joined string onto the stack.
     pub fn core_join(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, RValue>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>,
+        prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<RValue>>>>,
         chunk: &Chunk, i: usize, line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
@@ -148,7 +176,14 @@ impl VM {
         }
 
         let separator_rr = self.stack.pop().unwrap();
-        let separator_rrb = separator_rr.borrow();
+        let mut separator_rm;
+        let separator_rrb = match separator_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                separator_rm = v_rc.borrow();
+                &*separator_rm
+            }
+        };
         let separator_pre = separator_rrb.to_string();
         let separator_opt = to_string_2(&separator_pre);
 
@@ -181,7 +216,14 @@ impl VM {
                             return 0;
                         }
                         let element_rr = self.stack.pop().unwrap();
-                        let element_rrb = element_rr.borrow();
+			let mut element_rm;
+			let element_rrb = match element_rr {
+			    RValue::Raw(ref v) => v,
+			    RValue::Ref(ref v_rc) => {
+				element_rm = v_rc.borrow();
+				&*element_rm
+			    }
+			};
                         match &*element_rrb {
                             Value::Null => {
                                 break;
@@ -239,7 +281,7 @@ impl VM {
                 }
                 let final_str = final_elements.join(separator);
                 self.stack
-                    .push(Rc::new(RefCell::new(Value::String(final_str, None))));
+                    .push(RValue::Ref(Rc::new(RefCell::new(Value::String(final_str, None)))));
             }
             _ => {
                 print_error(chunk, i, "second join argument must be string");

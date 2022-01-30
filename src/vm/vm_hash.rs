@@ -15,19 +15,33 @@ impl VM {
         }
 
         let key_str_rr = self.stack.pop().unwrap();
-        let key_str_rrb = key_str_rr.borrow();
+        let mut key_str_rm;
+        let key_str_rrb = match key_str_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                key_str_rm = v_rc.borrow();
+                &*key_str_rm
+            }
+        };
         let key_str_pre = key_str_rrb.to_string();
         let key_str_opt = to_string_2(&key_str_pre);
 
         let hash_rr = self.stack.pop().unwrap();
-        let hash_rrb = hash_rr.borrow();
+        let mut hash_rm;
+        let hash_rrb = match hash_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                hash_rm = v_rc.borrow();
+                &*hash_rm
+            }
+        };
 
         match (&*hash_rrb, key_str_opt) {
             (Value::Hash(map), Some(s)) => {
                 let v = map.get(s);
                 match v {
                     None => {
-                        self.stack.push(Rc::new(RefCell::new(Value::Null)));
+                        self.stack.push(RValue::Raw(Value::Null));
                     }
                     Some(r) => {
                         self.stack.push(r.clone());
@@ -58,15 +72,29 @@ impl VM {
         let val_rr = self.stack.pop().unwrap();
 
         let key_str_rr = self.stack.pop().unwrap();
-        let key_str_rrb = key_str_rr.borrow();
+        let mut key_str_rm;
+        let key_str_rrb = match key_str_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                key_str_rm = v_rc.borrow();
+                &*key_str_rm
+            }
+        };
         let key_str_pre = key_str_rrb.to_string();
         let key_str_opt = to_string_2(&key_str_pre);
 
-        let hash_rr = self.stack.pop().unwrap();
+        let mut hash_rr = self.stack.pop().unwrap();
 
         {
-            let mut hash_rrb = hash_rr.borrow_mut();
-            match (&mut *hash_rrb, key_str_opt) {
+	    let mut hash_rm;
+	    let mut hash_rrb = match hash_rr {
+		RValue::Raw(ref mut v) => v,
+		RValue::Ref(ref mut v_rc) => {
+		    hash_rm = v_rc.borrow_mut();
+		    &mut *hash_rm
+		}
+	    };
+            match (hash_rrb, key_str_opt) {
                 (Value::Hash(map), Some(s)) => {
                     map.insert(s.to_string(), val_rr);
                 }
@@ -99,8 +127,15 @@ impl VM {
         let hash_rr = self.stack.pop().unwrap();
         let is_hash;
         {
-            let hash_rrb = hash_rr.borrow();
-            match &*hash_rrb {
+	    let mut hash_rm;
+	    let hash_rrb = match hash_rr {
+		RValue::Raw(ref v) => v,
+		RValue::Ref(ref v_rc) => {
+		    hash_rm = v_rc.borrow();
+		    &*hash_rm
+		}
+	    };
+            match hash_rrb {
                 Value::Hash(_) => {
                     is_hash = true;
                 }
@@ -112,7 +147,7 @@ impl VM {
         }
         if is_hash {
             self.stack
-                .push(Rc::new(RefCell::new(Value::KeysGenerator(0, hash_rr))));
+                .push(RValue::Ref(Rc::new(RefCell::new(Value::KeysGenerator(0, Box::new(hash_rr))))));
         }
         return 1;
     }
@@ -128,8 +163,15 @@ impl VM {
         let hash_rr = self.stack.pop().unwrap();
         let is_hash;
         {
-            let hash_rrb = hash_rr.borrow();
-            match &*hash_rrb {
+	    let mut hash_rm;
+	    let hash_rrb = match hash_rr {
+		RValue::Raw(ref v) => v,
+		RValue::Ref(ref v_rc) => {
+		    hash_rm = v_rc.borrow();
+		    &*hash_rm
+		}
+	    };
+            match hash_rrb {
                 Value::Hash(_) => {
                     is_hash = true;
                 }
@@ -141,7 +183,7 @@ impl VM {
         }
         if is_hash {
             self.stack
-                .push(Rc::new(RefCell::new(Value::ValuesGenerator(0, hash_rr))));
+                .push(RValue::Ref(Rc::new(RefCell::new(Value::ValuesGenerator(0, Box::new(hash_rr))))));
         }
         return 1;
     }
@@ -157,8 +199,15 @@ impl VM {
         let hash_rr = self.stack.pop().unwrap();
         let is_hash;
         {
-            let hash_rrb = hash_rr.borrow();
-            match &*hash_rrb {
+	    let mut hash_rm;
+	    let hash_rrb = match hash_rr {
+		RValue::Raw(ref v) => v,
+		RValue::Ref(ref v_rc) => {
+		    hash_rm = v_rc.borrow();
+		    &*hash_rm
+		}
+	    };
+            match hash_rrb {
                 Value::Hash(_) => {
                     is_hash = true;
                 }
@@ -170,7 +219,7 @@ impl VM {
         }
         if is_hash {
             self.stack
-                .push(Rc::new(RefCell::new(Value::EachGenerator(0, hash_rr))));
+                .push(RValue::Ref(Rc::new(RefCell::new(Value::EachGenerator(0, Box::new(hash_rr))))));
         }
         return 1;
     }

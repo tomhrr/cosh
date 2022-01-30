@@ -21,22 +21,36 @@ impl VM {
         }
 
         let rw_rr = self.stack.pop().unwrap();
-        let rw_rrb = rw_rr.borrow();
+        let mut rw_rm;
+        let rw_rrb = match rw_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                rw_rm = v_rc.borrow();
+                &*rw_rm
+            }
+        };
         let path_rr = self.stack.pop().unwrap();
-        let path_rrb = path_rr.borrow();
+        let mut path_rm;
+        let path_rrb = match path_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                path_rm = v_rc.borrow();
+                &*path_rm
+            }
+        };
         let path_str_pre = path_rrb.to_string();
         let path_str_opt = to_string_2(&path_str_pre);
 
-        match &*rw_rrb {
+        match rw_rrb {
             Value::String(rw_str, _) => match rw_str.as_ref() {
                 "r" => match path_str_opt {
                     Some(s) => {
                         let file_res = File::open(s);
                         match file_res {
                             Ok(file) => {
-                                self.stack.push(Rc::new(RefCell::new(
+                                self.stack.push(RValue::Ref(Rc::new(RefCell::new(
                                     Value::FileReader(BufReader::new(file)),
-                                )));
+                                ))));
                             }
                             Err(e) => {
                                 let err_str = format!(
@@ -58,9 +72,9 @@ impl VM {
                         let file_res = File::create(s);
                         match file_res {
                             Ok(file) => {
-                                self.stack.push(Rc::new(RefCell::new(
+                                self.stack.push(RValue::Ref(Rc::new(RefCell::new(
                                     Value::FileWriter(LineWriter::new(file)),
-                                )));
+                                ))));
                             }
                             Err(e) => {
                                 let err_str = format!(
@@ -99,21 +113,28 @@ impl VM {
             return 0;
         }
 
-        let file_reader_rr = self.stack.pop().unwrap();
-        let mut file_reader_rrb = file_reader_rr.borrow_mut();
+        let mut file_reader_rr = self.stack.pop().unwrap();
+        let mut file_reader_rm;
+        let mut file_reader_rrb = match file_reader_rr {
+            RValue::Raw(ref mut v) => v,
+            RValue::Ref(ref mut v_rc) => {
+                file_reader_rm = v_rc.borrow_mut();
+                &mut *file_reader_rm
+            }
+        };
 
-        match *file_reader_rrb {
+        match file_reader_rrb {
             Value::FileReader(ref mut bufread) => {
                 let mut contents = String::new();
                 let res = BufRead::read_line(bufread, &mut contents);
                 match res {
                     Ok(0) => {
-                        self.stack.push(Rc::new(RefCell::new(Value::Null)));
+                        self.stack.push(RValue::Raw(Value::Null));
                     }
                     Ok(_) => {
-                        self.stack.push(Rc::new(RefCell::new(Value::String(
+                        self.stack.push(RValue::Ref(Rc::new(RefCell::new(Value::String(
                             contents, None,
-                        ))));
+                        )))));
                     }
                     _ => {
                         print_error(chunk, i, "unable to read line from file");
@@ -141,17 +162,31 @@ impl VM {
             return 0;
         }
 
-        let line_rr = self.stack.pop().unwrap();
-        let line_rrb = line_rr.borrow();
+        let mut line_rr = self.stack.pop().unwrap();
+        let mut line_rm;
+        let mut line_rrb = match line_rr {
+            RValue::Raw(ref mut v) => v,
+            RValue::Ref(ref mut v_rc) => {
+                line_rm = v_rc.borrow_mut();
+                &mut *line_rm
+            }
+        };
         let line_str_pre = line_rrb.to_string();
         let line_str_opt = to_string_2(&line_str_pre);
 
         match line_str_opt {
             Some(s) => {
                 if s != "" {
-                    let file_writer = self.stack.pop().unwrap();
-                    let mut file_writer_b = file_writer.borrow_mut();
-                    match *file_writer_b {
+                    let mut file_writer_rr = self.stack.pop().unwrap();
+		    let mut file_writer_rm;
+		    let mut file_writer_rrb = match file_writer_rr {
+			RValue::Raw(ref mut v) => v,
+			RValue::Ref(ref mut v_rc) => {
+			    file_writer_rm = v_rc.borrow_mut();
+			    &mut *file_writer_rm
+			}
+		    };
+                    match file_writer_rrb {
                         Value::FileWriter(ref mut line_writer) => {
                             let res = line_writer.write_all(s.as_bytes());
                             match res {
@@ -195,10 +230,17 @@ impl VM {
             return 0;
         }
 
-        let file_rr = self.stack.pop().unwrap();
-        let mut file_rrb = file_rr.borrow_mut();
+        let mut file_rr = self.stack.pop().unwrap();
+        let mut file_rm;
+        let mut file_rrb = match file_rr {
+            RValue::Raw(ref mut v) => v,
+            RValue::Ref(ref mut v_rc) => {
+                file_rm = v_rc.borrow_mut();
+                &mut *file_rm
+            }
+        };
 
-        match *file_rrb {
+        match file_rrb {
             Value::FileReader(_) => {
                 // No action required.
                 return 1;
@@ -236,7 +278,14 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_rrb = path_rr.borrow();
+        let mut path_rm;
+        let path_rrb = match path_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                path_rm = v_rc.borrow();
+                &*path_rm
+            }
+        };
         let path_str_pre = path_rrb.to_string();
         let path_str_opt = to_string_2(&path_str_pre);
 
@@ -246,7 +295,7 @@ impl VM {
                 match dir_handle_res {
                     Ok(dir_handle) => {
                         self.stack.push(
-                            Rc::new(RefCell::new(Value::DirectoryHandle(dir_handle))));
+                            RValue::Ref(Rc::new(RefCell::new(Value::DirectoryHandle(dir_handle)))));
                         return 1;
                     }
                     Err(e) => {
@@ -275,21 +324,28 @@ impl VM {
             return 0;
         }
 
-        let dir_handle_rr = self.stack.pop().unwrap();
-        let mut dir_handle_rrb = dir_handle_rr.borrow_mut();
+        let mut dir_handle_rr = self.stack.pop().unwrap();
+        let mut dir_handle_rm;
+        let mut dir_handle_rrb = match dir_handle_rr {
+            RValue::Raw(ref mut v) => v,
+            RValue::Ref(ref mut v_rc) => {
+                dir_handle_rm = v_rc.borrow_mut();
+                &mut *dir_handle_rm
+            }
+        };
 
-        let entry_value = match *dir_handle_rrb {
+        let entry_value = match dir_handle_rrb {
             Value::DirectoryHandle(ref mut dir_handle) => {
                 let entry_opt = dir_handle.next();
                 match entry_opt {
                     Some(s) => {
                         let path = s.unwrap().path();
-                        Rc::new(RefCell::new(Value::String(
+                        RValue::Ref(Rc::new(RefCell::new(Value::String(
                             path.to_str().unwrap().to_string(),
                             None,
-                        )))
+                        ))))
                     }
-                    None => Rc::new(RefCell::new(Value::Null)),
+                    None => RValue::Raw(Value::Null),
                 }
             }
             _ => {
@@ -315,7 +371,14 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_rrb = path_rr.borrow();
+        let mut path_rm;
+        let path_rrb = match path_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                path_rm = v_rc.borrow();
+                &*path_rm
+            }
+        };
         let path_str_pre = path_rrb.to_string();
         let path_str_opt = to_string_2(&path_str_pre);
 
@@ -329,10 +392,10 @@ impl VM {
                             false => 0,
                         };
                         self.stack
-                            .push(Rc::new(RefCell::new(Value::Int(is_dir))));
+                            .push(RValue::Raw(Value::Int(is_dir)));
                     }
                     _ => {
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(0))));
+                        self.stack.push(RValue::Raw(Value::Int(0)));
                     }
                 }
             }

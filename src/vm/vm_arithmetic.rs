@@ -89,7 +89,7 @@ impl VM {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n1 + n2);
-                self.stack.push(Rc::new(RefCell::new(n3)));
+                self.stack.push(RValue::Ref(Rc::new(RefCell::new(n3))));
                 return 1;
             }
             (Value::BigInt(_), Value::Int(n2)) => {
@@ -99,12 +99,12 @@ impl VM {
                 return self.opcode_add_inner(chunk, i, &int_to_bigint(*n1), v2);
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                self.stack.push(Rc::new(RefCell::new(add_ints(*n1, *n2))));
+                self.stack.push(RValue::Raw(add_ints(*n1, *n2)));
                 return 1;
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 self.stack
-                    .push(Rc::new(RefCell::new(Value::Float(n1 + n2))));
+                    .push(RValue::Raw(Value::Float(n1 + n2)));
                 return 1;
             }
             (Value::BigInt(n1), Value::Float(_)) => {
@@ -124,7 +124,7 @@ impl VM {
                 let n2_opt = v2.to_int();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(add_ints(n1, n2))));
+                        self.stack.push(RValue::Raw(add_ints(n1, n2)));
                         return 1;
                     }
                     _ => {}
@@ -133,9 +133,9 @@ impl VM {
                 let n2_opt = v2.to_bigint();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(
+                        self.stack.push(RValue::Ref(Rc::new(RefCell::new(
                             Value::BigInt(n1 + n2),
-                        )));
+                        ))));
                         return 1;
                     }
                     _ => {}
@@ -144,9 +144,9 @@ impl VM {
                 let n2_opt = v2.to_float();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(
+                        self.stack.push(RValue::Raw(
                             Value::Float(n1 + n2),
-                        )));
+                        ));
                         return 1;
                     }
                     _ => {}
@@ -165,9 +165,23 @@ impl VM {
         }
 
         let v1_rr = self.stack.pop().unwrap();
-        let v1_rrb = v1_rr.borrow();
+        let mut v1_rm;
+        let v1_rrb = match v1_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v1_rm = v_rc.borrow();
+                &*v1_rm
+            }
+        };
         let v2_rr = self.stack.pop().unwrap();
-        let v2_rrb = v2_rr.borrow();
+        let mut v2_rm;
+        let v2_rrb = match v2_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v2_rm = v_rc.borrow();
+                &*v2_rm
+            }
+        };
 
         let res = self.opcode_add_inner(chunk, i, &v1_rrb, &v2_rrb);
         if res == 0 {
@@ -186,7 +200,7 @@ impl VM {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n2 - n1);
-                self.stack.push(Rc::new(RefCell::new(n3)));
+                self.stack.push(RValue::Ref(Rc::new(RefCell::new(n3))));
                 return 1;
             }
             (Value::BigInt(_), Value::Int(n2)) => {
@@ -196,12 +210,12 @@ impl VM {
                 return self.opcode_subtract_inner(chunk, i, &int_to_bigint(*n1), v2);
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                self.stack.push(Rc::new(RefCell::new(subtract_ints(*n1, *n2))));
+                self.stack.push(RValue::Raw(subtract_ints(*n1, *n2)));
                 return 1;
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 self.stack
-                    .push(Rc::new(RefCell::new(Value::Float(n2 - n1))));
+                    .push(RValue::Raw(Value::Float(n2 - n1)));
                 return 1;
             }
             (Value::BigInt(n1), Value::Float(_)) => {
@@ -221,7 +235,7 @@ impl VM {
                 let n2_opt = v2.to_int();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(subtract_ints(n1, n2))));
+                        self.stack.push(RValue::Raw(subtract_ints(n1, n2)));
                         return 1;
                     }
                     _ => {}
@@ -230,9 +244,9 @@ impl VM {
                 let n2_opt = v2.to_bigint();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(
+                        self.stack.push(RValue::Ref(Rc::new(RefCell::new(
                             Value::BigInt(n2 - n1),
-                        )));
+                        ))));
                         return 1;
                     }
                     _ => {}
@@ -241,9 +255,9 @@ impl VM {
                 let n2_opt = v2.to_float();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(
+                        self.stack.push(RValue::Raw(
                             Value::Float(n2 - n1),
-                        )));
+                        ));
                         return 1;
                     }
                     _ => {}
@@ -262,9 +276,23 @@ impl VM {
         }
 
         let v1_rr = self.stack.pop().unwrap();
-        let v1_rrb = v1_rr.borrow();
+        let mut v1_rm;
+        let v1_rrb = match v1_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v1_rm = v_rc.borrow();
+                &*v1_rm
+            }
+        };
         let v2_rr = self.stack.pop().unwrap();
-        let v2_rrb = v2_rr.borrow();
+        let mut v2_rm;
+        let v2_rrb = match v2_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v2_rm = v_rc.borrow();
+                &*v2_rm
+            }
+        };
 
         let res = self.opcode_subtract_inner(chunk, i, &v1_rrb, &v2_rrb);
         if res == 0 {
@@ -284,7 +312,7 @@ impl VM {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n1 * n2);
-                self.stack.push(Rc::new(RefCell::new(n3)));
+                self.stack.push(RValue::Ref(Rc::new(RefCell::new(n3))));
                 return 1;
             }
             (Value::BigInt(_), Value::Int(n2)) => {
@@ -294,12 +322,12 @@ impl VM {
                 return self.opcode_multiply_inner(chunk, i, &int_to_bigint(*n1), v2);
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                self.stack.push(Rc::new(RefCell::new(multiply_ints(*n1, *n2))));
+                self.stack.push(RValue::Raw(multiply_ints(*n1, *n2)));
                 return 1;
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 self.stack
-                    .push(Rc::new(RefCell::new(Value::Float(n1 * n2))));
+                    .push(RValue::Raw(Value::Float(n1 * n2)));
                 return 1;
             }
             (Value::BigInt(n1), Value::Float(_)) => {
@@ -319,7 +347,7 @@ impl VM {
                 let n2_opt = v2.to_int();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(multiply_ints(n1, n2))));
+                        self.stack.push(RValue::Raw(multiply_ints(n1, n2)));
                         return 1;
                     }
                     _ => {}
@@ -328,9 +356,9 @@ impl VM {
                 let n2_opt = v2.to_bigint();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(
+                        self.stack.push(RValue::Ref(Rc::new(RefCell::new(
                             Value::BigInt(n1 * n2),
-                        )));
+                        ))));
                         return 1;
                     }
                     _ => {}
@@ -339,9 +367,9 @@ impl VM {
                 let n2_opt = v2.to_float();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(
+                        self.stack.push(RValue::Raw(
                             Value::Float(n1 * n2),
-                        )));
+                        ));
                         return 1;
                     }
                     _ => {}
@@ -360,9 +388,23 @@ impl VM {
         }
 
         let v1_rr = self.stack.pop().unwrap();
-        let v1_rrb = v1_rr.borrow();
+        let mut v1_rm;
+        let v1_rrb = match v1_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v1_rm = v_rc.borrow();
+                &*v1_rm
+            }
+        };
         let v2_rr = self.stack.pop().unwrap();
-        let v2_rrb = v2_rr.borrow();
+        let mut v2_rm;
+        let v2_rrb = match v2_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v2_rm = v_rc.borrow();
+                &*v2_rm
+            }
+        };
 
         let res = self.opcode_multiply_inner(chunk, i, &v1_rrb, &v2_rrb);
         if res == 0 {
@@ -381,7 +423,7 @@ impl VM {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n2 / n1);
-                self.stack.push(Rc::new(RefCell::new(n3)));
+                self.stack.push(RValue::Ref(Rc::new(RefCell::new(n3))));
                 return 1;
             }
             (Value::BigInt(_), Value::Int(n2)) => {
@@ -391,12 +433,12 @@ impl VM {
                 return self.opcode_divide_inner(chunk, i, &int_to_bigint(*n1), v2);
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                self.stack.push(Rc::new(RefCell::new(divide_ints(*n1, *n2))));
+                self.stack.push(RValue::Raw(divide_ints(*n1, *n2)));
                 return 1;
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 self.stack
-                    .push(Rc::new(RefCell::new(Value::Float(n2 / n1))));
+                    .push(RValue::Raw(Value::Float(n2 / n1)));
                 return 1;
             }
             (Value::BigInt(n1), Value::Float(_)) => {
@@ -416,7 +458,7 @@ impl VM {
                 let n2_opt = v2.to_int();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(divide_ints(n1, n2))));
+                        self.stack.push(RValue::Raw(divide_ints(n1, n2)));
                         return 1;
                     }
                     _ => {}
@@ -425,9 +467,9 @@ impl VM {
                 let n2_opt = v2.to_bigint();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(
+                        self.stack.push(RValue::Ref(Rc::new(RefCell::new(
                             Value::BigInt(n2 / n1),
-                        )));
+                        ))));
                         return 1;
                     }
                     _ => {}
@@ -436,9 +478,9 @@ impl VM {
                 let n2_opt = v2.to_float();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        self.stack.push(Rc::new(RefCell::new(
+                        self.stack.push(RValue::Raw(
                             Value::Float(n2 / n1),
-                        )));
+                        ));
                         return 1;
                     }
                     _ => {}
@@ -457,9 +499,23 @@ impl VM {
         }
 
         let v1_rr = self.stack.pop().unwrap();
-        let v1_rrb = v1_rr.borrow();
+        let mut v1_rm;
+        let v1_rrb = match v1_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v1_rm = v_rc.borrow();
+                &*v1_rm
+            }
+        };
         let v2_rr = self.stack.pop().unwrap();
-        let v2_rrb = v2_rr.borrow();
+        let mut v2_rm;
+        let v2_rrb = match v2_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v2_rm = v_rc.borrow();
+                &*v2_rm
+            }
+        };
 
         let res = self.opcode_divide_inner(chunk, i, &v1_rrb, &v2_rrb);
         if res == 0 {
@@ -479,7 +535,7 @@ impl VM {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let res = if n1 == n2 { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(RValue::Ref(Rc::new(RefCell::new(Value::Int(res)))));
                 return 1;
             }
             (Value::BigInt(_), Value::Int(n2)) => {
@@ -490,7 +546,7 @@ impl VM {
             }
             (Value::Int(n1), Value::Int(n2)) => {
                 let res = if n1 == n2 { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(RValue::Raw(Value::Int(res)));
                 return 1;
             }
             (Value::BigInt(n1), Value::Float(_)) => {
@@ -507,7 +563,7 @@ impl VM {
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 let res = if n1 == n2 { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(RValue::Raw(Value::Int(res)));
                 return 1;
             }
             (_, _) => {
@@ -516,7 +572,7 @@ impl VM {
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n1 == n2 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -526,7 +582,7 @@ impl VM {
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n1 == n2 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -536,7 +592,7 @@ impl VM {
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n1 == n2 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -548,7 +604,7 @@ impl VM {
                 match (i1_str_opt, i2_str_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n1 == n2 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -567,9 +623,23 @@ impl VM {
         }
 
         let v1_rr = self.stack.pop().unwrap();
-        let v1_rrb = v1_rr.borrow();
+        let mut v1_rm;
+        let v1_rrb = match v1_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v1_rm = v_rc.borrow();
+                &*v1_rm
+            }
+        };
         let v2_rr = self.stack.pop().unwrap();
-        let v2_rrb = v2_rr.borrow();
+        let mut v2_rm;
+        let v2_rrb = match v2_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v2_rm = v_rc.borrow();
+                &*v2_rm
+            }
+        };
 
         let res = self.opcode_eq_inner(chunk, i, &v1_rrb, &v2_rrb);
         if res == 0 {
@@ -589,7 +659,7 @@ impl VM {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let res = if n2 > n1 { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(RValue::Raw(Value::Int(res)));
                 return 1;
             }
             (Value::BigInt(_), Value::Int(n2)) => {
@@ -600,7 +670,7 @@ impl VM {
             }
             (Value::Int(n1), Value::Int(n2)) => {
                 let res = if n2 > n1 { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(RValue::Raw(Value::Int(res)));
                 return 1;
             }
             (Value::BigInt(n1), Value::Float(_)) => {
@@ -617,7 +687,7 @@ impl VM {
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 let res = if n2 > n1 { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(RValue::Raw(Value::Int(res)));
                 return 1;
             }
             (_, _) => {
@@ -626,7 +696,7 @@ impl VM {
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n2 > n1 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -636,7 +706,7 @@ impl VM {
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n2 > n1 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -646,7 +716,7 @@ impl VM {
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n2 > n1 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -658,7 +728,7 @@ impl VM {
                 match (i1_str_opt, i2_str_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n2 > n1 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -677,9 +747,23 @@ impl VM {
         }
 
         let v1_rr = self.stack.pop().unwrap();
-        let v1_rrb = v1_rr.borrow();
+        let mut v1_rm;
+        let v1_rrb = match v1_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v1_rm = v_rc.borrow();
+                &*v1_rm
+            }
+        };
         let v2_rr = self.stack.pop().unwrap();
-        let v2_rrb = v2_rr.borrow();
+        let mut v2_rm;
+        let v2_rrb = match v2_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v2_rm = v_rc.borrow();
+                &*v2_rm
+            }
+        };
 
         let res = self.opcode_gt_inner(chunk, i, &v1_rrb, &v2_rrb);
         if res == 0 {
@@ -699,7 +783,7 @@ impl VM {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let res = if n2 < n1 { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(RValue::Raw(Value::Int(res)));
                 return 1;
             }
             (Value::BigInt(_), Value::Int(n2)) => {
@@ -710,7 +794,7 @@ impl VM {
             }
             (Value::Int(n1), Value::Int(n2)) => {
                 let res = if n2 < n1 { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(RValue::Raw(Value::Int(res)));
                 return 1;
             }
             (Value::BigInt(n1), Value::Float(_)) => {
@@ -727,7 +811,7 @@ impl VM {
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 let res = if n2 < n1 { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(RValue::Raw(Value::Int(res)));
                 return 1;
             }
             (_, _) => {
@@ -736,7 +820,7 @@ impl VM {
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n2 < n1 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -746,7 +830,7 @@ impl VM {
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n2 < n1 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -756,7 +840,7 @@ impl VM {
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n2 < n1 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                    }
                     _ => {}
@@ -768,7 +852,7 @@ impl VM {
                 match (i1_str_opt, i2_str_opt) {
                     (Some(n1), Some(n2)) => {
                         let res = if n2 < n1 { 1 } else { 0 };
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                        self.stack.push(RValue::Raw(Value::Int(res)));
                         return 1;
                     }
                     _ => {}
@@ -787,9 +871,23 @@ impl VM {
         }
 
         let v1_rr = self.stack.pop().unwrap();
-        let v1_rrb = v1_rr.borrow();
+        let mut v1_rm;
+        let v1_rrb = match v1_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v1_rm = v_rc.borrow();
+                &*v1_rm
+            }
+        };
         let v2_rr = self.stack.pop().unwrap();
-        let v2_rrb = v2_rr.borrow();
+        let mut v2_rm;
+        let v2_rrb = match v2_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                v2_rm = v_rc.borrow();
+                &*v2_rm
+            }
+        };
 
         let res = self.opcode_lt_inner(chunk, i, &v1_rrb, &v2_rrb);
         if res == 0 {

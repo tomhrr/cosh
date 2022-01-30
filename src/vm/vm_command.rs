@@ -123,7 +123,14 @@ impl VM {
                 self.stack.get(self.stack.len() - 1 - capture_num);
             match capture_el_rr_opt {
                 Some(capture_el_rr) => {
-                    let capture_el_rrb = capture_el_rr.borrow();
+		    let mut capture_el_rm;
+		    let capture_el_rrb = match capture_el_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    capture_el_rm = v_rc.borrow();
+			    &*capture_el_rm
+			}
+		    };
                     let capture_el_str_pre = capture_el_rrb.to_string();
                     let capture_el_str_opt = to_string_2(&capture_el_str_pre);
                     match capture_el_str_opt {
@@ -153,7 +160,14 @@ impl VM {
             }
 
 	    let value_rr = self.stack.pop().unwrap();
-	    let value_rrb = value_rr.borrow();
+	    let mut value_rm;
+	    let value_rrb = match value_rr {
+		RValue::Raw(ref v) => v,
+		RValue::Ref(ref v_rc) => {
+		    value_rm = v_rc.borrow();
+		    &*value_rm
+		}
+	    };
 	    let value_pre = value_rrb.to_string();
 	    let value_opt = to_string_2(&value_pre);
 
@@ -223,7 +237,7 @@ impl VM {
                 let upstream_stdout = process.stdout.unwrap();
                 let cmd_generator =
                     Value::CommandGenerator(BufReader::new(upstream_stdout));
-                self.stack.push(Rc::new(RefCell::new(cmd_generator)));
+                self.stack.push(RValue::Ref(Rc::new(RefCell::new(cmd_generator))));
             }
             Err(e) => {
                 let err_str = format!("unable to run command: {}", e.to_string());
@@ -277,9 +291,9 @@ impl VM {
     /// output onto the stack.
     pub fn core_pipe(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, RValue>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>,
+        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<RValue>>>>,
         chunk: &Chunk, i: usize, line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
@@ -289,9 +303,16 @@ impl VM {
         }
 
         let cmd_rr = self.stack.pop().unwrap();
-        let cmd_rrb = cmd_rr.borrow();
+        let mut cmd_rm;
+        let cmd_rrb = match cmd_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                cmd_rm = v_rc.borrow();
+                &*cmd_rm
+            }
+        };
 
-        match &*cmd_rrb {
+        match cmd_rrb {
             Value::Command(s) => {
                 let prepared_cmd_opt = self.prepare_and_split_command(&s, chunk, i);
                 if prepared_cmd_opt.is_none() {
@@ -330,7 +351,7 @@ impl VM {
                                 let cmd_generator = Value::CommandGenerator(
                                     BufReader::new(upstream_stdout),
                                 );
-                                self.stack.push(Rc::new(RefCell::new(cmd_generator)));
+                                self.stack.push(RValue::Ref(Rc::new(RefCell::new(cmd_generator))));
                             }
                             Ok(ForkResult::Child) => {
                                 loop {
@@ -341,7 +362,7 @@ impl VM {
                                     let shift_res = self.opcode_shift(
                                         scopes,
                                         global_functions,
-                                        prev_localvarstacks,
+                                        prev_local_vars_stacks,
                                         chunk,
                                         i,
                                         line_col,
@@ -351,7 +372,14 @@ impl VM {
                                         return 0;
                                     }
                                     let element_rr = self.stack.pop().unwrap();
-                                    let element_rrb = element_rr.borrow();
+				    let mut element_rm;
+				    let element_rrb = match element_rr {
+					RValue::Raw(ref v) => v,
+					RValue::Ref(ref v_rc) => {
+					    element_rm = v_rc.borrow();
+					    &*element_rm
+					}
+				    };
                                     match &*element_rrb {
                                         Value::Null => {
                                             break;

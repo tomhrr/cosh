@@ -14,12 +14,19 @@ lazy_static! {
 /// Takes a wrapped value as its single argument, and returns a
 /// wrapped value for the stringified representation of the argument.
 fn to_string_value(
-    value_rr: Rc<RefCell<Value>>,
-) -> Option<Rc<RefCell<Value>>> {
+    value_rr: RValue,
+) -> Option<RValue> {
     let is_string;
     {
-        let value_rrb = value_rr.borrow();
-        match *value_rrb {
+        let mut value_rm;
+        let value_rrb = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        };
+        match value_rrb {
             Value::String(_, _) => {
                 is_string = true;
             }
@@ -31,14 +38,21 @@ fn to_string_value(
     if is_string {
         return Some(value_rr);
     } else {
-        let value_rrb = value_rr.borrow();
+        let mut value_rm;
+        let value_rrb = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        };
         let value_str_pre = value_rrb.to_string();
         let value_str_opt = to_string_2(&value_str_pre);
         match value_str_opt {
-            Some(s) => Some(Rc::new(RefCell::new(Value::String(
+            Some(s) => Some(RValue::Ref(Rc::new(RefCell::new(Value::String(
                 s.to_string(),
                 None,
-            )))),
+            ))))),
             _ => None,
         }
     }
@@ -60,27 +74,48 @@ impl VM {
             print_error(chunk, i, "regex must be a string");
             return 0;
         }
-        let regex_str_rr = regex_str_rr_opt.unwrap();
+        let mut regex_str_rr = regex_str_rr_opt.unwrap();
 
         {
-            let mut regex_str_rrb = regex_str_rr.borrow_mut();
+	    let mut regex_str_rm;
+	    let mut regex_str_rrb = match regex_str_rr {
+		RValue::Raw(ref mut v) => v,
+		RValue::Ref(ref mut v_rc) => {
+		    regex_str_rm = v_rc.borrow_mut();
+		    &mut *regex_str_rm
+		}
+	    };
             let res = regex_str_rrb.gen_regex(chunk, i);
             if !res {
                 return 0;
             }
         }
-        let regex_str_rrb = regex_str_rr.borrow();
+        let mut regex_str_rm;
+        let regex_str_rrb = match regex_str_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                regex_str_rm = v_rc.borrow();
+                &*regex_str_rm
+            }
+        };
         let regex_opt = regex_str_rrb.to_regex();
 
         let str_rr = self.stack.pop().unwrap();
-        let str_rrb = str_rr.borrow();
+        let mut str_rm;
+        let str_rrb = match str_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                str_rm = v_rc.borrow();
+                &*str_rm
+            }
+        };
         let str_pre = str_rrb.to_string();
         let str_opt = to_string_2(&str_pre);
 
         match (regex_opt, str_opt) {
             (Some(regex), Some(s)) => {
                 let res = if regex.is_match(s) { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(RValue::Raw(Value::Int(res)));
             }
             (_, Some(_)) => {
                 print_error(chunk, i, "first m argument must be string");
@@ -118,24 +153,52 @@ impl VM {
             print_error(chunk, i, "regex must be a string");
             return 0;
         }
-        let regex_str_rr = regex_str_rr_opt.unwrap();
+        let mut regex_str_rr = regex_str_rr_opt.unwrap();
 
         {
-            let mut regex_str_rrb = regex_str_rr.borrow_mut();
+	    let mut regex_str_rm;
+	    let mut regex_str_rrb = match regex_str_rr {
+		RValue::Raw(ref mut v) => v,
+		RValue::Ref(ref mut v_rc) => {
+		    regex_str_rm = v_rc.borrow_mut();
+		    &mut *regex_str_rm
+		}
+	    };
             let res = regex_str_rrb.gen_regex(chunk, i);
             if !res {
                 return 0;
             }
         }
-        let regex_str_rrb = regex_str_rr.borrow();
+        let mut regex_str_rm;
+        let regex_str_rrb = match regex_str_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                regex_str_rm = v_rc.borrow();
+                &*regex_str_rm
+            }
+        };
         let regex_opt = regex_str_rrb.to_regex();
 
-        let repl_str_rrb = repl_str_rr.borrow();
+        let mut repl_str_rm;
+        let repl_str_rrb = match repl_str_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                repl_str_rm = v_rc.borrow();
+                &*repl_str_rm
+            }
+        };
         let repl_str_pre = repl_str_rrb.to_string();
         let repl_str_opt = to_string_2(&repl_str_pre);
 
         let str_rr = self.stack.pop().unwrap();
-        let str_rrb = str_rr.borrow();
+        let mut str_rm;
+        let str_rrb = match str_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                str_rm = v_rc.borrow();
+                &*str_rm
+            }
+        };
         let str_pre = str_rrb.to_string();
         let str_opt = to_string_2(&str_pre);
 
@@ -144,10 +207,10 @@ impl VM {
                 let updated_repl = RE_ADJUST.replace_all(repl_str, "$${$1}");
                 let updated_repl_str = updated_repl.to_string();
                 let updated_str = regex.replace_all(s, &updated_repl_str[..]);
-                self.stack.push(Rc::new(RefCell::new(Value::String(
+                self.stack.push(RValue::Ref(Rc::new(RefCell::new(Value::String(
                     updated_str.to_string(),
                     None,
-                ))));
+                )))));
             }
             (_, _, Some(_)) => {
                 print_error(chunk, i, "first s argument must be string");
@@ -180,20 +243,41 @@ impl VM {
             print_error(chunk, i, "regex must be a string");
             return 0;
         }
-        let regex_str_rr = regex_str_rr_opt.unwrap();
+        let mut regex_str_rr = regex_str_rr_opt.unwrap();
 
         {
-            let mut regex_str_rrb = regex_str_rr.borrow_mut();
+	    let mut regex_str_rm;
+	    let mut regex_str_rrb = match regex_str_rr {
+		RValue::Raw(ref mut v) => v,
+		RValue::Ref(ref mut v_rc) => {
+		    regex_str_rm = v_rc.borrow_mut();
+		    &mut *regex_str_rm
+		}
+	    };
             let res = regex_str_rrb.gen_regex(chunk, i);
             if !res {
                 return 0;
             }
         }
-        let regex_str_rrb = regex_str_rr.borrow();
+	let mut regex_str_rm;
+	let mut regex_str_rrb = match regex_str_rr {
+	    RValue::Raw(ref mut v) => v,
+	    RValue::Ref(ref mut v_rc) => {
+		regex_str_rm = v_rc.borrow_mut();
+		&mut *regex_str_rm
+	    }
+	};
         let regex_opt = regex_str_rrb.to_regex();
 
         let str_rr = self.stack.pop().unwrap();
-        let str_rrb = str_rr.borrow();
+        let mut str_rm;
+        let str_rrb = match str_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                str_rm = v_rc.borrow();
+                &*str_rm
+            }
+        };
         let str_pre = str_rrb.to_string();
         let str_opt = to_string_2(&str_pre);
 
@@ -202,12 +286,12 @@ impl VM {
                 let captures = regex.captures_iter(s);
                 let mut lst = VecDeque::new();
                 for capture in captures {
-                    lst.push_back(Rc::new(RefCell::new(Value::String(
+                    lst.push_back(RValue::Ref(Rc::new(RefCell::new(Value::String(
                         capture.get(0).unwrap().as_str().to_string(),
                         None,
-                    ))));
+                    )))));
                 }
-                self.stack.push(Rc::new(RefCell::new(Value::List(lst))));
+                self.stack.push(RValue::Ref(Rc::new(RefCell::new(Value::List(lst)))));
             }
             (_, Some(_)) => {
                 print_error(chunk, i, "first c argument must be string");

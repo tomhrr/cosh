@@ -28,7 +28,14 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
+        let mut value_rm;
+        let value_rrb = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        };
         let value_pre = value_rrb.to_string();
         let value_opt = to_string_2(&value_pre);
 
@@ -63,12 +70,26 @@ impl VM {
         }
 
         let dst_rr = self.stack.pop().unwrap();
-        let dst_rrb = dst_rr.borrow();
+        let mut dst_rm;
+        let dst_rrb = match dst_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                dst_rm = v_rc.borrow();
+                &*dst_rm
+            }
+        };
         let dst_pre = dst_rrb.to_string();
         let dst_opt = to_string_2(&dst_pre);
 
         let src_rr = self.stack.pop().unwrap();
-        let src_rrb = src_rr.borrow();
+        let mut src_rm;
+        let src_rrb = match src_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                src_rm = v_rc.borrow();
+                &*src_rm
+            }
+        };
         let src_pre = src_rrb.to_string();
         let src_opt = to_string_2(&src_pre);
 
@@ -104,12 +125,26 @@ impl VM {
         }
 
         let dst_rr = self.stack.pop().unwrap();
-        let dst_rrb = dst_rr.borrow();
+        let mut dst_rm;
+        let dst_rrb = match dst_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                dst_rm = v_rc.borrow();
+                &*dst_rm
+            }
+        };
         let dst_pre = dst_rrb.to_string();
         let dst_opt = to_string_2(&dst_pre);
 
         let src_rr = self.stack.pop().unwrap();
-        let src_rrb = src_rr.borrow();
+        let mut src_rm;
+        let src_rrb = match src_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                src_rm = v_rc.borrow();
+                &*src_rm
+            }
+        };
         let src_pre = src_rrb.to_string();
         let src_opt = to_string_2(&src_pre);
 
@@ -165,7 +200,14 @@ impl VM {
             }
         } else {
             let dir_rr = self.stack.pop().unwrap();
-            let dir_rrb = dir_rr.borrow();
+	    let mut dir_rm;
+	    let dir_rrb = match dir_rr {
+		RValue::Raw(ref v) => v,
+		RValue::Ref(ref v_rc) => {
+		    dir_rm = v_rc.borrow();
+		    &*dir_rm
+		}
+	    };
             let dir_pre = dir_rrb.to_string();
             let dir_opt = to_string_2(&dir_pre);
 
@@ -198,10 +240,10 @@ impl VM {
         let current_dir_res = std::env::current_dir();
         match current_dir_res {
             Ok(current_dir) => {
-                self.stack.push(Rc::new(RefCell::new(Value::String(
+                self.stack.push(RValue::Ref(Rc::new(RefCell::new(Value::String(
                     current_dir.to_str().unwrap().to_string(),
                     None,
-                ))));
+                )))));
             }
             Err(e) => {
                 let err_str = format!("unable to pwd: {}", e.to_string());
@@ -223,7 +265,14 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_rrb = path_rr.borrow();
+        let mut path_rm;
+        let path_rrb = match path_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                path_rm = v_rc.borrow();
+                &*path_rm
+            }
+        };
         let path_pre = path_rrb.to_string();
         let path_opt = to_string_2(&path_pre);
 
@@ -301,7 +350,14 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_rrb = path_rr.borrow();
+        let mut path_rm;
+        let path_rrb = match path_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                path_rm = v_rc.borrow();
+                &*path_rm
+            }
+        };
         let path_pre = path_rrb.to_string();
         let path_opt = to_string_2(&path_pre);
 
@@ -313,84 +369,84 @@ impl VM {
                         let mut map = IndexMap::new();
                         map.insert(
                             "dev".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_u64(meta.dev()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "ino".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_u64(meta.ino()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "mode".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_u32(meta.mode()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "nlink".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_u64(meta.nlink()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "uid".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_u32(meta.uid()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "gid".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_u32(meta.gid()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "rdev".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_u64(meta.rdev()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "size".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_u64(meta.size()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "atime_nsec".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_i64(meta.atime_nsec()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "mtime_nsec".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_i64(meta.mtime_nsec()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "ctime_nsec".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_i64(meta.ctime_nsec()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "blksize".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_u64(meta.blksize()).unwrap(),
-                            ))),
+                            )))),
                         );
                         map.insert(
                             "blocks".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                                 BigInt::from_u64(meta.blocks()).unwrap(),
-                            ))),
+                            )))),
                         );
                         self.stack
-                            .push(Rc::new(RefCell::new(Value::Hash(map))));
+                            .push(RValue::Ref(Rc::new(RefCell::new(Value::Hash(map)))));
                     }
                     Err(e) => {
                         let err_str =
@@ -421,26 +477,26 @@ impl VM {
             let mut map = IndexMap::new();
             map.insert(
                 "pid".to_string(),
-                Rc::new(RefCell::new(Value::BigInt(
+                RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                     BigInt::from_i32(*pid).unwrap(),
-                ))),
+                )))),
             );
             map.insert(
                 "uid".to_string(),
-                Rc::new(RefCell::new(Value::BigInt(
+                RValue::Ref(Rc::new(RefCell::new(Value::BigInt(
                     BigInt::from_u32(process.uid).unwrap(),
-                ))),
+                )))),
             );
             map.insert(
                 "name".to_string(),
-                Rc::new(RefCell::new(Value::String(
+                RValue::Ref(Rc::new(RefCell::new(Value::String(
                     process.name().to_string(),
                     None,
-                ))),
+                )))),
             );
-            lst.push_back(Rc::new(RefCell::new(Value::Hash(map))))
+            lst.push_back(RValue::Ref(Rc::new(RefCell::new(Value::Hash(map)))))
         }
-        self.stack.push(Rc::new(RefCell::new(Value::List(lst))));
+        self.stack.push(RValue::Ref(Rc::new(RefCell::new(Value::List(lst)))));
         return 1;
     }
 
@@ -453,12 +509,26 @@ impl VM {
         }
 
         let sig_rr = self.stack.pop().unwrap();
-        let sig_rrb = sig_rr.borrow();
+        let mut sig_rm;
+        let sig_rrb = match sig_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                sig_rm = v_rc.borrow();
+                &*sig_rm
+            }
+        };
         let sig_pre = sig_rrb.to_string();
         let sig_opt = to_string_2(&sig_pre);
 
         let pid_rr = self.stack.pop().unwrap();
-        let pid_rrb = pid_rr.borrow();
+        let mut pid_rm;
+        let pid_rrb = match pid_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                pid_rm = v_rc.borrow();
+                &*pid_rm
+            }
+        };
         let pid_int_opt = pid_rrb.to_int();
 
         match (pid_int_opt, sig_opt) {

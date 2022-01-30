@@ -6,6 +6,7 @@ use std::fs::File;
 use std::fs::ReadDir;
 use std::io::BufReader;
 use std::io::LineWriter;
+use std::process::abort;
 use std::rc::Rc;
 use std::str;
 
@@ -76,9 +77,9 @@ pub enum Value {
     /// captured.
     CommandUncaptured(String),
     /// A list.
-    List(VecDeque<Rc<RefCell<Value>>>),
+    List(VecDeque<RValue>),
     /// A hash.
-    Hash(IndexMap<String, Rc<RefCell<Value>>>),
+    Hash(IndexMap<String, RValue>),
     /// An anonymous function that refers to a local stack, where the
     /// second value is the local variable stack index and the third
     /// value is a unique identifier for that stack (currently its
@@ -87,9 +88,9 @@ pub enum Value {
     /// A generator constructed by way of a generator function.
     Generator(
         /// The global variable state.
-        HashMap<String, Rc<RefCell<Value>>>,
+        HashMap<String, RValue>,
         /// The local variable stack.
-        Vec<Rc<RefCell<Value>>>,
+        Vec<RValue>,
         /// The current instruction index.
         usize,
         /// The chunk of the associated generator function.
@@ -98,25 +99,56 @@ pub enum Value {
         Vec<Chunk>,
         /// The values that need to be passed into the generator when
         /// it is first called.
-        Vec<Rc<RefCell<Value>>>,
+        Vec<RValue>,
         /// A hash of cached values for the chunk of the associated
         /// generator function.
-        HashMap<String, Rc<RefCell<Value>>>,
+        HashMap<String, RValue>,
     ),
     /// A generator for getting the output of a Command.
     CommandGenerator(BufReader<ChildStdout>),
     /// A generator over the keys of a hash.
-    KeysGenerator(usize, Rc<RefCell<Value>>),
+    KeysGenerator(usize, Box<RValue>),
     /// A generator over the values of a hash.
-    ValuesGenerator(usize, Rc<RefCell<Value>>),
+    ValuesGenerator(usize, Box<RValue>),
     /// A generator over key-value pairs (lists) of a hash.
-    EachGenerator(usize, Rc<RefCell<Value>>),
+    EachGenerator(usize, Box<RValue>),
     /// A file reader value.
     FileReader(BufReader<File>),
     /// A file writer value.
     FileWriter(LineWriter<File>),
     /// A directory handle.
     DirectoryHandle(ReadDir),
+}
+
+#[derive(Debug)]
+/// A wrapped value type, where a value can be handled as-is (raw) or
+/// wrapped in an Rc<RefCell> (ref).
+pub enum RValue {
+    Raw(Value),
+    Ref(Rc<RefCell<Value>>)
+}
+
+impl RValue {
+    pub fn clone(&self) -> RValue {
+        match self {
+            RValue::Raw(Value::Null) => {
+                RValue::Raw(Value::Null)
+            }
+            RValue::Raw(Value::Int(n)) => {
+                RValue::Raw(Value::Int(*n))
+            }
+            RValue::Raw(Value::Float(n)) => {
+                RValue::Raw(Value::Float(*n))
+            }
+            RValue::Ref(v) => {
+                RValue::Ref(v.clone())
+            }
+            _ => {
+                eprintln!("unable to clone RValue {:?}", *self);
+                abort();
+            }
+        }
+    }
 }
 
 /// An enum for the Value types that can be serialised and
@@ -195,9 +227,17 @@ impl Chunk {
 
     /// Add a constant to the current chunk, and return its index in
     /// the constants list (for later calls to `get_constant`).
-    pub fn add_constant(&mut self, value_rr: Rc<RefCell<Value>>) -> i32 {
-        let value_rrb = value_rr.borrow();
-        let value_sd = match &*value_rrb {
+    pub fn add_constant(&mut self, value_rr: RValue) -> i32 {
+        let mut value_rm;
+        let value = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        }; 
+
+        let value_sd = match value {
             Value::Null => ValueSD::Null,
             Value::Int(n) => ValueSD::Int(*n),
             Value::Float(n) => ValueSD::Float(*n),
@@ -209,7 +249,7 @@ impl Chunk {
             }
             _ => {
                 eprintln!("constant type cannot be added to chunk! {:?}",
-                          value_rrb);
+                          *value);
                 std::process::abort();
             }
         };
@@ -218,7 +258,7 @@ impl Chunk {
     }
 
     /// Get a constant from the current chunk.
-    pub fn get_constant(&self, i: i32) -> Rc<RefCell<Value>> {
+    pub fn get_constant(&self, i: i32) -> RValue {
         let value_sd = &self.constants[i as usize];
         let value = match value_sd {
             ValueSD::Null => Value::Null,
@@ -234,7 +274,7 @@ impl Chunk {
                 Value::CommandUncaptured(s.to_string())
             }
         };
-        return Rc::new(RefCell::new(value));
+        return RValue::Ref(Rc::new(RefCell::new(value)));
     }
 
     /// Add an opcode to the current chunk's data.
@@ -280,7 +320,7 @@ impl Chunk {
     }
 
     /// Get the chunk's most recently-added constant.
-    pub fn get_last_constant(&mut self) -> Rc<RefCell<Value>> {
+    pub fn get_last_constant(&mut self) -> RValue {
         return self
             .get_constant((self.constants.len() - 1).try_into().unwrap());
     }

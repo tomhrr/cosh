@@ -48,13 +48,20 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
         }
         serde_json::value::Value::Array(lst) => Value::List(
             lst.iter()
-                .map(|v| Rc::new(RefCell::new(convert_from_json(v))))
+                .map(|v| {
+                    let c = convert_from_json(v);
+                    match c {
+                        Value::Null     => RValue::Raw(c),
+                        Value::Int(_)   => RValue::Raw(c),
+                        Value::Float(_) => RValue::Raw(c),
+                        _               => RValue::Ref(Rc::new(RefCell::new(c)))
+                    }})
                 .collect::<VecDeque<_>>(),
         ),
         serde_json::value::Value::Object(map) => Value::Hash(
             map.iter()
                 .map(|(k, v)| {
-                    (k.to_string(), Rc::new(RefCell::new(convert_from_json(v))))
+                    (k.to_string(), RValue::Ref(Rc::new(RefCell::new(convert_from_json(v)))))
                 })
                 .collect::<IndexMap<_, _>>(),
         ),
@@ -73,7 +80,17 @@ fn convert_to_json(v: &Value) -> String {
         Value::List(lst) => {
             let s = lst
                 .iter()
-                .map(|v_rr| convert_to_json(&v_rr.borrow()))
+                .map(|v_rr| {
+		    let mut v_rm;
+		    let v_rrb = match v_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    v_rm = v_rc.borrow();
+			    &*v_rm
+			}
+		    };
+                    convert_to_json(v_rrb)
+                }) 
                 .collect::<Vec<_>>()
                 .join(",");
             format!("[{}]", s)
@@ -82,7 +99,15 @@ fn convert_to_json(v: &Value) -> String {
             let s = vm
                 .iter()
                 .map(|(k, v_rr)| {
-                    format!("\"{}\":{}", k, convert_to_json(&v_rr.borrow()))
+		    let mut v_rm;
+		    let v_rrb = match v_rr {
+			RValue::Raw(ref v) => v,
+			RValue::Ref(ref v_rc) => {
+			    v_rm = v_rc.borrow();
+			    &*v_rm
+			}
+		    };
+                    format!("\"{}\":{}", k, convert_to_json(v_rrb))
                 })
                 .collect::<Vec<_>>()
                 .join(",");
@@ -102,7 +127,14 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
+        let mut value_rm;
+        let value_rrb = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        };
         let value_pre = value_rrb.to_string();
         let value_opt = to_string_2(&value_pre);
 
@@ -121,7 +153,7 @@ impl VM {
                         doc = d;
                     }
                 }
-                let json_rr = Rc::new(RefCell::new(convert_from_json(&doc)));
+                let json_rr = RValue::Ref(Rc::new(RefCell::new(convert_from_json(&doc))));
                 self.stack.push(json_rr);
             }
             _ => {
@@ -141,11 +173,18 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
-        self.stack.push(Rc::new(RefCell::new(Value::String(
+        let mut value_rm;
+        let value_rrb = match value_rr {
+            RValue::Raw(ref v) => v,
+            RValue::Ref(ref v_rc) => {
+                value_rm = v_rc.borrow();
+                &*value_rm
+            }
+        };
+        self.stack.push(RValue::Ref(Rc::new(RefCell::new(Value::String(
             convert_to_json(&value_rrb),
             None,
-        ))));
+        )))));
 
         return 1;
     }

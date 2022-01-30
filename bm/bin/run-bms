@@ -43,18 +43,18 @@ my @cosh_extras = qw(./target/release/cosh ch);
 my $time = time();
 my %bm_details = (
     other => { time => $time },
-    #perl  => { version => $perl_ver },
+    perl  => { version => $perl_ver },
     cosh  => { commit  => $cosh_commit,
                hash    => $cosh_hash }
 );
 for my $program (@programs) {
-#    my %perl_details = (
-#        avg_time => run_cmd("avg-time $count", $program, @perl_extras),
-#        avg_inst => run_cmd("avg-perf instructions $count", $program, @perl_extras),
-#        avg_mem  => run_cmd("avg-perf syscalls:sys_enter_mmap,syscalls:sys_enter_brk 1",
-#                            $program, @perl_extras),
-#        max_rss  => run_cmd("max-rss", $program, @perl_extras),
-#    );
+    my %perl_details = (
+        avg_time => run_cmd("avg-time $count", $program, @perl_extras),
+        avg_inst => run_cmd("avg-perf instructions $count", $program, @perl_extras),
+        avg_mem  => run_cmd("avg-perf syscalls:sys_enter_mmap,syscalls:sys_enter_brk 1",
+                            $program, @perl_extras),
+        max_rss  => run_cmd("max-rss", $program, @perl_extras),
+    );
     my %cosh_details = (
         avg_time => run_cmd("avg-time $count", $program, @cosh_extras),
         avg_inst => run_cmd("avg-perf instructions $count", $program, @cosh_extras),
@@ -62,20 +62,20 @@ for my $program (@programs) {
                             $program, @cosh_extras),
         max_rss  => run_cmd("max-rss", $program, @cosh_extras),
     );
-#    my %diff = (
-#        map { my $pv = $perl_details{$_};
-#              my $cv = $cosh_details{$_};
-#              my $diff = $cv / $pv;
-#              $_ => sprintf("%.3f", $diff) }
-#            qw(avg_time avg_inst avg_mem max_rss)
-#    );
+    my %diff = (
+        map { my $pv = $perl_details{$_};
+              my $cv = $cosh_details{$_};
+              my $diff = $cv / $pv;
+              $_ => sprintf("%.3f", $diff) }
+            qw(avg_time avg_inst avg_mem max_rss)
+    );
 
     my $pname = $program;
     $pname =~ s/.*\///;
     $bm_details{'programs'}->{$pname} = {
-#        perl => \%perl_details,
+        perl => \%perl_details,
         cosh => \%cosh_details,
-#        diff => \%diff,
+        diff => \%diff,
     };
 }
 

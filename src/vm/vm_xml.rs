@@ -26,7 +26,7 @@ fn convert_from_xml(node: &roxmltree::Node) -> Value {
                 );
             }
         }
-        return Value::Hash(map);
+        return Value::Hash(Box::new(map));
     }
 
     let mut attr_map = IndexMap::new();
@@ -38,7 +38,7 @@ fn convert_from_xml(node: &roxmltree::Node) -> Value {
     }
     map.insert(
         "attributes".to_string(),
-        RValue::Ref(Rc::new(RefCell::new(Value::Hash(attr_map)))),
+        RValue::Ref(Rc::new(RefCell::new(Value::Hash(Box::new(attr_map))))),
     );
 
     let mut child_nodes = VecDeque::new();
@@ -54,7 +54,7 @@ fn convert_from_xml(node: &roxmltree::Node) -> Value {
     }
     map.insert("value".to_string(),
                RValue::Ref(Rc::new(RefCell::new(Value::List(child_nodes)))));
-    return Value::Hash(map);
+    return Value::Hash(Box::new(map));
 }
 
 /// Converts a value into an XML string.

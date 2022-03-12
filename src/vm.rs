@@ -14,7 +14,7 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use sysinfo::{System, SystemExt};
 
-use chunk::{print_error, Chunk, Value, RValue};
+use chunk::{print_error, Chunk, Value, RValue, GeneratorObject};
 use compiler::Compiler;
 use opcode::{to_opcode, OpCode};
 
@@ -431,16 +431,21 @@ impl VM {
                                 for i in new_call_stack_chunks.iter() {
                                     gen_call_stack_chunks.push((*i).clone());
                                 }
+                                let gen_object = GeneratorObject::new(
+                                    HashMap::new(),
+                                    Vec::new(),
+                                    0,
+                                    call_chunk.clone(),
+                                    gen_call_stack_chunks,
+                                    gen_args,
+                                    HashMap::new(),
+                                );
                                 let gen_rr =
-                                    RValue::Ref(Rc::new(RefCell::new(Value::Generator(
-                                        HashMap::new(),
-                                        Vec::new(),
-                                        0,
-                                        call_chunk.clone(),
-                                        gen_call_stack_chunks,
-                                        gen_args,
-                                        HashMap::new(),
-                                    ))));
+                                    RValue::Ref(
+                                        Rc::new(
+                                            RefCell::new(
+                                                Value::Generator(
+                                                    Box::new(gen_object)))));
                                 self.stack.push(gen_rr);
                             } else {
                                 if call_chunk.has_vars {
@@ -618,7 +623,7 @@ impl VM {
                                     list_index_opt = None;
                                 }
                                 self.stack.push(RValue::Ref(Rc::new(RefCell::new(
-                                    Value::Hash(map),
+                                    Value::Hash(Box::new(map)),
                                 ))));
                             }
                         }

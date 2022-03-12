@@ -59,11 +59,13 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
                 .collect::<VecDeque<_>>(),
         ),
         serde_json::value::Value::Object(map) => Value::Hash(
-            map.iter()
-                .map(|(k, v)| {
-                    (k.to_string(), RValue::Ref(Rc::new(RefCell::new(convert_from_json(v)))))
-                })
-                .collect::<IndexMap<_, _>>(),
+            Box::new(
+                map.iter()
+                    .map(|(k, v)| {
+                        (k.to_string(), RValue::Ref(Rc::new(RefCell::new(convert_from_json(v)))))
+                    })
+                    .collect::<IndexMap<_, _>>()
+            )
         ),
     }
 }

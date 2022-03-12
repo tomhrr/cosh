@@ -437,7 +437,7 @@ impl VM {
                         }
                     }
                 }
-                Value::Generator(_, _, _, _, _, _, _) => {
+                Value::Generator(_) => {
                     is_generator = true;
                 }
                 Value::CommandGenerator(_) => {

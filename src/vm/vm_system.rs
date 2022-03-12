@@ -446,7 +446,7 @@ impl VM {
                             )))),
                         );
                         self.stack
-                            .push(RValue::Ref(Rc::new(RefCell::new(Value::Hash(map)))));
+                            .push(RValue::Ref(Rc::new(RefCell::new(Value::Hash(Box::new(map))))));
                     }
                     Err(e) => {
                         let err_str =
@@ -494,7 +494,7 @@ impl VM {
                     None,
                 )))),
             );
-            lst.push_back(RValue::Ref(Rc::new(RefCell::new(Value::Hash(map)))))
+            lst.push_back(RValue::Ref(Rc::new(RefCell::new(Value::Hash(Box::new(map))))))
         }
         self.stack.push(RValue::Ref(Rc::new(RefCell::new(Value::List(lst)))));
         return 1;

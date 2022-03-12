@@ -55,6 +55,47 @@ pub struct Chunk {
     pub scope_depth: u32,
 }
 
+#[derive(Debug)]
+pub struct GeneratorObject {
+    /// The global variable state.
+    pub global_vars: HashMap<String, RValue>,
+    /// The local variable stack.
+    pub local_vars_stack: Vec<RValue>,
+    /// The current instruction index.
+    pub index: usize,
+    /// The chunk of the associated generator function.
+    pub chunk: Chunk,
+    /// The chunks of the other functions in the call stack.
+    pub call_stack_chunks: Vec<Chunk>,
+    /// The values that need to be passed into the generator when
+    /// it is first called.
+    pub gen_args: Vec<RValue>,
+    /// A hash of cached values for the chunk of the associated
+    /// generator function.
+    pub chunk_values: HashMap<String, RValue>,
+}
+
+impl GeneratorObject {
+    /// Construct a generator object.
+    pub fn new(global_vars: HashMap<String, RValue>,
+        local_vars_stack: Vec<RValue>,
+        index: usize,
+        chunk: Chunk,
+        call_stack_chunks: Vec<Chunk>,
+        gen_args: Vec<RValue>,
+        chunk_values: HashMap<String, RValue>) -> GeneratorObject {
+        GeneratorObject {
+            global_vars: global_vars,
+            local_vars_stack: local_vars_stack,
+            index: index,
+            chunk: chunk,
+            call_stack_chunks: call_stack_chunks,
+            gen_args: gen_args,
+            chunk_values: chunk_values
+        }
+    }
+}
+
 /// The core value type used by the compiler and VM.
 #[derive(Debug)]
 pub enum Value {
@@ -69,7 +110,7 @@ pub enum Value {
     /// String.  The second part here is the regex object that
     /// corresponds to the string, which is generated and cached
     /// when the string is used as a regex.
-    String(String, Option<Regex>),
+    String(String, Option<Box<Regex>>),
     /// An external command (wrapped in curly brackets), where the
     /// output is captured.
     Command(String),
@@ -79,31 +120,14 @@ pub enum Value {
     /// A list.
     List(VecDeque<RValue>),
     /// A hash.
-    Hash(IndexMap<String, RValue>),
+    Hash(Box<IndexMap<String, RValue>>),
     /// An anonymous function that refers to a local stack, where the
     /// second value is the local variable stack index and the third
     /// value is a unique identifier for that stack (currently its
     /// pointer value).
     Function(String, u32, u64),
     /// A generator constructed by way of a generator function.
-    Generator(
-        /// The global variable state.
-        HashMap<String, RValue>,
-        /// The local variable stack.
-        Vec<RValue>,
-        /// The current instruction index.
-        usize,
-        /// The chunk of the associated generator function.
-        Chunk,
-        /// The chunks of the other functions in the call stack.
-        Vec<Chunk>,
-        /// The values that need to be passed into the generator when
-        /// it is first called.
-        Vec<RValue>,
-        /// A hash of cached values for the chunk of the associated
-        /// generator function.
-        HashMap<String, RValue>,
-    ),
+    Generator(Box<GeneratorObject>),
     /// A generator for getting the output of a Command.
     CommandGenerator(BufReader<ChildStdout>),
     /// A generator over the keys of a hash.
@@ -653,7 +677,7 @@ impl Value {
                 let regex_res = Regex::new(s);
                 match regex_res {
                     Ok(regex) => {
-                        *current_regex = Some(regex.clone());
+                        *current_regex = Some(Box::new(regex.clone()));
                         return true;
                     }
                     Err(e) => {

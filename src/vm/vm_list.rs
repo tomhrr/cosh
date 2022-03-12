@@ -306,15 +306,22 @@ impl VM {
 		}
 	    };
             match *shiftable_rrb {
-                Value::Generator(
-                    ref mut global_vars,
-                    ref mut local_vars_stack,
-                    ref mut index,
-                    ref chunk,
-                    ref call_stack_chunks,
-                    ref mut gen_args,
-                    ref mut chunk_values,
-                ) => {
+                Value::Generator(ref mut generator_object) => {
+                    let mut global_vars =
+                        &mut generator_object.global_vars;
+                    let mut local_vars_stack =
+                        &mut generator_object.local_vars_stack;
+                    let mut index =
+                        &mut generator_object.index;
+                    let chunk =
+                        &generator_object.chunk;
+                    let call_stack_chunks =
+                        &generator_object.call_stack_chunks;
+                    let mut gen_args =
+                        &mut generator_object.gen_args;
+                    let mut chunk_values =
+                        &mut generator_object.chunk_values;
+
                     stack_len = self.stack.len();
                     let mut is_empty = false;
                     if gen_args.len() == 1 {
@@ -627,7 +634,7 @@ impl VM {
         };
         let res = match value_rrb {
             Value::List(_) => 1,
-            Value::Generator(_, _, _, _, _, _, _) => 1,
+            Value::Generator(_) => 1,
             Value::CommandGenerator(_) => 1,
             Value::KeysGenerator(_, _) => 1,
             Value::ValuesGenerator(_, _) => 1,

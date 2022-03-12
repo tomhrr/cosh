@@ -118,8 +118,15 @@
         "f> requires two arguments" error;
     then;
     swap; w open; fh var; fh !;
-    fh @; drop;
-    [ fh @; swap; writeline; ] for;
+    begin;
+        dup; shift;
+        dup; is-null; if;
+            drop;
+            drop;
+            leave;
+        then;
+        fh @; swap; writeline;
+        0 until;
     fh @; close; ::
 
 : take

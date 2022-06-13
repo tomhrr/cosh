@@ -7,7 +7,7 @@ use std::io::LineWriter;
 use std::io::Write;
 use std::rc::Rc;
 
-use chunk::{print_error, Chunk, Value};
+use chunk::{print_error, Chunk, Value, StringPair};
 use vm::*;
 
 impl VM {
@@ -21,21 +21,36 @@ impl VM {
         }
 
         let rw_rr = self.stack.pop().unwrap();
-        let rw_rrb = rw_rr.borrow();
         let path_rr = self.stack.pop().unwrap();
-        let path_rrb = path_rr.borrow();
-        let path_str_pre = path_rrb.to_string();
-        let path_str_opt = to_string_2(&path_str_pre);
+        let path_str_s;
+        let path_str_b;
+        let path_str_str;
+        let path_str_bk : Option<String>;
+        let path_str_opt : Option<&str> =
+            match path_rr {
+                Value::String(sp) => {
+                    path_str_s = sp;
+                    path_str_b = path_str_s.borrow();
+                    Some(&path_str_b.s)
+                }
+                _ => {
+                    path_str_bk = path_rr.to_string();
+                    match path_str_bk {
+                        Some(s) => { path_str_str = s; Some(&path_str_str) }
+                        _ => None
+                    }
+                }
+            };
 
-        match &*rw_rrb {
-            Value::String(rw_str, _) => match rw_str.as_ref() {
+        match rw_rr {
+            Value::String(sp) => match sp.borrow().s.as_ref() {
                 "r" => match path_str_opt {
                     Some(s) => {
                         let file_res = File::open(s);
                         match file_res {
                             Ok(file) => {
-                                self.stack.push(Rc::new(RefCell::new(
-                                    Value::FileReader(BufReader::new(file)),
+                                self.stack.push(
+                                    Value::FileReader(Rc::new(RefCell::new(BufReader::new(file))
                                 )));
                             }
                             Err(e) => {
@@ -58,8 +73,8 @@ impl VM {
                         let file_res = File::create(s);
                         match file_res {
                             Ok(file) => {
-                                self.stack.push(Rc::new(RefCell::new(
-                                    Value::FileWriter(LineWriter::new(file)),
+                                self.stack.push(
+                                    Value::FileWriter(Rc::new(RefCell::new(LineWriter::new(file))
                                 )));
                             }
                             Err(e) => {
@@ -100,20 +115,22 @@ impl VM {
         }
 
         let file_reader_rr = self.stack.pop().unwrap();
-        let mut file_reader_rrb = file_reader_rr.borrow_mut();
 
-        match *file_reader_rrb {
-            Value::FileReader(ref mut bufread) => {
+        match file_reader_rr {
+            Value::FileReader(bufread) => {
                 let mut contents = String::new();
-                let res = BufRead::read_line(bufread, &mut contents);
+                let res = bufread.borrow_mut().read_line(&mut contents);
                 match res {
                     Ok(0) => {
-                        self.stack.push(Rc::new(RefCell::new(Value::Null)));
+                        self.stack.push(Value::Null);
                     }
                     Ok(_) => {
-                        self.stack.push(Rc::new(RefCell::new(Value::String(
-                            contents, None,
-                        ))));
+                        self.stack.push(Value::String(
+                            Rc::new(RefCell::new(
+                                StringPair::new(
+                                contents, None,
+                            )))
+                        ));
                     }
                     _ => {
                         print_error(chunk, i, "unable to read line from file");
@@ -142,18 +159,33 @@ impl VM {
         }
 
         let line_rr = self.stack.pop().unwrap();
-        let line_rrb = line_rr.borrow();
-        let line_str_pre = line_rrb.to_string();
-        let line_str_opt = to_string_2(&line_str_pre);
+        let line_str_s;
+        let line_str_b;
+        let line_str_str;
+        let line_str_bk : Option<String>;
+        let line_str_opt : Option<&str> =
+            match line_rr {
+                Value::String(sp) => {
+                    line_str_s = sp;
+                    line_str_b = line_str_s.borrow();
+                    Some(&line_str_b.s)
+                }
+                _ => {
+                    line_str_bk = line_rr.to_string();
+                    match line_str_bk {
+                        Some(s) => { line_str_str = s; Some(&line_str_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match line_str_opt {
             Some(s) => {
                 if s != "" {
-                    let file_writer = self.stack.pop().unwrap();
-                    let mut file_writer_b = file_writer.borrow_mut();
-                    match *file_writer_b {
+                    let mut file_writer = self.stack.pop().unwrap();
+                    match file_writer {
                         Value::FileWriter(ref mut line_writer) => {
-                            let res = line_writer.write_all(s.as_bytes());
+                            let res = line_writer.borrow_mut().write_all(s.as_bytes());
                             match res {
                                 Ok(_) => {
                                     return 1;
@@ -195,16 +227,15 @@ impl VM {
             return 0;
         }
 
-        let file_rr = self.stack.pop().unwrap();
-        let mut file_rrb = file_rr.borrow_mut();
+        let mut file_rr = self.stack.pop().unwrap();
 
-        match *file_rrb {
+        match file_rr {
             Value::FileReader(_) => {
                 // No action required.
                 return 1;
             }
             Value::FileWriter(ref mut line_writer) => {
-                let res = line_writer.flush();
+                let res = line_writer.borrow_mut().flush();
                 match res {
                     Ok(_) => {
                         return 1;
@@ -236,9 +267,25 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_rrb = path_rr.borrow();
-        let path_str_pre = path_rrb.to_string();
-        let path_str_opt = to_string_2(&path_str_pre);
+        let path_str_s;
+        let path_str_b;
+        let path_str_str;
+        let path_str_bk : Option<String>;
+        let path_str_opt : Option<&str> =
+            match path_rr {
+                Value::String(sp) => {
+                    path_str_s = sp;
+                    path_str_b = path_str_s.borrow();
+                    Some(&path_str_b.s)
+                }
+                _ => {
+                    path_str_bk = path_rr.to_string();
+                    match path_str_bk {
+                        Some(s) => { path_str_str = s; Some(&path_str_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match path_str_opt {
             Some(s) => {
@@ -246,7 +293,7 @@ impl VM {
                 match dir_handle_res {
                     Ok(dir_handle) => {
                         self.stack.push(
-                            Rc::new(RefCell::new(Value::DirectoryHandle(dir_handle))));
+                            Value::DirectoryHandle(Rc::new(RefCell::new(dir_handle))));
                         return 1;
                     }
                     Err(e) => {
@@ -275,21 +322,24 @@ impl VM {
             return 0;
         }
 
-        let dir_handle_rr = self.stack.pop().unwrap();
-        let mut dir_handle_rrb = dir_handle_rr.borrow_mut();
+        let mut dir_handle_rr = self.stack.pop().unwrap();
 
-        let entry_value = match *dir_handle_rrb {
+        let entry_value = match dir_handle_rr {
             Value::DirectoryHandle(ref mut dir_handle) => {
-                let entry_opt = dir_handle.next();
+                let entry_opt = dir_handle.borrow_mut().next();
                 match entry_opt {
                     Some(s) => {
                         let path = s.unwrap().path();
-                        Rc::new(RefCell::new(Value::String(
-                            path.to_str().unwrap().to_string(),
-                            None,
-                        )))
+                        Value::String(
+                            Rc::new(RefCell::new(
+                                StringPair::new(
+                                    path.to_str().unwrap().to_string(),
+                                    None,
+                                )
+                            ))
+                        )
                     }
-                    None => Rc::new(RefCell::new(Value::Null)),
+                    None => Value::Null,
                 }
             }
             _ => {
@@ -315,9 +365,25 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_rrb = path_rr.borrow();
-        let path_str_pre = path_rrb.to_string();
-        let path_str_opt = to_string_2(&path_str_pre);
+        let path_str_s;
+        let path_str_b;
+        let path_str_str;
+        let path_str_bk : Option<String>;
+        let path_str_opt : Option<&str> =
+            match path_rr {
+                Value::String(sp) => {
+                    path_str_s = sp;
+                    path_str_b = path_str_s.borrow();
+                    Some(&path_str_b.s)
+                }
+                _ => {
+                    path_str_bk = path_rr.to_string();
+                    match path_str_bk {
+                        Some(s) => { path_str_str = s; Some(&path_str_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match path_str_opt {
             Some(s) => {
@@ -329,10 +395,10 @@ impl VM {
                             false => 0,
                         };
                         self.stack
-                            .push(Rc::new(RefCell::new(Value::Int(is_dir))));
+                            .push(Value::Int(is_dir));
                     }
                     _ => {
-                        self.stack.push(Rc::new(RefCell::new(Value::Int(0))));
+                        self.stack.push(Value::Int(0));
                     }
                 }
             }

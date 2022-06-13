@@ -123,9 +123,25 @@ impl VM {
                 self.stack.get(self.stack.len() - 1 - capture_num);
             match capture_el_rr_opt {
                 Some(capture_el_rr) => {
-                    let capture_el_rrb = capture_el_rr.borrow();
-                    let capture_el_str_pre = capture_el_rrb.to_string();
-                    let capture_el_str_opt = to_string_2(&capture_el_str_pre);
+		    let capture_el_str_s;
+		    let capture_el_str_b;
+		    let capture_el_str_str;
+		    let capture_el_str_bk : Option<String>;
+		    let capture_el_str_opt : Option<&str> =
+			match capture_el_rr {
+			    Value::String(sp) => {
+				capture_el_str_s = sp;
+				capture_el_str_b = capture_el_str_s.borrow();
+				Some(&capture_el_str_b.s)
+			    }
+			    _ => {
+				capture_el_str_bk = capture_el_rr.to_string();
+				match capture_el_str_bk {
+				    Some(s) => { capture_el_str_str = s; Some(&capture_el_str_str) }
+				    _ => None
+				}
+			    }
+			};
                     match capture_el_str_opt {
                         Some(capture_el_str) => {
                             let capture_str_with_brackets = format!("\\{{{}\\}}", capture_str);
@@ -153,9 +169,25 @@ impl VM {
             }
 
 	    let value_rr = self.stack.pop().unwrap();
-	    let value_rrb = value_rr.borrow();
-	    let value_pre = value_rrb.to_string();
-	    let value_opt = to_string_2(&value_pre);
+	    let value_s;
+	    let value_b;
+	    let value_str;
+	    let value_bk : Option<String>;
+	    let value_opt : Option<&str> =
+		match value_rr {
+		    Value::String(sp) => {
+			value_s = sp;
+			value_b = value_s.borrow();
+			Some(&value_b.s)
+		    }
+		    _ => {
+			value_bk = value_rr.to_string();
+			match value_bk {
+			    Some(s) => { value_str = s; Some(&value_str) }
+			    _ => None
+			}
+		    }
+		};
 
             match value_opt {
                 Some(s) => {
@@ -222,8 +254,8 @@ impl VM {
             Ok(process) => {
                 let upstream_stdout = process.stdout.unwrap();
                 let cmd_generator =
-                    Value::CommandGenerator(BufReader::new(upstream_stdout));
-                self.stack.push(Rc::new(RefCell::new(cmd_generator)));
+                    Value::CommandGenerator(Rc::new(RefCell::new(BufReader::new(upstream_stdout))));
+                self.stack.push(cmd_generator);
             }
             Err(e) => {
                 let err_str = format!("unable to run command: {}", e.to_string());
@@ -277,9 +309,9 @@ impl VM {
     /// output onto the stack.
     pub fn core_pipe(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>,
+        prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: &Chunk, i: usize, line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
@@ -289,11 +321,10 @@ impl VM {
         }
 
         let cmd_rr = self.stack.pop().unwrap();
-        let cmd_rrb = cmd_rr.borrow();
 
-        match &*cmd_rrb {
+        match cmd_rr {
             Value::Command(s) => {
-                let prepared_cmd_opt = self.prepare_and_split_command(&s, chunk, i);
+                let prepared_cmd_opt = self.prepare_and_split_command(&s.borrow(), chunk, i);
                 if prepared_cmd_opt.is_none() {
                     return 0;
                 }
@@ -328,9 +359,9 @@ impl VM {
                                 let upstream_stdout =
                                     upstream_stdout_opt.unwrap();
                                 let cmd_generator = Value::CommandGenerator(
-                                    BufReader::new(upstream_stdout),
+                                    Rc::new(RefCell::new(BufReader::new(upstream_stdout)))
                                 );
-                                self.stack.push(Rc::new(RefCell::new(cmd_generator)));
+                                self.stack.push(cmd_generator);
                             }
                             Ok(ForkResult::Child) => {
                                 loop {
@@ -351,15 +382,32 @@ impl VM {
                                         return 0;
                                     }
                                     let element_rr = self.stack.pop().unwrap();
-                                    let element_rrb = element_rr.borrow();
-                                    match &*element_rrb {
+                                    match element_rr {
                                         Value::Null => {
                                             break;
                                         }
                                         _ => {}
                                     }
-                                    let element_str_pre = element_rrb.to_string();
-                                    let element_str_opt = to_string_2(&element_str_pre);
+				    let element_s;
+				    let element_b;
+				    let element_str;
+				    let element_bk : Option<String>;
+				    let element_str_opt : Option<&str> =
+					match element_rr {
+					    Value::String(sp) => {
+						element_s = sp;
+						element_b = element_s.borrow();
+						Some(&element_b.s)
+					    }
+					    _ => {
+						element_bk = element_rr.to_string();
+						match element_bk {
+						    Some(s) => { element_str = s; Some(&element_str) }
+						    _ => None
+						}
+					    }
+					};
+
                                     match element_str_opt {
                                         Some(s) => {
                                             let res = upstream_stdin

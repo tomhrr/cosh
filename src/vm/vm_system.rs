@@ -15,7 +15,7 @@ use num_bigint::BigInt;
 use sysinfo::{ProcessExt, SystemExt};
 use utime::*;
 
-use chunk::{print_error, Chunk, Value};
+use chunk::{print_error, Chunk, Value, StringPair};
 use vm::*;
 
 impl VM {
@@ -28,9 +28,25 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
-        let value_pre = value_rrb.to_string();
-        let value_opt = to_string_2(&value_pre);
+        let value_s;
+        let value_b;
+        let value_str;
+        let value_bk : Option<String>;
+        let value_opt : Option<&str> =
+            match value_rr {
+                Value::String(sp) => {
+                    value_s = sp;
+                    value_b = value_s.borrow();
+                    Some(&value_b.s)
+                }
+                _ => {
+                    value_bk = value_rr.to_string();
+                    match value_bk {
+                        Some(s) => { value_str = s; Some(&value_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match value_opt {
             Some(s) => {
@@ -63,14 +79,46 @@ impl VM {
         }
 
         let dst_rr = self.stack.pop().unwrap();
-        let dst_rrb = dst_rr.borrow();
-        let dst_pre = dst_rrb.to_string();
-        let dst_opt = to_string_2(&dst_pre);
+        let dst_s;
+        let dst_b;
+        let dst_str;
+        let dst_bk : Option<String>;
+        let dst_opt : Option<&str> =
+            match dst_rr {
+                Value::String(sp) => {
+                    dst_s = sp;
+                    dst_b = dst_s.borrow();
+                    Some(&dst_b.s)
+                }
+                _ => {
+                    dst_bk = dst_rr.to_string();
+                    match dst_bk {
+                        Some(s) => { dst_str = s; Some(&dst_str) }
+                        _ => None
+                    }
+                }
+            };
 
         let src_rr = self.stack.pop().unwrap();
-        let src_rrb = src_rr.borrow();
-        let src_pre = src_rrb.to_string();
-        let src_opt = to_string_2(&src_pre);
+        let src_s;
+        let src_b;
+        let src_str;
+        let src_bk : Option<String>;
+        let src_opt : Option<&str> =
+            match src_rr {
+                Value::String(sp) => {
+                    src_s = sp;
+                    src_b = src_s.borrow();
+                    Some(&src_b.s)
+                }
+                _ => {
+                    src_bk = src_rr.to_string();
+                    match src_bk {
+                        Some(s) => { src_str = s; Some(&src_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
@@ -104,14 +152,46 @@ impl VM {
         }
 
         let dst_rr = self.stack.pop().unwrap();
-        let dst_rrb = dst_rr.borrow();
-        let dst_pre = dst_rrb.to_string();
-        let dst_opt = to_string_2(&dst_pre);
+        let dst_s;
+        let dst_b;
+        let dst_str;
+        let dst_bk : Option<String>;
+        let dst_opt : Option<&str> =
+            match dst_rr {
+                Value::String(sp) => {
+                    dst_s = sp;
+                    dst_b = dst_s.borrow();
+                    Some(&dst_b.s)
+                }
+                _ => {
+                    dst_bk = dst_rr.to_string();
+                    match dst_bk {
+                        Some(s) => { dst_str = s; Some(&dst_str) }
+                        _ => None
+                    }
+                }
+            };
 
         let src_rr = self.stack.pop().unwrap();
-        let src_rrb = src_rr.borrow();
-        let src_pre = src_rrb.to_string();
-        let src_opt = to_string_2(&src_pre);
+        let src_s;
+        let src_b;
+        let src_str;
+        let src_bk : Option<String>;
+        let src_opt : Option<&str> =
+            match src_rr {
+                Value::String(sp) => {
+                    src_s = sp;
+                    src_b = src_s.borrow();
+                    Some(&src_b.s)
+                }
+                _ => {
+                    src_bk = src_rr.to_string();
+                    match src_bk {
+                        Some(s) => { src_str = s; Some(&src_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
@@ -165,9 +245,25 @@ impl VM {
             }
         } else {
             let dir_rr = self.stack.pop().unwrap();
-            let dir_rrb = dir_rr.borrow();
-            let dir_pre = dir_rrb.to_string();
-            let dir_opt = to_string_2(&dir_pre);
+	    let dir_s;
+	    let dir_b;
+	    let dir_str;
+	    let dir_bk : Option<String>;
+	    let dir_opt : Option<&str> =
+		match dir_rr {
+		    Value::String(sp) => {
+			dir_s = sp;
+			dir_b = dir_s.borrow();
+			Some(&dir_b.s)
+		    }
+		    _ => {
+			dir_bk = dir_rr.to_string();
+			match dir_bk {
+			    Some(s) => { dir_str = s; Some(&dir_str) }
+			    _ => None
+			}
+		    }
+		};
 
             match dir_opt {
                 Some(dir) => {
@@ -198,10 +294,14 @@ impl VM {
         let current_dir_res = std::env::current_dir();
         match current_dir_res {
             Ok(current_dir) => {
-                self.stack.push(Rc::new(RefCell::new(Value::String(
-                    current_dir.to_str().unwrap().to_string(),
-                    None,
-                ))));
+                self.stack.push(Value::String(
+                    Rc::new(RefCell::new(
+                        StringPair::new(
+                            current_dir.to_str().unwrap().to_string(),
+                            None,
+                        )
+                    ))
+                ));
             }
             Err(e) => {
                 let err_str = format!("unable to pwd: {}", e.to_string());
@@ -223,9 +323,25 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_rrb = path_rr.borrow();
-        let path_pre = path_rrb.to_string();
-        let path_opt = to_string_2(&path_pre);
+	let path_s;
+	let path_b;
+	let path_str;
+	let path_bk : Option<String>;
+	let path_opt : Option<&str> =
+	    match path_rr {
+		Value::String(sp) => {
+		    path_s = sp;
+		    path_b = path_s.borrow();
+		    Some(&path_b.s)
+		}
+		_ => {
+		    path_bk = path_rr.to_string();
+		    match path_bk {
+			Some(s) => { path_str = s; Some(&path_str) }
+			_ => None
+		    }
+		}
+	    };
 
         match path_opt {
             Some(path_str) => {
@@ -301,9 +417,25 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_rrb = path_rr.borrow();
-        let path_pre = path_rrb.to_string();
-        let path_opt = to_string_2(&path_pre);
+	let path_s;
+	let path_b;
+	let path_str;
+	let path_bk : Option<String>;
+	let path_opt : Option<&str> =
+	    match path_rr {
+		Value::String(sp) => {
+		    path_s = sp;
+		    path_b = path_s.borrow();
+		    Some(&path_b.s)
+		}
+		_ => {
+		    path_bk = path_rr.to_string();
+		    match path_bk {
+			Some(s) => { path_str = s; Some(&path_str) }
+			_ => None
+		    }
+		}
+	    };
 
         match path_opt {
             Some(s) => {
@@ -313,84 +445,84 @@ impl VM {
                         let mut map = IndexMap::new();
                         map.insert(
                             "dev".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_u64(meta.dev()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "ino".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_u64(meta.ino()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "mode".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_u32(meta.mode()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "nlink".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_u64(meta.nlink()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "uid".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_u32(meta.uid()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "gid".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_u32(meta.gid()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "rdev".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_u64(meta.rdev()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "size".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_u64(meta.size()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "atime_nsec".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_i64(meta.atime_nsec()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "mtime_nsec".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_i64(meta.mtime_nsec()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "ctime_nsec".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_i64(meta.ctime_nsec()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "blksize".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_u64(meta.blksize()).unwrap(),
-                            ))),
+                            ),
                         );
                         map.insert(
                             "blocks".to_string(),
-                            Rc::new(RefCell::new(Value::BigInt(
+                            Value::BigInt(
                                 BigInt::from_u64(meta.blocks()).unwrap(),
-                            ))),
+                            ),
                         );
                         self.stack
-                            .push(Rc::new(RefCell::new(Value::Hash(map))));
+                            .push(Value::Hash(Rc::new(RefCell::new(map))));
                     }
                     Err(e) => {
                         let err_str =
@@ -421,26 +553,30 @@ impl VM {
             let mut map = IndexMap::new();
             map.insert(
                 "pid".to_string(),
-                Rc::new(RefCell::new(Value::BigInt(
+                Value::BigInt(
                     BigInt::from_i32(*pid).unwrap(),
-                ))),
+                ),
             );
             map.insert(
                 "uid".to_string(),
-                Rc::new(RefCell::new(Value::BigInt(
+                Value::BigInt(
                     BigInt::from_u32(process.uid).unwrap(),
-                ))),
+                ),
             );
             map.insert(
                 "name".to_string(),
-                Rc::new(RefCell::new(Value::String(
-                    process.name().to_string(),
-                    None,
-                ))),
+                Value::String(
+                    Rc::new(RefCell::new(
+                        StringPair::new(
+                            process.name().to_string(),
+                            None,
+                        )
+                    ))
+                ),
             );
-            lst.push_back(Rc::new(RefCell::new(Value::Hash(map))))
+            lst.push_back(Value::Hash(Rc::new(RefCell::new(map))))
         }
-        self.stack.push(Rc::new(RefCell::new(Value::List(lst))));
+        self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
         return 1;
     }
 
@@ -453,13 +589,28 @@ impl VM {
         }
 
         let sig_rr = self.stack.pop().unwrap();
-        let sig_rrb = sig_rr.borrow();
-        let sig_pre = sig_rrb.to_string();
-        let sig_opt = to_string_2(&sig_pre);
+        let sig_s;
+        let sig_b;
+        let sig_str;
+        let sig_bk : Option<String>;
+        let sig_opt : Option<&str> =
+            match sig_rr {
+                Value::String(sp) => {
+                    sig_s = sp;
+                    sig_b = sig_s.borrow();
+                    Some(&sig_b.s)
+                }
+                _ => {
+                    sig_bk = sig_rr.to_string();
+                    match sig_bk {
+                        Some(s) => { sig_str = s; Some(&sig_str) }
+                        _ => None
+                    }
+                }
+            };
 
         let pid_rr = self.stack.pop().unwrap();
-        let pid_rrb = pid_rr.borrow();
-        let pid_int_opt = pid_rrb.to_int();
+        let pid_int_opt = pid_rr.to_int();
 
         match (pid_int_opt, sig_opt) {
             (Some(pid), Some(sig)) => {

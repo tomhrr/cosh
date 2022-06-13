@@ -8,7 +8,7 @@ use std::sync::Arc;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use chunk::{print_error, Chunk, Value};
+use chunk::{print_error, Chunk, Value, StringPair};
 use vm::*;
 
 lazy_static! {
@@ -26,20 +26,53 @@ impl VM {
         }
 
         let v1 = self.stack.pop().unwrap();
-        let v1_b = v1.borrow();
         let v2 = self.stack.pop().unwrap();
-        let v2_b = v2.borrow();
 
-        let v1_str_pre = v1_b.to_string();
-        let v1_str_opt = to_string_2(&v1_str_pre);
-        let v2_str_pre = v2_b.to_string();
-        let v2_str_opt = to_string_2(&v2_str_pre);
+        let v1_str_s;
+        let v1_str_b;
+        let v1_str_str;
+        let v1_str_bk : Option<String>;
+        let v1_str_opt : Option<&str> =
+            match v1 {
+                Value::String(sp) => {
+                    v1_str_s = sp;
+                    v1_str_b = v1_str_s.borrow();
+                    Some(&v1_str_b.s)
+                }
+                _ => {
+                    v1_str_bk = v1.to_string();
+                    match v1_str_bk {
+                        Some(s) => { v1_str_str = s; Some(&v1_str_str) }
+                        _ => None
+                    }
+                }
+            };
+
+        let v2_str_s;
+        let v2_str_b;
+        let v2_str_str;
+        let v2_str_bk : Option<String>;
+        let v2_str_opt : Option<&str> =
+            match v2 {
+                Value::String(sp) => {
+                    v2_str_s = sp;
+                    v2_str_b = v2_str_s.borrow();
+                    Some(&v2_str_b.s)
+                }
+                _ => {
+                    v2_str_bk = v2.to_string();
+                    match v2_str_bk {
+                        Some(s) => { v2_str_str = s; Some(&v2_str_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match (v1_str_opt, v2_str_opt) {
             (Some(s1), Some(s2)) => {
                 let s3 = format!("{}{}", s2, s1);
                 self.stack
-                    .push(Rc::new(RefCell::new(Value::String(s3, None))));
+                    .push(Value::String(Rc::new(RefCell::new(StringPair::new(s3, None)))));
             }
             (Some(_), _) => {
                 print_error(chunk, i, "second append argument must be string");
@@ -64,14 +97,47 @@ impl VM {
         }
 
         let separator_rr = self.stack.pop().unwrap();
-        let separator_rrb = separator_rr.borrow();
         let list_str_rr = self.stack.pop().unwrap();
-        let list_str_rrb = list_str_rr.borrow();
 
-        let separator_pre = separator_rrb.to_string();
-        let separator_opt = to_string_2(&separator_pre);
-        let list_str_pre = list_str_rrb.to_string();
-        let list_str_opt = to_string_2(&list_str_pre);
+        let separator_s;
+        let separator_b;
+        let separator_str;
+        let separator_bk : Option<String>;
+        let separator_opt : Option<&str> =
+            match separator_rr {
+                Value::String(sp) => {
+                    separator_s = sp;
+                    separator_b = separator_s.borrow();
+                    Some(&separator_b.s)
+                }
+                _ => {
+                    separator_bk = separator_rr.to_string();
+                    match separator_bk {
+                        Some(s) => { separator_str = s; Some(&separator_str) }
+                        _ => None
+                    }
+                }
+            };
+
+        let list_str_s;
+        let list_str_b;
+        let list_str_str;
+        let list_str_bk : Option<String>;
+        let list_str_opt : Option<&str> =
+            match list_str_rr {
+                Value::String(sp) => {
+                    list_str_s = sp;
+                    list_str_b = list_str_s.borrow();
+                    Some(&list_str_b.s)
+                }
+                _ => {
+                    list_str_bk = list_str_rr.to_string();
+                    match list_str_bk {
+                        Some(s) => { list_str_str = s; Some(&list_str_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match (separator_opt, list_str_opt) {
             (Some(separator), Some(list_str)) => {
@@ -111,12 +177,16 @@ impl VM {
 
                 let mut lst = VecDeque::new();
                 for e in final_elements.iter() {
-                    lst.push_back(Rc::new(RefCell::new(Value::String(
-                        e.to_string(),
-                        None,
-                    ))));
+                    lst.push_back(Value::String(
+                        Rc::new(RefCell::new(
+                            StringPair::new(
+                                e.to_string(),
+                                None,
+                            )
+                        ))
+                    ));
                 }
-                self.stack.push(Rc::new(RefCell::new(Value::List(lst))));
+                self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
             }
             (Some(_), _) => {
                 print_error(chunk, i, "first split argument must be string");
@@ -136,9 +206,9 @@ impl VM {
     /// resulting joined string onto the stack.
     pub fn core_join(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>,
+        prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: &Chunk, i: usize, line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
@@ -148,9 +218,25 @@ impl VM {
         }
 
         let separator_rr = self.stack.pop().unwrap();
-        let separator_rrb = separator_rr.borrow();
-        let separator_pre = separator_rrb.to_string();
-        let separator_opt = to_string_2(&separator_pre);
+        let separator_s;
+        let separator_b;
+        let separator_str;
+        let separator_bk : Option<String>;
+        let separator_opt : Option<&str> =
+            match separator_rr {
+                Value::String(sp) => {
+                    separator_s = sp;
+                    separator_b = separator_s.borrow();
+                    Some(&separator_b.s)
+                }
+                _ => {
+                    separator_bk = separator_rr.to_string();
+                    match separator_bk {
+                        Some(s) => { separator_str = s; Some(&separator_str) }
+                        _ => None
+                    }
+                }
+            };
 
         let esc_quotes = Regex::new(r#"""#).unwrap();
 
@@ -181,24 +267,42 @@ impl VM {
                             return 0;
                         }
                         let element_rr = self.stack.pop().unwrap();
-                        let element_rrb = element_rr.borrow();
-                        match &*element_rrb {
+                        match element_rr {
                             Value::Null => {
                                 break;
                             }
-                            Value::String(s, _) => {
+                            Value::String(sp) => {
                                 if !separator_is_empty_string &&
-                                        (separator_regex.is_match(&s) ||
-                                         esc_quotes.is_match(&s)) {
-                                    let s2 = esc_quotes.replace_all(s, "\\\"");
+                                        (separator_regex.is_match(&sp.borrow().s) ||
+                                         esc_quotes.is_match(&sp.borrow().s)) {
+                                    let s1 = &sp.borrow();
+                                    let s2 = esc_quotes.replace_all(&s1.s, "\\\"");
                                     final_elements.push(format!("\"{}\"", s2));
                                 } else {
-                                    final_elements.push(s.to_string());
+                                    final_elements.push(sp.borrow().s.to_string());
                                 }
                             }
                             _ => {
-                                let element_pre = element_rrb.to_string();
-                                let element_opt = to_string_2(&element_pre);
+				let element_s;
+				let element_b;
+				let element_str;
+				let element_bk : Option<String>;
+				let element_opt : Option<&str> =
+				    match element_rr {
+					Value::String(sp) => {
+					    element_s = sp;
+					    element_b = element_s.borrow();
+					    Some(&element_b.s)
+					}
+					_ => {
+					    element_bk = element_rr.to_string();
+					    match element_bk {
+						Some(s) => { element_str = s; Some(&element_str) }
+						_ => None
+					    }
+					}
+				    };
+
                                 match element_opt {
                                     Some(s) => {
                                         if !separator_is_empty_string &&
@@ -239,7 +343,7 @@ impl VM {
                 }
                 let final_str = final_elements.join(separator);
                 self.stack
-                    .push(Rc::new(RefCell::new(Value::String(final_str, None))));
+                    .push(Value::String(Rc::new(RefCell::new(StringPair::new(final_str, None)))));
             }
             _ => {
                 print_error(chunk, i, "second join argument must be string");

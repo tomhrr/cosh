@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use regex::Regex;
 
-use chunk::{print_error, Chunk, Value};
+use chunk::{print_error, Chunk, Value, StringPair};
 use vm::*;
 
 lazy_static! {
@@ -14,13 +14,12 @@ lazy_static! {
 /// Takes a wrapped value as its single argument, and returns a
 /// wrapped value for the stringified representation of the argument.
 fn to_string_value(
-    value_rr: Rc<RefCell<Value>>,
-) -> Option<Rc<RefCell<Value>>> {
+    value_rr: Value,
+) -> Option<Value> {
     let is_string;
     {
-        let value_rrb = value_rr.borrow();
-        match *value_rrb {
-            Value::String(_, _) => {
+        match value_rr {
+            Value::String(_) => {
                 is_string = true;
             }
             _ => {
@@ -31,14 +30,34 @@ fn to_string_value(
     if is_string {
         return Some(value_rr);
     } else {
-        let value_rrb = value_rr.borrow();
-        let value_str_pre = value_rrb.to_string();
-        let value_str_opt = to_string_2(&value_str_pre);
-        match value_str_opt {
-            Some(s) => Some(Rc::new(RefCell::new(Value::String(
-                s.to_string(),
-                None,
-            )))),
+	let value_s;
+        let value_b;
+        let value_str;
+        let value_bk : Option<String>;
+        let value_opt : Option<&str> =
+            match value_rr {
+                Value::String(sp) => {
+                    value_s = sp;
+                    value_b = value_s.borrow();
+                    Some(&value_b.s)
+                }
+                _ => {
+                    value_bk = value_rr.to_string();
+                    match value_bk {
+                        Some(s) => { value_str = s; Some(&value_str) }
+                        _ => None
+                    }
+                }
+            };
+        match value_opt {
+            Some(s) => Some(Value::String(
+                Rc::new(RefCell::new(
+                    StringPair::new(
+                        s.to_string(),
+                        None,
+                    )
+                ))
+            )),
             _ => None,
         }
     }
@@ -60,27 +79,65 @@ impl VM {
             print_error(chunk, i, "regex must be a string");
             return 0;
         }
-        let regex_str_rr = regex_str_rr_opt.unwrap();
+        let mut regex_str_rr = regex_str_rr_opt.unwrap();
 
         {
-            let mut regex_str_rrb = regex_str_rr.borrow_mut();
-            let res = regex_str_rrb.gen_regex(chunk, i);
+            let res = regex_str_rr.gen_regex(chunk, i);
             if !res {
                 return 0;
             }
         }
-        let regex_str_rrb = regex_str_rr.borrow();
-        let regex_opt = regex_str_rrb.to_regex();
+        
+	let regex_s;
+        let regex_b;
+        let regex_rb;
+        let regex_opt : Option<&Regex> =
+            match regex_str_rr {
+                Value::String(sp) => {
+                    regex_s = sp;
+                    regex_b = regex_s.borrow();
+                    match regex_b.r {
+                        Some(ref rb) => {
+                            regex_rb = rb;
+                            Some(regex_rb)
+                        }
+                        None => {
+			    eprintln!("gen_regex must be called before to_regex!");
+			    std::process::abort(); 
+                        }
+                    }
+                }
+                _ => {
+                    eprintln!("gen_regex must be called before to_regex!");
+                    std::process::abort(); 
+                }
+            };
 
         let str_rr = self.stack.pop().unwrap();
-        let str_rrb = str_rr.borrow();
-        let str_pre = str_rrb.to_string();
-        let str_opt = to_string_2(&str_pre);
+	let str_s;
+        let str_b;
+        let str_str;
+        let str_bk : Option<String>;
+        let str_opt : Option<&str> =
+            match str_rr {
+                Value::String(sp) => {
+                    str_s = sp;
+                    str_b = str_s.borrow();
+                    Some(&str_b.s)
+                }
+                _ => {
+                    str_bk = str_rr.to_string();
+                    match str_bk {
+                        Some(s) => { str_str = s; Some(&str_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match (regex_opt, str_opt) {
             (Some(regex), Some(s)) => {
                 let res = if regex.is_match(s) { 1 } else { 0 };
-                self.stack.push(Rc::new(RefCell::new(Value::Int(res))));
+                self.stack.push(Value::Int(res));
             }
             (_, Some(_)) => {
                 print_error(chunk, i, "first m argument must be string");
@@ -118,36 +175,93 @@ impl VM {
             print_error(chunk, i, "regex must be a string");
             return 0;
         }
-        let regex_str_rr = regex_str_rr_opt.unwrap();
+        let mut regex_str_rr = regex_str_rr_opt.unwrap();
 
         {
-            let mut regex_str_rrb = regex_str_rr.borrow_mut();
-            let res = regex_str_rrb.gen_regex(chunk, i);
+            let res = regex_str_rr.gen_regex(chunk, i);
             if !res {
                 return 0;
             }
         }
-        let regex_str_rrb = regex_str_rr.borrow();
-        let regex_opt = regex_str_rrb.to_regex();
+	let regex_s;
+        let regex_b;
+        let regex_rb;
+        let regex_opt : Option<&Regex> =
+            match regex_str_rr {
+                Value::String(sp) => {
+                    regex_s = sp;
+                    regex_b = regex_s.borrow();
+                    match regex_b.r {
+                        Some(ref rb) => {
+                            regex_rb = rb;
+                            Some(regex_rb)
+                        }
+                        None => {
+			    eprintln!("gen_regex must be called before to_regex!");
+			    std::process::abort(); 
+                        }
+                    }
+                }
+                _ => {
+                    eprintln!("gen_regex must be called before to_regex!");
+                    std::process::abort(); 
+                }
+            };
 
-        let repl_str_rrb = repl_str_rr.borrow();
-        let repl_str_pre = repl_str_rrb.to_string();
-        let repl_str_opt = to_string_2(&repl_str_pre);
+        let repl_str_s;
+        let repl_str_b;
+        let repl_str_str;
+        let repl_str_bk : Option<String>;
+        let repl_str_opt : Option<&str> =
+            match repl_str_rr {
+                Value::String(sp) => {
+                    repl_str_s = sp;
+                    repl_str_b = repl_str_s.borrow();
+                    Some(&repl_str_b.s)
+                }
+                _ => {
+                    repl_str_bk = repl_str_rr.to_string();
+                    match repl_str_bk {
+                        Some(s) => { repl_str_str = s; Some(&repl_str_str) }
+                        _ => None
+                    }
+                }
+            };
 
         let str_rr = self.stack.pop().unwrap();
-        let str_rrb = str_rr.borrow();
-        let str_pre = str_rrb.to_string();
-        let str_opt = to_string_2(&str_pre);
+        let str_s;
+        let str_b;
+        let str_str;
+        let str_bk : Option<String>;
+        let str_opt : Option<&str> =
+            match str_rr {
+                Value::String(sp) => {
+                    str_s = sp;
+                    str_b = str_s.borrow();
+                    Some(&str_b.s)
+                }
+                _ => {
+                    str_bk = str_rr.to_string();
+                    match str_bk {
+                        Some(s) => { str_str = s; Some(&str_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match (repl_str_opt, regex_opt, str_opt) {
             (Some(repl_str), Some(regex), Some(s)) => {
                 let updated_repl = RE_ADJUST.replace_all(repl_str, "$${$1}");
                 let updated_repl_str = updated_repl.to_string();
                 let updated_str = regex.replace_all(s, &updated_repl_str[..]);
-                self.stack.push(Rc::new(RefCell::new(Value::String(
-                    updated_str.to_string(),
-                    None,
-                ))));
+                self.stack.push(Value::String(
+                    Rc::new(RefCell::new(
+                        StringPair::new(
+                            updated_str.to_string(),
+                            None,
+                        )
+                    ))
+                ));
             }
             (_, _, Some(_)) => {
                 print_error(chunk, i, "first s argument must be string");
@@ -180,34 +294,75 @@ impl VM {
             print_error(chunk, i, "regex must be a string");
             return 0;
         }
-        let regex_str_rr = regex_str_rr_opt.unwrap();
+        let mut regex_str_rr = regex_str_rr_opt.unwrap();
 
         {
-            let mut regex_str_rrb = regex_str_rr.borrow_mut();
-            let res = regex_str_rrb.gen_regex(chunk, i);
+            let res = regex_str_rr.gen_regex(chunk, i);
             if !res {
                 return 0;
             }
         }
-        let regex_str_rrb = regex_str_rr.borrow();
-        let regex_opt = regex_str_rrb.to_regex();
+	let regex_s;
+        let regex_b;
+        let regex_rb;
+        let regex_opt : Option<&Regex> =
+            match regex_str_rr {
+                Value::String(sp) => {
+                    regex_s = sp;
+                    regex_b = regex_s.borrow();
+                    match regex_b.r {
+                        Some(ref rb) => {
+                            regex_rb = rb;
+                            Some(regex_rb)
+                        }
+                        None => {
+			    eprintln!("gen_regex must be called before to_regex!");
+			    std::process::abort(); 
+                        }
+                    }
+                }
+                _ => {
+                    eprintln!("gen_regex must be called before to_regex!");
+                    std::process::abort(); 
+                }
+            };
 
         let str_rr = self.stack.pop().unwrap();
-        let str_rrb = str_rr.borrow();
-        let str_pre = str_rrb.to_string();
-        let str_opt = to_string_2(&str_pre);
+        let str_s;
+        let str_b;
+        let str_str;
+        let str_bk : Option<String>;
+        let str_opt : Option<&str> =
+            match str_rr {
+                Value::String(sp) => {
+                    str_s = sp;
+                    str_b = str_s.borrow();
+                    Some(&str_b.s)
+                }
+                _ => {
+                    str_bk = str_rr.to_string();
+                    match str_bk {
+                        Some(s) => { str_str = s; Some(&str_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match (regex_opt, str_opt) {
             (Some(regex), Some(s)) => {
                 let captures = regex.captures_iter(s);
                 let mut lst = VecDeque::new();
                 for capture in captures {
-                    lst.push_back(Rc::new(RefCell::new(Value::String(
-                        capture.get(0).unwrap().as_str().to_string(),
-                        None,
-                    ))));
+                    lst.push_back(Value::String(
+                        Rc::new(RefCell::new(
+                            StringPair::new(
+                                capture.get(0).unwrap().as_str().to_string(),
+                                None,
+                            )
+                        ))
+                    ));
                 }
-                self.stack.push(Rc::new(RefCell::new(Value::List(lst))));
+                self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
             }
             (_, Some(_)) => {
                 print_error(chunk, i, "first c argument must be string");

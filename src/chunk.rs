@@ -54,8 +54,96 @@ pub struct Chunk {
     pub scope_depth: u32,
 }
 
-/// The core value type used by the compiler and VM.
+#[derive(Debug, Clone)]
+pub struct StringPair {
+    pub s: String,
+    pub r: Option<Regex>
+}
+
+impl StringPair {
+    pub fn new(s: String, r: Option<Regex>) -> StringPair {
+        StringPair {
+            s: s,
+            r: r
+        }
+    }
+}
+
 #[derive(Debug)]
+pub struct AnonymousFunction {
+    pub f: String,
+    pub local_var_stack_index: u32,
+    pub stack_id: u64
+}
+
+impl AnonymousFunction {
+    pub fn new(f: String, lvsi: u32, si: u64) -> AnonymousFunction {
+        AnonymousFunction {
+            f: f,
+            local_var_stack_index: lvsi,
+            stack_id: si
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct GeneratorObject {
+    /// The global variable state.
+    pub global_vars: Rc<RefCell<HashMap<String, Value>>>,
+    /// The local variable stack.
+    pub local_vars_stack: Rc<RefCell<Vec<Value>>>,
+    /// The current instruction index.
+    pub index: usize,
+    /// The chunk of the associated generator function.
+    pub chunk: Chunk,
+    /// The chunks of the other functions in the call stack.
+    pub call_stack_chunks: Rc<RefCell<Vec<Chunk>>>,
+    /// The values that need to be passed into the generator when
+    /// it is first called.
+    pub gen_args: Vec<Value>,
+    /// A hash of cached values for the chunk of the associated
+    /// generator function.
+    pub chunk_values: Rc<RefCell<HashMap<String, Value>>>,
+}
+
+impl GeneratorObject {
+    /// Construct a generator object.
+    pub fn new(global_vars: Rc<RefCell<HashMap<String, Value>>>,
+        local_vars_stack: Rc<RefCell<Vec<Value>>>,
+        index: usize,
+        chunk: Chunk,
+        call_stack_chunks: Rc<RefCell<Vec<Chunk>>>,
+        gen_args: Vec<Value>,
+        chunk_values: Rc<RefCell<HashMap<String, Value>>>) -> GeneratorObject {
+        GeneratorObject {
+            global_vars: global_vars,
+            local_vars_stack: local_vars_stack,
+            index: index,
+            chunk: chunk,
+            call_stack_chunks: call_stack_chunks,
+            gen_args: gen_args,
+            chunk_values: chunk_values
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct HashWithIndex {
+    pub i: usize,
+    pub h: Value
+}
+
+impl HashWithIndex {
+    pub fn new(i: usize, h: Value) -> HashWithIndex {
+        HashWithIndex {
+            i: i,
+            h: h
+        }
+    }
+}
+
+/// The core value type used by the compiler and VM.
+#[derive(Debug, Clone)]
 pub enum Value {
     /// Used to indicate that a generator is exhausted.
     Null,
@@ -68,55 +156,38 @@ pub enum Value {
     /// String.  The second part here is the regex object that
     /// corresponds to the string, which is generated and cached
     /// when the string is used as a regex.
-    String(String, Option<Regex>),
+    String(Rc<RefCell<StringPair>>),
     /// An external command (wrapped in curly brackets), where the
     /// output is captured.
-    Command(String),
+    Command(Rc<RefCell<String>>),
     /// An external command (begins with $), where the output is not
     /// captured.
-    CommandUncaptured(String),
+    CommandUncaptured(Rc<RefCell<String>>),
     /// A list.
-    List(VecDeque<Rc<RefCell<Value>>>),
+    List(Rc<RefCell<VecDeque<Value>>>),
     /// A hash.
-    Hash(IndexMap<String, Rc<RefCell<Value>>>),
+    Hash(Rc<RefCell<IndexMap<String, Value>>>),
     /// An anonymous function that refers to a local stack, where the
     /// second value is the local variable stack index and the third
     /// value is a unique identifier for that stack (currently its
     /// pointer value).
-    Function(String, u32, u64),
+    Function(Rc<RefCell<AnonymousFunction>>),
     /// A generator constructed by way of a generator function.
-    Generator(
-        /// The global variable state.
-        HashMap<String, Rc<RefCell<Value>>>,
-        /// The local variable stack.
-        Vec<Rc<RefCell<Value>>>,
-        /// The current instruction index.
-        usize,
-        /// The chunk of the associated generator function.
-        Chunk,
-        /// The chunks of the other functions in the call stack.
-        Vec<Chunk>,
-        /// The values that need to be passed into the generator when
-        /// it is first called.
-        Vec<Rc<RefCell<Value>>>,
-        /// A hash of cached values for the chunk of the associated
-        /// generator function.
-        HashMap<String, Rc<RefCell<Value>>>,
-    ),
+    Generator(GeneratorObject),
     /// A generator for getting the output of a Command.
-    CommandGenerator(BufReader<ChildStdout>),
+    CommandGenerator(Rc<RefCell<BufReader<ChildStdout>>>),
     /// A generator over the keys of a hash.
-    KeysGenerator(usize, Rc<RefCell<Value>>),
+    KeysGenerator(Rc<RefCell<HashWithIndex>>),
     /// A generator over the values of a hash.
-    ValuesGenerator(usize, Rc<RefCell<Value>>),
+    ValuesGenerator(Rc<RefCell<HashWithIndex>>),
     /// A generator over key-value pairs (lists) of a hash.
-    EachGenerator(usize, Rc<RefCell<Value>>),
+    EachGenerator(Rc<RefCell<HashWithIndex>>),
     /// A file reader value.
-    FileReader(BufReader<File>),
+    FileReader(Rc<RefCell<BufReader<File>>>),
     /// A file writer value.
-    FileWriter(LineWriter<File>),
+    FileWriter(Rc<RefCell<LineWriter<File>>>),
     /// A directory handle.
-    DirectoryHandle(ReadDir),
+    DirectoryHandle(Rc<RefCell<ReadDir>>),
 }
 
 /// An enum for the Value types that can be serialised and
@@ -195,21 +266,20 @@ impl Chunk {
 
     /// Add a constant to the current chunk, and return its index in
     /// the constants list (for later calls to `get_constant`).
-    pub fn add_constant(&mut self, value_rr: Rc<RefCell<Value>>) -> i32 {
-        let value_rrb = value_rr.borrow();
-        let value_sd = match &*value_rrb {
+    pub fn add_constant(&mut self, value_rr: Value) -> i32 {
+        let value_sd = match value_rr {
             Value::Null => ValueSD::Null,
-            Value::Int(n) => ValueSD::Int(*n),
-            Value::Float(n) => ValueSD::Float(*n),
+            Value::Int(n) => ValueSD::Int(n),
+            Value::Float(n) => ValueSD::Float(n),
             Value::BigInt(n) => ValueSD::BigInt(n.to_str_radix(10)),
-            Value::String(s, _) => ValueSD::String(s.to_string()),
-            Value::Command(s) => ValueSD::Command(s.to_string()),
+            Value::String(sp) => ValueSD::String(sp.borrow().s.to_string()),
+            Value::Command(s) => ValueSD::Command(s.borrow().to_string()),
             Value::CommandUncaptured(s) => {
-                ValueSD::CommandUncaptured(s.to_string())
+                ValueSD::CommandUncaptured(s.borrow().to_string())
             }
             _ => {
                 eprintln!("constant type cannot be added to chunk! {:?}",
-                          value_rrb);
+                          value_rr);
                 std::process::abort();
             }
         };
@@ -218,7 +288,7 @@ impl Chunk {
     }
 
     /// Get a constant from the current chunk.
-    pub fn get_constant(&self, i: i32) -> Rc<RefCell<Value>> {
+    pub fn get_constant(&self, i: i32) -> Value {
         let value_sd = &self.constants[i as usize];
         let value = match value_sd {
             ValueSD::Null => Value::Null,
@@ -228,13 +298,13 @@ impl Chunk {
                 let nn = n.parse::<num_bigint::BigInt>().unwrap();
                 Value::BigInt(nn)
             }
-            ValueSD::String(s) => Value::String(s.to_string(), None),
-            ValueSD::Command(s) => Value::Command(s.to_string()),
+            ValueSD::String(sp) => Value::String(Rc::new(RefCell::new(StringPair::new(sp.to_string(), None)))),
+            ValueSD::Command(s) => Value::Command(Rc::new(RefCell::new(s.to_string()))),
             ValueSD::CommandUncaptured(s) => {
-                Value::CommandUncaptured(s.to_string())
+                Value::CommandUncaptured(Rc::new(RefCell::new(s.to_string())))
             }
         };
-        return Rc::new(RefCell::new(value));
+        return value;
     }
 
     /// Add an opcode to the current chunk's data.
@@ -280,7 +350,7 @@ impl Chunk {
     }
 
     /// Get the chunk's most recently-added constant.
-    pub fn get_last_constant(&mut self) -> Rc<RefCell<Value>> {
+    pub fn get_last_constant(&mut self) -> Value {
         return self
             .get_constant((self.constants.len() - 1).try_into().unwrap());
     }
@@ -509,28 +579,28 @@ impl Chunk {
 }
 
 impl Value {
-    /// Convert the current value into a string.  If the current value
-    /// is a string, this will return the &str as the first element of
-    /// the pair.  Otherwise, it will return a new String as the
-    /// second element of the pair.  If the value is not representable
-    /// as a string, both elements of the pair will be None.
-    pub fn to_string(&self) -> (Option<&str>, Option<String>) {
+    /// Convert the current value into a string.  Not intended for use
+    /// with Value::String.
+    pub fn to_string(&self) -> Option<String> {
         match self {
-            Value::String(s, _) => (Some(s), None),
+            Value::String(_) => {
+                eprintln!("to_string should not be called with Value::String");
+                std::process::exit(1);
+            }   
             Value::Int(n) => {
                 let s = format!("{}", n);
-                (None, Some(s))
+                Some(s)
             }
             Value::BigInt(n) => {
                 let s = format!("{}", n);
-                (None, Some(s))
+                Some(s)
             }
             Value::Float(f) => {
                 let s = format!("{}", f);
-                (None, Some(s))
+                Some(s)
             }
-            Value::Null => (Some(&""), None),
-            _ => (None, None),
+            Value::Null => Some("".to_string()),
+            _ => None
         }
     }
 
@@ -541,7 +611,8 @@ impl Value {
             Value::Int(n) => Some(*n),
             Value::BigInt(n) => n.to_i32(),
             Value::Float(f) => Some(*f as i32),
-            Value::String(s, _) => {
+            Value::String(sp) => {
+                let s = &sp.borrow().s;
                 let n_r = s.parse::<i32>();
                 match n_r {
                     Ok(n) => {
@@ -564,7 +635,8 @@ impl Value {
             Value::Int(n) => Some(BigInt::from_i32(*n).unwrap()),
             Value::BigInt(n) => Some(n.clone()),
             Value::Float(f) => Some(BigInt::from_i32(*f as i32).unwrap()),
-            Value::String(s, _) => {
+            Value::String(sp) => {
+                let s = &sp.borrow().s;
                 let n_r = s.to_string().parse::<num_bigint::BigInt>();
                 match n_r {
                     Ok(n) => {
@@ -588,7 +660,8 @@ impl Value {
             Value::Int(n) => Some(*n as f64),
             Value::BigInt(n) => Some(n.to_f64().unwrap()),
             Value::Float(f) => Some(*f),
-            Value::String(s, _) => {
+            Value::String(sp) => {
+                let s = &sp.borrow().s;
                 let n_r = s.parse::<f64>();
                 match n_r {
                     Ok(n) => {
@@ -609,11 +682,11 @@ impl Value {
     /// non-string value, this will abort the current process.
     pub fn gen_regex(&mut self, chunk: &Chunk, i: usize) -> bool {
         match self {
-            Value::String(s, ref mut current_regex) => {
-                let regex_res = Regex::new(s);
+            Value::String(sp) => {
+                let regex_res = Regex::new(&sp.borrow().s);
                 match regex_res {
                     Ok(regex) => {
-                        *current_regex = Some(regex.clone());
+                        sp.borrow_mut().r = Some(regex.clone());
                         return true;
                     }
                     Err(e) => {
@@ -635,16 +708,26 @@ impl Value {
         }
     }
 
+    /*
     /// For a string value, return the corresponding regex.  For this
     /// function to work, gen_regex must have been called on the
     /// string value beforehand.
     pub fn to_regex(&self) -> Option<&Regex> {
         match self {
-            Value::String(_, Some(ref regex)) => Some(regex),
+            Value::String(sp) => {
+                match sp.borrow().r {
+                    Some(ref regex) => Some(regex),
+                    _ => {
+                        eprintln!("gen_regex must be called before to_regex!");
+                        std::process::abort();
+                    }
+                }
+            }
             _ => {
                 eprintln!("gen_regex must be called before to_regex!");
                 std::process::abort();
             }
         }
     }
+    */
 }

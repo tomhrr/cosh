@@ -13,7 +13,7 @@ extern crate termion;
 extern crate utime;
 extern crate xml;
 
-mod chunk;
+pub mod chunk;
 pub mod compiler;
 mod opcode;
 pub mod vm;

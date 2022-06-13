@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::io;
 use std::io::Write;
-use std::rc::Rc;
 use std::str;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -82,11 +81,27 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
-        let value_str_pre = value_rrb.to_string();
-        let value_str_opt = to_string_2(&value_str_pre);
+	let value_s;
+        let value_b;
+        let value_str;
+        let value_bk : Option<String>;
+        let value_opt : Option<&str> =
+            match value_rr {
+                Value::String(sp) => {
+                    value_s = sp;
+                    value_b = value_s.borrow();
+                    Some(&value_b.s)
+                }
+                _ => {
+                    value_bk = value_rr.to_string();
+                    match value_bk {
+                        Some(s) => { value_str = s; Some(&value_str) }
+                        _ => None
+                    }
+                }
+            };
 
-        match value_str_opt {
+        match value_opt {
             Some(s) => {
                 print!("{}", s);
                 return 1;
@@ -107,11 +122,27 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
-        let value_str_pre = value_rrb.to_string();
-        let value_str_opt = to_string_2(&value_str_pre);
+	let value_s;
+        let value_b;
+        let value_str;
+        let value_bk : Option<String>;
+        let value_opt : Option<&str> =
+            match value_rr {
+                Value::String(sp) => {
+                    value_s = sp;
+                    value_b = value_s.borrow();
+                    Some(&value_b.s)
+                }
+                _ => {
+                    value_bk = value_rr.to_string();
+                    match value_bk {
+                        Some(s) => { value_str = s; Some(&value_str) }
+                        _ => None
+                    }
+                }
+            };
 
-        match value_str_opt {
+        match value_opt {
             Some(s) => {
                 println!("{}", s);
                 return 1;
@@ -132,17 +163,16 @@ impl VM {
     /// to standard output, returning the new number of lines that can
     /// be printed without waiting for user input.
     fn print_stack_value<'a>(
-        &mut self, value_rr: &Rc<RefCell<Value>>, chunk: &Chunk,
+        &mut self, value_rr: &Value, chunk: &Chunk,
         i: usize,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         indent: i32, no_first_indent: bool, window_height: i32, mut lines_to_print: i32,
         running: Arc<AtomicBool>,
     ) -> i32 {
         let mut is_generator = false;
         {
-            let value_rrb = value_rr.borrow();
-            match &*value_rrb {
+            match value_rr {
                 // The way this works is less than ideal, what with it
                 // being different from standard stringification, but
                 // it may be that having separate representations is
@@ -185,9 +215,9 @@ impl VM {
                         return lines_to_print;
                     }
                 }
-                Value::String(s, _) => {
-                    let mut ss = unescape_string(s);
-                    if s.contains(char::is_whitespace) {
+                Value::String(sp) => {
+                    let mut ss = unescape_string(&sp.borrow().s);
+                    if sp.borrow().s.contains(char::is_whitespace) {
                         ss = format!("\"{}\"", ss);
                     } else if ss.len() == 0 {
                         ss = format!("\"\"");
@@ -206,7 +236,7 @@ impl VM {
                     }
                 }
                 Value::Command(s) => {
-                    let s = format!("{{{}}}", s);
+                    let s = format!("{{{}}}", s.borrow());
                     lines_to_print = psv_helper(
                         &s,
                         indent,
@@ -219,7 +249,7 @@ impl VM {
                     }
                 }
                 Value::CommandUncaptured(s) => {
-                    let s = format!("{{{}}}", s);
+                    let s = format!("{{{}}}", s.borrow());
                     lines_to_print = psv_helper(
                         &s,
                         indent,
@@ -244,8 +274,9 @@ impl VM {
                         return lines_to_print;
                     }
                 }
-                Value::Function(s, _, _) => {
-                    let s = format!("{{Function: {}}}", s);
+                Value::Function(f) => {
+                    let fs = &f.borrow().f;
+                    let s = format!("{{Function: {}}}", fs);
                     lines_to_print = psv_helper(
                         &s,
                         indent,
@@ -294,7 +325,7 @@ impl VM {
                     }
                 }
                 Value::List(list) => {
-                    if list.len() == 0 {
+                    if list.borrow().len() == 0 {
                         lines_to_print = psv_helper(
                             "()",
                             indent,
@@ -317,7 +348,7 @@ impl VM {
                             return lines_to_print;
                         }
                         let new_indent = indent + 4;
-                        for element in list.iter() {
+                        for element in list.borrow().iter() {
                             lines_to_print = self.print_stack_value(
                                 element,
                                 chunk,
@@ -347,7 +378,7 @@ impl VM {
                     }
                 }
                 Value::Hash(map) => {
-                    if map.len() == 0 {
+                    if map.borrow().len() == 0 {
                         lines_to_print = psv_helper(
                             "h()",
                             indent,
@@ -371,7 +402,7 @@ impl VM {
                         }
 
                         let mut key_maxlen = 0;
-                        for (k, _) in map.iter() {
+                        for (k, _) in map.borrow().iter() {
                             let key_len = k.len();
                             if key_len > key_maxlen {
                                 key_maxlen = key_len;
@@ -379,7 +410,7 @@ impl VM {
                         }
 
                         let new_indent = indent + 4;
-                        for (k, v) in map.iter() {
+                        for (k, v) in map.borrow().iter() {
                             for _ in 0..new_indent {
                                 print!(" ");
                             }
@@ -417,19 +448,19 @@ impl VM {
                         }
                     }
                 }
-                Value::Generator(_, _, _, _, _, _, _) => {
+                Value::Generator(_) => {
                     is_generator = true;
                 }
                 Value::CommandGenerator(_) => {
                     is_generator = true;
                 }
-                Value::KeysGenerator(_, _) => {
+                Value::KeysGenerator(_) => {
                     is_generator = true;
                 }
-                Value::ValuesGenerator(_, _) => {
+                Value::ValuesGenerator(_) => {
                     is_generator = true;
                 }
-                Value::EachGenerator(_, _) => {
+                Value::EachGenerator(_) => {
                     is_generator = true;
                 }
             }
@@ -459,8 +490,7 @@ impl VM {
                 let is_null;
                 let value_rr = self.stack.pop().unwrap();
                 {
-                    let value_rrb = value_rr.borrow();
-                    match &*value_rrb {
+                    match value_rr {
                         Value::Null => {
                             is_null = true;
                         }
@@ -533,7 +563,7 @@ impl VM {
     /// the stack is printed.  Prints the stack to standard output.
     pub fn print_stack<'a>(
         &mut self, chunk: &Chunk, i: usize,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         running: Arc<AtomicBool>, no_remove: bool,
     ) {

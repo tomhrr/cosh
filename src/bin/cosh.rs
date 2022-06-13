@@ -10,6 +10,7 @@ extern crate searchpath;
 extern crate tempfile;
 
 use std::borrow::Cow::{self, Borrowed};
+use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::env;
@@ -39,6 +40,7 @@ use tempfile::tempfile;
 
 use cosh::compiler::Compiler;
 use cosh::vm::VM;
+use cosh::chunk::StringPair;
 
 // Most of the code through to 'impl Completer for ShellCompleter' is
 // taken from kkawakam/rustyline#574 as at 3a41ee9, with some small
@@ -405,6 +407,19 @@ fn print_usage(program: &str, opts: Options) {
 }
 
 fn main() {
+    /*
+    let x1 = StringPair::new("asdf".to_string(),
+        None);
+    let x2 = Rc::new(RefCell::new(StringPair::new("qwer".to_string(),
+        None)));
+    let mut v = Vec::new();
+    for n in 1..20000000 {
+        let y = x2.clone();
+        v.push(y);
+    }
+    std::process::exit(0);
+    */ 
+
     let args: Vec<String> = env::args().collect();
     let program = args[0].clone();
 
@@ -486,7 +501,7 @@ fn main() {
                 &mut global_functions,
                 &mut call_stack_chunks,
                 &chunk,
-                &mut chunk_values,
+                Rc::new(RefCell::new(chunk_values)),
                 0,
                 None,
                 None,

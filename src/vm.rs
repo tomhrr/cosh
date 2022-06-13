@@ -14,7 +14,7 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use sysinfo::{System, SystemExt};
 
-use chunk::{print_error, Chunk, Value};
+use chunk::{print_error, Chunk, Value, StringPair, GeneratorObject, AnonymousFunction};
 use compiler::Compiler;
 use opcode::{to_opcode, OpCode};
 
@@ -56,12 +56,12 @@ pub struct VM {
     // running.
     debug: bool,
     // The stack.
-    stack: Vec<Rc<RefCell<Value>>>,
+    stack: Vec<Value>,
     // Whether the stack should be printed after interpretation has
     // finished.
     print_stack: bool,
     // The local variable stack.
-    local_var_stack: Rc<RefCell<Vec<Rc<RefCell<Value>>>>>,
+    local_var_stack: Rc<RefCell<Vec<Value>>>,
     // A System object, for getting process information.
     sys: System,
 }
@@ -132,13 +132,13 @@ lazy_static! {
         map
     };
 
-    static ref SHIFT_FORMS: HashMap<&'static str, fn(&mut VM, &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32> = {
+    static ref SHIFT_FORMS: HashMap<&'static str, fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32> = {
         let mut map = HashMap::new();
-        map.insert("shift", VM::opcode_shift as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
-        map.insert("gnth", VM::core_gnth as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
-        map.insert("|", VM::core_pipe as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
-        map.insert("shift-all", VM::core_shift_all as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
-        map.insert("join", VM::core_join as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
+        map.insert("shift", VM::opcode_shift as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
+        map.insert("gnth", VM::core_gnth as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
+        map.insert("|", VM::core_pipe as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
+        map.insert("shift-all", VM::core_shift_all as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
+        map.insert("join", VM::core_join as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
         map
     };
 
@@ -196,14 +196,14 @@ impl VM {
     /// called).
     pub fn call<'a>(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
-        chunk_values: &mut HashMap<String, Rc<RefCell<Value>>>, i: usize,
-        call_opcode: OpCode, mut function_rr: Rc<RefCell<Value>>,
-        gen_global_vars: Option<&mut HashMap<String, Rc<RefCell<Value>>>>,
-        gen_local_vars_stack: Option<&mut Vec<Rc<RefCell<Value>>>>,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>,
+        chunk_values: Rc<RefCell<HashMap<String, Value>>>, i: usize,
+        call_opcode: OpCode, mut function_rr: Value,
+        gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
+        gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
+        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32), running: Arc<AtomicBool>,
     ) -> bool {
         // Determine whether the function has been called implicitly.
@@ -228,9 +228,12 @@ impl VM {
         let mut plvs_index = 0;
         let mut value_function_str = "".to_owned();
         {
-            let function_rrb = function_rr.borrow();
-            match &*function_rrb {
-                Value::Function(s, vf_plvs_index, vf_plvs_ptr) => {
+            match function_rr {
+                Value::Function(ref vf) => { //s, vf_plvs_index, vf_plvs_ptr) => {
+                    let s = &vf.borrow().f;
+                    let vf_plvs_index = &vf.borrow_mut().local_var_stack_index;
+                    let vf_plvs_ptr = &vf.borrow_mut().stack_id;
+
                     is_value_function = true;
                     plvs_index = *vf_plvs_index;
                     value_function_str = s.clone();
@@ -257,27 +260,31 @@ impl VM {
             }
         }
         if is_value_function {
-            function_rr = Rc::new(RefCell::new(Value::String(
-                value_function_str.to_string(),
-                None,
-            )));
+            function_rr = Value::String(
+                Rc::new(RefCell::new(
+                    StringPair::new(
+                        value_function_str.to_string(),
+                        None
+                    )
+                ))
+            );
         }
 
-        let function = function_rr.borrow();
-        match &*function {
+        match function_rr {
             Value::Command(s) => {
-                let i2 = self.core_command(&s, chunk, i);
+                let i2 = self.core_command(&s.borrow(), chunk, i);
                 if i2 == 0 {
                     return false;
                 }
             }
             Value::CommandUncaptured(s) => {
-                let i2 = self.core_command_uncaptured(&s, chunk, i);
+                let i2 = self.core_command_uncaptured(&s.borrow(), chunk, i);
                 if i2 == 0 {
                     return false;
                 }
             }
-            Value::String(s, _) => {
+            Value::String(sp) => {
+                let s = &sp.borrow().s;
                 let sf_fn_opt = SIMPLE_FORMS.get(&s as &str);
                 if !sf_fn_opt.is_none() {
                     let sf_fn = sf_fn_opt.unwrap();
@@ -316,9 +323,26 @@ impl VM {
                     }
 
                     let lib_rr = self.stack.pop().unwrap();
-                    let lib_rrb = lib_rr.borrow();
-                    let lib_str_pre = lib_rrb.to_string();
-                    let lib_str_opt = to_string_2(&lib_str_pre);
+		    let lib_str_s;
+		    let lib_str_b;
+		    let lib_str_str;
+		    let lib_str_bk : Option<String>;
+		    let lib_str_opt : Option<&str> =
+			match lib_rr {
+			    Value::String(sp) => {
+				lib_str_s = sp;
+				lib_str_b = lib_str_s.borrow();
+				Some(&lib_str_b.s)
+			    }
+			    _ => {
+				lib_str_bk = lib_rr.to_string();
+				match lib_str_bk {
+				    Some(s) => { lib_str_str = s; Some(&lib_str_str) }
+				    _ => None
+				}
+			    }
+			};
+
                     match lib_str_opt {
                         Some(s) => {
                             let mut compiler = Compiler::new(false);
@@ -373,10 +397,14 @@ impl VM {
                     match call_chunk_opt {
                         None => {
                             if is_implicit {
-                                let value_rr = Rc::new(RefCell::new(Value::String(
-                                    s.to_string(),
-                                    None,
-                                )));
+                                let value_rr = Value::String(
+                                    Rc::new(RefCell::new(
+                                        StringPair::new(
+                                            s.to_string(),
+                                            None,
+                                        )
+                                    ))
+                                );
                                 self.stack.push(value_rr);
                             } else {
                                 print_error(chunk, i, "function not found");
@@ -404,22 +432,24 @@ impl VM {
                                     }
                                 }
                                 if gen_args.len() == 0 {
-                                    gen_args.push(Rc::new(RefCell::new(Value::Null)));
+                                    gen_args.push(Value::Null);
                                 }
                                 let mut gen_call_stack_chunks = Vec::new();
                                 for i in new_call_stack_chunks.iter() {
                                     gen_call_stack_chunks.push((*i).clone());
                                 }
                                 let gen_rr =
-                                    Rc::new(RefCell::new(Value::Generator(
-                                        HashMap::new(),
-                                        Vec::new(),
-                                        0,
-                                        call_chunk.clone(),
-                                        gen_call_stack_chunks,
-                                        gen_args,
-                                        HashMap::new(),
-                                    )));
+                                    Value::Generator(
+                                        GeneratorObject::new(
+                                            Rc::new(RefCell::new(HashMap::new())),
+                                            Rc::new(RefCell::new(Vec::new())),
+                                            0,
+                                            call_chunk.clone(),
+                                            Rc::new(RefCell::new(gen_call_stack_chunks)),
+                                            gen_args,
+                                            Rc::new(RefCell::new(HashMap::new())),
+                                        )
+                                    );
                                 self.stack.push(gen_rr);
                             } else {
                                 if call_chunk.has_vars {
@@ -494,13 +524,13 @@ impl VM {
     /// specified instruction index.
     pub fn run<'a>(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Rc<RefCell<Value>>>>>,
+        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
-        chunk_values: &mut HashMap<String, Rc<RefCell<Value>>>, index: usize,
-        mut gen_global_vars: Option<&mut HashMap<String, Rc<RefCell<Value>>>>,
-        mut gen_local_vars_stack: Option<&mut Vec<Rc<RefCell<Value>>>>,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Rc<RefCell<Value>>>>>>,
+        chunk_values: Rc<RefCell<HashMap<String, Value>>>, index: usize,
+        mut gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
+        mut gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
+        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32), running: Arc<AtomicBool>,
     ) -> usize {
         let mut i = index;
@@ -569,8 +599,8 @@ impl VM {
                                 } else {
                                     list_index_opt = None;
                                 }
-                                self.stack.push(Rc::new(RefCell::new(
-                                    Value::List(lst),
+                                self.stack.push(
+                                    Value::List(Rc::new(RefCell::new(lst),
                                 )));
                             }
                             ListType::Hash => {
@@ -578,10 +608,26 @@ impl VM {
                                 while self.stack.len() > list_index {
                                     let value_rr = self.stack.pop().unwrap();
                                     let key_rr = self.stack.pop().unwrap();
-                                    let key_rrb = key_rr.borrow();
-                                    let key_str_pre = key_rrb.to_string();
-                                    let key_str = to_string_2(&key_str_pre).unwrap().to_string();
-                                    map.insert(key_str, value_rr);
+				    let key_str_s;
+				    let key_str_b;
+				    let key_str_str;
+				    let key_str_bk : Option<String>;
+				    let key_str_opt : Option<&str> =
+					match key_rr {
+					    Value::String(sp) => {
+						key_str_s = sp;
+						key_str_b = key_str_s.borrow();
+						Some(&key_str_b.s)
+					    }
+					    _ => {
+						key_str_bk = key_rr.to_string();
+						match key_str_bk {
+						    Some(s) => { key_str_str = s; Some(&key_str_str) }
+						    _ => None
+						}
+					    }
+					};
+                                    map.insert(key_str_opt.unwrap().to_string(), value_rr);
                                 }
                                 if list_indexes.len() > 0 {
                                     list_index_opt =
@@ -589,9 +635,9 @@ impl VM {
                                 } else {
                                     list_index_opt = None;
                                 }
-                                self.stack.push(Rc::new(RefCell::new(
-                                    Value::Hash(map),
-                                )));
+                                self.stack.push(
+                                    Value::Hash(Rc::new(RefCell::new(map))),
+                                );
                             }
                         }
                     }
@@ -620,23 +666,22 @@ impl VM {
                     let plvs_index = prev_local_vars_stacks.len();
                     let plvs_ptr = self.local_var_stack.as_ptr() as *const _ as u64;
                     {
-                        let value_rrb = value_rr.borrow();
-                        match &*value_rrb {
-                            Value::String(s, _) => {
-                                match chunk_values.get(s) {
+                        match value_rr {
+                            Value::String(ref sp) => {
+                                let s = &sp.borrow().s;
+                                match chunk_values.borrow().get(s) {
                                     Some(cv_value_rr) => {
-                                        let cv_value_rrb = cv_value_rr.borrow();
-                                        match &*cv_value_rrb {
-                                            Value::String(cv_s, _) => {
-                                                self.stack.push(Rc::new(
-                                                    RefCell::new(
-                                                        Value::Function(
-                                                            cv_s.clone(),
+                                        match cv_value_rr {
+                                            Value::String(_) => {
+                                                self.stack.push(
+                                                    Value::Function(
+                                                        Rc::new(RefCell::new(AnonymousFunction::new(
+                                                            s.to_string(),
                                                             plvs_index as u32,
                                                             plvs_ptr,
-                                                        ),
+                                                        ))),
                                                     ),
-                                                ));
+                                                );
                                             }
                                             _ => {
                                                 eprintln!("unexpected function value!");
@@ -657,18 +702,19 @@ impl VM {
                         }
                     }
                     if copy {
-                        chunk_values.insert(fn_name.clone().to_string(), value_rr);
-                        let cv_value_rr = chunk_values.get(&fn_name).unwrap().clone();
-                        let cv_value_rrb = cv_value_rr.borrow();
-                        match &*cv_value_rrb {
-                            Value::String(s, _) => {
-                                self.stack.push(Rc::new(RefCell::new(
+                        chunk_values.borrow_mut().insert(fn_name.clone().to_string(), value_rr);
+                        let cv_value_rr = chunk_values.borrow().get(&fn_name).unwrap().clone();
+                        match cv_value_rr {
+                            Value::String(sp) => {
+                                self.stack.push(
                                     Value::Function(
-                                        s.clone(),
-                                        plvs_index as u32,
-                                        plvs_ptr,
-                                    ),
-                                )));
+                                        Rc::new(RefCell::new(AnonymousFunction::new(
+                                            sp.borrow().s.to_string(),
+                                            plvs_index as u32,
+                                            plvs_ptr,
+                                        )))
+                                    )
+                                );
                             }
                             _ => {
                                 eprintln!("unexpected function value!");
@@ -688,15 +734,14 @@ impl VM {
                     let mut copy = false;
                     let mut name = "".to_owned();
                     {
-                        let value_rrb = value_rr.borrow();
-                        match &*value_rrb {
-                            Value::String(s, _) => {
-                                match chunk_values.get(s) {
+                        match value_rr {
+                            Value::String(ref sp) => {
+                                match chunk_values.borrow().get(&sp.borrow().s) {
                                     Some(cv_value_rr) => {
                                         self.stack.push(cv_value_rr.clone());
                                     }
                                     _ => {
-                                        name = s.clone();
+                                        name = sp.borrow().s.clone();
                                         copy = true;
                                     }
                                 }
@@ -707,9 +752,9 @@ impl VM {
                         }
                     }
                     if copy {
-                        chunk_values.insert(name.clone().to_string(), value_rr);
+                        chunk_values.borrow_mut().insert(name.clone().to_string(), value_rr);
                         self.stack
-                            .push(chunk_values.get(&name).unwrap().clone());
+                            .push(chunk_values.borrow().get(&name).unwrap().clone());
                     }
                 }
                 OpCode::Call | OpCode::CallImplicit => {
@@ -743,7 +788,7 @@ impl VM {
                         global_functions,
                         call_stack_chunks,
                         chunk,
-                        chunk_values,
+                        chunk_values.clone(),
                         i,
                         op,
                         function_rr,
@@ -772,10 +817,10 @@ impl VM {
 
                     match gen_local_vars_stack {
                         Some(ref mut glvs) => {
-                            if var_index == (glvs.len() as u8) {
-                                glvs.push(value_rr);
+                            if var_index == (glvs.borrow().len() as u8) {
+                                glvs.borrow_mut().push(value_rr);
                             } else {
-                                glvs[var_index as usize] = value_rr;
+                                glvs.borrow_mut()[var_index as usize] = value_rr;
                             }
                         }
                         _ => {
@@ -795,7 +840,7 @@ impl VM {
 
                     match gen_local_vars_stack {
                         Some(ref mut glvs) => {
-                            let value_rr = glvs[var_index as usize].clone();
+                            let value_rr = glvs.borrow()[var_index as usize].clone();
                             self.stack.push(value_rr);
                         }
                         _ => {
@@ -810,7 +855,7 @@ impl VM {
                 }
                 OpCode::PopLocalVar => match gen_local_vars_stack {
                     Some(ref mut glvs) => {
-                        glvs.pop();
+                        glvs.borrow_mut().pop();
                     }
                     _ => {
                         self.local_var_stack.borrow_mut().pop();
@@ -825,10 +870,9 @@ impl VM {
                     let var_name;
                     {
                         let var_name_rr = self.stack.pop().unwrap();
-                        let var_name_rrb = var_name_rr.borrow();
-                        match &*var_name_rrb {
-                            Value::String(s, _) => {
-                                var_name = s.clone().to_string();
+                        match var_name_rr {
+                            Value::String(sp) => {
+                                var_name = sp.borrow().s.clone().to_string();
                             }
                             _ => {
                                 print_error(
@@ -843,15 +887,15 @@ impl VM {
 
                     match gen_global_vars {
                         Some(ref mut ggv) => {
-                            ggv.insert(
+                            ggv.borrow_mut().insert(
                                 var_name.to_string(),
-                                Rc::new(RefCell::new(Value::Int(0))),
+                                Value::Int(0),
                             );
                         }
                         _ => {
                             scopes.last().unwrap().borrow_mut().insert(
                                 var_name.to_string(),
-                                Rc::new(RefCell::new(Value::Int(0))),
+                                Value::Int(0),
                             );
                         }
                     }
@@ -863,17 +907,17 @@ impl VM {
                     }
 
                     let var_name_rr = self.stack.pop().unwrap();
-                    let var_name_rrb = var_name_rr.borrow();
                     let value_rr = self.stack.pop().unwrap();
 
-                    match &*var_name_rrb {
-                        Value::String(s, _) => {
+                    match var_name_rr {
+                        Value::String(sp) => {
                             let mut done = false;
+                            let s = &sp.borrow().s;
 
                             match gen_global_vars {
                                 Some(ref mut ggv) => {
-                                    if ggv.contains_key(s) {
-                                        ggv.insert(s.clone(), value_rr.clone());
+                                    if ggv.borrow().contains_key(s) {
+                                        ggv.borrow_mut().insert(s.clone(), value_rr.clone());
                                         done = true;
                                     }
                                 }
@@ -919,16 +963,16 @@ impl VM {
                     }
 
                     let var_name_rr = self.stack.pop().unwrap();
-                    let var_name_rrb = var_name_rr.borrow();
-                    match &*var_name_rrb {
-                        Value::String(s, _) => {
+                    match var_name_rr {
+                        Value::String(sp) => {
                             let mut done = false;
+                            let s = &sp.borrow().s;
 
                             match gen_global_vars {
                                 Some(ref mut ggv) => {
-                                    if ggv.contains_key(s) {
+                                    if ggv.borrow().contains_key(s) {
                                         self.stack
-                                            .push(ggv.get(s).unwrap().clone());
+                                            .push(ggv.borrow().get(s).unwrap().clone());
                                         done = true;
                                     }
                                 }
@@ -976,7 +1020,6 @@ impl VM {
                     }
 
                     let value_rr = self.stack.pop().unwrap();
-                    let value_rrb = value_rr.borrow();
 
                     i = i + 1;
                     let i1: usize = data[i].try_into().unwrap();
@@ -984,9 +1027,9 @@ impl VM {
                     let i2: usize = data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
 
-                    match &*value_rrb {
-                        Value::String(s, _) => {
-                            if s == "" {
+                    match value_rr {
+                        Value::String(sp) => {
+                            if sp.borrow().s == "" {
                                 i = i + jmp_len;
                             }
                         }
@@ -994,7 +1037,7 @@ impl VM {
                             i = i + jmp_len;
                         }
                         Value::Float(nf) => {
-                            if *nf == 0.0 {
+                            if nf == 0.0 {
                                 i = i + jmp_len;
                             }
                         }
@@ -1008,7 +1051,6 @@ impl VM {
                     }
 
                     let value_rr = self.stack.pop().unwrap();
-                    let value_rrb = value_rr.borrow();
 
                     i = i + 1;
                     let i1: usize = data[i].try_into().unwrap();
@@ -1016,9 +1058,9 @@ impl VM {
                     let i2: usize = data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
 
-                    match &*value_rrb {
-                        Value::String(s, _) => {
-                            if s == "" {
+                    match value_rr {
+                        Value::String(sp) => {
+                            if sp.borrow().s == "" {
                                 i = i - jmp_len;
                             }
                         }
@@ -1026,7 +1068,7 @@ impl VM {
                             i = i - jmp_len;
                         }
                         Value::Float(nf) => {
-                            if *nf == 0.0 {
+                            if nf == 0.0 {
                                 i = i - jmp_len;
                             }
                         }
@@ -1086,9 +1128,27 @@ impl VM {
                     }
 
                     let error_rr = self.stack.pop().unwrap();
-                    let error_rrb = error_rr.borrow();
-                    let error_str_pre = error_rrb.to_string();
-                    let error_str_opt = to_string_2(&error_str_pre);
+		    
+                    let error_str_s;
+		    let error_str_b;
+		    let error_str_str;
+		    let error_str_bk : Option<String>;
+		    let error_str_opt : Option<&str> =
+			match error_rr {
+			    Value::String(sp) => {
+                                error_str_s = sp;
+                                error_str_b = error_str_s.borrow();
+                                Some(&error_str_b.s)
+                            }
+			    _ => {
+				error_str_bk = error_rr.to_string();
+				match error_str_bk {
+				    Some(s) => { error_str_str = s; Some(&error_str_str) }
+				    _ => None
+				}
+			    }
+			};
+
                     match error_str_opt {
                         Some(s) => {
                             let err_str = format!("{}:{}: {}", line, col, s);
@@ -1156,12 +1216,12 @@ impl VM {
     /// functions.
     pub fn interpret(
         &mut self, global_functions: HashMap<String, Chunk>,
-        variables: HashMap<String, Rc<RefCell<Value>>>,
+        variables: HashMap<String, Value>,
         fh: &mut Box<dyn BufRead>, running: Arc<AtomicBool>,
         name: &str
     ) -> (
         Option<Chunk>,
-        HashMap<String, Rc<RefCell<Value>>>,
+        HashMap<String, Value>,
         Vec<RefCell<HashMap<String, Chunk>>>,
     ) {
         let mut compiler = Compiler::new(self.debug);
@@ -1174,7 +1234,7 @@ impl VM {
         let mut global_functions_rr = RefCell::new(global_functions);
         let call_stack_chunks = vec![];
         let mut scopes = vec![RefCell::new(variables)];
-        let mut chunk_values = HashMap::new();
+        let chunk_values = Rc::new(RefCell::new(HashMap::new()));
         let mut prev_local_vars_stacks = vec![];
 
         self.run(
@@ -1182,7 +1242,7 @@ impl VM {
             &mut global_functions_rr,
             &call_stack_chunks,
             &chunk,
-            &mut chunk_values,
+            chunk_values,
             0,
             None,
             None,

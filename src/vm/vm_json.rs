@@ -6,7 +6,7 @@ use std::rc::Rc;
 use indexmap::IndexMap;
 use num_bigint::ToBigInt;
 
-use chunk::{print_error, Chunk, Value};
+use chunk::{print_error, Chunk, Value, StringPair};
 use vm::*;
 
 /// Converts a serde_json object into a value.
@@ -44,19 +44,23 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
         }
         serde_json::value::Value::String(s) => {
             eprintln!("string {}", s);
-            Value::String(s.to_string(), None)
+            Value::String(Rc::new(RefCell::new(StringPair::new(s.to_string(), None))))
         }
         serde_json::value::Value::Array(lst) => Value::List(
-            lst.iter()
-                .map(|v| Rc::new(RefCell::new(convert_from_json(v))))
-                .collect::<VecDeque<_>>(),
+            Rc::new(RefCell::new(
+                lst.iter()
+                    .map(|v| convert_from_json(v))
+                    .collect::<VecDeque<_>>(),
+            ))
         ),
         serde_json::value::Value::Object(map) => Value::Hash(
-            map.iter()
-                .map(|(k, v)| {
-                    (k.to_string(), Rc::new(RefCell::new(convert_from_json(v))))
-                })
-                .collect::<IndexMap<_, _>>(),
+            Rc::new(RefCell::new(
+                map.iter()
+                    .map(|(k, v)| {
+                        (k.to_string(), convert_from_json(v))
+                    })
+                    .collect::<IndexMap<_, _>>(),
+            ))
         ),
     }
 }
@@ -67,22 +71,24 @@ fn convert_to_json(v: &Value) -> String {
         Value::Null => "null".to_string(),
         Value::Int(n) => n.to_string(),
         Value::Float(f) => f.to_string(),
-        Value::String(s, _) => {
-            format!("\"{}\"", s)
+        Value::String(sp) => {
+            format!("\"{}\"", &sp.borrow().s)
         }
         Value::List(lst) => {
             let s = lst
+                .borrow()
                 .iter()
-                .map(|v_rr| convert_to_json(&v_rr.borrow()))
+                .map(|v_rr| convert_to_json(&v_rr))
                 .collect::<Vec<_>>()
                 .join(",");
             format!("[{}]", s)
         }
         Value::Hash(vm) => {
             let s = vm
+                .borrow()
                 .iter()
                 .map(|(k, v_rr)| {
-                    format!("\"{}\":{}", k, convert_to_json(&v_rr.borrow()))
+                    format!("\"{}\":{}", k, convert_to_json(&v_rr))
                 })
                 .collect::<Vec<_>>()
                 .join(",");
@@ -102,9 +108,25 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
-        let value_pre = value_rrb.to_string();
-        let value_opt = to_string_2(&value_pre);
+	let value_s;
+        let value_b;
+        let value_str;
+        let value_bk : Option<String>;
+        let value_opt : Option<&str> =
+            match value_rr {
+                Value::String(sp) => {
+                    value_s = sp;
+                    value_b = value_s.borrow();
+                    Some(&value_b.s)
+                }
+                _ => {
+                    value_bk = value_rr.to_string();
+                    match value_bk {
+                        Some(s) => { value_str = s; Some(&value_str) }
+                        _ => None
+                    }
+                }
+            };
 
         match value_opt {
             Some(s) => {
@@ -121,7 +143,7 @@ impl VM {
                         doc = d;
                     }
                 }
-                let json_rr = Rc::new(RefCell::new(convert_from_json(&doc)));
+                let json_rr = convert_from_json(&doc);
                 self.stack.push(json_rr);
             }
             _ => {
@@ -141,11 +163,14 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
-        self.stack.push(Rc::new(RefCell::new(Value::String(
-            convert_to_json(&value_rrb),
-            None,
-        ))));
+        self.stack.push(Value::String(
+            Rc::new(RefCell::new(
+                StringPair::new(
+                    convert_to_json(&value_rr),
+                    None,
+                )
+            ))
+        ));
 
         return 1;
     }

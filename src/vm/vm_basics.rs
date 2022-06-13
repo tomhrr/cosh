@@ -1,8 +1,6 @@
-use std::cell::RefCell;
-use std::rc::Rc;
 use rand::Rng;
 
-use chunk::{print_error, Chunk, Value};
+use chunk::{print_error, Chunk, Value, StringPair};
 use vm::*;
 
 impl VM {
@@ -80,7 +78,7 @@ impl VM {
     #[allow(unused_variables)]
     pub fn opcode_depth(&mut self, chunk: &Chunk, i: usize) -> i32 {
         self.stack
-            .push(Rc::new(RefCell::new(Value::Int(self.stack.len() as i32))));
+            .push(Value::Int(self.stack.len() as i32));
         return 1;
     }
 
@@ -94,17 +92,16 @@ impl VM {
         }
 
         let lst_rr = self.stack.pop().unwrap();
-        let lst_rrb = lst_rr.borrow();
-        match &*lst_rrb {
+        match lst_rr {
             Value::List(lst) => {
-                let len = lst.len();
+                let len = lst.borrow().len();
                 self.stack
-                    .push(Rc::new(RefCell::new(Value::Int(len as i32))));
+                    .push(Value::Int(len as i32));
             }
-            Value::String(s, _) => {
-                let len = s.len();
+            Value::String(sp) => {
+                let len = sp.borrow().s.len();
                 self.stack
-                    .push(Rc::new(RefCell::new(Value::Int(len as i32))));
+                    .push(Value::Int(len as i32));
             }
             _ => {
                 print_error(chunk, i, "len argument must be a list or a string");
@@ -123,12 +120,11 @@ impl VM {
         }
 
         let i1_rr = self.stack.pop().unwrap();
-        let i1_rrb = i1_rr.borrow();
-        let is_null = match *i1_rrb {
+        let is_null = match i1_rr {
             Value::Null => 1,
             _ => 0,
         };
-        self.stack.push(Rc::new(RefCell::new(Value::Int(is_null))));
+        self.stack.push(Value::Int(is_null));
         return 1;
     }
 
@@ -141,12 +137,11 @@ impl VM {
         }
 
         let i1_rr = self.stack.pop().unwrap();
-        let i1_rrb = i1_rr.borrow();
-        let is_list = match *i1_rrb {
+        let is_list = match i1_rr {
             Value::List(_) => 1,
             _ => 0,
         };
-        self.stack.push(Rc::new(RefCell::new(Value::Int(is_list))));
+        self.stack.push(Value::Int(is_list));
         return 1;
     }
 
@@ -161,14 +156,13 @@ impl VM {
         }
 
         let i1_rr = self.stack.pop().unwrap();
-        let i1_rrb = i1_rr.borrow();
-        let is_callable = match *i1_rrb {
-            Value::Function(_, _, _) => 1,
+        let is_callable = match i1_rr {
+            Value::Function(_) => 1,
             /* This could be better. */
-            Value::String(_, _) => 1,
+            Value::String(_) => 1,
             _ => 0,
         };
-        self.stack.push(Rc::new(RefCell::new(Value::Int(is_callable))));
+        self.stack.push(Value::Int(is_callable));
         return 1;
     }
 
@@ -182,17 +176,34 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let is_string;
         {
-            let value_rrb = value_rr.borrow();
-            match *value_rrb {
-                Value::String(_, _) => {
+            match value_rr {
+                Value::String(_) => {
                     is_string = true;
                 }
                 _ => {
-                    let value_pre = value_rrb.to_string();
-                    let value_opt = to_string_2(&value_pre);
+		    let value_s;
+		    let value_b;
+		    let value_str;
+		    let value_bk : Option<String>;
+		    let value_opt : Option<&str> =
+			match value_rr {
+			    Value::String(sp) => {
+				value_s = sp;
+				value_b = value_s.borrow();
+				Some(&value_b.s)
+			    }
+			    _ => {
+				value_bk = value_rr.to_string();
+				match value_bk {
+				    Some(s) => { value_str = s; Some(&value_str) }
+				    _ => None
+				}
+			    }
+			};
+
                     match value_opt {
                         Some(s) => {
-                            self.stack.push(Rc::new(RefCell::new(Value::String(s.to_string(), None))));
+                            self.stack.push(Value::String(Rc::new(RefCell::new(StringPair::new(s.to_string(), None)))));
                             return 1;
                         }
                         _ => {
@@ -219,8 +230,7 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let is_int;
         {
-            let value_rrb = value_rr.borrow();
-            match *value_rrb {
+            match value_rr {
                 Value::Int(_) => {
                     is_int = true;
                 }
@@ -228,17 +238,17 @@ impl VM {
                     is_int = true;
                 }
                 _ => {
-                    let value_opt = value_rrb.to_int();
+                    let value_opt = value_rr.to_int();
                     match value_opt {
                         Some(n) => {
-                            self.stack.push(Rc::new(RefCell::new(Value::Int(n))));
+                            self.stack.push(Value::Int(n));
                             return 1;
                         }
                         _ => {
-                            let value_opt = value_rrb.to_bigint();
+                            let value_opt = value_rr.to_bigint();
                             match value_opt {
                                 Some(n) => {
-                                    self.stack.push(Rc::new(RefCell::new(Value::BigInt(n))));
+                                    self.stack.push(Value::BigInt(n));
                                     return 1;
                                 }
                                 _ => {
@@ -267,16 +277,15 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let is_float;
         {
-            let value_rrb = value_rr.borrow();
-            match *value_rrb {
+            match value_rr {
                 Value::Float(_) => {
                     is_float = true;
                 }
                 _ => {
-                    let value_opt = value_rrb.to_float();
+                    let value_opt = value_rr.to_float();
                     match value_opt {
                         Some(n) => {
-                            self.stack.push(Rc::new(RefCell::new(Value::Float(n))));
+                            self.stack.push(Value::Float(n));
                             return 1;
                         }
                         _ => {
@@ -301,13 +310,12 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_rrb = value_rr.borrow();
-        let value_opt = value_rrb.to_float();
+        let value_opt = value_rr.to_float();
         match value_opt {
             Some(n) => {
                 let mut rng = rand::thread_rng();
                 let rand_value = rng.gen_range(0.0..n);
-                self.stack.push(Rc::new(RefCell::new(Value::Float(rand_value))));
+                self.stack.push(Value::Float(rand_value));
             }
             _ => {
                 print_error(chunk, i, "unable to convert argument to float");

@@ -11,7 +11,7 @@ use std::str;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use chunk::{Chunk, Value};
+use chunk::{Chunk, Value, StringPair};
 use opcode::OpCode;
 
 /// The various token types used by the compiler.
@@ -722,10 +722,14 @@ impl Compiler {
                     if !res {
                         return false;
                     }
-                    let name_str_rr = Rc::new(RefCell::new(Value::String(
-                        name_str.as_str().to_string(),
-                        None,
-                    )));
+                    let name_str_rr = Value::String(
+                        Rc::new(RefCell::new(
+                            StringPair::new(
+                                name_str.as_str().to_string(),
+                                None,
+                            )
+                        ))
+                    );
                     let i = chunk.add_constant(name_str_rr);
                     let fn_opcode = if function_chunk.uses_local_vars { OpCode::Function } else { OpCode::Constant };
                     chunk.add_opcode(fn_opcode);
@@ -757,7 +761,7 @@ impl Compiler {
                     return true;
                 }
                 TokenType::Int(n) => {
-                    let value_rr = Rc::new(RefCell::new(Value::Int(n)));
+                    let value_rr = Value::Int(n);
                     let i = chunk.add_constant(value_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -766,7 +770,7 @@ impl Compiler {
                     chunk.add_byte(i_lower as u8);
                 }
                 TokenType::BigInt(n) => {
-                    let value_rr = Rc::new(RefCell::new(Value::BigInt(n)));
+                    let value_rr = Value::BigInt(n);
                     let i = chunk.add_constant(value_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -775,7 +779,7 @@ impl Compiler {
                     chunk.add_byte(i_lower as u8);
                 }
                 TokenType::Float(n) => {
-                    let value_rr = Rc::new(RefCell::new(Value::Float(n)));
+                    let value_rr = Value::Float(n);
                     let i = chunk.add_constant(value_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -824,11 +828,10 @@ impl Compiler {
                                 return false;
                             }
                             chunk.pop_byte();
-                            let last_constant_rrb = last_constant_rr.borrow();
-                            match &*last_constant_rrb {
-                                Value::String(s, _) => {
+                            match last_constant_rr {
+                                Value::String(sp) => {
                                     let local = Local::new(
-                                        s.to_string(),
+                                        sp.borrow().s.to_string(),
                                         self.scope_depth.into(),
                                     );
                                     self.locals.push(local);
@@ -841,7 +844,7 @@ impl Compiler {
                                     return false;
                                 }
                             }
-                            let value_rr = Rc::new(RefCell::new(Value::Int(0)));
+                            let value_rr = Value::Int(0);
                             let i = chunk.add_constant(value_rr);
                             chunk.add_opcode(OpCode::Constant);
                             let i_upper = (i >> 8) & 0xFF;
@@ -875,14 +878,13 @@ impl Compiler {
                         chunk.pop_byte();
                         let mut success = false;
                         {
-                            let last_constant_rrb = last_constant_rr.borrow();
-                            match &*last_constant_rrb {
-                                Value::String(s, _) => {
+                            match last_constant_rr {
+                                Value::String(ref sp) => {
                                     if self.locals.len() != 0 {
                                         let mut i = self.locals.len() - 1;
                                         loop {
                                             let local = &self.locals[i];
-                                            if local.name.eq(s) {
+                                            if local.name.eq(&sp.borrow().s) {
                                                 uses_local_vars = true;
                                                 chunk.add_opcode(
                                                     OpCode::SetLocalVar,
@@ -937,14 +939,13 @@ impl Compiler {
                         }
                         let mut success = false;
                         {
-                            let last_constant_rrb = last_constant_rr.borrow();
-                            match &*last_constant_rrb {
-                                Value::String(s, _) => {
+                            match last_constant_rr {
+                                Value::String(ref sp) => {
                                     if self.locals.len() != 0 {
                                         let mut i = self.locals.len() - 1;
                                         loop {
                                             let local = &self.locals[i];
-                                            if local.name.eq(s) {
+                                            if local.name.eq(&sp.borrow().s) {
                                                 uses_local_vars = true;
                                                 chunk.add_opcode(
                                                     OpCode::GetLocalVar,
@@ -1172,7 +1173,7 @@ impl Compiler {
                         chunk.add_opcode(OpCode::Rand);
                     } else {
                         let s_escaped = escape_string(&s);
-                        let s_rr = Rc::new(RefCell::new(Value::String(s_escaped, None)));
+                        let s_rr = Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
                         let i = chunk.add_constant(s_rr);
                         chunk.add_opcode(OpCode::Constant);
                         let i_upper = (i >> 8) & 0xFF;
@@ -1185,7 +1186,7 @@ impl Compiler {
                 }
                 TokenType::Command(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Rc::new(RefCell::new(Value::Command(s_escaped)));
+                    let s_rr = Value::Command(Rc::new(RefCell::new(s_escaped)));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -1195,7 +1196,7 @@ impl Compiler {
                 }
                 TokenType::CommandUncaptured(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Rc::new(RefCell::new(Value::CommandUncaptured(s_escaped)));
+                    let s_rr = Value::CommandUncaptured(Rc::new(RefCell::new(s_escaped)));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -1206,7 +1207,7 @@ impl Compiler {
                 }
                 TokenType::CommandExplicit(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Rc::new(RefCell::new(Value::Command(s_escaped)));
+                    let s_rr = Value::Command(Rc::new(RefCell::new(s_escaped)));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -1217,7 +1218,7 @@ impl Compiler {
                 }
                 TokenType::String(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Rc::new(RefCell::new(Value::String(s_escaped, None)));
+                    let s_rr = Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;

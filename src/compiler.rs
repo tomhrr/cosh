@@ -789,7 +789,16 @@ impl Compiler {
                 }
                 TokenType::Word(s) | TokenType::WordImplicit(s) => {
                     if s == "+" {
-                        chunk.add_opcode(OpCode::Add);
+                        match chunk.get_third_last_opcode() {
+                            OpCode::Constant => {
+                                chunk.set_third_last_opcode(
+                                    OpCode::AddConstant
+                                );
+                            },
+                            _ => {
+                                chunk.add_opcode(OpCode::Add);
+                            }
+                        }
                     } else if s == "-" {
                         chunk.add_opcode(OpCode::Subtract);
                     } else if s == "*" {

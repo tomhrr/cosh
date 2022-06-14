@@ -307,6 +307,16 @@ impl Chunk {
         return value;
     }
 
+    /// Get a constant int value from the current chunk.
+    pub fn get_constant_int(&self, i: i32) -> i32 {
+        let value_sd = &self.constants[i as usize];
+        let value = match *value_sd {
+            ValueSD::Int(n) => n,
+            _ => 0
+        };
+        return value;
+    }
+
     /// Add an opcode to the current chunk's data.
     pub fn add_opcode(&mut self, opcode: OpCode) {
         self.data.borrow_mut().push(opcode as u8);
@@ -332,6 +342,43 @@ impl Chunk {
                 .get(self.data.borrow().len() - 2)
                 .unwrap(),
         );
+    }
+
+    pub fn get_third_last_opcode(&self) -> OpCode {
+        if self.data.borrow().len() < 3 {
+            return OpCode::Call;
+        }
+        return to_opcode(
+            *self
+                .data
+                .borrow()
+                .get(self.data.borrow().len() - 3)
+                .unwrap(),
+        );
+    }
+
+    pub fn set_second_last_opcode(&mut self, opcode: OpCode) {
+        let len = self.data.borrow().len();
+        let mut bm = self.data.borrow_mut();
+        if let Some(el) = bm.get_mut(len - 2) {
+            *el = opcode as u8;
+        }
+    }
+
+    pub fn set_third_last_opcode(&mut self, opcode: OpCode) {
+        let len = self.data.borrow().len();
+        let mut bm = self.data.borrow_mut();
+        if let Some(el) = bm.get_mut(len - 3) {
+            *el = opcode as u8;
+        }
+    }
+
+    pub fn set_last_opcode(&mut self, opcode: OpCode) {
+        let len = self.data.borrow().len();
+        let mut bm = self.data.borrow_mut();
+        if let Some(el) = bm.get_mut(len - 1) {
+            *el = opcode as u8;
+        }
     }
 
     /// Add a raw byte to the current chunk's data.
@@ -409,6 +456,16 @@ impl Chunk {
                         | ((i_lower & 0xFF) as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_CONSTANT {:?}", value);
+                }
+                OpCode::AddConstant => {
+                    i = i + 1;
+                    let i_upper = data_b[i];
+                    i = i + 1;
+                    let i_lower = data_b[i];
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00)
+                        | ((i_lower & 0xFF) as u16);
+                    let value = self.get_constant(constant_i as i32);
+                    println!("OP_ADDCONSTANT {:?}", value);
                 }
                 OpCode::Add => {
                     println!("OP_ADD");

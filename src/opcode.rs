@@ -47,6 +47,7 @@ pub enum OpCode {
     Int = 44,
     Flt = 45,
     Rand = 46,
+    AddConstant = 47,
     Unknown = 255,
 }
 
@@ -99,6 +100,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         44 => OpCode::Int,
         45 => OpCode::Flt,
         46 => OpCode::Rand,
+        47 => OpCode::AddConstant,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

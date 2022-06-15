@@ -810,7 +810,16 @@ impl Compiler {
                     } else if s == "<" {
                         chunk.add_opcode(OpCode::Lt);
                     } else if s == "=" {
-                        chunk.add_opcode(OpCode::Eq);
+                        match chunk.get_third_last_opcode() {
+                            OpCode::Constant => {
+                                chunk.set_third_last_opcode(
+                                    OpCode::EqConstant
+                                );
+                            },
+                            _ => {
+                                chunk.add_opcode(OpCode::Eq);
+                            }
+                        }
                     } else if s == "var" {
                         if self.scope_depth == 0 {
                             chunk.add_opcode(OpCode::Var);

@@ -582,6 +582,28 @@ impl VM {
 			(_) => {}
 		    };
                 }
+                OpCode::EqConstant => {
+                    i = i + 1;
+                    let i_upper = data[i];
+                    i = i + 1;
+                    let i_lower = data[i];
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00)
+                        | ((i_lower & 0xFF) as u16);
+                    let n = chunk.get_constant_int(i2 as i32);
+
+                    let len = self.stack.len();
+		    let v1_rr = self.stack.get_mut(len - 1).unwrap();
+		    match v1_rr {
+			Value::Int(ref mut n1) => {
+                            if *n1 == n {
+                                *n1 = 1;
+                            } else {
+                                *n1 = 0;
+                            }
+			}
+			(_) => {}
+		    };
+                }
                 OpCode::StartList => {
                     match list_index_opt {
                         Some(list_index) => {

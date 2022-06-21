@@ -233,85 +233,95 @@ impl VM {
         let mut shiftable_rr = self.stack.pop().unwrap();
         {
             match shiftable_rr {
-                Value::Generator(ref mut generator_object) => {
-                    let index =
-                        generator_object.index;
-
+                Value::Generator(ref mut generator_object_) => {
+                    // todo: set to none, error later if still none.
+                    let mut new_i = 0;
                     {
-                        let gen_args =
-                            &mut generator_object.gen_args;
-                        stack_len = self.stack.len();
-                        let mut is_empty = false;
-                        if gen_args.len() == 1 {
-                            let gen_arg_rr = &gen_args[0];
-                            match gen_arg_rr {
-                                Value::Null => {
-                                    is_empty = true;
+                        let mut generator_object =
+                            generator_object_.borrow_mut();
+                        let index =
+                            generator_object.index;
+                        eprintln!("generator index is currently {:?}",
+                        index);
+
+                        {
+                            let gen_args =
+                                &mut generator_object.gen_args;
+                            stack_len = self.stack.len();
+                            let mut is_empty = false;
+                            if gen_args.len() == 1 {
+                                let gen_arg_rr = &gen_args[0];
+                                match gen_arg_rr {
+                                    Value::Null => {
+                                        is_empty = true;
+                                    }
+                                    _ => {
+                                        is_empty = false;
+                                    }
                                 }
-                                _ => {
-                                    is_empty = false;
+                            }
+                            if is_empty {
+                                gen_args.pop();
+                                self.stack.push(Value::Int(0));
+                            } else {
+                                let gen_args_len = gen_args.len();
+                                if gen_args_len > 0 {
+                                    while gen_args.len() > 0 {
+                                        self.stack.push(gen_args.pop().unwrap());
+                                    }
+                                    self.stack.push(Value::Int(
+                                        gen_args_len as i32,
+                                    ));
                                 }
                             }
                         }
-                        if is_empty {
-                            gen_args.pop();
-                            self.stack.push(Value::Int(0));
+
+                        let global_vars =
+                            generator_object.global_vars.clone();
+                        let local_vars_stack =
+                            generator_object.local_vars_stack.clone();
+                        let chunk =
+                            &generator_object.chunk;
+                        let call_stack_chunks =
+                            &generator_object.call_stack_chunks;
+
+                        let mut call_stack_chunks_sub = Vec::new();
+                        let cscb = call_stack_chunks.borrow();
+                        for i in cscb.iter() {
+                            call_stack_chunks_sub.push(i);
+                        }
+                        let current_index = index;
+                        if current_index == chunk.data.borrow().len() {
+                            /* At end of function: push null. */
+                            self.stack.push(Value::Null);
                         } else {
-                            let gen_args_len = gen_args.len();
-                            if gen_args_len > 0 {
-                                while gen_args.len() > 0 {
-                                    self.stack.push(gen_args.pop().unwrap());
+                            let res = self.run(
+                                scopes,
+                                global_functions,
+                                &call_stack_chunks_sub,
+                                chunk,
+                                generator_object.chunk_values.clone(),
+                                index,
+                                Some(global_vars),
+                                Some(local_vars_stack),
+                                prev_local_vars_stacks,
+                                line_col,
+                                running,
+                            );
+                            match res {
+                                0 => {
+                                    return 0;
                                 }
-                                self.stack.push(Value::Int(
-                                    gen_args_len as i32,
-                                ));
+                                i => {
+                                    new_i = i;
+                        eprintln!("generator index is now {:?}", i);
+                                    new_stack_len = self.stack.len();
+                                    repush = true;
+                                }
                             }
                         }
                     }
-
-                    let global_vars =
-                        generator_object.global_vars.clone();
-                    let local_vars_stack =
-                        generator_object.local_vars_stack.clone();
-                    let chunk =
-                        &generator_object.chunk;
-                    let call_stack_chunks =
-                        &generator_object.call_stack_chunks;
-
-                    let mut call_stack_chunks_sub = Vec::new();
-                    let cscb = call_stack_chunks.borrow();
-                    for i in cscb.iter() {
-                        call_stack_chunks_sub.push(i);
-                    }
-                    let current_index = index;
-                    if current_index == chunk.data.borrow().len() {
-                        /* At end of function: push null. */
-                        self.stack.push(Value::Null);
-                    } else {
-                        let res = self.run(
-                            scopes,
-                            global_functions,
-                            &call_stack_chunks_sub,
-                            chunk,
-                            generator_object.chunk_values.clone(),
-                            index,
-                            Some(global_vars),
-                            Some(local_vars_stack),
-                            prev_local_vars_stacks,
-                            line_col,
-                            running,
-                        );
-                        match res {
-                            0 => {
-                                return 0;
-                            }
-                            i => {
-                                generator_object.index = i;
-                                new_stack_len = self.stack.len();
-                                repush = true;
-                            }
-                        }
-                    }
+                    generator_object_.borrow_mut().index = new_i;
                 }
                 Value::List(ref mut lst) => {
                     if lst.borrow().len() > 0 {
@@ -345,91 +355,100 @@ impl VM {
                     }
                 }
                 Value::KeysGenerator(ref mut hwi) => {
-                    let hash_rr = &hwi.borrow().h;
-                    match hash_rr {
-                        Value::Hash(map) => {
-                            let mapb = map.borrow();
-                            let kv = mapb.get_index(hwi.borrow().i);
-                            match kv {
-                                Some((k, _)) => {
-                                    self.stack.push(
-                                        Value::String(
-                                            Rc::new(RefCell::new(
-                                                StringPair::new(k.to_string(), None),
-                                            ))
-                                        )
-                                    );
-                                }
-                                None => {
-                                    self.stack.push(Value::Null);
+                    {
+                        let hash_rr = &hwi.borrow().h;
+                        match hash_rr {
+                            Value::Hash(map) => {
+                                let mapb = map.borrow();
+                                let kv = mapb.get_index(hwi.borrow().i);
+                                match kv {
+                                    Some((k, _)) => {
+                                        self.stack.push(
+                                            Value::String(
+                                                Rc::new(RefCell::new(
+                                                    StringPair::new(k.to_string(), None),
+                                                ))
+                                            )
+                                        );
+                                    }
+                                    None => {
+                                        self.stack.push(Value::Null);
+                                    }
                                 }
                             }
-                            hwi.borrow_mut().i = hwi.borrow().i + 1;
-                        }
-                        _ => {
-                            eprintln!(
-                                "keys generator does not contain a hash!"
-                            );
-                            std::process::abort();
+                            _ => {
+                                eprintln!(
+                                    "keys generator does not contain a hash!"
+                                );
+                                std::process::abort();
+                            }
                         }
                     }
+                    let el = hwi.borrow().i + 1;
+                    hwi.borrow_mut().i = el;
                 }
                 Value::ValuesGenerator(ref mut hwi) => {
-                    let hash_rr = &hwi.borrow().h;
-                    match hash_rr {
-                        Value::Hash(map) => {
-                            let mapb = map.borrow();
-                            let kv = mapb.get_index(hwi.borrow().i);
-                            match kv {
-                                Some((_, v)) => {
-                                    self.stack.push(v.clone());
-                                }
-                                None => {
-                                    self.stack.push(
-                                        Value::Null,
-                                    );
+                    {
+                        let hash_rr = &hwi.borrow().h;
+                        match hash_rr {
+                            Value::Hash(map) => {
+                                let mapb = map.borrow();
+                                let kv = mapb.get_index(hwi.borrow().i);
+                                match kv {
+                                    Some((_, v)) => {
+                                        self.stack.push(v.clone());
+                                    }
+                                    None => {
+                                        self.stack.push(
+                                            Value::Null,
+                                        );
+                                    }
                                 }
                             }
-                            hwi.borrow_mut().i = hwi.borrow().i + 1;
-                        }
-                        _ => {
-                            eprintln!(
-                                "values generator does not contain a hash!"
-                            );
-                            std::process::abort();
+                            _ => {
+                                eprintln!(
+                                    "values generator does not contain a hash!"
+                                );
+                                std::process::abort();
+                            }
                         }
                     }
+                    let el = hwi.borrow().i + 1;
+                    hwi.borrow_mut().i = el;
                 }
                 Value::EachGenerator(ref mut hwi) => {
-                    let hash_rr = &hwi.borrow().h;
-                    match hash_rr {
-                        Value::Hash(map) => {
-                            let mapb = map.borrow();
-                            let kv = mapb.get_index(hwi.borrow().i);
-                            match kv {
-                                Some((k, v)) => {
-                                    let mut lst = VecDeque::new();
-                                    lst.push_back(
-                                        Value::String(Rc::new(RefCell::new(StringPair::new(k.to_string(), None)))),
-                                    );
-                                    lst.push_back(v.clone());
-                                    self.stack.push(
-                                        Value::List(Rc::new(RefCell::new(lst))),
-                                    );
-                                }
-                                None => {
-                                    self.stack.push(Value::Null);
+                    {
+                        let hash_rr = &hwi.borrow().h;
+                        match hash_rr {
+                            Value::Hash(map) => {
+                                let mapb = map.borrow();
+                                let kv = mapb.get_index(hwi.borrow().i);
+                                match kv {
+                                    Some((k, v)) => {
+                                        let mut lst = VecDeque::new();
+                                        lst.push_back(
+                                            Value::String(Rc::new(RefCell::new(StringPair::new(k.to_string(), None)))),
+                                        );
+                                        lst.push_back(v.clone());
+                                        self.stack.push(
+                                            Value::List(Rc::new(RefCell::new(lst))),
+                                        );
+                                    }
+                                    None => {
+                                        self.stack.push(Value::Null);
+                                    }
                                 }
                             }
-                            hwi.borrow_mut().i = hwi.borrow().i + 1;
-                        }
-                        _ => {
-                            eprintln!(
-                                "each generator does not contain a hash!"
-                            );
-                            std::process::abort();
+                            _ => {
+                                eprintln!(
+                                    "each generator does not contain a hash!"
+                                );
+                                std::process::abort();
+                            }
                         }
                     }
+                    let el = hwi.borrow().i + 1;
+                    hwi.borrow_mut().i = el;
                 }
                 _ => {
                     print_error(chunk, i, "argument cannot be shifted");

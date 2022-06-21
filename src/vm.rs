@@ -230,12 +230,13 @@ impl VM {
         {
             match function_rr {
                 Value::Function(ref vf) => { //s, vf_plvs_index, vf_plvs_ptr) => {
-                    let s = &vf.borrow().f;
-                    let vf_plvs_index = &vf.borrow_mut().local_var_stack_index;
-                    let vf_plvs_ptr = &vf.borrow_mut().stack_id;
+                    let af = vf.borrow();
+                    let s = &af.f;
+                    let vf_plvs_index = af.local_var_stack_index;
+                    let vf_plvs_ptr = af.stack_id;
 
                     is_value_function = true;
-                    plvs_index = *vf_plvs_index;
+                    plvs_index = vf_plvs_index;
                     value_function_str = s.clone();
                     if (plvs_index + 1) > (prev_local_vars_stacks.len() as u32) {
                         print_error(
@@ -247,7 +248,7 @@ impl VM {
                     }
                     let plvs_ptr = prev_local_vars_stacks[plvs_index as usize].as_ptr()
                         as *const _ as u64;
-                    if *vf_plvs_ptr != plvs_ptr {
+                    if vf_plvs_ptr != plvs_ptr {
                         print_error(
                             chunk,
                             i,
@@ -256,7 +257,8 @@ impl VM {
                         return false;
                     }
                 }
-                _ => {}
+                _ => {
+                }
             }
         }
         if is_value_function {
@@ -440,15 +442,17 @@ impl VM {
                                 }
                                 let gen_rr =
                                     Value::Generator(
-                                        GeneratorObject::new(
-                                            Rc::new(RefCell::new(HashMap::new())),
-                                            Rc::new(RefCell::new(Vec::new())),
-                                            0,
-                                            call_chunk.clone(),
-                                            Rc::new(RefCell::new(gen_call_stack_chunks)),
-                                            gen_args,
-                                            Rc::new(RefCell::new(HashMap::new())),
-                                        )
+                                        Rc::new(RefCell::new(
+                                            GeneratorObject::new(
+                                                Rc::new(RefCell::new(HashMap::new())),
+                                                Rc::new(RefCell::new(Vec::new())),
+                                                0,
+                                                call_chunk.clone(),
+                                                Rc::new(RefCell::new(gen_call_stack_chunks)),
+                                                gen_args,
+                                                Rc::new(RefCell::new(HashMap::new())),
+                                            )
+                                        ))
                                     );
                                 self.stack.push(gen_rr);
                             } else {

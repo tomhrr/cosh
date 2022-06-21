@@ -173,7 +173,7 @@ pub enum Value {
     /// pointer value).
     Function(Rc<RefCell<AnonymousFunction>>),
     /// A generator constructed by way of a generator function.
-    Generator(GeneratorObject),
+    Generator(Rc<RefCell<GeneratorObject>>),
     /// A generator for getting the output of a Command.
     CommandGenerator(Rc<RefCell<BufReader<ChildStdout>>>),
     /// A generator over the keys of a hash.

@@ -789,13 +789,13 @@ impl Compiler {
                 }
                 TokenType::Word(s) | TokenType::WordImplicit(s) => {
                     if s == "+" {
-                        let mlen = chunk.data.borrow().len() - 1;
-                        chunk.set_previous_point(
-                            mlen,
-                            token.line_number, token.column_number
-                        );
                         match chunk.get_third_last_opcode() {
                             OpCode::Constant => {
+                                let mlen = chunk.data.borrow().len() - 1;
+                                chunk.set_previous_point(
+                                    mlen,
+                                    token.line_number, token.column_number
+                                );
                                 chunk.set_third_last_opcode(
                                     OpCode::AddConstant
                                 );

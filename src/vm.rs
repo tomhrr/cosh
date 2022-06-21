@@ -571,16 +571,31 @@ impl VM {
                     let i_lower = data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00)
                         | ((i_lower & 0xFF) as u16);
-                    let n = chunk.get_constant_int(i2 as i32);
-
-                    let len = self.stack.len();
-                    let v1_rr = self.stack.get_mut(len - 1).unwrap();
-                    match v1_rr {
-                        Value::Int(ref mut n1) => {
-                            *n1 = *n1 + n;
-                        }
-                        (_) => {}
-                    };
+                    let mut done = false;
+                    if chunk.has_constant_int(i2 as i32) {
+                        let n = chunk.get_constant_int(i2 as i32);
+                        let len = self.stack.len();
+                        let v1_rr = self.stack.get_mut(len - 1).unwrap();
+                        match v1_rr {
+                            Value::Int(ref mut n1) => {
+                                *n1 = *n1 + n;
+                                done = true;
+                            }
+                            _ => {}
+                        };
+                    }
+                    if !done {
+			let op_fn_opt = SIMPLE_OPS[OpCode::Add as usize];
+                        self.stack.push(chunk.get_constant(i2 as i32));
+			let op_fn = op_fn_opt.unwrap();
+			let res = op_fn(self, chunk, i);
+			if res == 0 {
+			    return 0;
+			} else {
+			    i = i + 1;
+			    continue;
+			}
+                    }
                 }
                 OpCode::EqConstant => {
                     i = i + 1;
@@ -601,7 +616,7 @@ impl VM {
                                 *n1 = 0;
                             }
                         }
-                        (_) => {}
+                        _ => {}
                     };
                 }
                 OpCode::StartList => {

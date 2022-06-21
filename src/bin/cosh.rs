@@ -40,7 +40,7 @@ use tempfile::tempfile;
 
 use cosh::compiler::Compiler;
 use cosh::vm::VM;
-use cosh::chunk::StringPair;
+//use cosh::chunk::StringPair;
 
 // Most of the code through to 'impl Completer for ShellCompleter' is
 // taken from kkawakam/rustyline#574 as at 3a41ee9, with some small
@@ -492,7 +492,7 @@ fn main() {
             if functions.len() > 0 {
                 call_stack_chunks.push(&functions[0]);
             }
-            let mut chunk_values = HashMap::new();
+            let chunk_values = HashMap::new();
             let mut prev_local_vars_stacks = vec![];
             let mut global_functions = RefCell::new(HashMap::new());
             let running = Arc::new(AtomicBool::new(true));

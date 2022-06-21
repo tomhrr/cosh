@@ -317,6 +317,14 @@ impl Chunk {
         return value;
     }
 
+    pub fn has_constant_int(&self, i: i32) -> bool {
+        let value_sd = &self.constants[i as usize];
+        return match *value_sd {
+            ValueSD::Int(_) => true,
+            _ => false
+        };
+    }
+
     /// Add an opcode to the current chunk's data.
     pub fn add_opcode(&mut self, opcode: OpCode) {
         self.data.borrow_mut().push(opcode as u8);
@@ -502,6 +510,22 @@ impl Chunk {
             Some((0, 0)) => None,
             Some((_, _)) => Some(*(point.unwrap())),
             _            => None
+        }
+    }
+
+    pub fn set_previous_point(&mut self, i: usize, line_number: u32,
+                              column_number: u32) {
+        let mut points_b = self.points.borrow_mut();
+        let point = points_b.get_mut(i);
+        match point {
+            Some((ref mut a, ref mut b)) => {
+                *a = line_number;
+                *b = column_number;
+            }
+            _ => {
+                eprintln!("point not found!");
+                std::process::abort();
+            }
         }
     }
 

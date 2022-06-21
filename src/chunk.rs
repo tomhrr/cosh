@@ -357,6 +357,19 @@ impl Chunk {
         );
     }
 
+    pub fn get_fourth_last_opcode(&self) -> OpCode {
+        if self.data.borrow().len() < 4 {
+            return OpCode::Call;
+        }
+        return to_opcode(
+            *self
+                .data
+                .borrow()
+                .get(self.data.borrow().len() - 4)
+                .unwrap(),
+        );
+    }
+
     pub fn set_second_last_opcode(&mut self, opcode: OpCode) {
         let len = self.data.borrow().len();
         let mut bm = self.data.borrow_mut();
@@ -369,6 +382,14 @@ impl Chunk {
         let len = self.data.borrow().len();
         let mut bm = self.data.borrow_mut();
         if let Some(el) = bm.get_mut(len - 3) {
+            *el = opcode as u8;
+        }
+    }
+
+    pub fn set_fourth_last_opcode(&mut self, opcode: OpCode) {
+        let len = self.data.borrow().len();
+        let mut bm = self.data.borrow_mut();
+        if let Some(el) = bm.get_mut(len - 4) {
             *el = opcode as u8;
         }
     }
@@ -394,6 +415,54 @@ impl Chunk {
     /// Get the last byte from the current chunk's data.
     pub fn get_last_byte(&self) -> u8 {
         return *self.data.borrow().last().unwrap();
+    }
+
+    pub fn get_second_last_byte(&self) -> u8 {
+        if self.data.borrow().len() < 2 {
+            return 0
+        }
+        return
+            *self
+                .data
+                .borrow()
+                .get(self.data.borrow().len() - 2)
+                .unwrap();
+    }
+
+    pub fn get_third_last_byte(&self) -> u8 {
+        if self.data.borrow().len() < 3 {
+            return 0
+        }
+        return
+            *self
+                .data
+                .borrow()
+                .get(self.data.borrow().len() - 3)
+                .unwrap();
+    }
+
+    pub fn set_last_byte(&mut self, byte: u8) {
+        let len = self.data.borrow().len();
+        let mut bm = self.data.borrow_mut();
+        if let Some(el) = bm.get_mut(len - 1) {
+            *el = byte;
+        }
+    }
+
+    pub fn set_second_last_byte(&mut self, byte: u8) {
+        let len = self.data.borrow().len();
+        let mut bm = self.data.borrow_mut();
+        if let Some(el) = bm.get_mut(len - 2) {
+            *el = byte;
+        }
+    }
+
+    pub fn set_third_last_byte(&mut self, byte: u8) {
+        let len = self.data.borrow().len();
+        let mut bm = self.data.borrow_mut();
+        if let Some(el) = bm.get_mut(len - 3) {
+            *el = byte;
+        }
     }
 
     /// Get the chunk's most recently-added constant.
@@ -547,6 +616,23 @@ impl Chunk {
                     let jump_i: usize = (i1 << 8) | i2;
                     println!("OP_JUMPNER {:?}", jump_i);
                 }
+                OpCode::JumpNeREqC => {
+                    i = i + 1;
+                    let i1: usize = data_b[i].try_into().unwrap();
+                    i = i + 1;
+                    let i2: usize = data_b[i].try_into().unwrap();
+                    let jump_i: usize = (i1 << 8) | i2;
+
+                    i = i + 1;
+                    let i_upper = data_b[i];
+                    i = i + 1;
+                    let i_lower = data_b[i];
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00)
+                        | ((i_lower & 0xFF) as u16);
+                    let value = self.get_constant(constant_i as i32);
+
+                    println!("OP_JUMPNEREQC {:?} {:?}", jump_i, value);
+                }
                 OpCode::Eq => {
                     println!("OP_EQ");
                 }
@@ -653,7 +739,7 @@ impl Value {
             Value::String(_) => {
                 eprintln!("to_string should not be called with Value::String");
                 std::process::exit(1);
-            }   
+            }
             Value::Int(n) => {
                 let s = format!("{}", n);
                 Some(s)

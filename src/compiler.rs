@@ -1148,16 +1148,39 @@ impl Compiler {
                             }
                         }
                     } else if s == "until" {
-                        chunk.add_opcode(OpCode::JumpNeR);
                         match begin_index {
                             Some(n) => {
-                                let jmp_len = chunk.data.borrow().len() - n + 2;
-                                chunk.add_byte(
-                                    ((jmp_len >> 8) & 0xff).try_into().unwrap(),
-                                );
-                                chunk.add_byte(
-                                    (jmp_len & 0xff).try_into().unwrap(),
-                                );
+                                match (chunk.get_third_last_opcode(),
+                                       chunk.get_fourth_last_opcode()) {
+                                    (OpCode::EqConstant, OpCode::Dup) => {
+                                        chunk.set_fourth_last_opcode(
+                                            OpCode::JumpNeREqC
+                                        );
+                                        let cb1 = chunk.get_second_last_byte();
+                                        let cb2 = chunk.get_last_byte();
+
+                                        let jmp_len =
+                                            chunk.data.borrow().len() - n + 1;
+                                        chunk.set_third_last_byte(
+                                            ((jmp_len >> 8) & 0xff).try_into().unwrap()
+                                        );
+                                        chunk.set_second_last_byte(
+                                            (jmp_len & 0xff).try_into().unwrap(),
+                                        );
+                                        chunk.set_last_byte(cb1);
+                                        chunk.add_byte(cb2);
+                                    },
+                                    _ => {
+                                        chunk.add_opcode(OpCode::JumpNeR);
+                                        let jmp_len = chunk.data.borrow().len() - n + 2;
+                                        chunk.add_byte(
+                                            ((jmp_len >> 8) & 0xff).try_into().unwrap(),
+                                        );
+                                        chunk.add_byte(
+                                            (jmp_len & 0xff).try_into().unwrap(),
+                                        );
+                                    }
+                                }
                             }
                             _ => {
                                 eprintln!(

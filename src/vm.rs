@@ -323,25 +323,25 @@ impl VM {
                     }
 
                     let lib_rr = self.stack.pop().unwrap();
-		    let lib_str_s;
-		    let lib_str_b;
-		    let lib_str_str;
-		    let lib_str_bk : Option<String>;
-		    let lib_str_opt : Option<&str> =
-			match lib_rr {
-			    Value::String(sp) => {
-				lib_str_s = sp;
-				lib_str_b = lib_str_s.borrow();
-				Some(&lib_str_b.s)
-			    }
-			    _ => {
-				lib_str_bk = lib_rr.to_string();
-				match lib_str_bk {
-				    Some(s) => { lib_str_str = s; Some(&lib_str_str) }
-				    _ => None
-				}
-			    }
-			};
+                    let lib_str_s;
+                    let lib_str_b;
+                    let lib_str_str;
+                    let lib_str_bk : Option<String>;
+                    let lib_str_opt : Option<&str> =
+                        match lib_rr {
+                            Value::String(sp) => {
+                                lib_str_s = sp;
+                                lib_str_b = lib_str_s.borrow();
+                                Some(&lib_str_b.s)
+                            }
+                            _ => {
+                                lib_str_bk = lib_rr.to_string();
+                                match lib_str_bk {
+                                    Some(s) => { lib_str_str = s; Some(&lib_str_str) }
+                                    _ => None
+                                }
+                            }
+                        };
 
                     match lib_str_opt {
                         Some(s) => {
@@ -574,13 +574,13 @@ impl VM {
                     let n = chunk.get_constant_int(i2 as i32);
 
                     let len = self.stack.len();
-		    let v1_rr = self.stack.get_mut(len - 1).unwrap();
-		    match v1_rr {
-			Value::Int(ref mut n1) => {
-			    *n1 = *n1 + n;
-			}
-			(_) => {}
-		    };
+                    let v1_rr = self.stack.get_mut(len - 1).unwrap();
+                    match v1_rr {
+                        Value::Int(ref mut n1) => {
+                            *n1 = *n1 + n;
+                        }
+                        (_) => {}
+                    };
                 }
                 OpCode::EqConstant => {
                     i = i + 1;
@@ -592,17 +592,17 @@ impl VM {
                     let n = chunk.get_constant_int(i2 as i32);
 
                     let len = self.stack.len();
-		    let v1_rr = self.stack.get_mut(len - 1).unwrap();
-		    match v1_rr {
-			Value::Int(ref mut n1) => {
+                    let v1_rr = self.stack.get_mut(len - 1).unwrap();
+                    match v1_rr {
+                        Value::Int(ref mut n1) => {
                             if *n1 == n {
                                 *n1 = 1;
                             } else {
                                 *n1 = 0;
                             }
-			}
-			(_) => {}
-		    };
+                        }
+                        (_) => {}
+                    };
                 }
                 OpCode::StartList => {
                     match list_index_opt {
@@ -648,25 +648,25 @@ impl VM {
                                 while self.stack.len() > list_index {
                                     let value_rr = self.stack.pop().unwrap();
                                     let key_rr = self.stack.pop().unwrap();
-				    let key_str_s;
-				    let key_str_b;
-				    let key_str_str;
-				    let key_str_bk : Option<String>;
-				    let key_str_opt : Option<&str> =
-					match key_rr {
-					    Value::String(sp) => {
-						key_str_s = sp;
-						key_str_b = key_str_s.borrow();
-						Some(&key_str_b.s)
-					    }
-					    _ => {
-						key_str_bk = key_rr.to_string();
-						match key_str_bk {
-						    Some(s) => { key_str_str = s; Some(&key_str_str) }
-						    _ => None
-						}
-					    }
-					};
+                                    let key_str_s;
+                                    let key_str_b;
+                                    let key_str_str;
+                                    let key_str_bk : Option<String>;
+                                    let key_str_opt : Option<&str> =
+                                        match key_rr {
+                                            Value::String(sp) => {
+                                                key_str_s = sp;
+                                                key_str_b = key_str_s.borrow();
+                                                Some(&key_str_b.s)
+                                            }
+                                            _ => {
+                                                key_str_bk = key_rr.to_string();
+                                                match key_str_bk {
+                                                    Some(s) => { key_str_str = s; Some(&key_str_str) }
+                                                    _ => None
+                                                }
+                                            }
+                                        };
                                     map.insert(key_str_opt.unwrap().to_string(), value_rr);
                                 }
                                 if list_indexes.len() > 0 {
@@ -1115,6 +1115,40 @@ impl VM {
                         _ => {}
                     }
                 }
+                OpCode::JumpNeREqC => {
+                    if self.stack.len() < 1 {
+                        print_error(chunk, i, "jumpnereqc requires one argument");
+                        return 0;
+                    }
+
+                    i = i + 1;
+                    let i1: usize = data[i].try_into().unwrap();
+                    i = i + 1;
+                    let i2: usize = data[i].try_into().unwrap();
+                    let jmp_len: usize = (i1 << 8) | i2;
+
+                    i = i + 1;
+                    let i_upper = data[i];
+                    i = i + 1;
+                    let i_lower = data[i];
+                    let i3 = (((i_upper as u16) << 8) & 0xFF00)
+                        | ((i_lower & 0xFF) as u16);
+                    let cmp_rr = chunk.get_constant(i3 as i32);
+
+                    let value_rr = self.stack.last().unwrap();
+
+                    match (cmp_rr, &*value_rr) {
+                        (Value::Int(n1), Value::Int(n2)) => {
+                            if n1 != *n2 {
+                                i = i - jmp_len;
+                            };
+                        }
+                        _ => {
+                            eprintln!("unexpected jumpnereqc value!");
+                            std::process::abort();
+                        }
+                    }
+                }
                 OpCode::Shift => {
                     let i2 = self.opcode_shift(
                         scopes,
@@ -1168,26 +1202,26 @@ impl VM {
                     }
 
                     let error_rr = self.stack.pop().unwrap();
-		    
+
                     let error_str_s;
-		    let error_str_b;
-		    let error_str_str;
-		    let error_str_bk : Option<String>;
-		    let error_str_opt : Option<&str> =
-			match error_rr {
-			    Value::String(sp) => {
+                    let error_str_b;
+                    let error_str_str;
+                    let error_str_bk : Option<String>;
+                    let error_str_opt : Option<&str> =
+                        match error_rr {
+                            Value::String(sp) => {
                                 error_str_s = sp;
                                 error_str_b = error_str_s.borrow();
                                 Some(&error_str_b.s)
                             }
-			    _ => {
-				error_str_bk = error_rr.to_string();
-				match error_str_bk {
-				    Some(s) => { error_str_str = s; Some(&error_str_str) }
-				    _ => None
-				}
-			    }
-			};
+                            _ => {
+                                error_str_bk = error_rr.to_string();
+                                match error_str_bk {
+                                    Some(s) => { error_str_str = s; Some(&error_str_str) }
+                                    _ => None
+                                }
+                            }
+                        };
 
                     match error_str_opt {
                         Some(s) => {

@@ -1133,13 +1133,13 @@ impl VM {
                     let i_lower = data[i];
                     let i3 = (((i_upper as u16) << 8) & 0xFF00)
                         | ((i_lower & 0xFF) as u16);
-                    let cmp_rr = chunk.get_constant(i3 as i32);
+                    let cmp_rr = chunk.get_constant_int(i3 as i32);
 
                     let value_rr = self.stack.last().unwrap();
 
-                    match (cmp_rr, &*value_rr) {
-                        (Value::Int(n1), Value::Int(n2)) => {
-                            if n1 != *n2 {
+                    match &*value_rr {
+                        Value::Int(n2) => {
+                            if cmp_rr != *n2 {
                                 i = i - jmp_len;
                             };
                         }

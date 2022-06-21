@@ -1039,6 +1039,10 @@ impl Compiler {
                         self.increase_scope_depth();
                     } else if s == "end-scope" {
                         self.decrease_scope_depth(chunk);
+                    } else if s == "push" {
+                        chunk.add_opcode(OpCode::Push);
+                    } else if s == "pop" {
+                        chunk.add_opcode(OpCode::Pop);
                     } else if s == "if" {
                         chunk.add_opcode(OpCode::JumpNe);
                         match if_index {

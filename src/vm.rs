@@ -110,9 +110,9 @@ lazy_static! {
         map.insert("nth", VM::core_nth as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("nth!", VM::core_nth_em as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("append", VM::core_append as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("push", VM::core_push as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("push", VM::opcode_push as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("unshift", VM::core_unshift as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("pop", VM::core_pop as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("pop", VM::opcode_pop as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("len", VM::core_len as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("is-dir", VM::core_is_dir as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("split", VM::core_split as fn(&mut VM, &Chunk, usize) -> i32);
@@ -169,6 +169,8 @@ lazy_static! {
         vec[OpCode::Int as usize] = Some(VM::opcode_int as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Flt as usize] = Some(VM::opcode_flt as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Rand as usize] = Some(VM::opcode_rand as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::Push as usize] = Some(VM::opcode_push as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::Pop as usize] = Some(VM::opcode_pop as fn(&mut VM, &Chunk, usize) -> i32);
         vec
     };
 }

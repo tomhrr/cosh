@@ -50,6 +50,8 @@ pub enum OpCode {
     AddConstant = 47,
     EqConstant = 48,
     JumpNeREqC = 49,
+    Push = 50,
+    Pop = 51,
     Unknown = 255,
 }
 
@@ -105,6 +107,8 @@ pub fn to_opcode(value: u8) -> OpCode {
         47 => OpCode::AddConstant,
         48 => OpCode::EqConstant,
         49 => OpCode::JumpNeREqC,
+        50 => OpCode::Push,
+        51 => OpCode::Pop,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

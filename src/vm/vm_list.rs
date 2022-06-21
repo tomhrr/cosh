@@ -131,7 +131,7 @@ impl VM {
 
     /// Takes a list and a value as its arguments.  Pushes the value
     /// onto the list and places the updated list onto the stack.
-    pub fn core_push(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_push(&mut self, chunk: &Chunk, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk, i, "push requires two arguments");
             return 0;
@@ -186,7 +186,7 @@ impl VM {
 
     /// Takes a list as its single argument.  Pops a value from the
     /// end of the list and places that value onto the stack.
-    pub fn core_pop(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_pop(&mut self, chunk: &Chunk, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "pop requires one argument");
             return 0;

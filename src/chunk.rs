@@ -741,6 +741,12 @@ impl Chunk {
                 OpCode::Rand => {
                     println!("OP_RAND")
                 }
+                OpCode::Push => {
+                    println!("OP_PUSH")
+                }
+                OpCode::Pop => {
+                    println!("OP_POP")
+                }
                 OpCode::Unknown => {
                     println!("(Unknown)");
                 }

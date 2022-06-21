@@ -241,8 +241,6 @@ impl VM {
                             generator_object_.borrow_mut();
                         let index =
                             generator_object.index;
-                        eprintln!("generator index is currently {:?}",
-                        index);
 
                         {
                             let gen_args =
@@ -314,7 +312,6 @@ impl VM {
                                 }
                                 i => {
                                     new_i = i;
-                        eprintln!("generator index is now {:?}", i);
                                     new_stack_len = self.stack.len();
                                     repush = true;
                                 }

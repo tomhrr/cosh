@@ -5,10 +5,8 @@
     begin;
         fh @;
         readline;
-        dup; is-null; if;
-            drop;
+        is-null; if;
             leave;
         then;
-        drop;
         0 until; ::
 myfn;

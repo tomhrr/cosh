@@ -160,6 +160,7 @@ lazy_static! {
         vec[OpCode::Rot as usize] = Some(VM::opcode_rot as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Depth as usize] = Some(VM::opcode_depth as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::IsNull as usize] = Some(VM::opcode_isnull as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::DupIsNull as usize] = Some(VM::opcode_dupisnull as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::IsList as usize] = Some(VM::opcode_islist as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::IsCallable as usize] = Some(VM::opcode_iscallable as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::IsShiftable as usize] = Some(VM::opcode_isshiftable as fn(&mut VM, &Chunk, usize) -> i32);

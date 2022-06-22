@@ -128,6 +128,22 @@ impl VM {
         return 1;
     }
 
+    pub fn opcode_dupisnull(&mut self, chunk: &Chunk, i: usize) -> i32 {
+        if self.stack.len() < 1 {
+            print_error(chunk, i, "is-null requires one argument");
+            return 0;
+        }
+
+        let i1_rr = self.stack.last().unwrap();
+        let is_null = match i1_rr {
+            &Value::Null => 1,
+            _ => 0,
+        };
+
+        self.stack.push(Value::Int(is_null));
+        return 1;
+    }
+
     /// Adds a boolean onto the stack indicating whether the topmost
     /// element is a list.
     pub fn opcode_islist(&mut self, chunk: &Chunk, i: usize) -> i32 {

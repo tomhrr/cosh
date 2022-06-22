@@ -747,6 +747,9 @@ impl Chunk {
                 OpCode::Pop => {
                     println!("OP_POP")
                 }
+                OpCode::DupIsNull => {
+                    println!("OP_DUPISNULL")
+                }
                 OpCode::Unknown => {
                     println!("(Unknown)");
                 }

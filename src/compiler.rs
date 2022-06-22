@@ -1024,7 +1024,14 @@ impl Compiler {
                     } else if s == "over" {
                         chunk.add_opcode(OpCode::Over);
                     } else if s == "is-null" {
-                        chunk.add_opcode(OpCode::IsNull);
+                        match chunk.get_last_opcode() {
+                            OpCode::Dup => {
+                                chunk.set_last_opcode(OpCode::DupIsNull);
+                            }
+                            _ => {
+                                chunk.add_opcode(OpCode::IsNull);
+                            }
+                        }
                     } else if s == "is-list" {
                         chunk.add_opcode(OpCode::IsList);
                     } else if s == "is-callable" {

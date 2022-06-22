@@ -52,6 +52,7 @@ pub enum OpCode {
     JumpNeREqC = 49,
     Push = 50,
     Pop = 51,
+    DupIsNull = 52,
     Unknown = 255,
 }
 
@@ -109,6 +110,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         49 => OpCode::JumpNeREqC,
         50 => OpCode::Push,
         51 => OpCode::Pop,
+        52 => OpCode::DupIsNull,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

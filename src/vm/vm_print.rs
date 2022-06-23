@@ -177,6 +177,46 @@ impl VM {
                 // being different from standard stringification, but
                 // it may be that having separate representations is
                 // useful for some reason.
+                Value::CoreFunction(_) => {
+                    let s = format!("{{CoreFunction}}");
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                    );
+                    if lines_to_print == -1 {
+                        return lines_to_print;
+                    }
+                },
+                Value::ShiftFunction(_) => {
+                    let s = format!("{{ShiftFunction}}");
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                    );
+                    if lines_to_print == -1 {
+                        return lines_to_print;
+                    }
+
+                },
+                Value::NamedFunction(_) => {
+                    let s = format!("{{NamedFunction}}");
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                    );
+                    if lines_to_print == -1 {
+                        return lines_to_print;
+                    }
+                },
                 Value::Null => {
                     lines_to_print = psv_helper(
                         "{{Null}}",

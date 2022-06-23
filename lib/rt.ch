@@ -98,6 +98,7 @@
         "second for argument must be callable" error;
     then;
     fn var;
+    exc;
     fn !;
     dup; is-shiftable; not; if;
         "first for argument must be shiftable" error;
@@ -178,7 +179,7 @@
     dup; is-callable; not; if;
         "second grep argument must be callable" error;
     then;
-    fn var; fn !;
+    fn var; exc; fn !;
     dup; is-shiftable; not; if;
         "first grep argument must be shiftable" error;
     then;
@@ -202,7 +203,7 @@
     dup; is-callable; not; if;
         "second grep argument must be callable" error;
     then;
-    fn var; fn !;
+    fn var; exc; fn !;
     dup; is-shiftable; not; if;
         "first grep argument must be shiftable" error;
     then;
@@ -242,7 +243,7 @@
     dup; is-callable; not; if;
         "second map argument must be callable" error;
     then;
-    fn var; fn !;
+    fn var; exc; fn !;
     dup; is-shiftable; not; if;
         "first map argument must be shiftable" error;
     then;
@@ -262,7 +263,7 @@
     dup; is-callable; not; if;
         "second map argument must be callable" error;
     then;
-    fn var; fn !;
+    fn var; exc; fn !;
     dup; is-shiftable; not; if;
         "first map argument must be shiftable" error;
     then;
@@ -315,7 +316,7 @@
     dup; is-callable; not; if;
         "second foldl argument must be callable" error;
     then;
-    fn var; fn !;
+    fn var; exc; fn !;
     begin;
         lst @; dup; shift; nip;
         dup; is-null; if;
@@ -451,7 +452,7 @@
     dup; is-callable; not; if;
         "second any argument must be callable" error;
     then;
-    fn var; fn !;
+    fn var; exc; fn !;
     dup; is-shiftable; not; if;
         "first any argument must be shiftable" error;
     then;
@@ -475,7 +476,7 @@
     dup; is-callable; not; if;
         "second all argument must be callable" error;
     then;
-    fn var; fn !;
+    fn var; exc; fn !;
     dup; is-shiftable; not; if;
         "first all argument must be shiftable" error;
     then;
@@ -499,7 +500,7 @@
     dup; is-callable; not; if;
         "second none argument must be callable" error;
     then;
-    fn var; fn !;
+    fn var; exc; fn !;
     dup; is-shiftable; not; if;
         "first none argument must be shiftable" error;
     then;
@@ -525,7 +526,7 @@
     dup; is-callable; not; if;
         "second first argument must be callable" error;
     then;
-    fn var; fn !;
+    fn var; exc; fn !;
     dup; is-shiftable; not; if;
         "first first argument must be shiftable" error;
     then;

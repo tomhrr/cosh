@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::convert::TryInto;
+use std::fmt;
 use std::fs::File;
 use std::fs::ReadDir;
 use std::io::BufReader;
@@ -16,8 +17,11 @@ use num_bigint::BigInt;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::ChildStdout;
+use std::sync::atomic::{AtomicBool};
+use std::sync::Arc;
 
 use opcode::{to_opcode, OpCode};
+use vm::VM;
 
 /// A chunk is a parsed/processed piece of code.
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -143,7 +147,7 @@ impl HashWithIndex {
 }
 
 /// The core value type used by the compiler and VM.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Value {
     /// Used to indicate that a generator is exhausted.
     Null,
@@ -172,6 +176,9 @@ pub enum Value {
     /// value is a unique identifier for that stack (currently its
     /// pointer value).
     Function(Rc<RefCell<AnonymousFunction>>),
+    CoreFunction(fn(&mut VM, &Chunk, usize) -> i32),
+    ShiftFunction(fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32),
+    NamedFunction(Rc<RefCell<Chunk>>),
     /// A generator constructed by way of a generator function.
     Generator(Rc<RefCell<GeneratorObject>>),
     /// A generator for getting the output of a Command.
@@ -188,6 +195,12 @@ pub enum Value {
     FileWriter(Rc<RefCell<LineWriter<File>>>),
     /// A directory handle.
     DirectoryHandle(Rc<RefCell<ReadDir>>),
+}
+
+impl fmt::Debug for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "((Value))")
+    }
 }
 
 /// An enum for the Value types that can be serialised and

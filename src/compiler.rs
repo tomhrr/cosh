@@ -1232,13 +1232,21 @@ impl Compiler {
                         let s_escaped = escape_string(&s);
                         let s_rr = Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
                         let i = chunk.add_constant(s_rr);
-                        chunk.add_opcode(OpCode::Constant);
-                        let i_upper = (i >> 8) & 0xFF;
-                        let i_lower = i & 0xFF;
-                        chunk.add_byte(i_upper as u8);
-                        chunk.add_byte(i_lower as u8);
-                        let opcode = if is_implicit { OpCode::CallImplicit } else { OpCode::Call };
-                        chunk.add_opcode(opcode);
+
+                        if is_implicit {
+                            chunk.add_opcode(OpCode::Constant);
+                            let i_upper = (i >> 8) & 0xFF;
+                            let i_lower = i & 0xFF;
+                            chunk.add_byte(i_upper as u8);
+                            chunk.add_byte(i_lower as u8);
+                            chunk.add_opcode(OpCode::CallImplicit);
+                        } else {
+                            chunk.add_opcode(OpCode::CallConstant);
+                            let i_upper = (i >> 8) & 0xFF;
+                            let i_lower = i & 0xFF;
+                            chunk.add_byte(i_upper as u8);
+                            chunk.add_byte(i_lower as u8);
+                        }
                     }
                 }
                 TokenType::Command(s) => {

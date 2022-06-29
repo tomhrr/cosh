@@ -763,6 +763,16 @@ impl Chunk {
                 OpCode::DupIsNull => {
                     println!("OP_DUPISNULL")
                 }
+                OpCode::CallConstant => {
+                    i = i + 1;
+                    let i_upper = data_b[i];
+                    i = i + 1;
+                    let i_lower = data_b[i];
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00)
+                        | ((i_lower & 0xFF) as u16);
+                    let value = self.get_constant(constant_i as i32);
+                    println!("OP_CALLCONSTANT {:?}", value);
+                }
                 OpCode::Unknown => {
                     println!("(Unknown)");
                 }

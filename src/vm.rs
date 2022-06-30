@@ -1767,6 +1767,14 @@ impl VM {
                     let jmp_len: usize = (i1 << 8) | i2;
                     i = i + jmp_len;
                 }
+                OpCode::JumpR => {
+                    i = i + 1;
+                    let i1: usize = data[i].try_into().unwrap();
+                    i = i + 1;
+                    let i2: usize = data[i].try_into().unwrap();
+                    let jmp_len: usize = (i1 << 8) | i2;
+                    i = i - jmp_len;
+                }
                 OpCode::Error => {
                     if self.stack.len() < 1 {
                         print_error(chunk, i, "error requires one argument");

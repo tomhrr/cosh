@@ -637,6 +637,14 @@ impl Chunk {
                     let jump_i: usize = (i1 << 8) | i2;
                     println!("OP_JUMP {:?}", jump_i);
                 }
+                OpCode::JumpR => {
+                    i = i + 1;
+                    let i1: usize = data_b[i].try_into().unwrap();
+                    i = i + 1;
+                    let i2: usize = data_b[i].try_into().unwrap();
+                    let jump_i: usize = (i1 << 8) | i2;
+                    println!("OP_JUMPR {:?}", jump_i);
+                }
                 OpCode::JumpNe => {
                     i = i + 1;
                     let i1: usize = data_b[i].try_into().unwrap();

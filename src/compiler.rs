@@ -1187,14 +1187,40 @@ impl Compiler {
                                         chunk.add_byte(cb2);
                                     },
                                     _ => {
-                                        chunk.add_opcode(OpCode::JumpNeR);
-                                        let jmp_len = chunk.data.borrow().len() - n + 2;
-                                        chunk.add_byte(
-                                            ((jmp_len >> 8) & 0xff).try_into().unwrap(),
-                                        );
-                                        chunk.add_byte(
-                                            (jmp_len & 0xff).try_into().unwrap(),
-                                        );
+                                        let mut done = false;
+                                        match chunk.get_third_last_opcode() {
+                                            OpCode::Constant => {
+                                                let i_upper = chunk.get_second_last_byte();
+                                                let i_lower = chunk.get_last_byte();
+                                                let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                                                let v = chunk.get_constant(constant_i.into());
+                                                match v {
+                                                    Value::Int(0) => {
+                                                        chunk.set_third_last_opcode(OpCode::JumpR);
+                                                        let jmp_len = chunk.data.borrow().len() - n;
+                                                        chunk.set_second_last_byte(
+                                                            ((jmp_len >> 8) & 0xff).try_into().unwrap(),
+                                                        );
+                                                        chunk.set_last_byte(
+                                                            (jmp_len & 0xff).try_into().unwrap(),
+                                                        );
+                                                        done = true;
+                                                    }
+                                                    _ => {}
+                                                }
+                                            }
+                                            _ => {}
+                                        };
+                                        if !done {
+                                            chunk.add_opcode(OpCode::JumpNeR);
+                                            let jmp_len = chunk.data.borrow().len() - n + 2;
+                                            chunk.add_byte(
+                                                ((jmp_len >> 8) & 0xff).try_into().unwrap(),
+                                            );
+                                            chunk.add_byte(
+                                                (jmp_len & 0xff).try_into().unwrap(),
+                                            );
+                                        }
                                     }
                                 }
                             }

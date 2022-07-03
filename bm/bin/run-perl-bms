@@ -6,11 +6,11 @@ use strict;
 use JSON::XS qw(encode_json);
 my $count = 10;
 
-my ($cosh_commit) = `git log --pretty=format:"%H" | head -n 1`;
-chomp $cosh_commit;
-my ($cosh_hash) = `find src -type f -exec md5sum {} \\; | sort -k 2 | md5sum`;
-chomp $cosh_hash;
-$cosh_hash =~ s/ .*//;
+my ($perl_ver) =
+    grep { /v5\./ }
+        `perl -v`;
+chomp $perl_ver;
+$perl_ver =~ s/^.*\(v(5\..*?)\).*$/$1/;
 
 sub run_cmd
 {
@@ -33,26 +33,25 @@ my @programs =
     map { chomp; $_ }
         `ls bm/programs/*.pl`;
 
-my @cosh_extras = qw(./target/release/cosh ch);
+my @perl_extras = qw(perl pl);
 my $time = time();
 my %bm_details = (
     other => { time => $time },
-    cosh  => { commit  => $cosh_commit,
-               hash    => $cosh_hash }
+    perl  => { version => $perl_ver },
 );
 for my $program (@programs) {
-    my %cosh_details = (
-        avg_time => run_cmd("avg-time $count", $program, @cosh_extras),
-        avg_inst => run_cmd("avg-perf instructions $count", $program, @cosh_extras),
+    my %perl_details = (
+        avg_time => run_cmd("avg-time $count", $program, @perl_extras),
+        avg_inst => run_cmd("avg-perf instructions $count", $program, @perl_extras),
         avg_mem  => run_cmd("avg-perf syscalls:sys_enter_mmap,syscalls:sys_enter_brk 1",
-                            $program, @cosh_extras),
-        max_rss  => run_cmd("max-rss", $program, @cosh_extras),
+                            $program, @perl_extras),
+        max_rss  => run_cmd("max-rss", $program, @perl_extras),
     );
 
     my $pname = $program;
     $pname =~ s/.*\///;
     $bm_details{'programs'}->{$pname} = {
-        cosh => \%cosh_details,
+        perl => \%perl_details,
     };
 }
 

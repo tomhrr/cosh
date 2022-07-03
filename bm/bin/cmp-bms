@@ -12,11 +12,17 @@ my ($f, $s) =
         ($first, $second);
 
 for my $program (sort keys %{$f->{'programs'}}) {
-    my $fp = $f->{'programs'}->{$program}->{'cosh'};
-    my $sp = $s->{'programs'}->{$program}->{'cosh'};
+    my $fp = $f->{'programs'}->{$program}->{'cosh'}
+          || $f->{'programs'}->{$program}->{'perl'};
+    my $sp = $s->{'programs'}->{$program}->{'cosh'}
+          || $s->{'programs'}->{$program}->{'perl'};
     for my $attr (sort keys %{$fp}) {
         my $fa = $fp->{$attr};
         my $sa = $sp->{$attr};
+        if ($fa == 0) {
+            warn "Cannot compare $program $attr: value is zero";
+            next;
+        }
         my $v = (1 - ($sa / $fa)) * 100;
         $v = sprintf "%.2f", $v;
         print "$program: $attr: $v% improved\n";

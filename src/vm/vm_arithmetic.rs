@@ -265,19 +265,33 @@ impl VM {
     /// Takes two values as its arguments, subtracts them, and places
     /// the result onto the stack.
     pub fn opcode_subtract(&mut self, chunk: &Chunk, i: usize) -> i32 {
-        if self.stack.len() < 2 {
+        let len = self.stack.len();
+        if len < 2 {
             print_error(chunk, i, "- requires two arguments");
             return 0;
         }
 
         let v1_rr = self.stack.pop().unwrap();
-        let v2_rr = self.stack.pop().unwrap();
+        let mut done = false;
+        match (&v1_rr,
+               self.stack.get_mut(len - 2).unwrap()) {
+            (Value::Int(n1), Value::Int(ref mut n2)) => {
+                *n2 = *n2 - n1;
+                done = true;
+            }
+            (_, _) => {}
+        };
 
-        let res = self.opcode_subtract_inner(chunk, i, &v1_rr, &v2_rr);
-        if res == 0 {
-            print_error(chunk, i, "- requires two numbers");
-            return 0;
+        if !done {
+            let v2_rr = self.stack.pop().unwrap();
+
+            let res = self.opcode_subtract_inner(chunk, i, &v1_rr, &v2_rr);
+            if res == 0 {
+                print_error(chunk, i, "- requires two numbers");
+                return 0;
+            }
         }
+
         return 1;
     }
 
@@ -361,19 +375,33 @@ impl VM {
     /// Takes two values as its arguments, multiplies them together,
     /// and places the result onto the stack.
     pub fn opcode_multiply(&mut self, chunk: &Chunk, i: usize) -> i32 {
-        if self.stack.len() < 2 {
+        let len = self.stack.len();
+        if len < 2 {
             print_error(chunk, i, "* requires two arguments");
             return 0;
         }
 
         let v1_rr = self.stack.pop().unwrap();
-        let v2_rr = self.stack.pop().unwrap();
+        let mut done = false;
+        match (&v1_rr,
+               self.stack.get_mut(len - 2).unwrap()) {
+            (Value::Int(n1), Value::Int(ref mut n2)) => {
+                *n2 = *n2 * n1;
+                done = true;
+            }
+            (_, _) => {}
+        };
 
-        let res = self.opcode_multiply_inner(chunk, i, &v1_rr, &v2_rr);
-        if res == 0 {
-            print_error(chunk, i, "* requires two numbers");
-            return 0;
+        if !done {
+            let v2_rr = self.stack.pop().unwrap();
+
+            let res = self.opcode_multiply_inner(chunk, i, &v1_rr, &v2_rr);
+            if res == 0 {
+                print_error(chunk, i, "* requires two numbers");
+                return 0;
+            }
         }
+
         return 1;
     }
 
@@ -456,19 +484,33 @@ impl VM {
     /// Takes two values as its arguments, subtracts them, and places
     /// the result onto the stack.
     pub fn opcode_divide(&mut self, chunk: &Chunk, i: usize) -> i32 {
-        if self.stack.len() < 2 {
+        let len = self.stack.len();
+        if len < 2 {
             print_error(chunk, i, "/ requires two arguments");
             return 0;
         }
 
         let v1_rr = self.stack.pop().unwrap();
-        let v2_rr = self.stack.pop().unwrap();
+        let mut done = false;
+        match (&v1_rr,
+               self.stack.get_mut(len - 2).unwrap()) {
+            (Value::Int(n1), Value::Int(ref mut n2)) => {
+                *n2 = *n2 / n1;
+                done = true;
+            }
+            (_, _) => {}
+        };
 
-        let res = self.opcode_divide_inner(chunk, i, &v1_rr, &v2_rr);
-        if res == 0 {
-            print_error(chunk, i, "/ requires two numbers");
-            return 0;
+        if !done {
+            let v2_rr = self.stack.pop().unwrap();
+
+            let res = self.opcode_divide_inner(chunk, i, &v1_rr, &v2_rr);
+            if res == 0 {
+                print_error(chunk, i, "/ requires two numbers");
+                return 0;
+            }
         }
+
         return 1;
     }
 

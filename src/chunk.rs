@@ -23,6 +23,21 @@ use std::sync::Arc;
 use opcode::{to_opcode, OpCode};
 use vm::VM;
 
+#[derive(Debug, Clone)]
+pub struct CFPair {
+    pub ffn: Value,
+    pub cfs: Rc<RefCell<Vec<CFPair>>>
+}
+
+impl CFPair {
+    pub fn new(ffn: Value) -> CFPair {
+        CFPair {
+            ffn: ffn,
+            cfs: Rc::new(RefCell::new(Vec::new()))
+        }
+    }
+}
+
 /// A chunk is a parsed/processed piece of code.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Chunk {
@@ -108,6 +123,7 @@ pub struct GeneratorObject {
     /// A hash of cached values for the chunk of the associated
     /// generator function.
     pub chunk_values: Rc<RefCell<HashMap<String, Value>>>,
+    pub chunk_functions: Rc<RefCell<Vec<CFPair>>>,
 }
 
 impl GeneratorObject {
@@ -126,7 +142,8 @@ impl GeneratorObject {
             chunk: chunk,
             call_stack_chunks: call_stack_chunks,
             gen_args: gen_args,
-            chunk_values: chunk_values
+            chunk_values: chunk_values,
+            chunk_functions: Rc::new(RefCell::new(Vec::new()))
         }
     }
 }

@@ -14,7 +14,7 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use sysinfo::{System, SystemExt};
 
-use chunk::{print_error, Chunk, Value, StringPair, GeneratorObject, AnonymousFunction, ValueSD};
+use chunk::{print_error, Chunk, Value, StringPair, GeneratorObject, AnonymousFunction, ValueSD, CFPair};
 use compiler::Compiler;
 use opcode::{to_opcode, OpCode};
 
@@ -193,7 +193,7 @@ impl VM {
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
         chunk_values: Rc<RefCell<HashMap<String, Value>>>,
-        chunk_functions: Rc<RefCell<Vec<Value>>>,
+        chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
@@ -272,11 +272,7 @@ impl VM {
                 &new_call_stack_chunks,
                 &call_chunk,
                 chunk_values.clone(),
-                /* Need new chunk_functions
-                    * here, but it could be
-                    * cached in chunk_functions
-                    * itself. */
-                Rc::new(RefCell::new(Vec::new())),
+                chunk_functions,
                 0,
                 gen_global_vars.clone(),
                 gen_local_vars_stack.clone(),
@@ -307,7 +303,7 @@ impl VM {
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
         chunk_values: Rc<RefCell<HashMap<String, Value>>>,
-        chunk_functions: Rc<RefCell<Vec<Value>>>,
+        chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
@@ -537,11 +533,7 @@ impl VM {
                         call_stack_chunks,
                         chunk,
                         chunk_values.clone(),
-                        /* Need new chunk_functions
-                            * here, but it could be
-                            * cached in chunk_functions
-                            * itself. */
-                        Rc::new(RefCell::new(Vec::new())),
+                        chunk_functions,
                         0,
                         gen_global_vars.clone(),
                         gen_local_vars_stack.clone(),
@@ -575,7 +567,7 @@ impl VM {
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
         chunk_values: Rc<RefCell<HashMap<String, Value>>>,
-        chunk_functions: Rc<RefCell<Vec<Value>>>,
+        chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         call_opcode: OpCode,
         mut function_rr: Option<Value>,
@@ -586,6 +578,9 @@ impl VM {
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32), running: Arc<AtomicBool>,
     ) -> bool {
+        if self.debug {
+            eprintln!("Chunk functions: {:?}", chunk_functions);
+        }
         // Determine whether the function has been called implicitly.
         let is_implicit;
         match call_opcode {
@@ -669,7 +664,7 @@ impl VM {
                         let cfb = chunk_functions.borrow();
                         let cv = cfb.get(function_str_index as usize);
                         match cv {
-                            Some(Value::Null) | None => {
+                            Some(CFPair { ffn: Value::Null, cfs: _ }) | None => {
                                 not_present = true;
                             }
                             _ => {
@@ -682,8 +677,9 @@ impl VM {
                         if !sf_fn_opt.is_none() {
                             let sf_fn = sf_fn_opt.unwrap();
                             let nv = Value::CoreFunction(*sf_fn);
-                            chunk_functions.borrow_mut().resize((function_str_index as usize) + 1, Value::Null);
-                            chunk_functions.borrow_mut().insert(function_str_index as usize, nv);
+                            chunk_functions.borrow_mut().resize(function_str_index as usize, CFPair::new(Value::Null));
+                            let cfpair = CFPair::new(nv);
+                            chunk_functions.borrow_mut().insert(function_str_index as usize, cfpair);
                             if self.debug {
                                 eprintln!("function str {:?} found, inserted as core function", s);
                             }
@@ -692,8 +688,9 @@ impl VM {
                             if !shift_fn_opt.is_none() {
                                 let shift_fn = shift_fn_opt.unwrap();
                                 let nv = Value::ShiftFunction(*shift_fn);
-                                chunk_functions.borrow_mut().resize((function_str_index as usize) + 1, Value::Null);
-                                chunk_functions.borrow_mut().insert(function_str_index as usize, nv);
+                                chunk_functions.borrow_mut().resize(function_str_index as usize, CFPair::new(Value::Null));
+                                let cfpair = CFPair::new(nv);
+                                chunk_functions.borrow_mut().insert(function_str_index as usize, cfpair);
                                 if self.debug {
                                     eprintln!("function str {:?} found, inserted as shift function", s);
                                 }
@@ -726,8 +723,9 @@ impl VM {
                                             Rc::new(RefCell::new(call_chunk.clone()));
                                         let nv =
                                         Value::NamedFunction(call_chunk_rc.clone());
-                                        chunk_functions.borrow_mut().resize((function_str_index as usize) + 1, Value::Null);
-                                        chunk_functions.borrow_mut().insert(function_str_index as usize, nv);
+                                        chunk_functions.borrow_mut().resize(function_str_index as usize, CFPair::new(Value::Null));
+                                        let cfpair = CFPair::new(nv);
+                                        chunk_functions.borrow_mut().insert(function_str_index as usize, cfpair);
                                         if self.debug {
                                             eprintln!("function str {:?} found, inserted as named function", s);
                                         }
@@ -742,7 +740,7 @@ impl VM {
                         let cfb = chunk_functions.borrow();
                         let cv = cfb.get(function_str_index as usize);
                         match cv {
-                            Some(Value::CoreFunction(cf)) => {
+                            Some(CFPair { ffn: Value::CoreFunction(cf), cfs: _ }) => {
                                 if self.debug {
                                     eprintln!("function str {:?} matches core function",
                                             s);
@@ -753,7 +751,7 @@ impl VM {
                                 }
                                 return true;
                             }
-                            Some(Value::ShiftFunction(sf)) => {
+                            Some(CFPair { ffn: Value::ShiftFunction(sf), cfs: _ }) => {
                                 if self.debug {
                                     eprintln!("function str {:?} matches shift function",
                                             s);
@@ -764,7 +762,7 @@ impl VM {
                                 }
                                 return true;
                             }
-                            Some(Value::NamedFunction(call_chunk_rc)) => {
+                            Some(CFPair { ffn: Value::NamedFunction(call_chunk_rc), cfs }) => {
                                 if self.debug {
                                     eprintln!("function str {:?} matches named function",
                                             s);
@@ -775,11 +773,7 @@ impl VM {
                                     call_stack_chunks,
                                     chunk,
                                     chunk_values.clone(),
-                                    /* Need new chunk_functions
-                                        * here, but it could be
-                                        * cached in chunk_functions
-                                        * itself. */
-                                    Rc::new(RefCell::new(Vec::new())),
+                                    cfs.clone(),
                                     0,
                                     gen_global_vars.clone(),
                                     gen_local_vars_stack.clone(),
@@ -791,7 +785,7 @@ impl VM {
                                     call_chunk_rc.clone()
                                 );
                             }
-                            Some(Value::Null) => {
+                            Some(CFPair { ffn: Value::Null, cfs: _ }) => {
                                 if self.debug {
                                     eprintln!("function str {:?} not cached", s);
                                 }
@@ -811,17 +805,15 @@ impl VM {
                         };
                     }
                 }
-
+                if self.debug {
+                    eprintln!("instantiating new chunk functions for string {:?}", s);
+                }
                 return self.call_string(
                     scopes,
                     global_functions,
                     call_stack_chunks,
                     chunk,
                     chunk_values.clone(),
-                    /* Need new chunk_functions
-                        * here, but it could be
-                        * cached in chunk_functions
-                        * itself. */
                     Rc::new(RefCell::new(Vec::new())),
                     0,
                     gen_global_vars.clone(),
@@ -868,16 +860,15 @@ impl VM {
                 return true;
             }
             Value::NamedFunction(call_chunk_rc) => {
+                if self.debug {
+                    eprintln!("instantiating new chunk functions for NamedFunction");
+                }
                 return self.call_named_function(
                     scopes,
                     global_functions,
                     call_stack_chunks,
                     chunk,
                     chunk_values.clone(),
-                    /* Need new chunk_functions
-                        * here, but it could be
-                        * cached in chunk_functions
-                        * itself. */
                     Rc::new(RefCell::new(Vec::new())),
                     0,
                     gen_global_vars.clone(),
@@ -892,16 +883,15 @@ impl VM {
             }
             Value::String(sp) => {
                 let s = &sp.borrow().s;
+                if self.debug {
+                    eprintln!("instantiating new chunk functions for string: {}", s);
+                }
                 return self.call_string(
                     scopes,
                     global_functions,
                     call_stack_chunks,
                     chunk,
                     chunk_values.clone(),
-                    /* Need new chunk_functions
-                        * here, but it could be
-                        * cached in chunk_functions
-                        * itself. */
                     Rc::new(RefCell::new(Vec::new())),
                     0,
                     gen_global_vars.clone(),
@@ -942,7 +932,7 @@ impl VM {
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
         chunk_values: Rc<RefCell<HashMap<String, Value>>>,
-        chunk_functions: Rc<RefCell<Vec<Value>>>,
+        chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         index: usize,
         mut gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         mut gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,

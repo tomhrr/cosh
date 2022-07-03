@@ -6,7 +6,7 @@ use std::rc::Rc;
 use indexmap::IndexMap;
 use num_bigint::ToBigInt;
 
-use chunk::{print_error, Chunk, Value, StringPair};
+use chunk::{print_error, Chunk, StringPair, Value};
 use vm::*;
 
 /// Converts a serde_json object into a value.
@@ -20,23 +20,15 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
                 let n_uw = n.as_i64().unwrap();
                 let n2_res = i32::try_from(n_uw);
                 match n2_res {
-                    Ok(n2) => {
-                        Value::Int(n2)
-                    }
-                    _ => {
-                        Value::BigInt(n_uw.to_bigint().unwrap())
-                    }
+                    Ok(n2) => Value::Int(n2),
+                    _ => Value::BigInt(n_uw.to_bigint().unwrap()),
                 }
             } else if n.is_u64() {
                 let n_uw = n.as_u64().unwrap();
                 let n2_res = i32::try_from(n_uw);
                 match n2_res {
-                    Ok(n2) => {
-                        Value::Int(n2)
-                    }
-                    _ => {
-                        Value::BigInt(n_uw.to_bigint().unwrap())
-                    }
+                    Ok(n2) => Value::Int(n2),
+                    _ => Value::BigInt(n_uw.to_bigint().unwrap()),
                 }
             } else {
                 Value::Float(n.as_f64().unwrap())
@@ -46,22 +38,16 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
             eprintln!("string {}", s);
             Value::String(Rc::new(RefCell::new(StringPair::new(s.to_string(), None))))
         }
-        serde_json::value::Value::Array(lst) => Value::List(
-            Rc::new(RefCell::new(
-                lst.iter()
-                    .map(|v| convert_from_json(v))
-                    .collect::<VecDeque<_>>(),
-            ))
-        ),
-        serde_json::value::Value::Object(map) => Value::Hash(
-            Rc::new(RefCell::new(
-                map.iter()
-                    .map(|(k, v)| {
-                        (k.to_string(), convert_from_json(v))
-                    })
-                    .collect::<IndexMap<_, _>>(),
-            ))
-        ),
+        serde_json::value::Value::Array(lst) => Value::List(Rc::new(RefCell::new(
+            lst.iter()
+                .map(|v| convert_from_json(v))
+                .collect::<VecDeque<_>>(),
+        ))),
+        serde_json::value::Value::Object(map) => Value::Hash(Rc::new(RefCell::new(
+            map.iter()
+                .map(|(k, v)| (k.to_string(), convert_from_json(v)))
+                .collect::<IndexMap<_, _>>(),
+        ))),
     }
 }
 
@@ -87,9 +73,7 @@ fn convert_to_json(v: &Value) -> String {
             let s = vm
                 .borrow()
                 .iter()
-                .map(|(k, v_rr)| {
-                    format!("\"{}\":{}", k, convert_to_json(&v_rr))
-                })
+                .map(|(k, v_rr)| format!("\"{}\":{}", k, convert_to_json(&v_rr)))
                 .collect::<Vec<_>>()
                 .join(",");
             format!("{{{}}}", s)
@@ -108,25 +92,27 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-	let value_s;
+        let value_s;
         let value_b;
         let value_str;
-        let value_bk : Option<String>;
-        let value_opt : Option<&str> =
-            match value_rr {
-                Value::String(sp) => {
-                    value_s = sp;
-                    value_b = value_s.borrow();
-                    Some(&value_b.s)
-                }
-                _ => {
-                    value_bk = value_rr.to_string();
-                    match value_bk {
-                        Some(s) => { value_str = s; Some(&value_str) }
-                        _ => None
+        let value_bk: Option<String>;
+        let value_opt: Option<&str> = match value_rr {
+            Value::String(sp) => {
+                value_s = sp;
+                value_b = value_s.borrow();
+                Some(&value_b.s)
+            }
+            _ => {
+                value_bk = value_rr.to_string();
+                match value_bk {
+                    Some(s) => {
+                        value_str = s;
+                        Some(&value_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match value_opt {
             Some(s) => {
@@ -134,8 +120,7 @@ impl VM {
                 let doc;
                 match doc_res {
                     Err(e) => {
-                        let err_str =
-                            format!("unable to parse JSON: {}", e.to_string());
+                        let err_str = format!("unable to parse JSON: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }
@@ -163,14 +148,11 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        self.stack.push(Value::String(
-            Rc::new(RefCell::new(
-                StringPair::new(
-                    convert_to_json(&value_rr),
-                    None,
-                )
-            ))
-        ));
+        self.stack
+            .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+                convert_to_json(&value_rr),
+                None,
+            )))));
 
         return 1;
     }

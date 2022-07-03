@@ -1,10 +1,10 @@
-extern crate cosh;
 extern crate assert_cmd;
+extern crate cosh;
 extern crate tempfile;
 
-use std::io::{Write};
-use std::fs;
 use assert_cmd::Command;
+use std::fs;
+use std::io::Write;
 use tempfile::NamedTempFile;
 
 #[test]
@@ -76,11 +76,16 @@ fn vars_basic() {
 
 #[test]
 fn vars_scoped() {
-    basic_test(concat!("x var; 10 x !; ",
-                               ": asdf x var; 15 x !; ",
-                                 ": qwer x @; x var; 20 x !; x @; :: ",
-                                 "qwer; x @; :: ",
-                             "asdf; x @;"), "15\n20\n15\n10");
+    basic_test(
+        concat!(
+            "x var; 10 x !; ",
+            ": asdf x var; 15 x !; ",
+            ": qwer x @; x var; 20 x !; x @; :: ",
+            "qwer; x @; :: ",
+            "asdf; x @;"
+        ),
+        "15\n20\n15\n10",
+    );
 }
 
 #[test]
@@ -95,7 +100,10 @@ fn if_then_multi() {
 
 #[test]
 fn if_then_else_multi() {
-    basic_test("1 if; 1 2 3 else; 4 5 6 then; 0 if; 1 2 3 else; 4 5 6 then;", "1\n2\n3\n4\n5\n6");
+    basic_test(
+        "1 if; 1 2 3 else; 4 5 6 then; 0 if; 1 2 3 else; 4 5 6 then;",
+        "1\n2\n3\n4\n5\n6",
+    );
 }
 
 #[test]
@@ -106,13 +114,20 @@ fn if_then_else_nested() {
 
 #[test]
 fn begin_until() {
-    basic_test("x var; 5 x !; begin; x @; println; x @; 1 -; x !; x @; 0 =; until", "5\n4\n3\n2\n1");
-    basic_test("x var; 5 x !; begin; x @; println; leave; x @; 1 -; x !; x @; 0 =; until", "5");
+    basic_test(
+        "x var; 5 x !; begin; x @; println; x @; 1 -; x !; x @; 0 =; until",
+        "5\n4\n3\n2\n1",
+    );
+    basic_test(
+        "x var; 5 x !; begin; x @; println; leave; x @; 1 -; x !; x @; 0 =; until",
+        "5",
+    );
 }
 
 #[test]
 fn begin_until_nested() {
-    basic_test("
+    basic_test(
+        "
 x var; 3 x !;
 begin;
     y var; 2 y !;
@@ -124,12 +139,17 @@ begin;
     x @; println;
     x @; 1 -; x !;
     x @; 0 =;
-    until;", "2\n1\n3\n2\n1\n2\n2\n1\n1");
+    until;",
+        "2\n1\n3\n2\n1\n2\n2\n1\n1",
+    );
 }
 
 #[test]
 fn top_level_functions() {
-    basic_test(": asdf 1 2 3 :: : qwer asdf; 1 2 3 :: qwer;", "1\n2\n3\n1\n2\n3");
+    basic_test(
+        ": asdf 1 2 3 :: : qwer asdf; 1 2 3 :: qwer;",
+        "1\n2\n3\n1\n2\n3",
+    );
 }
 
 #[test]
@@ -204,17 +224,26 @@ fn var_must_be_string_2_error() {
 
 #[test]
 fn var_must_be_string_in_fn_error() {
-    basic_error_test(": m 100 asdf dup; var; !; ::", "1:19: variable name must precede var");
+    basic_error_test(
+        ": m 100 asdf dup; var; !; ::",
+        "1:19: variable name must precede var",
+    );
 }
 
 #[test]
 fn set_must_be_string_in_fn_error() {
-    basic_error_test(": m asdf var; asdf dup; !; ::", "1:25: variable name must precede !");
+    basic_error_test(
+        ": m asdf var; asdf dup; !; ::",
+        "1:25: variable name must precede !",
+    );
 }
 
 #[test]
 fn get_must_be_string_in_fn_error() {
-    basic_error_test(": m asdf var; 100 asdf !; asdf dup; @; ::", "1:37: variable name must precede @");
+    basic_error_test(
+        ": m asdf var; 100 asdf !; asdf dup; @; ::",
+        "1:37: variable name must precede @",
+    );
 }
 
 #[test]
@@ -244,7 +273,8 @@ fn generator_basic_test() {
 
 #[test]
 fn generator_var_test() {
-    basic_test("
+    basic_test(
+        "
 :~ gen 0 0
     drop;
     n var;
@@ -256,7 +286,9 @@ fn generator_var_test() {
         until; ::
 n var; 100 n !;
 gen; dup; shift; println; dup; shift; println; shift; println;
-n @; println;", "0\n1\n2\n100");
+n @; println;",
+        "0\n1\n2\n100",
+    );
 }
 
 #[test]
@@ -305,7 +337,10 @@ fn ge_test() {
 
 #[test]
 fn is_null_test() {
-    basic_test(":~ nullgen 0 0 drop; :: nullgen; dup; shift; is-null; nip;", "1");
+    basic_test(
+        ":~ nullgen 0 0 drop; :: nullgen; dup; shift; is-null; nip;",
+        "1",
+    );
 }
 
 #[test]
@@ -315,15 +350,19 @@ fn is_list_test() {
 
 #[test]
 fn read_file_test() {
-    basic_test("
+    basic_test(
+        "
 : rl dup; readline; print; ::
 test-data/readfile r open; rl; rl; rl; rl; rl; drop;
-", "1\n2\n3\n4\n5");
+",
+        "1\n2\n3\n4\n5",
+    );
 }
 
 #[test]
 fn write_file_test() {
-    basic_test("
+    basic_test(
+        "
 test w open;
     dup; \"asdf\\n\" writeline;
     dup; \"qwer\\n\" writeline;
@@ -332,13 +371,18 @@ test r open;
     dup; readline; print;
     dup; readline; print;
     close;
-", "asdf\nqwer");
+",
+        "asdf\nqwer",
+    );
     fs::remove_file("test").unwrap();
 }
 
 #[test]
 fn lsr_test() {
-    basic_test(". lsr; begin; dup; shift; is-null; if; leave; then; 0 until;", "()");
+    basic_test(
+        ". lsr; begin; dup; shift; is-null; if; leave; then; 0 until;",
+        "()",
+    );
 }
 
 #[test]
@@ -348,7 +392,10 @@ fn implicit_generator_test() {
 
 #[test]
 fn regex_borrow_problem() {
-    basic_test("((\"asdf\") (\"asdf\")) [[asdf m] grep] map", "(\n    (\n        asdf\n    )\n    (\n        asdf\n    )\n)");
+    basic_test(
+        "((\"asdf\") (\"asdf\")) [[asdf m] grep] map",
+        "(\n    (\n        asdf\n    )\n    (\n        asdf\n    )\n)",
+    );
 }
 
 #[test]
@@ -412,14 +459,26 @@ fn take_test() {
 
 #[test]
 fn grep_test_generator() {
-    basic_test("10 range; [5 <] grep; take-all", "(\n    0\n    1\n    2\n    3\n    4\n)");
-    basic_test("10 range; take-all; [5 <] grep", "(\n    0\n    1\n    2\n    3\n    4\n)");
+    basic_test(
+        "10 range; [5 <] grep; take-all",
+        "(\n    0\n    1\n    2\n    3\n    4\n)",
+    );
+    basic_test(
+        "10 range; take-all; [5 <] grep",
+        "(\n    0\n    1\n    2\n    3\n    4\n)",
+    );
 }
 
 #[test]
 fn map_test_generator() {
-    basic_test("5 range; [2 *] map; take-all", "(\n    0\n    2\n    4\n    6\n    8\n)");
-    basic_test("5 range; take-all; [2 *] map", "(\n    0\n    2\n    4\n    6\n    8\n)");
+    basic_test(
+        "5 range; [2 *] map; take-all",
+        "(\n    0\n    2\n    4\n    6\n    8\n)",
+    );
+    basic_test(
+        "5 range; take-all; [2 *] map",
+        "(\n    0\n    2\n    4\n    6\n    8\n)",
+    );
 }
 
 #[test]
@@ -443,26 +502,33 @@ fn append_test() {
 
 #[test]
 fn coerce_to_int_test() {
-    basic_test("test-data/csv f<; [chomp] map; [, split] map; [0 [+] foldl] map; take-all;",
-               "(\n    10\n    26\n    42\n)");
+    basic_test(
+        "test-data/csv f<; [chomp] map; [, split] map; [0 [+] foldl] map; take-all;",
+        "(\n    10\n    26\n    42\n)",
+    );
 }
 
 #[test]
 fn coerce_to_string_test() {
-    basic_test("(1 2 3 4 5 6) '' [append] foldl;",
-               "123456");
+    basic_test("(1 2 3 4 5 6) '' [append] foldl;", "123456");
 }
 
 #[test]
 fn commands_test() {
-    basic_test("{ls}; {sort} |; take-all; [o.toml m] grep; chomp map;",
-               "(\n    Cargo.toml\n)");
+    basic_test(
+        "{ls}; {sort} |; take-all; [o.toml m] grep; chomp map;",
+        "(\n    Cargo.toml\n)",
+    );
     basic_test(". -type f {find {2} -maxdepth 1 {1} {0}}; {sort} |; take-all; [o.toml m] grep; chomp map; nip; nip; nip;",
                "(\n    ./Cargo.toml\n)");
-    basic_test("3 2 1 {dc -e \"{2} {0} + {1} + p\"}; shift; chomp; nip; nip; nip;",
-               "6");
-    basic_test("{ls}; -r {sort {}} |; take-all; [o.toml m] grep; chomp map;",
-               "(\n    Cargo.toml\n)");
+    basic_test(
+        "3 2 1 {dc -e \"{2} {0} + {1} + p\"}; shift; chomp; nip; nip; nip;",
+        "6",
+    );
+    basic_test(
+        "{ls}; -r {sort {}} |; take-all; [o.toml m] grep; chomp map;",
+        "(\n    Cargo.toml\n)",
+    );
 }
 
 #[test]
@@ -471,7 +537,10 @@ fn hash_test() {
     basic_test("h(1 2 3 4) 1 5 at!; 1 at;", "5");
     basic_test("h(1 2 3 4) keys; take-all;", "(\n    3\n    1\n)");
     basic_test("h(1 2 3 4) values; take-all;", "(\n    4\n    2\n)");
-    basic_test("h(1 2 3 4) each; take-all;", "(\n    (\n        3\n        4\n    )\n    (\n        1\n        2\n    )\n)");
+    basic_test(
+        "h(1 2 3 4) each; take-all;",
+        "(\n    (\n        3\n        4\n    )\n    (\n        1\n        2\n    )\n)",
+    );
 }
 
 #[test]
@@ -484,20 +553,24 @@ fn json_test() {
 
 #[test]
 fn json_file_test() {
-    basic_test("test-data/json1 f<; \"\" join; from-json;", "h(\n    \"asdf\": 1\n)");
+    basic_test(
+        "test-data/json1 f<; \"\" join; from-json;",
+        "h(\n    \"asdf\": 1\n)",
+    );
     basic_test("test-data/json2 f<; \"\" join; from-json;", "h(\n    \"asdf\": 1\n    \"qwer\": 2\n    \"tyui\": h(\n        \"asdf\": 5\n    )\n    \"zxcv\": (\n        3\n        4\n    )\n)");
 }
 
 #[test]
 fn xml_test() {
-    basic_test("\"<e a='b'>one<a>two</a>three</e>\" from-xml; to-xml;",
-        "\"<e a=\\\"b\\\">one<a>two</a>three</e>\"");
+    basic_test(
+        "\"<e a='b'>one<a>two</a>three</e>\" from-xml; to-xml;",
+        "\"<e a=\\\"b\\\">one<a>two</a>three</e>\"",
+    );
 }
 
 #[test]
 fn external_command_test() {
-    basic_test("$ls tests",
-        "test1.rs");
+    basic_test("$ls tests", "test1.rs");
 }
 
 #[test]
@@ -522,7 +595,10 @@ fn float_test_subtract() {
 
 #[test]
 fn bigint_test_multiply() {
-    basic_test("1000000000000000000 1000000000000000001 *;", "1000000000000000001000000000000000000");
+    basic_test(
+        "1000000000000000000 1000000000000000001 *;",
+        "1000000000000000001000000000000000000",
+    );
 }
 
 #[test]
@@ -542,12 +618,18 @@ fn global_var_is_zero() {
 
 #[test]
 fn nested_function_vars() {
-    basic_test(": ff n var; 10 n !; f var; [n @; 1 +; n !] f !; f @; funcall; f @; funcall; n @; :: ff;", "12");
+    basic_test(
+        ": ff n var; 10 n !; f var; [n @; 1 +; n !] f !; f @; funcall; f @; funcall; n @; :: ff;",
+        "12",
+    );
 }
 
 #[test]
 fn grep_not_iterated_n_is_the_same() {
-    basic_test("n var; 10 n !; README.md f<; [n @; 1 +; n !; eeeee m] grep; n @;", "()\n10");
+    basic_test(
+        "n var; 10 n !; README.md f<; [n @; 1 +; n !; eeeee m] grep; n @;",
+        "()\n10",
+    );
 }
 
 #[test]
@@ -578,7 +660,10 @@ fn misc_lst_fns() {
     basic_test("(1 2 3) [2 >] first", "3");
     basic_test("(1 2 3) [100 >] first", "{{Null}}");
     basic_test("4 range; dup; shift; drop; product", "6");
-    basic_test("(1 2 5 1 2 5 3 6) uniq", "(\n    1\n    2\n    5\n    3\n    6\n)");
+    basic_test(
+        "(1 2 5 1 2 5 3 6) uniq",
+        "(\n    1\n    2\n    5\n    3\n    6\n)",
+    );
     basic_test("(a b 1 b 2) uniq", "(\n    a\n    b\n    1\n    2\n)");
 }
 
@@ -589,8 +674,14 @@ fn return_test() {
 
 #[test]
 fn sort_test() {
-    basic_test("(5 2 3 4 1) sort;", "(\n    1\n    2\n    3\n    4\n    5\n)");
-    basic_test("(5 2 3 4 1) > sortp;", "(\n    5\n    4\n    3\n    2\n    1\n)");
+    basic_test(
+        "(5 2 3 4 1) sort;",
+        "(\n    1\n    2\n    3\n    4\n    5\n)",
+    );
+    basic_test(
+        "(5 2 3 4 1) > sortp;",
+        "(\n    5\n    4\n    3\n    2\n    1\n)",
+    );
 }
 
 #[test]

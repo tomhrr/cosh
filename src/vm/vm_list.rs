@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-use chunk::{print_error, Chunk, Value, StringPair};
+use chunk::{print_error, Chunk, StringPair, Value};
 use vm::VM;
 
 impl VM {
@@ -82,7 +82,9 @@ impl VM {
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
-        chunk: &Chunk, i: usize, line_col: (u32, u32),
+        chunk: &Chunk,
+        i: usize,
+        line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 2 {
@@ -218,7 +220,9 @@ impl VM {
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
-        chunk: &Chunk, i: usize, line_col: (u32, u32),
+        chunk: &Chunk,
+        i: usize,
+        line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 1 {
@@ -237,14 +241,11 @@ impl VM {
                     // todo: set to none, error later if still none.
                     let mut new_i = 0;
                     {
-                        let mut generator_object =
-                            generator_object_.borrow_mut();
-                        let index =
-                            generator_object.index;
+                        let mut generator_object = generator_object_.borrow_mut();
+                        let index = generator_object.index;
 
                         {
-                            let gen_args =
-                                &mut generator_object.gen_args;
+                            let gen_args = &mut generator_object.gen_args;
                             stack_len = self.stack.len();
                             let mut is_empty = false;
                             if gen_args.len() == 1 {
@@ -267,21 +268,15 @@ impl VM {
                                     while gen_args.len() > 0 {
                                         self.stack.push(gen_args.pop().unwrap());
                                     }
-                                    self.stack.push(Value::Int(
-                                        gen_args_len as i32,
-                                    ));
+                                    self.stack.push(Value::Int(gen_args_len as i32));
                                 }
                             }
                         }
 
-                        let global_vars =
-                            generator_object.global_vars.clone();
-                        let local_vars_stack =
-                            generator_object.local_vars_stack.clone();
-                        let chunk =
-                            &generator_object.chunk;
-                        let call_stack_chunks =
-                            &generator_object.call_stack_chunks;
+                        let global_vars = generator_object.global_vars.clone();
+                        let local_vars_stack = generator_object.local_vars_stack.clone();
+                        let chunk = &generator_object.chunk;
+                        let call_stack_chunks = &generator_object.call_stack_chunks;
 
                         let mut call_stack_chunks_sub = Vec::new();
                         let cscb = call_stack_chunks.borrow();
@@ -335,20 +330,15 @@ impl VM {
                     match res {
                         Ok(bytes) => {
                             if bytes != 0 {
-                                self.stack.push(
-                                    Value::String(Rc::new(RefCell::new(StringPair::new(contents, None)))),
-                                );
+                                self.stack.push(Value::String(Rc::new(RefCell::new(
+                                    StringPair::new(contents, None),
+                                ))));
                             } else {
-                                self.stack
-                                    .push(Value::Null);
+                                self.stack.push(Value::Null);
                             }
                         }
                         Err(_) => {
-                            print_error(
-                                chunk,
-                                i,
-                                "unable to read next line from command output",
-                            );
+                            print_error(chunk, i, "unable to read next line from command output");
                         }
                     }
                 }
@@ -361,13 +351,9 @@ impl VM {
                                 let kv = mapb.get_index(hwi.borrow().i);
                                 match kv {
                                     Some((k, _)) => {
-                                        self.stack.push(
-                                            Value::String(
-                                                Rc::new(RefCell::new(
-                                                    StringPair::new(k.to_string(), None),
-                                                ))
-                                            )
-                                        );
+                                        self.stack.push(Value::String(Rc::new(RefCell::new(
+                                            StringPair::new(k.to_string(), None),
+                                        ))));
                                     }
                                     None => {
                                         self.stack.push(Value::Null);
@@ -375,9 +361,7 @@ impl VM {
                                 }
                             }
                             _ => {
-                                eprintln!(
-                                    "keys generator does not contain a hash!"
-                                );
+                                eprintln!("keys generator does not contain a hash!");
                                 std::process::abort();
                             }
                         }
@@ -397,16 +381,12 @@ impl VM {
                                         self.stack.push(v.clone());
                                     }
                                     None => {
-                                        self.stack.push(
-                                            Value::Null,
-                                        );
+                                        self.stack.push(Value::Null);
                                     }
                                 }
                             }
                             _ => {
-                                eprintln!(
-                                    "values generator does not contain a hash!"
-                                );
+                                eprintln!("values generator does not contain a hash!");
                                 std::process::abort();
                             }
                         }
@@ -424,13 +404,11 @@ impl VM {
                                 match kv {
                                     Some((k, v)) => {
                                         let mut lst = VecDeque::new();
-                                        lst.push_back(
-                                            Value::String(Rc::new(RefCell::new(StringPair::new(k.to_string(), None)))),
-                                        );
+                                        lst.push_back(Value::String(Rc::new(RefCell::new(
+                                            StringPair::new(k.to_string(), None),
+                                        ))));
                                         lst.push_back(v.clone());
-                                        self.stack.push(
-                                            Value::List(Rc::new(RefCell::new(lst))),
-                                        );
+                                        self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                                     }
                                     None => {
                                         self.stack.push(Value::Null);
@@ -438,9 +416,7 @@ impl VM {
                                 }
                             }
                             _ => {
-                                eprintln!(
-                                    "each generator does not contain a hash!"
-                                );
+                                eprintln!("each generator does not contain a hash!");
                                 std::process::abort();
                             }
                         }
@@ -471,8 +447,10 @@ impl VM {
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
-        chunk: &Chunk, i: usize, line_col: (u32, u32),
-        running: Arc<AtomicBool>
+        chunk: &Chunk,
+        i: usize,
+        line_col: (u32, u32),
+        running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "shift-all requires one argument");

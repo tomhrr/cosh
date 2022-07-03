@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use chunk::{print_error, Chunk, Value, StringPair};
+use chunk::{print_error, Chunk, StringPair, Value};
 use vm::*;
 
 impl VM {
@@ -77,8 +77,7 @@ impl VM {
     /// Push the current depth of the stack onto the stack.
     #[allow(unused_variables)]
     pub fn opcode_depth(&mut self, chunk: &Chunk, i: usize) -> i32 {
-        self.stack
-            .push(Value::Int(self.stack.len() as i32));
+        self.stack.push(Value::Int(self.stack.len() as i32));
         return 1;
     }
 
@@ -95,13 +94,11 @@ impl VM {
         match lst_rr {
             Value::List(lst) => {
                 let len = lst.borrow().len();
-                self.stack
-                    .push(Value::Int(len as i32));
+                self.stack.push(Value::Int(len as i32));
             }
             Value::String(sp) => {
                 let len = sp.borrow().s.len();
-                self.stack
-                    .push(Value::Int(len as i32));
+                self.stack.push(Value::Int(len as i32));
             }
             _ => {
                 print_error(chunk, i, "len argument must be a list or a string");
@@ -200,29 +197,35 @@ impl VM {
                     is_string = true;
                 }
                 _ => {
-		    let value_s;
-		    let value_b;
-		    let value_str;
-		    let value_bk : Option<String>;
-		    let value_opt : Option<&str> =
-			match value_rr {
-			    Value::String(sp) => {
-				value_s = sp;
-				value_b = value_s.borrow();
-				Some(&value_b.s)
-			    }
-			    _ => {
-				value_bk = value_rr.to_string();
-				match value_bk {
-				    Some(s) => { value_str = s; Some(&value_str) }
-				    _ => None
-				}
-			    }
-			};
+                    let value_s;
+                    let value_b;
+                    let value_str;
+                    let value_bk: Option<String>;
+                    let value_opt: Option<&str> = match value_rr {
+                        Value::String(sp) => {
+                            value_s = sp;
+                            value_b = value_s.borrow();
+                            Some(&value_b.s)
+                        }
+                        _ => {
+                            value_bk = value_rr.to_string();
+                            match value_bk {
+                                Some(s) => {
+                                    value_str = s;
+                                    Some(&value_str)
+                                }
+                                _ => None,
+                            }
+                        }
+                    };
 
                     match value_opt {
                         Some(s) => {
-                            self.stack.push(Value::String(Rc::new(RefCell::new(StringPair::new(s.to_string(), None)))));
+                            self.stack
+                                .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+                                    s.to_string(),
+                                    None,
+                                )))));
                             return 1;
                         }
                         _ => {

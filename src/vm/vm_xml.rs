@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use indexmap::IndexMap;
 
-use chunk::{print_error, Chunk, Value, StringPair};
+use chunk::{print_error, Chunk, StringPair, Value};
 use vm::*;
 
 /// Converts a roxmltree object into a value.
@@ -13,7 +13,10 @@ fn convert_from_xml(node: &roxmltree::Node) -> Value {
     let tag_name = node.tag_name().name();
     map.insert(
         "key".to_string(),
-        Value::String(Rc::new(RefCell::new(StringPair::new(tag_name.to_string(), None)))),
+        Value::String(Rc::new(RefCell::new(StringPair::new(
+            tag_name.to_string(),
+            None,
+        )))),
     );
     if node.is_text() {
         let text_opt = node.text();
@@ -33,7 +36,10 @@ fn convert_from_xml(node: &roxmltree::Node) -> Value {
     for attr in node.attributes() {
         attr_map.insert(
             attr.name().to_string(),
-            Value::String(Rc::new(RefCell::new(StringPair::new(attr.value().to_string(), None)))),
+            Value::String(Rc::new(RefCell::new(StringPair::new(
+                attr.value().to_string(),
+                None,
+            )))),
         );
     }
     map.insert(
@@ -46,8 +52,10 @@ fn convert_from_xml(node: &roxmltree::Node) -> Value {
         let child_node_value = convert_from_xml(&child_node);
         child_nodes.push_back(child_node_value);
     }
-    map.insert("value".to_string(),
-               Value::List(Rc::new(RefCell::new(child_nodes))));
+    map.insert(
+        "value".to_string(),
+        Value::List(Rc::new(RefCell::new(child_nodes))),
+    );
     return Value::Hash(Rc::new(RefCell::new(map)));
 }
 
@@ -64,72 +72,70 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             let vmm = vm.borrow();
             let key_opt = vmm.get("key");
             match key_opt {
-                Some(value_rr) => {
-                    match value_rr {
-                        Value::String(sp) => {
-                            let s = &sp.borrow().s;
-                            if s != "" {
-                                begin_open_element = format!("<{}", s);
-                                begin_close_element = ">".to_string();
-                                end_element = format!("</{}>", s);
-                            }
+                Some(value_rr) => match value_rr {
+                    Value::String(sp) => {
+                        let s = &sp.borrow().s;
+                        if s != "" {
+                            begin_open_element = format!("<{}", s);
+                            begin_close_element = ">".to_string();
+                            end_element = format!("</{}>", s);
                         }
-                        _ => {}
                     }
-                }
+                    _ => {}
+                },
                 None => {}
             }
 
             let attributes_opt = vmm.get("attributes");
             let attributes_str = match attributes_opt {
-                Some(attributes_rr) => {
-                    match attributes_rr {
-                        Value::Hash(map) => {
-                            let mut has_none = false;
-                            let attributes_str_lst = map
-                                .borrow()
-                                .iter()
-                                .map(|(key, value_rr)| {
-				    let value_str_s;
-				    let value_str_b;
-				    let value_str_str;
-				    let value_str_bk : Option<String>;
-				    let value_str_opt : Option<&str> =
-					match value_rr {
-					    Value::String(sp) => {
-						value_str_s = sp;
-						value_str_b = value_str_s.borrow();
-						Some(&value_str_b.s)
-					    }
-					    _ => {
-						value_str_bk = value_rr.to_string();
-						match value_str_bk {
-						    Some(s) => { value_str_str = s; Some(&value_str_str) }
-						    _ => None
-						}
-					    }
-					};
-
-                                    match value_str_opt {
-                                        Some(s) => {
-                                            format!("{}=\"{}\"", key, s)
-                                        }
-                                        None => {
-                                            has_none = true;
-                                            "".to_string()
+                Some(attributes_rr) => match attributes_rr {
+                    Value::Hash(map) => {
+                        let mut has_none = false;
+                        let attributes_str_lst = map
+                            .borrow()
+                            .iter()
+                            .map(|(key, value_rr)| {
+                                let value_str_s;
+                                let value_str_b;
+                                let value_str_str;
+                                let value_str_bk: Option<String>;
+                                let value_str_opt: Option<&str> = match value_rr {
+                                    Value::String(sp) => {
+                                        value_str_s = sp;
+                                        value_str_b = value_str_s.borrow();
+                                        Some(&value_str_b.s)
+                                    }
+                                    _ => {
+                                        value_str_bk = value_rr.to_string();
+                                        match value_str_bk {
+                                            Some(s) => {
+                                                value_str_str = s;
+                                                Some(&value_str_str)
+                                            }
+                                            _ => None,
                                         }
                                     }
-                                })
-                                .collect::<Vec<_>>();
-                            if has_none {
-                                return None;
-                            } else {
-                                attributes_str_lst.join(" ")
-                            }
+                                };
+
+                                match value_str_opt {
+                                    Some(s) => {
+                                        format!("{}=\"{}\"", key, s)
+                                    }
+                                    None => {
+                                        has_none = true;
+                                        "".to_string()
+                                    }
+                                }
+                            })
+                            .collect::<Vec<_>>();
+                        if has_none {
+                            return None;
+                        } else {
+                            attributes_str_lst.join(" ")
                         }
-                        _ => "".to_string(),
                     }
-                }
+                    _ => "".to_string(),
+                },
                 _ => "".to_string(),
             };
             attributes = if attributes_str != "" {
@@ -141,25 +147,23 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             let value_opt = vmm.get("value");
             let mut has_none = false;
             child_nodes = match value_opt {
-                Some(value_rr) => {
-                    match value_rr {
-                        Value::List(lst) => lst
-                            .borrow()
-                            .iter()
-                            .map(|lst_value_rr| {
-                                let lst_value_rrb = convert_to_xml(&lst_value_rr);
-                                if lst_value_rrb.is_none() {
-                                    has_none = true;
-                                    "".to_string()
-                                } else {
-                                    lst_value_rrb.unwrap()
-                                }
-                            })
-                            .collect::<Vec<_>>()
-                            .join(""),
-                        _ => "".to_string(),
-                    }
-                }
+                Some(value_rr) => match value_rr {
+                    Value::List(lst) => lst
+                        .borrow()
+                        .iter()
+                        .map(|lst_value_rr| {
+                            let lst_value_rrb = convert_to_xml(&lst_value_rr);
+                            if lst_value_rrb.is_none() {
+                                has_none = true;
+                                "".to_string()
+                            } else {
+                                lst_value_rrb.unwrap()
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .join(""),
+                    _ => "".to_string(),
+                },
                 _ => "".to_string(),
             };
             if has_none {
@@ -168,17 +172,18 @@ fn convert_to_xml(v: &Value) -> Option<String> {
 
             let text_opt = vmm.get("text");
             match text_opt {
-                Some(value_rr) => {
-                    match value_rr {
-                        Value::String(sp) => {
-                            text = sp.borrow().s.to_string();
-                        }
-                        _ => {}
+                Some(value_rr) => match value_rr {
+                    Value::String(sp) => {
+                        text = sp.borrow().s.to_string();
                     }
-                }
+                    _ => {}
+                },
                 _ => {}
             };
-            return Some(format!("{}{}{}{}{}{}", begin_open_element, attributes, begin_close_element, text, child_nodes, end_element));
+            return Some(format!(
+                "{}{}{}{}{}{}",
+                begin_open_element, attributes, begin_close_element, text, child_nodes, end_element
+            ));
         }
         _ => Some("".to_string()),
     }
@@ -197,22 +202,24 @@ impl VM {
         let value_s;
         let value_b;
         let value_str;
-        let value_bk : Option<String>;
-        let value_opt : Option<&str> =
-            match value_rr {
-                Value::String(sp) => {
-                    value_s = sp;
-                    value_b = value_s.borrow();
-                    Some(&value_b.s)
-                }
-                _ => {
-                    value_bk = value_rr.to_string();
-                    match value_bk {
-                        Some(s) => { value_str = s; Some(&value_str) }
-                        _ => None
+        let value_bk: Option<String>;
+        let value_opt: Option<&str> = match value_rr {
+            Value::String(sp) => {
+                value_s = sp;
+                value_b = value_s.borrow();
+                Some(&value_b.s)
+            }
+            _ => {
+                value_bk = value_rr.to_string();
+                match value_bk {
+                    Some(s) => {
+                        value_str = s;
+                        Some(&value_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match value_opt {
             Some(s) => {
@@ -220,8 +227,7 @@ impl VM {
                 let doc;
                 match doc_res {
                     Err(e) => {
-                        let err_str =
-                            format!("unable to parse XML: {}", e.to_string());
+                        let err_str = format!("unable to parse XML: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }
@@ -229,9 +235,7 @@ impl VM {
                         doc = d;
                     }
                 }
-                let xml_rr = convert_from_xml(
-                    &doc.root_element(),
-                );
+                let xml_rr = convert_from_xml(&doc.root_element());
                 self.stack.push(xml_rr);
             }
             _ => {
@@ -258,7 +262,10 @@ impl VM {
             return 0;
         }
         self.stack
-            .push(Value::String(Rc::new(RefCell::new(StringPair::new(doc_opt.unwrap(), None)))));
+            .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+                doc_opt.unwrap(),
+                None,
+            )))));
         return 1;
     }
 }

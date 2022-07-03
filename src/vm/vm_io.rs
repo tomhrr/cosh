@@ -7,7 +7,7 @@ use std::io::LineWriter;
 use std::io::Write;
 use std::rc::Rc;
 
-use chunk::{print_error, Chunk, Value, StringPair};
+use chunk::{print_error, Chunk, StringPair, Value};
 use vm::*;
 
 impl VM {
@@ -25,22 +25,24 @@ impl VM {
         let path_str_s;
         let path_str_b;
         let path_str_str;
-        let path_str_bk : Option<String>;
-        let path_str_opt : Option<&str> =
-            match path_rr {
-                Value::String(sp) => {
-                    path_str_s = sp;
-                    path_str_b = path_str_s.borrow();
-                    Some(&path_str_b.s)
-                }
-                _ => {
-                    path_str_bk = path_rr.to_string();
-                    match path_str_bk {
-                        Some(s) => { path_str_str = s; Some(&path_str_str) }
-                        _ => None
+        let path_str_bk: Option<String>;
+        let path_str_opt: Option<&str> = match path_rr {
+            Value::String(sp) => {
+                path_str_s = sp;
+                path_str_b = path_str_s.borrow();
+                Some(&path_str_b.s)
+            }
+            _ => {
+                path_str_bk = path_rr.to_string();
+                match path_str_bk {
+                    Some(s) => {
+                        path_str_str = s;
+                        Some(&path_str_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match rw_rr {
             Value::String(sp) => match sp.borrow().s.as_ref() {
@@ -49,15 +51,12 @@ impl VM {
                         let file_res = File::open(s);
                         match file_res {
                             Ok(file) => {
-                                self.stack.push(
-                                    Value::FileReader(Rc::new(RefCell::new(BufReader::new(file))
-                                )));
+                                self.stack.push(Value::FileReader(Rc::new(RefCell::new(
+                                    BufReader::new(file),
+                                ))));
                             }
                             Err(e) => {
-                                let err_str = format!(
-                                    "unable to open file: {}",
-                                    e.to_string()
-                                );
+                                let err_str = format!("unable to open file: {}", e.to_string());
                                 print_error(chunk, i, &err_str);
                                 return 0;
                             }
@@ -73,15 +72,12 @@ impl VM {
                         let file_res = File::create(s);
                         match file_res {
                             Ok(file) => {
-                                self.stack.push(
-                                    Value::FileWriter(Rc::new(RefCell::new(LineWriter::new(file))
-                                )));
+                                self.stack.push(Value::FileWriter(Rc::new(RefCell::new(
+                                    LineWriter::new(file),
+                                ))));
                             }
                             Err(e) => {
-                                let err_str = format!(
-                                    "unable to open file: {}",
-                                    e.to_string()
-                                );
+                                let err_str = format!("unable to open file: {}", e.to_string());
                                 print_error(chunk, i, &err_str);
                                 return 0;
                             }
@@ -125,12 +121,10 @@ impl VM {
                         self.stack.push(Value::Null);
                     }
                     Ok(_) => {
-                        self.stack.push(Value::String(
-                            Rc::new(RefCell::new(
-                                StringPair::new(
+                        self.stack
+                            .push(Value::String(Rc::new(RefCell::new(StringPair::new(
                                 contents, None,
-                            )))
-                        ));
+                            )))));
                     }
                     _ => {
                         print_error(chunk, i, "unable to read line from file");
@@ -139,11 +133,7 @@ impl VM {
                 }
             }
             _ => {
-                print_error(
-                    chunk,
-                    i,
-                    "readline argument must be a file reader",
-                );
+                print_error(chunk, i, "readline argument must be a file reader");
                 return 0;
             }
         }
@@ -162,22 +152,24 @@ impl VM {
         let line_str_s;
         let line_str_b;
         let line_str_str;
-        let line_str_bk : Option<String>;
-        let line_str_opt : Option<&str> =
-            match line_rr {
-                Value::String(sp) => {
-                    line_str_s = sp;
-                    line_str_b = line_str_s.borrow();
-                    Some(&line_str_b.s)
-                }
-                _ => {
-                    line_str_bk = line_rr.to_string();
-                    match line_str_bk {
-                        Some(s) => { line_str_str = s; Some(&line_str_str) }
-                        _ => None
+        let line_str_bk: Option<String>;
+        let line_str_opt: Option<&str> = match line_rr {
+            Value::String(sp) => {
+                line_str_s = sp;
+                line_str_b = line_str_s.borrow();
+                Some(&line_str_b.s)
+            }
+            _ => {
+                line_str_bk = line_rr.to_string();
+                match line_str_bk {
+                    Some(s) => {
+                        line_str_str = s;
+                        Some(&line_str_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match line_str_opt {
             Some(s) => {
@@ -191,21 +183,14 @@ impl VM {
                                     return 1;
                                 }
                                 Err(e) => {
-                                    let err_str = format!(
-                                        "unable to open file: {}",
-                                        e.to_string()
-                                    );
+                                    let err_str = format!("unable to open file: {}", e.to_string());
                                     print_error(chunk, i, &err_str);
                                     return 0;
                                 }
                             }
                         }
                         _ => {
-                            print_error(
-                                chunk,
-                                i,
-                                "writeline argument must be a file writer",
-                            );
+                            print_error(chunk, i, "writeline argument must be a file writer");
                             return 0;
                         }
                     }
@@ -241,10 +226,7 @@ impl VM {
                         return 1;
                     }
                     Err(e) => {
-                        let err_str = format!(
-                            "unable to flush data: {}",
-                            e.to_string()
-                        );
+                        let err_str = format!("unable to flush data: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }
@@ -270,37 +252,36 @@ impl VM {
         let path_str_s;
         let path_str_b;
         let path_str_str;
-        let path_str_bk : Option<String>;
-        let path_str_opt : Option<&str> =
-            match path_rr {
-                Value::String(sp) => {
-                    path_str_s = sp;
-                    path_str_b = path_str_s.borrow();
-                    Some(&path_str_b.s)
-                }
-                _ => {
-                    path_str_bk = path_rr.to_string();
-                    match path_str_bk {
-                        Some(s) => { path_str_str = s; Some(&path_str_str) }
-                        _ => None
+        let path_str_bk: Option<String>;
+        let path_str_opt: Option<&str> = match path_rr {
+            Value::String(sp) => {
+                path_str_s = sp;
+                path_str_b = path_str_s.borrow();
+                Some(&path_str_b.s)
+            }
+            _ => {
+                path_str_bk = path_rr.to_string();
+                match path_str_bk {
+                    Some(s) => {
+                        path_str_str = s;
+                        Some(&path_str_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match path_str_opt {
             Some(s) => {
                 let dir_handle_res = std::fs::read_dir(s);
                 match dir_handle_res {
                     Ok(dir_handle) => {
-                        self.stack.push(
-                            Value::DirectoryHandle(Rc::new(RefCell::new(dir_handle))));
+                        self.stack
+                            .push(Value::DirectoryHandle(Rc::new(RefCell::new(dir_handle))));
                         return 1;
                     }
                     Err(e) => {
-                        let err_str = format!(
-                            "unable to open directory: {}",
-                            e.to_string()
-                        );
+                        let err_str = format!("unable to open directory: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }
@@ -330,24 +311,16 @@ impl VM {
                 match entry_opt {
                     Some(s) => {
                         let path = s.unwrap().path();
-                        Value::String(
-                            Rc::new(RefCell::new(
-                                StringPair::new(
-                                    path.to_str().unwrap().to_string(),
-                                    None,
-                                )
-                            ))
-                        )
+                        Value::String(Rc::new(RefCell::new(StringPair::new(
+                            path.to_str().unwrap().to_string(),
+                            None,
+                        ))))
                     }
                     None => Value::Null,
                 }
             }
             _ => {
-                print_error(
-                    chunk,
-                    i,
-                    "readdir argument must be a directory handle",
-                );
+                print_error(chunk, i, "readdir argument must be a directory handle");
                 return 0;
             }
         };
@@ -368,22 +341,24 @@ impl VM {
         let path_str_s;
         let path_str_b;
         let path_str_str;
-        let path_str_bk : Option<String>;
-        let path_str_opt : Option<&str> =
-            match path_rr {
-                Value::String(sp) => {
-                    path_str_s = sp;
-                    path_str_b = path_str_s.borrow();
-                    Some(&path_str_b.s)
-                }
-                _ => {
-                    path_str_bk = path_rr.to_string();
-                    match path_str_bk {
-                        Some(s) => { path_str_str = s; Some(&path_str_str) }
-                        _ => None
+        let path_str_bk: Option<String>;
+        let path_str_opt: Option<&str> = match path_rr {
+            Value::String(sp) => {
+                path_str_s = sp;
+                path_str_b = path_str_s.borrow();
+                Some(&path_str_b.s)
+            }
+            _ => {
+                path_str_bk = path_rr.to_string();
+                match path_str_bk {
+                    Some(s) => {
+                        path_str_str = s;
+                        Some(&path_str_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match path_str_opt {
             Some(s) => {
@@ -394,8 +369,7 @@ impl VM {
                             true => 1,
                             false => 0,
                         };
-                        self.stack
-                            .push(Value::Int(is_dir));
+                        self.stack.push(Value::Int(is_dir));
                     }
                     _ => {
                         self.stack.push(Value::Int(0));

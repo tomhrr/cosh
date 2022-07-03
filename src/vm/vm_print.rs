@@ -32,8 +32,11 @@ fn unescape_string(s: &str) -> String {
 /// the current program is not being run interactively, in which case
 /// no waiting is required.)
 fn psv_helper(
-    s: &str, indent: i32, no_first_indent: bool,
-    window_height: i32, mut lines_to_print: i32,
+    s: &str,
+    indent: i32,
+    no_first_indent: bool,
+    window_height: i32,
+    mut lines_to_print: i32,
 ) -> i32 {
     if window_height != 0 {
         if lines_to_print == 0 {
@@ -81,25 +84,27 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-	let value_s;
+        let value_s;
         let value_b;
         let value_str;
-        let value_bk : Option<String>;
-        let value_opt : Option<&str> =
-            match value_rr {
-                Value::String(sp) => {
-                    value_s = sp;
-                    value_b = value_s.borrow();
-                    Some(&value_b.s)
-                }
-                _ => {
-                    value_bk = value_rr.to_string();
-                    match value_bk {
-                        Some(s) => { value_str = s; Some(&value_str) }
-                        _ => None
+        let value_bk: Option<String>;
+        let value_opt: Option<&str> = match value_rr {
+            Value::String(sp) => {
+                value_s = sp;
+                value_b = value_s.borrow();
+                Some(&value_b.s)
+            }
+            _ => {
+                value_bk = value_rr.to_string();
+                match value_bk {
+                    Some(s) => {
+                        value_str = s;
+                        Some(&value_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match value_opt {
             Some(s) => {
@@ -122,25 +127,27 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-	let value_s;
+        let value_s;
         let value_b;
         let value_str;
-        let value_bk : Option<String>;
-        let value_opt : Option<&str> =
-            match value_rr {
-                Value::String(sp) => {
-                    value_s = sp;
-                    value_b = value_s.borrow();
-                    Some(&value_b.s)
-                }
-                _ => {
-                    value_bk = value_rr.to_string();
-                    match value_bk {
-                        Some(s) => { value_str = s; Some(&value_str) }
-                        _ => None
+        let value_bk: Option<String>;
+        let value_opt: Option<&str> = match value_rr {
+            Value::String(sp) => {
+                value_s = sp;
+                value_b = value_s.borrow();
+                Some(&value_b.s)
+            }
+            _ => {
+                value_bk = value_rr.to_string();
+                match value_bk {
+                    Some(s) => {
+                        value_str = s;
+                        Some(&value_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match value_opt {
             Some(s) => {
@@ -163,11 +170,16 @@ impl VM {
     /// to standard output, returning the new number of lines that can
     /// be printed without waiting for user input.
     fn print_stack_value<'a>(
-        &mut self, value_rr: &Value, chunk: &Chunk,
+        &mut self,
+        value_rr: &Value,
+        chunk: &Chunk,
         i: usize,
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        indent: i32, no_first_indent: bool, window_height: i32, mut lines_to_print: i32,
+        indent: i32,
+        no_first_indent: bool,
+        window_height: i32,
+        mut lines_to_print: i32,
         running: Arc<AtomicBool>,
     ) -> i32 {
         let mut is_generator = false;
@@ -179,44 +191,28 @@ impl VM {
                 // useful for some reason.
                 Value::CoreFunction(_) => {
                     let s = format!("{{CoreFunction}}");
-                    lines_to_print = psv_helper(
-                        &s,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
-                },
+                }
                 Value::ShiftFunction(_) => {
                     let s = format!("{{ShiftFunction}}");
-                    lines_to_print = psv_helper(
-                        &s,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
-
-                },
+                }
                 Value::NamedFunction(_) => {
                     let s = format!("{{NamedFunction}}");
-                    lines_to_print = psv_helper(
-                        &s,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
-                },
+                }
                 Value::Null => {
                     lines_to_print = psv_helper(
                         "{{Null}}",
@@ -231,26 +227,16 @@ impl VM {
                 }
                 Value::Int(n) => {
                     let s = format!("{}", n);
-                    lines_to_print = psv_helper(
-                        &s,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
                 }
                 Value::BigInt(n) => {
                     let s = format!("{}", n);
-                    lines_to_print = psv_helper(
-                        &s,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
@@ -264,52 +250,32 @@ impl VM {
                     } else {
                         ss = format!("{}", ss);
                     }
-                    lines_to_print = psv_helper(
-                        &ss,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    lines_to_print =
+                        psv_helper(&ss, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
                 }
                 Value::Command(s) => {
                     let s = format!("{{{}}}", s.borrow());
-                    lines_to_print = psv_helper(
-                        &s,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
                 }
                 Value::CommandUncaptured(s) => {
                     let s = format!("{{{}}}", s.borrow());
-                    lines_to_print = psv_helper(
-                        &s,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
                 }
                 Value::Float(f) => {
                     let s = format!("{}", f);
-                    lines_to_print = psv_helper(
-                        &s,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
@@ -317,13 +283,8 @@ impl VM {
                 Value::Function(f) => {
                     let fs = &f.borrow().f;
                     let s = format!("{{Function: {}}}", fs);
-                    lines_to_print = psv_helper(
-                        &s,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
@@ -377,13 +338,8 @@ impl VM {
                             return lines_to_print;
                         }
                     } else {
-                        lines_to_print = psv_helper(
-                            "(",
-                            indent,
-                            no_first_indent,
-                            window_height,
-                            lines_to_print,
-                        );
+                        lines_to_print =
+                            psv_helper("(", indent, no_first_indent, window_height, lines_to_print);
                         if lines_to_print == -1 {
                             return lines_to_print;
                         }
@@ -405,13 +361,8 @@ impl VM {
                                 return lines_to_print;
                             }
                         }
-                        lines_to_print = psv_helper(
-                            ")",
-                            indent,
-                            false,
-                            window_height,
-                            lines_to_print,
-                        );
+                        lines_to_print =
+                            psv_helper(")", indent, false, window_height, lines_to_print);
                         if lines_to_print == -1 {
                             return lines_to_print;
                         }
@@ -476,13 +427,8 @@ impl VM {
                                 return lines_to_print;
                             }
                         }
-                        lines_to_print = psv_helper(
-                            ")",
-                            indent,
-                            false,
-                            window_height,
-                            lines_to_print,
-                        );
+                        lines_to_print =
+                            psv_helper(")", indent, false, window_height, lines_to_print);
                         if lines_to_print == -1 {
                             return lines_to_print;
                         }
@@ -541,13 +487,8 @@ impl VM {
                 }
                 if !is_null {
                     if !has_elements {
-                        lines_to_print = psv_helper(
-                            "(",
-                            indent,
-                            no_first_indent,
-                            window_height,
-                            lines_to_print,
-                        );
+                        lines_to_print =
+                            psv_helper("(", indent, no_first_indent, window_height, lines_to_print);
                         if lines_to_print == -1 {
                             return lines_to_print;
                         }
@@ -574,21 +515,10 @@ impl VM {
             }
             self.stack.pop();
             if !has_elements {
-                lines_to_print = psv_helper(
-                    "()",
-                    indent,
-                    no_first_indent,
-                    window_height,
-                    lines_to_print,
-                );
+                lines_to_print =
+                    psv_helper("()", indent, no_first_indent, window_height, lines_to_print);
             } else {
-                lines_to_print = psv_helper(
-                    ")",
-                    indent,
-                    false,
-                    window_height,
-                    lines_to_print,
-                );
+                lines_to_print = psv_helper(")", indent, false, window_height, lines_to_print);
             }
             if lines_to_print == -1 {
                 return lines_to_print;
@@ -602,10 +532,13 @@ impl VM {
     /// boolean indicating whether the stack needs to be cleared after
     /// the stack is printed.  Prints the stack to standard output.
     pub fn print_stack<'a>(
-        &mut self, chunk: &Chunk, i: usize,
+        &mut self,
+        chunk: &Chunk,
+        i: usize,
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        running: Arc<AtomicBool>, no_remove: bool,
+        running: Arc<AtomicBool>,
+        no_remove: bool,
     ) {
         let mut window_height: i32 = 0;
         let dim_opt = term_size::dimensions();

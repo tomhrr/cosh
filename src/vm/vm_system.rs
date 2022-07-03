@@ -15,7 +15,7 @@ use num_bigint::BigInt;
 use sysinfo::{ProcessExt, SystemExt};
 use utime::*;
 
-use chunk::{print_error, Chunk, Value, StringPair};
+use chunk::{print_error, Chunk, StringPair, Value};
 use vm::*;
 
 impl VM {
@@ -31,22 +31,24 @@ impl VM {
         let value_s;
         let value_b;
         let value_str;
-        let value_bk : Option<String>;
-        let value_opt : Option<&str> =
-            match value_rr {
-                Value::String(sp) => {
-                    value_s = sp;
-                    value_b = value_s.borrow();
-                    Some(&value_b.s)
-                }
-                _ => {
-                    value_bk = value_rr.to_string();
-                    match value_bk {
-                        Some(s) => { value_str = s; Some(&value_str) }
-                        _ => None
+        let value_bk: Option<String>;
+        let value_opt: Option<&str> = match value_rr {
+            Value::String(sp) => {
+                value_s = sp;
+                value_b = value_s.borrow();
+                Some(&value_b.s)
+            }
+            _ => {
+                value_bk = value_rr.to_string();
+                match value_bk {
+                    Some(s) => {
+                        value_str = s;
+                        Some(&value_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match value_opt {
             Some(s) => {
@@ -54,8 +56,7 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str =
-                            format!("unable to remove file: {}", e.to_string());
+                        let err_str = format!("unable to remove file: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }
@@ -82,43 +83,47 @@ impl VM {
         let dst_s;
         let dst_b;
         let dst_str;
-        let dst_bk : Option<String>;
-        let dst_opt : Option<&str> =
-            match dst_rr {
-                Value::String(sp) => {
-                    dst_s = sp;
-                    dst_b = dst_s.borrow();
-                    Some(&dst_b.s)
-                }
-                _ => {
-                    dst_bk = dst_rr.to_string();
-                    match dst_bk {
-                        Some(s) => { dst_str = s; Some(&dst_str) }
-                        _ => None
+        let dst_bk: Option<String>;
+        let dst_opt: Option<&str> = match dst_rr {
+            Value::String(sp) => {
+                dst_s = sp;
+                dst_b = dst_s.borrow();
+                Some(&dst_b.s)
+            }
+            _ => {
+                dst_bk = dst_rr.to_string();
+                match dst_bk {
+                    Some(s) => {
+                        dst_str = s;
+                        Some(&dst_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         let src_rr = self.stack.pop().unwrap();
         let src_s;
         let src_b;
         let src_str;
-        let src_bk : Option<String>;
-        let src_opt : Option<&str> =
-            match src_rr {
-                Value::String(sp) => {
-                    src_s = sp;
-                    src_b = src_s.borrow();
-                    Some(&src_b.s)
-                }
-                _ => {
-                    src_bk = src_rr.to_string();
-                    match src_bk {
-                        Some(s) => { src_str = s; Some(&src_str) }
-                        _ => None
+        let src_bk: Option<String>;
+        let src_opt: Option<&str> = match src_rr {
+            Value::String(sp) => {
+                src_s = sp;
+                src_b = src_s.borrow();
+                Some(&src_b.s)
+            }
+            _ => {
+                src_bk = src_rr.to_string();
+                match src_bk {
+                    Some(s) => {
+                        src_str = s;
+                        Some(&src_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
@@ -126,8 +131,7 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str =
-                            format!("unable to copy file: {}", e.to_string());
+                        let err_str = format!("unable to copy file: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }
@@ -155,43 +159,47 @@ impl VM {
         let dst_s;
         let dst_b;
         let dst_str;
-        let dst_bk : Option<String>;
-        let dst_opt : Option<&str> =
-            match dst_rr {
-                Value::String(sp) => {
-                    dst_s = sp;
-                    dst_b = dst_s.borrow();
-                    Some(&dst_b.s)
-                }
-                _ => {
-                    dst_bk = dst_rr.to_string();
-                    match dst_bk {
-                        Some(s) => { dst_str = s; Some(&dst_str) }
-                        _ => None
+        let dst_bk: Option<String>;
+        let dst_opt: Option<&str> = match dst_rr {
+            Value::String(sp) => {
+                dst_s = sp;
+                dst_b = dst_s.borrow();
+                Some(&dst_b.s)
+            }
+            _ => {
+                dst_bk = dst_rr.to_string();
+                match dst_bk {
+                    Some(s) => {
+                        dst_str = s;
+                        Some(&dst_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         let src_rr = self.stack.pop().unwrap();
         let src_s;
         let src_b;
         let src_str;
-        let src_bk : Option<String>;
-        let src_opt : Option<&str> =
-            match src_rr {
-                Value::String(sp) => {
-                    src_s = sp;
-                    src_b = src_s.borrow();
-                    Some(&src_b.s)
-                }
-                _ => {
-                    src_bk = src_rr.to_string();
-                    match src_bk {
-                        Some(s) => { src_str = s; Some(&src_str) }
-                        _ => None
+        let src_bk: Option<String>;
+        let src_opt: Option<&str> = match src_rr {
+            Value::String(sp) => {
+                src_s = sp;
+                src_b = src_s.borrow();
+                Some(&src_b.s)
+            }
+            _ => {
+                src_bk = src_rr.to_string();
+                match src_bk {
+                    Some(s) => {
+                        src_str = s;
+                        Some(&src_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
@@ -199,8 +207,7 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str =
-                            format!("unable to move file: {}", e.to_string());
+                        let err_str = format!("unable to move file: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }
@@ -227,43 +234,41 @@ impl VM {
                     match res {
                         Ok(_) => {}
                         Err(e) => {
-                            let err_str = format!(
-                                "unable to cd to home: {}",
-                                e.to_string()
-                            );
+                            let err_str = format!("unable to cd to home: {}", e.to_string());
                             print_error(chunk, i, &err_str);
                             return 0;
                         }
                     }
                 }
                 Err(e) => {
-                    let err_str =
-                        format!("unable to cd to home: {}", e.to_string());
+                    let err_str = format!("unable to cd to home: {}", e.to_string());
                     print_error(chunk, i, &err_str);
                     return 0;
                 }
             }
         } else {
             let dir_rr = self.stack.pop().unwrap();
-	    let dir_s;
-	    let dir_b;
-	    let dir_str;
-	    let dir_bk : Option<String>;
-	    let dir_opt : Option<&str> =
-		match dir_rr {
-		    Value::String(sp) => {
-			dir_s = sp;
-			dir_b = dir_s.borrow();
-			Some(&dir_b.s)
-		    }
-		    _ => {
-			dir_bk = dir_rr.to_string();
-			match dir_bk {
-			    Some(s) => { dir_str = s; Some(&dir_str) }
-			    _ => None
-			}
-		    }
-		};
+            let dir_s;
+            let dir_b;
+            let dir_str;
+            let dir_bk: Option<String>;
+            let dir_opt: Option<&str> = match dir_rr {
+                Value::String(sp) => {
+                    dir_s = sp;
+                    dir_b = dir_s.borrow();
+                    Some(&dir_b.s)
+                }
+                _ => {
+                    dir_bk = dir_rr.to_string();
+                    match dir_bk {
+                        Some(s) => {
+                            dir_str = s;
+                            Some(&dir_str)
+                        }
+                        _ => None,
+                    }
+                }
+            };
 
             match dir_opt {
                 Some(dir) => {
@@ -272,8 +277,7 @@ impl VM {
                     match res {
                         Ok(_) => {}
                         Err(e) => {
-                            let err_str =
-                                format!("unable to cd: {}", e.to_string());
+                            let err_str = format!("unable to cd: {}", e.to_string());
                             print_error(chunk, i, &err_str);
                             return 0;
                         }
@@ -294,14 +298,11 @@ impl VM {
         let current_dir_res = std::env::current_dir();
         match current_dir_res {
             Ok(current_dir) => {
-                self.stack.push(Value::String(
-                    Rc::new(RefCell::new(
-                        StringPair::new(
-                            current_dir.to_str().unwrap().to_string(),
-                            None,
-                        )
-                    ))
-                ));
+                self.stack
+                    .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+                        current_dir.to_str().unwrap().to_string(),
+                        None,
+                    )))));
             }
             Err(e) => {
                 let err_str = format!("unable to pwd: {}", e.to_string());
@@ -323,25 +324,27 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-	let path_s;
-	let path_b;
-	let path_str;
-	let path_bk : Option<String>;
-	let path_opt : Option<&str> =
-	    match path_rr {
-		Value::String(sp) => {
-		    path_s = sp;
-		    path_b = path_s.borrow();
-		    Some(&path_b.s)
-		}
-		_ => {
-		    path_bk = path_rr.to_string();
-		    match path_bk {
-			Some(s) => { path_str = s; Some(&path_str) }
-			_ => None
-		    }
-		}
-	    };
+        let path_s;
+        let path_b;
+        let path_str;
+        let path_bk: Option<String>;
+        let path_opt: Option<&str> = match path_rr {
+            Value::String(sp) => {
+                path_s = sp;
+                path_b = path_s.borrow();
+                Some(&path_b.s)
+            }
+            _ => {
+                path_bk = path_rr.to_string();
+                match path_bk {
+                    Some(s) => {
+                        path_str = s;
+                        Some(&path_str)
+                    }
+                    _ => None,
+                }
+            }
+        };
 
         match path_opt {
             Some(path_str) => {
@@ -349,12 +352,9 @@ impl VM {
                 if !path.exists() {
                     let res = fs::write(&path_str, "");
                     match res {
-                        Ok(_) => {},
+                        Ok(_) => {}
                         Err(e) => {
-                            let err_str = format!(
-                                "unable to write file: {}",
-                                e.to_string()
-                            );
+                            let err_str = format!("unable to write file: {}", e.to_string());
                             print_error(chunk, i, &err_str);
                             return 0;
                         }
@@ -367,25 +367,19 @@ impl VM {
                                 .duration_since(SystemTime::UNIX_EPOCH)
                                 .unwrap()
                                 .as_secs();
-                            let sft_res =
-                                set_file_times(&path_str, accessed, mtime as i64);
+                            let sft_res = set_file_times(&path_str, accessed, mtime as i64);
                             match sft_res {
                                 Ok(_) => {}
                                 Err(e) => {
-                                    let err_str = format!(
-                                        "unable to write file: {}",
-                                        e.to_string()
-                                    );
+                                    let err_str =
+                                        format!("unable to write file: {}", e.to_string());
                                     print_error(chunk, i, &err_str);
                                     return 0;
                                 }
                             }
                         }
                         Err(e) => {
-                            let err_str = format!(
-                                "unable to write file: {}",
-                                e.to_string()
-                            );
+                            let err_str = format!("unable to write file: {}", e.to_string());
                             print_error(chunk, i, &err_str);
                             return 0;
                         }
@@ -417,25 +411,27 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-	let path_s;
-	let path_b;
-	let path_str;
-	let path_bk : Option<String>;
-	let path_opt : Option<&str> =
-	    match path_rr {
-		Value::String(sp) => {
-		    path_s = sp;
-		    path_b = path_s.borrow();
-		    Some(&path_b.s)
-		}
-		_ => {
-		    path_bk = path_rr.to_string();
-		    match path_bk {
-			Some(s) => { path_str = s; Some(&path_str) }
-			_ => None
-		    }
-		}
-	    };
+        let path_s;
+        let path_b;
+        let path_str;
+        let path_bk: Option<String>;
+        let path_opt: Option<&str> = match path_rr {
+            Value::String(sp) => {
+                path_s = sp;
+                path_b = path_s.borrow();
+                Some(&path_b.s)
+            }
+            _ => {
+                path_bk = path_rr.to_string();
+                match path_bk {
+                    Some(s) => {
+                        path_str = s;
+                        Some(&path_str)
+                    }
+                    _ => None,
+                }
+            }
+        };
 
         match path_opt {
             Some(s) => {
@@ -445,88 +441,60 @@ impl VM {
                         let mut map = IndexMap::new();
                         map.insert(
                             "dev".to_string(),
-                            Value::BigInt(
-                                BigInt::from_u64(meta.dev()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_u64(meta.dev()).unwrap()),
                         );
                         map.insert(
                             "ino".to_string(),
-                            Value::BigInt(
-                                BigInt::from_u64(meta.ino()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_u64(meta.ino()).unwrap()),
                         );
                         map.insert(
                             "mode".to_string(),
-                            Value::BigInt(
-                                BigInt::from_u32(meta.mode()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_u32(meta.mode()).unwrap()),
                         );
                         map.insert(
                             "nlink".to_string(),
-                            Value::BigInt(
-                                BigInt::from_u64(meta.nlink()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_u64(meta.nlink()).unwrap()),
                         );
                         map.insert(
                             "uid".to_string(),
-                            Value::BigInt(
-                                BigInt::from_u32(meta.uid()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_u32(meta.uid()).unwrap()),
                         );
                         map.insert(
                             "gid".to_string(),
-                            Value::BigInt(
-                                BigInt::from_u32(meta.gid()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_u32(meta.gid()).unwrap()),
                         );
                         map.insert(
                             "rdev".to_string(),
-                            Value::BigInt(
-                                BigInt::from_u64(meta.rdev()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_u64(meta.rdev()).unwrap()),
                         );
                         map.insert(
                             "size".to_string(),
-                            Value::BigInt(
-                                BigInt::from_u64(meta.size()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_u64(meta.size()).unwrap()),
                         );
                         map.insert(
                             "atime_nsec".to_string(),
-                            Value::BigInt(
-                                BigInt::from_i64(meta.atime_nsec()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_i64(meta.atime_nsec()).unwrap()),
                         );
                         map.insert(
                             "mtime_nsec".to_string(),
-                            Value::BigInt(
-                                BigInt::from_i64(meta.mtime_nsec()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_i64(meta.mtime_nsec()).unwrap()),
                         );
                         map.insert(
                             "ctime_nsec".to_string(),
-                            Value::BigInt(
-                                BigInt::from_i64(meta.ctime_nsec()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_i64(meta.ctime_nsec()).unwrap()),
                         );
                         map.insert(
                             "blksize".to_string(),
-                            Value::BigInt(
-                                BigInt::from_u64(meta.blksize()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_u64(meta.blksize()).unwrap()),
                         );
                         map.insert(
                             "blocks".to_string(),
-                            Value::BigInt(
-                                BigInt::from_u64(meta.blocks()).unwrap(),
-                            ),
+                            Value::BigInt(BigInt::from_u64(meta.blocks()).unwrap()),
                         );
-                        self.stack
-                            .push(Value::Hash(Rc::new(RefCell::new(map))));
+                        self.stack.push(Value::Hash(Rc::new(RefCell::new(map))));
                     }
                     Err(e) => {
-                        let err_str =
-                            format!("unable to stat file: {}", e.to_string());
+                        let err_str = format!("unable to stat file: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }
@@ -553,26 +521,18 @@ impl VM {
             let mut map = IndexMap::new();
             map.insert(
                 "pid".to_string(),
-                Value::BigInt(
-                    BigInt::from_i32(*pid).unwrap(),
-                ),
+                Value::BigInt(BigInt::from_i32(*pid).unwrap()),
             );
             map.insert(
                 "uid".to_string(),
-                Value::BigInt(
-                    BigInt::from_u32(process.uid).unwrap(),
-                ),
+                Value::BigInt(BigInt::from_u32(process.uid).unwrap()),
             );
             map.insert(
                 "name".to_string(),
-                Value::String(
-                    Rc::new(RefCell::new(
-                        StringPair::new(
-                            process.name().to_string(),
-                            None,
-                        )
-                    ))
-                ),
+                Value::String(Rc::new(RefCell::new(StringPair::new(
+                    process.name().to_string(),
+                    None,
+                )))),
             );
             lst.push_back(Value::Hash(Rc::new(RefCell::new(map))))
         }
@@ -592,22 +552,24 @@ impl VM {
         let sig_s;
         let sig_b;
         let sig_str;
-        let sig_bk : Option<String>;
-        let sig_opt : Option<&str> =
-            match sig_rr {
-                Value::String(sp) => {
-                    sig_s = sp;
-                    sig_b = sig_s.borrow();
-                    Some(&sig_b.s)
-                }
-                _ => {
-                    sig_bk = sig_rr.to_string();
-                    match sig_bk {
-                        Some(s) => { sig_str = s; Some(&sig_str) }
-                        _ => None
+        let sig_bk: Option<String>;
+        let sig_opt: Option<&str> = match sig_rr {
+            Value::String(sp) => {
+                sig_s = sp;
+                sig_b = sig_s.borrow();
+                Some(&sig_b.s)
+            }
+            _ => {
+                sig_bk = sig_rr.to_string();
+                match sig_bk {
+                    Some(s) => {
+                        sig_str = s;
+                        Some(&sig_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         let pid_rr = self.stack.pop().unwrap();
         let pid_int_opt = pid_rr.to_int();
@@ -633,10 +595,7 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str = format!(
-                            "unable to kill process: {}",
-                            e.to_string()
-                        );
+                        let err_str = format!("unable to kill process: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }

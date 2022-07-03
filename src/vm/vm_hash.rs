@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use chunk::{print_error, Chunk, Value, HashWithIndex};
+use chunk::{print_error, Chunk, HashWithIndex, Value};
 use vm::*;
 
 impl VM {
@@ -15,25 +15,27 @@ impl VM {
         }
 
         let key_str_rr = self.stack.pop().unwrap();
-	let key_str_s;
+        let key_str_s;
         let key_str_b;
         let key_str_str;
-        let key_str_bk : Option<String>;
-        let key_str_opt : Option<&str> =
-            match key_str_rr {
-                Value::String(sp) => {
-                    key_str_s = sp;
-                    key_str_b = key_str_s.borrow();
-                    Some(&key_str_b.s)
-                }
-                _ => {
-                    key_str_bk = key_str_rr.to_string();
-                    match key_str_bk {
-                        Some(s) => { key_str_str = s; Some(&key_str_str) }
-                        _ => None
+        let key_str_bk: Option<String>;
+        let key_str_opt: Option<&str> = match key_str_rr {
+            Value::String(sp) => {
+                key_str_s = sp;
+                key_str_b = key_str_s.borrow();
+                Some(&key_str_b.s)
+            }
+            _ => {
+                key_str_bk = key_str_rr.to_string();
+                match key_str_bk {
+                    Some(s) => {
+                        key_str_str = s;
+                        Some(&key_str_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         let hash_rr = self.stack.pop().unwrap();
 
@@ -74,25 +76,27 @@ impl VM {
         let val_rr = self.stack.pop().unwrap();
 
         let key_str_rr = self.stack.pop().unwrap();
-	let key_str_s;
+        let key_str_s;
         let key_str_b;
         let key_str_str;
-        let key_str_bk : Option<String>;
-        let key_str_opt : Option<&str> =
-            match key_str_rr {
-                Value::String(sp) => {
-                    key_str_s = sp;
-                    key_str_b = key_str_s.borrow();
-                    Some(&key_str_b.s)
-                }
-                _ => {
-                    key_str_bk = key_str_rr.to_string();
-                    match key_str_bk {
-                        Some(s) => { key_str_str = s; Some(&key_str_str) }
-                        _ => None
+        let key_str_bk: Option<String>;
+        let key_str_opt: Option<&str> = match key_str_rr {
+            Value::String(sp) => {
+                key_str_s = sp;
+                key_str_b = key_str_s.borrow();
+                Some(&key_str_b.s)
+            }
+            _ => {
+                key_str_bk = key_str_rr.to_string();
+                match key_str_bk {
+                    Some(s) => {
+                        key_str_str = s;
+                        Some(&key_str_str)
                     }
+                    _ => None,
                 }
-            };
+            }
+        };
 
         let mut hash_rr = self.stack.pop().unwrap();
 
@@ -106,11 +110,7 @@ impl VM {
                     return 0;
                 }
                 _ => {
-                    print_error(
-                        chunk,
-                        i,
-                        "second at! argument must be key string",
-                    );
+                    print_error(chunk, i, "second at! argument must be key string");
                     return 0;
                 }
             }
@@ -141,8 +141,9 @@ impl VM {
             }
         }
         if is_hash {
-            self.stack
-                .push(Value::KeysGenerator(Rc::new(RefCell::new(HashWithIndex::new(0, hash_rr)))));
+            self.stack.push(Value::KeysGenerator(Rc::new(RefCell::new(
+                HashWithIndex::new(0, hash_rr),
+            ))));
         }
         return 1;
     }
@@ -169,8 +170,9 @@ impl VM {
             }
         }
         if is_hash {
-            self.stack
-                .push(Value::ValuesGenerator(Rc::new(RefCell::new(HashWithIndex::new(0, hash_rr)))));
+            self.stack.push(Value::ValuesGenerator(Rc::new(RefCell::new(
+                HashWithIndex::new(0, hash_rr),
+            ))));
         }
         return 1;
     }
@@ -197,8 +199,9 @@ impl VM {
             }
         }
         if is_hash {
-            self.stack
-                .push(Value::EachGenerator(Rc::new(RefCell::new(HashWithIndex::new(0, hash_rr)))));
+            self.stack.push(Value::EachGenerator(Rc::new(RefCell::new(
+                HashWithIndex::new(0, hash_rr),
+            ))));
         }
         return 1;
     }

@@ -11,7 +11,7 @@ use std::str;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use chunk::{Chunk, Value, StringPair};
+use chunk::{Chunk, StringPair, Value};
 use opcode::OpCode;
 
 /// The various token types used by the compiler.
@@ -57,9 +57,7 @@ pub struct Token {
 }
 
 impl Token {
-    fn new(
-        token_type: TokenType, line_number: u32, column_number: u32,
-    ) -> Token {
+    fn new(token_type: TokenType, line_number: u32, column_number: u32) -> Token {
         Token {
             token_type: token_type,
             line_number: line_number,
@@ -117,11 +115,7 @@ impl<'a> Scanner<'a> {
     pub fn scan(&mut self) -> Token {
         if self.next_is_eof {
             self.next_is_eof = false;
-            return Token::new(
-                TokenType::Eof,
-                self.line_number,
-                self.column_number,
-            );
+            return Token::new(TokenType::Eof, self.line_number, self.column_number);
         }
 
         let mut done = false;
@@ -158,11 +152,7 @@ impl<'a> Scanner<'a> {
                 });
                 if eof {
                     if result_index == 0 {
-                        return Token::new(
-                            TokenType::Eof,
-                            self.line_number,
-                            self.column_number,
-                        );
+                        return Token::new(TokenType::Eof, self.line_number, self.column_number);
                     } else {
                         self.next_is_eof = true;
                         finished = true;
@@ -179,8 +169,7 @@ impl<'a> Scanner<'a> {
                     self.column_number = self.column_number + 1;
                 }
                 '\t' => {
-                    self.column_number =
-                        self.column_number + (self.column_number % 4);
+                    self.column_number = self.column_number + (self.column_number % 4);
                 }
                 _ => {
                     if (buffer[0] as char == '"')
@@ -214,11 +203,7 @@ impl<'a> Scanner<'a> {
                         )
                     }
                     ')' => {
-                        return Token::new(
-                            TokenType::EndList,
-                            real_line_number,
-                            real_column_number,
-                        )
+                        return Token::new(TokenType::EndList, real_line_number, real_column_number)
                     }
                     '[' => {
                         return Token::new(
@@ -256,11 +241,7 @@ impl<'a> Scanner<'a> {
             });
             if eof {
                 if result_index == 0 {
-                    return Token::new(
-                        TokenType::Eof,
-                        self.line_number,
-                        self.column_number,
-                    );
+                    return Token::new(TokenType::Eof, self.line_number, self.column_number);
                 } else {
                     self.next_is_eof = true;
                     finished = true;
@@ -276,8 +257,7 @@ impl<'a> Scanner<'a> {
                     self.column_number = self.column_number + 1;
                 }
                 '\t' => {
-                    self.column_number =
-                        self.column_number + (self.column_number % 4);
+                    self.column_number = self.column_number + (self.column_number % 4);
                 }
                 '(' => {
                     self.column_number = self.column_number + 1;
@@ -340,9 +320,7 @@ impl<'a> Scanner<'a> {
                     }
                     _ => {
                         if result_index >= 2048 {
-                            eprintln!(
-                                "token is too long (more than 2048 chars)"
-                            );
+                            eprintln!("token is too long (more than 2048 chars)");
                             return Token::new(
                                 TokenType::Error,
                                 self.line_number,
@@ -352,9 +330,7 @@ impl<'a> Scanner<'a> {
                         result[result_index] = buffer[0];
                         result_index = result_index + 1;
                         let c = buffer[0] as char;
-                        if result_index == 1
-                            && (c == '{' || c == '}' || c == '[' || c == ']')
-                        {
+                        if result_index == 1 && (c == '{' || c == '}' || c == '[' || c == ']') {
                             done = true;
                         }
                     }
@@ -386,8 +362,7 @@ impl<'a> Scanner<'a> {
                         self.column_number = self.column_number + 1;
                     }
                     '\t' => {
-                        self.column_number =
-                            self.column_number + (self.column_number % 4);
+                        self.column_number = self.column_number + (self.column_number % 4);
                     }
                     ';' => {
                         self.column_number = self.column_number + 1;
@@ -420,11 +395,7 @@ impl<'a> Scanner<'a> {
                     "{}:{}: unterminated string literal",
                     real_line_number, real_column_number
                 );
-                return Token::new(
-                    TokenType::Error,
-                    real_line_number,
-                    real_column_number,
-                );
+                return Token::new(TokenType::Error, real_line_number, real_column_number);
             }
         }
 
@@ -436,7 +407,8 @@ impl<'a> Scanner<'a> {
         }
         if (buffer[0] as char) == '\n'
             || self.next_is_eof
-            || (self.has_lookahead && self.lookahead == (']' as u8)) {
+            || (self.has_lookahead && self.lookahead == (']' as u8))
+        {
             is_implicit_word = true;
         }
 
@@ -473,10 +445,7 @@ impl<'a> Scanner<'a> {
                         match n_res {
                             Ok(n) => TokenType::Int(n),
                             Err(_) => {
-                                let n = s
-                                    .to_string()
-                                    .parse::<num_bigint::BigInt>()
-                                    .unwrap();
+                                let n = s.to_string().parse::<num_bigint::BigInt>().unwrap();
                                 TokenType::BigInt(n)
                             }
                         }
@@ -535,9 +504,7 @@ impl Compiler {
     /// for dealing with local variables that will no longer be in use
     /// after the scope depth is decreased.
     fn decrease_scope_depth(&mut self, chunk: &mut Chunk) {
-        while self.locals.len() > 0
-            && (self.locals.last().unwrap().depth == self.scope_depth)
-        {
+        while self.locals.len() > 0 && (self.locals.last().unwrap().depth == self.scope_depth) {
             chunk.add_opcode(OpCode::PopLocalVar);
             self.locals.pop();
         }
@@ -548,9 +515,7 @@ impl Compiler {
     /// way of the scanner, and compiles that token data into
     /// bytecode, which is added to the chunk.  Returns a boolean
     /// indicating whether compilation was successful.
-    fn compile_inner(
-        &mut self, scanner: &mut Scanner, chunk: &mut Chunk,
-    ) -> bool {
+    fn compile_inner(&mut self, scanner: &mut Scanner, chunk: &mut Chunk) -> bool {
         // Stores instruction indexes for various types of statement,
         // in order to be able to jump later.
         let mut if_indexes: Vec<(Option<usize>, Option<usize>)> = Vec::new();
@@ -612,8 +577,7 @@ impl Compiler {
                         _ => {
                             eprintln!(
                                 "{}:{}: expected name token",
-                                name_token.line_number,
-                                name_token.column_number
+                                name_token.line_number, name_token.column_number
                             );
                             return false;
                         }
@@ -649,22 +613,21 @@ impl Compiler {
                         }
                     }
 
-                    let mut generator_chunk = Chunk::new_generator(
-                        chunk.name.to_string(),
-                        arg_count,
-                        req_arg_count,
-                    );
+                    let mut generator_chunk =
+                        Chunk::new_generator(chunk.name.to_string(), arg_count, req_arg_count);
 
                     self.increase_scope_depth();
                     let res = self.compile_inner(scanner, &mut generator_chunk);
                     if !res {
                         return false;
                     }
-                    chunk.functions.borrow_mut().insert(name_str, generator_chunk);
+                    chunk
+                        .functions
+                        .borrow_mut()
+                        .insert(name_str, generator_chunk);
                 }
                 TokenType::StartFunction => {
-                    let mut function_chunk =
-                        Chunk::new_standard(chunk.name.to_string());
+                    let mut function_chunk = Chunk::new_standard(chunk.name.to_string());
                     let name_token = scanner.scan();
                     let name_str: String;
                     match name_token.token_type {
@@ -680,8 +643,7 @@ impl Compiler {
                         _ => {
                             eprintln!(
                                 "{}:{}: expected name token",
-                                name_token.line_number,
-                                name_token.column_number
+                                name_token.line_number, name_token.column_number
                             );
                             return false;
                         }
@@ -695,7 +657,10 @@ impl Compiler {
                     if !res {
                         return false;
                     }
-                    chunk.functions.borrow_mut().insert(name_str, function_chunk);
+                    chunk
+                        .functions
+                        .borrow_mut()
+                        .insert(name_str, function_chunk);
                 }
                 TokenType::EndFunction => {
                     self.decrease_scope_depth(chunk);
@@ -709,8 +674,7 @@ impl Compiler {
                     return true;
                 }
                 TokenType::LeftBracket => {
-                    let mut function_chunk =
-                        Chunk::new_standard(chunk.name.to_string());
+                    let mut function_chunk = Chunk::new_standard(chunk.name.to_string());
                     if self.scope_depth > 0 {
                         function_chunk.nested = true;
                         function_chunk.scope_depth = self.scope_depth;
@@ -722,22 +686,25 @@ impl Compiler {
                     if !res {
                         return false;
                     }
-                    let name_str_rr = Value::String(
-                        Rc::new(RefCell::new(
-                            StringPair::new(
-                                name_str.as_str().to_string(),
-                                None,
-                            )
-                        ))
-                    );
+                    let name_str_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
+                        name_str.as_str().to_string(),
+                        None,
+                    ))));
                     let i = chunk.add_constant(name_str_rr);
-                    let fn_opcode = if function_chunk.uses_local_vars { OpCode::Function } else { OpCode::Constant };
+                    let fn_opcode = if function_chunk.uses_local_vars {
+                        OpCode::Function
+                    } else {
+                        OpCode::Constant
+                    };
                     chunk.add_opcode(fn_opcode);
                     let i_upper = (i >> 8) & 0xFF;
                     let i_lower = i & 0xFF;
                     chunk.add_byte(i_upper as u8);
                     chunk.add_byte(i_lower as u8);
-                    chunk.functions.borrow_mut().insert(name_str, function_chunk);
+                    chunk
+                        .functions
+                        .borrow_mut()
+                        .insert(name_str, function_chunk);
                 }
                 TokenType::RightBracket => {
                     match chunk.get_second_last_opcode() {
@@ -794,12 +761,11 @@ impl Compiler {
                                 let mlen = chunk.data.borrow().len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
-                                    token.line_number, token.column_number
+                                    token.line_number,
+                                    token.column_number,
                                 );
-                                chunk.set_third_last_opcode(
-                                    OpCode::AddConstant
-                                );
-                            },
+                                chunk.set_third_last_opcode(OpCode::AddConstant);
+                            }
                             _ => {
                                 chunk.add_opcode(OpCode::Add);
                             }
@@ -810,12 +776,11 @@ impl Compiler {
                                 let mlen = chunk.data.borrow().len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
-                                    token.line_number, token.column_number
+                                    token.line_number,
+                                    token.column_number,
                                 );
-                                chunk.set_third_last_opcode(
-                                    OpCode::SubtractConstant
-                                );
-                            },
+                                chunk.set_third_last_opcode(OpCode::SubtractConstant);
+                            }
                             _ => {
                                 chunk.add_opcode(OpCode::Subtract);
                             }
@@ -826,12 +791,11 @@ impl Compiler {
                                 let mlen = chunk.data.borrow().len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
-                                    token.line_number, token.column_number
+                                    token.line_number,
+                                    token.column_number,
                                 );
-                                chunk.set_third_last_opcode(
-                                    OpCode::MultiplyConstant
-                                );
-                            },
+                                chunk.set_third_last_opcode(OpCode::MultiplyConstant);
+                            }
                             _ => {
                                 chunk.add_opcode(OpCode::Multiply);
                             }
@@ -842,12 +806,11 @@ impl Compiler {
                                 let mlen = chunk.data.borrow().len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
-                                    token.line_number, token.column_number
+                                    token.line_number,
+                                    token.column_number,
                                 );
-                                chunk.set_third_last_opcode(
-                                    OpCode::DivideConstant
-                                );
-                            },
+                                chunk.set_third_last_opcode(OpCode::DivideConstant);
+                            }
                             _ => {
                                 chunk.add_opcode(OpCode::Divide);
                             }
@@ -859,10 +822,8 @@ impl Compiler {
                     } else if s == "=" {
                         match chunk.get_third_last_opcode() {
                             OpCode::Constant => {
-                                chunk.set_third_last_opcode(
-                                    OpCode::EqConstant
-                                );
-                            },
+                                chunk.set_third_last_opcode(OpCode::EqConstant);
+                            }
                             _ => {
                                 chunk.add_opcode(OpCode::Eq);
                             }
@@ -951,9 +912,7 @@ impl Compiler {
                                             let local = &self.locals[i];
                                             if local.name.eq(&sp.borrow().s) {
                                                 uses_local_vars = true;
-                                                chunk.add_opcode(
-                                                    OpCode::SetLocalVar,
-                                                );
+                                                chunk.add_opcode(OpCode::SetLocalVar);
                                                 chunk.add_byte(i as u8);
                                                 success = true;
                                                 break;
@@ -1012,9 +971,7 @@ impl Compiler {
                                             let local = &self.locals[i];
                                             if local.name.eq(&sp.borrow().s) {
                                                 uses_local_vars = true;
-                                                chunk.add_opcode(
-                                                    OpCode::GetLocalVar,
-                                                );
+                                                chunk.add_opcode(OpCode::GetLocalVar);
                                                 chunk.add_byte(i as u8);
                                                 success = true;
                                                 break;
@@ -1108,12 +1065,9 @@ impl Compiler {
                         let mut has_else = false;
                         match else_index {
                             Some(n) => {
-                                let jmp_len =
-                                    chunk.data.borrow().len() - n - 2;
+                                let jmp_len = chunk.data.borrow().len() - n - 2;
                                 chunk.data.borrow_mut()[n] =
-                                    ((jmp_len >> 8) & 0xff)
-                                        .try_into()
-                                        .unwrap();
+                                    ((jmp_len >> 8) & 0xff).try_into().unwrap();
                                 chunk.data.borrow_mut()[n + 1] =
                                     (jmp_len & 0xff).try_into().unwrap();
                                 has_else = true;
@@ -1124,12 +1078,9 @@ impl Compiler {
                         if !has_else {
                             match if_index {
                                 Some(n) => {
-                                    let jmp_len =
-                                        chunk.data.borrow().len() - n - 2;
+                                    let jmp_len = chunk.data.borrow().len() - n - 2;
                                     chunk.data.borrow_mut()[n] =
-                                        ((jmp_len >> 8) & 0xff)
-                                            .try_into()
-                                            .unwrap();
+                                        ((jmp_len >> 8) & 0xff).try_into().unwrap();
                                     chunk.data.borrow_mut()[n + 1] =
                                         (jmp_len & 0xff).try_into().unwrap();
                                     if_index = None;
@@ -1182,8 +1133,7 @@ impl Compiler {
                     } else if s == "begin" {
                         match begin_index {
                             Some(_) => {
-                                begin_indexes
-                                    .push((begin_index, leave_indexes));
+                                begin_indexes.push((begin_index, leave_indexes));
                                 leave_indexes = Vec::new();
                             }
                             _ => {}
@@ -1209,21 +1159,20 @@ impl Compiler {
                         match begin_index {
                             Some(n) => {
                                 let mut done = false;
-                                match (chunk.get_third_last_opcode(),
-                                       chunk.get_fourth_last_opcode()) {
+                                match (
+                                    chunk.get_third_last_opcode(),
+                                    chunk.get_fourth_last_opcode(),
+                                ) {
                                     (OpCode::EqConstant, OpCode::Dup) => {
-                                        chunk.set_fourth_last_opcode(
-                                            OpCode::JumpNeREqC
-                                        );
+                                        chunk.set_fourth_last_opcode(OpCode::JumpNeREqC);
                                         let cb1 = chunk.get_second_last_byte();
                                         let cb2 = chunk.get_last_byte();
-					let i3 = (((cb1 as u16) << 8) & 0xFF00)
-					    | ((cb2 & 0xFF) as u16);
+                                        let i3 =
+                                            (((cb1 as u16) << 8) & 0xFF00) | ((cb2 & 0xFF) as u16);
                                         if chunk.has_constant_int(i3 as i32) {
-                                            let jmp_len =
-                                                chunk.data.borrow().len() - n + 1;
+                                            let jmp_len = chunk.data.borrow().len() - n + 1;
                                             chunk.set_third_last_byte(
-                                                ((jmp_len >> 8) & 0xff).try_into().unwrap()
+                                                ((jmp_len >> 8) & 0xff).try_into().unwrap(),
                                             );
                                             chunk.set_second_last_byte(
                                                 (jmp_len & 0xff).try_into().unwrap(),
@@ -1232,7 +1181,7 @@ impl Compiler {
                                             chunk.add_byte(cb2);
                                             done = true;
                                         }
-                                    },
+                                    }
                                     _ => {}
                                 };
                                 if !done {
@@ -1241,7 +1190,8 @@ impl Compiler {
                                         OpCode::Constant => {
                                             let i_upper = chunk.get_second_last_byte();
                                             let i_lower = chunk.get_last_byte();
-                                            let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                                            let constant_i = (((i_upper as u16) << 8) & 0xFF00)
+                                                | ((i_lower & 0xFF) as u16);
                                             let v = chunk.get_constant(constant_i.into());
                                             match v {
                                                 Value::Int(0) => {
@@ -1263,12 +1213,8 @@ impl Compiler {
                                     if !done2 {
                                         chunk.add_opcode(OpCode::JumpNeR);
                                         let jmp_len = chunk.data.borrow().len() - n + 2;
-                                        chunk.add_byte(
-                                            ((jmp_len >> 8) & 0xff).try_into().unwrap(),
-                                        );
-                                        chunk.add_byte(
-                                            (jmp_len & 0xff).try_into().unwrap(),
-                                        );
+                                        chunk.add_byte(((jmp_len >> 8) & 0xff).try_into().unwrap());
+                                        chunk.add_byte((jmp_len & 0xff).try_into().unwrap());
                                     }
                                 }
                             }
@@ -1288,7 +1234,8 @@ impl Compiler {
                                 (jmp_len & 0xff).try_into().unwrap();
                         }
                         if begin_indexes.len() > 0 {
-                            let (prev_begin_index, prev_leave_indexes) = begin_indexes.pop().unwrap();
+                            let (prev_begin_index, prev_leave_indexes) =
+                                begin_indexes.pop().unwrap();
                             begin_index = prev_begin_index;
                             leave_indexes = prev_leave_indexes;
                         }
@@ -1304,7 +1251,8 @@ impl Compiler {
                         chunk.add_opcode(OpCode::Rand);
                     } else {
                         let s_escaped = escape_string(&s);
-                        let s_rr = Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
+                        let s_rr =
+                            Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
                         let i = chunk.add_constant(s_rr);
 
                         if is_implicit {
@@ -1357,7 +1305,8 @@ impl Compiler {
                 }
                 TokenType::String(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
+                    let s_rr =
+                        Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -1384,10 +1333,8 @@ impl Compiler {
 
     /// Takes a BufRead and a chunk name as its arguments.  Compiles
     /// the program code found in the BufRead, and returns a chunk
-    /// containing the compiled code. 
-    pub fn compile(
-        &mut self, fh: &mut Box<dyn BufRead>, name: &str,
-    ) -> Option<Chunk> {
+    /// containing the compiled code.
+    pub fn compile(&mut self, fh: &mut Box<dyn BufRead>, name: &str) -> Option<Chunk> {
         let mut scanner = Scanner::new(fh);
         let mut chunk = Chunk::new_standard(name.to_string());
         let res = self.compile_inner(&mut scanner, &mut chunk);
@@ -1400,9 +1347,7 @@ impl Compiler {
 
     /// Takes a chunk and a file object as its arguments.  Serialises
     /// the chunk to the file.
-    pub fn serialise(
-        &mut self, chunk: &Chunk, file: &mut std::fs::File,
-    ) -> bool {
+    pub fn serialise(&mut self, chunk: &Chunk, file: &mut std::fs::File) -> bool {
         let encoded_res = bincode::serialize(&chunk);
         match encoded_res {
             Ok(encoded) => {

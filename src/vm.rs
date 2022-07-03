@@ -14,7 +14,9 @@ use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use sysinfo::{System, SystemExt};
 
-use chunk::{print_error, Chunk, Value, StringPair, GeneratorObject, AnonymousFunction, ValueSD, CFPair};
+use chunk::{
+    print_error, AnonymousFunction, CFPair, Chunk, GeneratorObject, StringPair, Value, ValueSD,
+};
 use compiler::Compiler;
 use opcode::{to_opcode, OpCode};
 
@@ -40,9 +42,7 @@ pub enum ListType {
 
 /// See Value.to_string.  This function takes the result of a call to
 /// that function, and returns a &str.
-pub fn to_string_2<'a>(
-    v: &'a (Option<&str>, Option<String>),
-) -> Option<&'a str> {
+pub fn to_string_2<'a>(v: &'a (Option<&str>, Option<String>)) -> Option<&'a str> {
     match v {
         (Some(s), _) => Some(s),
         (_, Some(s)) => Some(&s),
@@ -70,32 +70,74 @@ lazy_static! {
     static ref SIMPLE_FORMS: HashMap<&'static str, fn(&mut VM, &Chunk, usize) -> i32> = {
         let mut map = HashMap::new();
         map.insert("+", VM::opcode_add as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("-", VM::opcode_subtract as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("*", VM::opcode_multiply as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "-",
+            VM::opcode_subtract as fn(&mut VM, &Chunk, usize) -> i32,
+        );
+        map.insert(
+            "*",
+            VM::opcode_multiply as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("/", VM::opcode_divide as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("=", VM::opcode_eq as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert(">", VM::opcode_gt as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("<", VM::opcode_lt as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("print", VM::opcode_print as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "print",
+            VM::opcode_print as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("drop", VM::opcode_drop as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("clear", VM::opcode_clear as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "clear",
+            VM::opcode_clear as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("dup", VM::opcode_dup as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("over", VM::opcode_over as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("swap", VM::opcode_swap as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("rot", VM::opcode_rot as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("depth", VM::opcode_depth as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("is-null", VM::opcode_isnull as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("is-list", VM::opcode_islist as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("is-callable", VM::opcode_iscallable as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("is-shiftable", VM::opcode_isshiftable as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "depth",
+            VM::opcode_depth as fn(&mut VM, &Chunk, usize) -> i32,
+        );
+        map.insert(
+            "is-null",
+            VM::opcode_isnull as fn(&mut VM, &Chunk, usize) -> i32,
+        );
+        map.insert(
+            "is-list",
+            VM::opcode_islist as fn(&mut VM, &Chunk, usize) -> i32,
+        );
+        map.insert(
+            "is-callable",
+            VM::opcode_iscallable as fn(&mut VM, &Chunk, usize) -> i32,
+        );
+        map.insert(
+            "is-shiftable",
+            VM::opcode_isshiftable as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("open", VM::opcode_open as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("readline", VM::opcode_readline as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("println", VM::core_println as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "readline",
+            VM::opcode_readline as fn(&mut VM, &Chunk, usize) -> i32,
+        );
+        map.insert(
+            "println",
+            VM::core_println as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("rm", VM::core_rm as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("writeline", VM::core_writeline as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "writeline",
+            VM::core_writeline as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("close", VM::core_close as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("opendir", VM::core_opendir as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("readdir", VM::core_readdir as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "opendir",
+            VM::core_opendir as fn(&mut VM, &Chunk, usize) -> i32,
+        );
+        map.insert(
+            "readdir",
+            VM::core_readdir as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("cp", VM::core_cp as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("mv", VM::core_mv as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("cd", VM::core_cd as fn(&mut VM, &Chunk, usize) -> i32);
@@ -109,44 +151,145 @@ lazy_static! {
         map.insert("c", VM::core_c as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("nth", VM::core_nth as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("nth!", VM::core_nth_em as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("append", VM::core_append as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "append",
+            VM::core_append as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("push", VM::opcode_push as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("unshift", VM::core_unshift as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "unshift",
+            VM::core_unshift as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("pop", VM::opcode_pop as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("len", VM::core_len as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("is-dir", VM::core_is_dir as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "is-dir",
+            VM::core_is_dir as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("split", VM::core_split as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("at", VM::core_at as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("at!", VM::core_at_em as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("keys", VM::core_keys as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("values", VM::core_values as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "values",
+            VM::core_values as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("each", VM::core_each as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("from-json", VM::core_from_json as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("to-json", VM::core_to_json as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("from-xml", VM::core_from_xml as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("to-xml", VM::core_to_xml as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert(
+            "from-json",
+            VM::core_from_json as fn(&mut VM, &Chunk, usize) -> i32,
+        );
+        map.insert(
+            "to-json",
+            VM::core_to_json as fn(&mut VM, &Chunk, usize) -> i32,
+        );
+        map.insert(
+            "from-xml",
+            VM::core_from_xml as fn(&mut VM, &Chunk, usize) -> i32,
+        );
+        map.insert(
+            "to-xml",
+            VM::core_to_xml as fn(&mut VM, &Chunk, usize) -> i32,
+        );
         map.insert("str", VM::opcode_str as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("int", VM::opcode_int as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("flt", VM::opcode_flt as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("rand", VM::opcode_rand as fn(&mut VM, &Chunk, usize) -> i32);
         map
     };
-
-    static ref SHIFT_FORMS: HashMap<&'static str, fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32> = {
+    static ref SHIFT_FORMS: HashMap<
+        &'static str,
+        fn(
+            &mut VM,
+            &mut Vec<RefCell<HashMap<String, Value>>>,
+            &mut RefCell<HashMap<String, Chunk>>,
+            &mut Vec<Rc<RefCell<Vec<Value>>>>,
+            &Chunk,
+            usize,
+            (u32, u32),
+            Arc<AtomicBool>,
+        ) -> i32,
+    > = {
         let mut map = HashMap::new();
-        map.insert("shift", VM::opcode_shift as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
-        map.insert("gnth", VM::core_gnth as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
-        map.insert("|", VM::core_pipe as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
-        map.insert("shift-all", VM::core_shift_all as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
-        map.insert("join", VM::core_join as fn(&mut VM, &mut Vec<RefCell<HashMap<String, Value>>>, &mut RefCell<HashMap<String, Chunk>>, &mut Vec<Rc<RefCell<Vec<Value>>>>, &Chunk, usize, (u32, u32), Arc<AtomicBool>) -> i32);
+        map.insert(
+            "shift",
+            VM::opcode_shift
+                as fn(
+                    &mut VM,
+                    &mut Vec<RefCell<HashMap<String, Value>>>,
+                    &mut RefCell<HashMap<String, Chunk>>,
+                    &mut Vec<Rc<RefCell<Vec<Value>>>>,
+                    &Chunk,
+                    usize,
+                    (u32, u32),
+                    Arc<AtomicBool>,
+                ) -> i32,
+        );
+        map.insert(
+            "gnth",
+            VM::core_gnth
+                as fn(
+                    &mut VM,
+                    &mut Vec<RefCell<HashMap<String, Value>>>,
+                    &mut RefCell<HashMap<String, Chunk>>,
+                    &mut Vec<Rc<RefCell<Vec<Value>>>>,
+                    &Chunk,
+                    usize,
+                    (u32, u32),
+                    Arc<AtomicBool>,
+                ) -> i32,
+        );
+        map.insert(
+            "|",
+            VM::core_pipe
+                as fn(
+                    &mut VM,
+                    &mut Vec<RefCell<HashMap<String, Value>>>,
+                    &mut RefCell<HashMap<String, Chunk>>,
+                    &mut Vec<Rc<RefCell<Vec<Value>>>>,
+                    &Chunk,
+                    usize,
+                    (u32, u32),
+                    Arc<AtomicBool>,
+                ) -> i32,
+        );
+        map.insert(
+            "shift-all",
+            VM::core_shift_all
+                as fn(
+                    &mut VM,
+                    &mut Vec<RefCell<HashMap<String, Value>>>,
+                    &mut RefCell<HashMap<String, Chunk>>,
+                    &mut Vec<Rc<RefCell<Vec<Value>>>>,
+                    &Chunk,
+                    usize,
+                    (u32, u32),
+                    Arc<AtomicBool>,
+                ) -> i32,
+        );
+        map.insert(
+            "join",
+            VM::core_join
+                as fn(
+                    &mut VM,
+                    &mut Vec<RefCell<HashMap<String, Value>>>,
+                    &mut RefCell<HashMap<String, Chunk>>,
+                    &mut Vec<Rc<RefCell<Vec<Value>>>>,
+                    &Chunk,
+                    usize,
+                    (u32, u32),
+                    Arc<AtomicBool>,
+                ) -> i32,
+        );
         map
     };
-
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM, &Chunk, usize) -> i32>> = {
         let mut vec = vec![None; 255];
         vec[OpCode::Add as usize] = Some(VM::opcode_add as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Subtract as usize] = Some(VM::opcode_subtract as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Multiply as usize] = Some(VM::opcode_multiply as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::Subtract as usize] =
+            Some(VM::opcode_subtract as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::Multiply as usize] =
+            Some(VM::opcode_multiply as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Divide as usize] = Some(VM::opcode_divide as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Eq as usize] = Some(VM::opcode_eq as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Gt as usize] = Some(VM::opcode_gt as fn(&mut VM, &Chunk, usize) -> i32);
@@ -160,12 +303,16 @@ lazy_static! {
         vec[OpCode::Rot as usize] = Some(VM::opcode_rot as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Depth as usize] = Some(VM::opcode_depth as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::IsNull as usize] = Some(VM::opcode_isnull as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::DupIsNull as usize] = Some(VM::opcode_dupisnull as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::DupIsNull as usize] =
+            Some(VM::opcode_dupisnull as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::IsList as usize] = Some(VM::opcode_islist as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::IsCallable as usize] = Some(VM::opcode_iscallable as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::IsShiftable as usize] = Some(VM::opcode_isshiftable as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::IsCallable as usize] =
+            Some(VM::opcode_iscallable as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::IsShiftable as usize] =
+            Some(VM::opcode_isshiftable as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Open as usize] = Some(VM::opcode_open as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Readline as usize] = Some(VM::opcode_readline as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::Readline as usize] =
+            Some(VM::opcode_readline as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Str as usize] = Some(VM::opcode_str as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Int as usize] = Some(VM::opcode_int as fn(&mut VM, &Chunk, usize) -> i32);
         vec[OpCode::Flt as usize] = Some(VM::opcode_flt as fn(&mut VM, &Chunk, usize) -> i32);
@@ -191,14 +338,16 @@ impl VM {
         &mut self,
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
+        call_stack_chunks: &Vec<&Chunk>,
+        chunk: &'a Chunk,
         chunk_values: Rc<RefCell<HashMap<String, Value>>>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
-        line_col: (u32, u32), running: Arc<AtomicBool>,
+        line_col: (u32, u32),
+        running: Arc<AtomicBool>,
         is_value_function: bool,
         plvs_index: u32,
         call_chunk_rc: Rc<RefCell<Chunk>>,
@@ -232,20 +381,15 @@ impl VM {
             for i in new_call_stack_chunks.iter() {
                 gen_call_stack_chunks.push((*i).clone());
             }
-            let gen_rr =
-                Value::Generator(
-                    Rc::new(RefCell::new(
-                        GeneratorObject::new(
-                            Rc::new(RefCell::new(HashMap::new())),
-                            Rc::new(RefCell::new(Vec::new())),
-                            0,
-                            call_chunk.clone(),
-                            Rc::new(RefCell::new(gen_call_stack_chunks)),
-                            gen_args,
-                            Rc::new(RefCell::new(HashMap::new())),
-                        )
-                    ))
-                );
+            let gen_rr = Value::Generator(Rc::new(RefCell::new(GeneratorObject::new(
+                Rc::new(RefCell::new(HashMap::new())),
+                Rc::new(RefCell::new(Vec::new())),
+                0,
+                call_chunk.clone(),
+                Rc::new(RefCell::new(gen_call_stack_chunks)),
+                gen_args,
+                Rc::new(RefCell::new(HashMap::new())),
+            ))));
             self.stack.push(gen_rr);
         } else {
             if call_chunk.has_vars {
@@ -254,16 +398,9 @@ impl VM {
 
             if is_value_function {
                 self.local_var_stack =
-                    (*(prev_local_vars_stacks
-                        .get(plvs_index as usize)
-                        .unwrap()))
-                    .clone();
+                    (*(prev_local_vars_stacks.get(plvs_index as usize).unwrap())).clone();
             } else if call_chunk.nested {
-                self.local_var_stack =
-                    (*(prev_local_vars_stacks
-                        .last()
-                        .unwrap()))
-                    .clone();
+                self.local_var_stack = (*(prev_local_vars_stacks.last().unwrap())).clone();
             }
 
             let res = self.run(
@@ -282,12 +419,10 @@ impl VM {
             );
 
             if is_value_function {
-                prev_local_vars_stacks[plvs_index as usize] =
-                    self.local_var_stack.clone();
+                prev_local_vars_stacks[plvs_index as usize] = self.local_var_stack.clone();
             } else if call_chunk.nested {
                 let plvs_len = prev_local_vars_stacks.len();
-                prev_local_vars_stacks[plvs_len - 1] =
-                    self.local_var_stack.clone();
+                prev_local_vars_stacks[plvs_len - 1] = self.local_var_stack.clone();
             }
 
             if res == 0 {
@@ -301,18 +436,20 @@ impl VM {
         &mut self,
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
+        call_stack_chunks: &Vec<&Chunk>,
+        chunk: &'a Chunk,
         chunk_values: Rc<RefCell<HashMap<String, Value>>>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
-        line_col: (u32, u32), running: Arc<AtomicBool>,
+        line_col: (u32, u32),
+        running: Arc<AtomicBool>,
         is_value_function: bool,
         plvs_index: u32,
         is_implicit: bool,
-        s: &str
+        s: &str,
     ) -> bool {
         let sf_fn_opt = SIMPLE_FORMS.get(s);
         if !sf_fn_opt.is_none() {
@@ -327,7 +464,16 @@ impl VM {
         let shift_fn_opt = SHIFT_FORMS.get(s);
         if !shift_fn_opt.is_none() {
             let shift_fn = shift_fn_opt.unwrap();
-            let n = shift_fn(self, scopes, global_functions, prev_local_vars_stacks, chunk, i, line_col, running);
+            let n = shift_fn(
+                self,
+                scopes,
+                global_functions,
+                prev_local_vars_stacks,
+                chunk,
+                i,
+                line_col,
+                running,
+            );
             if n == 0 {
                 return false;
             }
@@ -337,14 +483,7 @@ impl VM {
         if s == "toggle-mode" {
             self.print_stack = !self.print_stack;
         } else if s == ".s" {
-            self.print_stack(
-                chunk,
-                i,
-                scopes,
-                global_functions,
-                running,
-                true,
-            );
+            self.print_stack(chunk, i, scopes, global_functions, running, true);
         } else if s == "exc" {
             if self.stack.len() < 1 {
                 print_error(chunk, i, "exc requires one argument");
@@ -355,22 +494,24 @@ impl VM {
             let fn_s;
             let fn_b;
             let fn_str;
-            let fn_bk : Option<String>;
-            let fn_opt : Option<&str> =
-                match fn_rr {
-                    Value::String(sp) => {
-                        fn_s = sp;
-                        fn_b = fn_s.borrow();
-                        Some(&fn_b.s)
-                    }
-                    _ => {
-                        fn_bk = fn_rr.to_string();
-                        match fn_bk {
-                            Some(s) => { fn_str = s; Some(&fn_str) }
-                            _ => None
+            let fn_bk: Option<String>;
+            let fn_opt: Option<&str> = match fn_rr {
+                Value::String(sp) => {
+                    fn_s = sp;
+                    fn_b = fn_s.borrow();
+                    Some(&fn_b.s)
+                }
+                _ => {
+                    fn_bk = fn_rr.to_string();
+                    match fn_bk {
+                        Some(s) => {
+                            fn_str = s;
+                            Some(&fn_str)
                         }
+                        _ => None,
                     }
-                };
+                }
+            };
 
             let mut pushed = false;
             match fn_opt {
@@ -403,18 +544,16 @@ impl VM {
                                     break;
                                 }
                             }
-                            if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
-                                global_function = global_functions
-                                    .borrow()
-                                    .get(s)
-                                    .unwrap()
-                                    .clone();
+                            if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s)
+                            {
+                                global_function = global_functions.borrow().get(s).unwrap().clone();
                                 call_chunk_opt = Some(&global_function);
                             }
                             match call_chunk_opt {
                                 Some(call_chunk) => {
-                                    let nv =
-                                    Value::NamedFunction(Rc::new(RefCell::new(call_chunk.clone())));
+                                    let nv = Value::NamedFunction(Rc::new(RefCell::new(
+                                        call_chunk.clone(),
+                                    )));
                                     self.stack.push(nv);
                                     pushed = true;
                                 }
@@ -423,8 +562,7 @@ impl VM {
                         }
                     }
                 }
-                _ => {
-                }
+                _ => {}
             }
             if !pushed {
                 self.stack.push(backup_rr);
@@ -439,22 +577,24 @@ impl VM {
             let lib_str_s;
             let lib_str_b;
             let lib_str_str;
-            let lib_str_bk : Option<String>;
-            let lib_str_opt : Option<&str> =
-                match lib_rr {
-                    Value::String(sp) => {
-                        lib_str_s = sp;
-                        lib_str_b = lib_str_s.borrow();
-                        Some(&lib_str_b.s)
-                    }
-                    _ => {
-                        lib_str_bk = lib_rr.to_string();
-                        match lib_str_bk {
-                            Some(s) => { lib_str_str = s; Some(&lib_str_str) }
-                            _ => None
+            let lib_str_bk: Option<String>;
+            let lib_str_opt: Option<&str> = match lib_rr {
+                Value::String(sp) => {
+                    lib_str_s = sp;
+                    lib_str_b = lib_str_s.borrow();
+                    Some(&lib_str_b.s)
+                }
+                _ => {
+                    lib_str_bk = lib_rr.to_string();
+                    match lib_str_bk {
+                        Some(s) => {
+                            lib_str_str = s;
+                            Some(&lib_str_str)
                         }
+                        _ => None,
                     }
-                };
+                }
+            };
 
             match lib_str_opt {
                 Some(s) => {
@@ -462,11 +602,8 @@ impl VM {
                     let import_chunk_opt = compiler.deserialise(s);
                     match import_chunk_opt {
                         Some(import_chunk) => {
-                            let mut global_functions_b =
-                                global_functions.borrow_mut();
-                            for (k, v) in
-                                import_chunk.functions.borrow().iter()
-                            {
+                            let mut global_functions_b = global_functions.borrow_mut();
+                            for (k, v) in import_chunk.functions.borrow().iter() {
                                 global_functions_b.insert(k.clone(), v.clone());
                             }
                         }
@@ -476,11 +613,7 @@ impl VM {
                     }
                 }
                 _ => {
-                    print_error(
-                        chunk,
-                        i,
-                        "import argument must be a string",
-                    );
+                    print_error(chunk, i, "import argument must be a string");
                     return false;
                 }
             }
@@ -500,24 +633,16 @@ impl VM {
                 }
             }
             if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
-                global_function = global_functions
-                    .borrow()
-                    .get(s)
-                    .unwrap()
-                    .clone();
+                global_function = global_functions.borrow().get(s).unwrap().clone();
                 call_chunk_opt = Some(&global_function);
             }
             match call_chunk_opt {
                 None => {
                     if is_implicit {
-                        let value_rr = Value::String(
-                            Rc::new(RefCell::new(
-                                StringPair::new(
-                                    s.to_string(),
-                                    None,
-                                )
-                            ))
-                        );
+                        let value_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
+                            s.to_string(),
+                            None,
+                        ))));
                         self.stack.push(value_rr);
                     } else {
                         print_error(chunk, i, "function not found");
@@ -525,8 +650,7 @@ impl VM {
                     }
                 }
                 Some(call_chunk) => {
-                    let call_chunk_rc =
-                        Rc::new(RefCell::new(call_chunk.clone()));
+                    let call_chunk_rc = Rc::new(RefCell::new(call_chunk.clone()));
                     return self.call_named_function(
                         scopes,
                         global_functions,
@@ -542,7 +666,7 @@ impl VM {
                         running.clone(),
                         is_value_function,
                         plvs_index,
-                        call_chunk_rc
+                        call_chunk_rc,
                     );
                 }
             }
@@ -565,7 +689,8 @@ impl VM {
         &mut self,
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
+        call_stack_chunks: &Vec<&Chunk>,
+        chunk: &'a Chunk,
         chunk_values: Rc<RefCell<HashMap<String, Value>>>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
@@ -576,7 +701,8 @@ impl VM {
         gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
-        line_col: (u32, u32), running: Arc<AtomicBool>,
+        line_col: (u32, u32),
+        running: Arc<AtomicBool>,
     ) -> bool {
         if self.debug {
             eprintln!("Chunk functions: {:?}", chunk_functions);
@@ -607,7 +733,8 @@ impl VM {
         let mut value_function_str = "".to_owned();
         {
             match function_rr {
-                Some(Value::Function(ref vf)) => { //s, vf_plvs_index, vf_plvs_ptr) => {
+                Some(Value::Function(ref vf)) => {
+                    //s, vf_plvs_index, vf_plvs_ptr) => {
                     let af = vf.borrow();
                     let s = &af.f;
                     let vf_plvs_index = af.local_var_stack_index;
@@ -617,37 +744,24 @@ impl VM {
                     plvs_index = vf_plvs_index;
                     value_function_str = s.clone();
                     if (plvs_index + 1) > (prev_local_vars_stacks.len() as u32) {
-                        print_error(
-                            chunk,
-                            i,
-                            "cannot call function, as stack has gone away",
-                        );
+                        print_error(chunk, i, "cannot call function, as stack has gone away");
                         return false;
                     }
-                    let plvs_ptr = prev_local_vars_stacks[plvs_index as usize].as_ptr()
-                        as *const _ as u64;
+                    let plvs_ptr =
+                        prev_local_vars_stacks[plvs_index as usize].as_ptr() as *const _ as u64;
                     if vf_plvs_ptr != plvs_ptr {
-                        print_error(
-                            chunk,
-                            i,
-                            "cannot call function, as stack has gone away",
-                        );
+                        print_error(chunk, i, "cannot call function, as stack has gone away");
                         return false;
                     }
                 }
-                _ => {
-                }
+                _ => {}
             }
         }
         if is_value_function {
-            function_rr = Some(Value::String(
-                Rc::new(RefCell::new(
-                    StringPair::new(
-                        value_function_str.to_string(),
-                        None
-                    )
-                ))
-            ));
+            function_rr = Some(Value::String(Rc::new(RefCell::new(StringPair::new(
+                value_function_str.to_string(),
+                None,
+            )))));
         }
 
         match function_str {
@@ -664,7 +778,11 @@ impl VM {
                         let cfb = chunk_functions.borrow();
                         let cv = cfb.get(function_str_index as usize);
                         match cv {
-                            Some(CFPair { ffn: Value::Null, cfs: _ }) | None => {
+                            Some(CFPair {
+                                ffn: Value::Null,
+                                cfs: _,
+                            })
+                            | None => {
                                 not_present = true;
                             }
                             _ => {
@@ -677,9 +795,13 @@ impl VM {
                         if !sf_fn_opt.is_none() {
                             let sf_fn = sf_fn_opt.unwrap();
                             let nv = Value::CoreFunction(*sf_fn);
-                            chunk_functions.borrow_mut().resize(function_str_index as usize, CFPair::new(Value::Null));
+                            chunk_functions
+                                .borrow_mut()
+                                .resize(function_str_index as usize, CFPair::new(Value::Null));
                             let cfpair = CFPair::new(nv);
-                            chunk_functions.borrow_mut().insert(function_str_index as usize, cfpair);
+                            chunk_functions
+                                .borrow_mut()
+                                .insert(function_str_index as usize, cfpair);
                             if self.debug {
                                 eprintln!("function str {:?} found, inserted as core function", s);
                             }
@@ -688,11 +810,18 @@ impl VM {
                             if !shift_fn_opt.is_none() {
                                 let shift_fn = shift_fn_opt.unwrap();
                                 let nv = Value::ShiftFunction(*shift_fn);
-                                chunk_functions.borrow_mut().resize(function_str_index as usize, CFPair::new(Value::Null));
+                                chunk_functions
+                                    .borrow_mut()
+                                    .resize(function_str_index as usize, CFPair::new(Value::Null));
                                 let cfpair = CFPair::new(nv);
-                                chunk_functions.borrow_mut().insert(function_str_index as usize, cfpair);
+                                chunk_functions
+                                    .borrow_mut()
+                                    .insert(function_str_index as usize, cfpair);
                                 if self.debug {
-                                    eprintln!("function str {:?} found, inserted as shift function", s);
+                                    eprintln!(
+                                        "function str {:?} found, inserted as shift function",
+                                        s
+                                    );
                                 }
                             } else {
                                 let mut new_call_stack_chunks = call_stack_chunks.clone();
@@ -709,23 +838,26 @@ impl VM {
                                         break;
                                     }
                                 }
-                                if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
-                                    global_function = global_functions
-                                        .borrow()
-                                        .get(s)
-                                        .unwrap()
-                                        .clone();
+                                if call_chunk_opt.is_none()
+                                    && global_functions.borrow().contains_key(s)
+                                {
+                                    global_function =
+                                        global_functions.borrow().get(s).unwrap().clone();
                                     call_chunk_opt = Some(&global_function);
                                 }
                                 match call_chunk_opt {
                                     Some(call_chunk) => {
                                         let call_chunk_rc =
                                             Rc::new(RefCell::new(call_chunk.clone()));
-                                        let nv =
-                                        Value::NamedFunction(call_chunk_rc.clone());
-                                        chunk_functions.borrow_mut().resize(function_str_index as usize, CFPair::new(Value::Null));
+                                        let nv = Value::NamedFunction(call_chunk_rc.clone());
+                                        chunk_functions.borrow_mut().resize(
+                                            function_str_index as usize,
+                                            CFPair::new(Value::Null),
+                                        );
                                         let cfpair = CFPair::new(nv);
-                                        chunk_functions.borrow_mut().insert(function_str_index as usize, cfpair);
+                                        chunk_functions
+                                            .borrow_mut()
+                                            .insert(function_str_index as usize, cfpair);
                                         if self.debug {
                                             eprintln!("function str {:?} found, inserted as named function", s);
                                         }
@@ -740,10 +872,12 @@ impl VM {
                         let cfb = chunk_functions.borrow();
                         let cv = cfb.get(function_str_index as usize);
                         match cv {
-                            Some(CFPair { ffn: Value::CoreFunction(cf), cfs: _ }) => {
+                            Some(CFPair {
+                                ffn: Value::CoreFunction(cf),
+                                cfs: _,
+                            }) => {
                                 if self.debug {
-                                    eprintln!("function str {:?} matches core function",
-                                            s);
+                                    eprintln!("function str {:?} matches core function", s);
                                 }
                                 let n = cf(self, chunk, i);
                                 if n == 0 {
@@ -751,21 +885,34 @@ impl VM {
                                 }
                                 return true;
                             }
-                            Some(CFPair { ffn: Value::ShiftFunction(sf), cfs: _ }) => {
+                            Some(CFPair {
+                                ffn: Value::ShiftFunction(sf),
+                                cfs: _,
+                            }) => {
                                 if self.debug {
-                                    eprintln!("function str {:?} matches shift function",
-                                            s);
+                                    eprintln!("function str {:?} matches shift function", s);
                                 }
-                                let n = sf(self, scopes, global_functions, prev_local_vars_stacks, chunk, i, line_col, running);
+                                let n = sf(
+                                    self,
+                                    scopes,
+                                    global_functions,
+                                    prev_local_vars_stacks,
+                                    chunk,
+                                    i,
+                                    line_col,
+                                    running,
+                                );
                                 if n == 0 {
                                     return false;
                                 }
                                 return true;
                             }
-                            Some(CFPair { ffn: Value::NamedFunction(call_chunk_rc), cfs }) => {
+                            Some(CFPair {
+                                ffn: Value::NamedFunction(call_chunk_rc),
+                                cfs,
+                            }) => {
                                 if self.debug {
-                                    eprintln!("function str {:?} matches named function",
-                                            s);
+                                    eprintln!("function str {:?} matches named function", s);
                                 }
                                 return self.call_named_function(
                                     scopes,
@@ -782,10 +929,13 @@ impl VM {
                                     running.clone(),
                                     is_value_function,
                                     plvs_index,
-                                    call_chunk_rc.clone()
+                                    call_chunk_rc.clone(),
                                 );
                             }
-                            Some(CFPair { ffn: Value::Null, cfs: _ }) => {
+                            Some(CFPair {
+                                ffn: Value::Null,
+                                cfs: _,
+                            }) => {
                                 if self.debug {
                                     eprintln!("function str {:?} not cached", s);
                                 }
@@ -824,7 +974,7 @@ impl VM {
                     is_value_function,
                     plvs_index,
                     is_implicit,
-                    s
+                    s,
                 );
             }
             _ => {}
@@ -853,7 +1003,16 @@ impl VM {
                 return true;
             }
             Value::ShiftFunction(sf) => {
-                let n = sf(self, scopes, global_functions, prev_local_vars_stacks, chunk, i, line_col, running);
+                let n = sf(
+                    self,
+                    scopes,
+                    global_functions,
+                    prev_local_vars_stacks,
+                    chunk,
+                    i,
+                    line_col,
+                    running,
+                );
                 if n == 0 {
                     return false;
                 }
@@ -878,7 +1037,7 @@ impl VM {
                     running.clone(),
                     is_value_function,
                     plvs_index,
-                    call_chunk_rc
+                    call_chunk_rc,
                 );
             }
             Value::String(sp) => {
@@ -902,7 +1061,7 @@ impl VM {
                     is_value_function,
                     plvs_index,
                     is_implicit,
-                    &s
+                    &s,
                 );
             }
             _ => {
@@ -930,14 +1089,16 @@ impl VM {
         &mut self,
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
+        call_stack_chunks: &Vec<&Chunk>,
+        chunk: &'a Chunk,
         chunk_values: Rc<RefCell<HashMap<String, Value>>>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         index: usize,
         mut gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         mut gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
-        line_col: (u32, u32), running: Arc<AtomicBool>,
+        line_col: (u32, u32),
+        running: Arc<AtomicBool>,
     ) -> usize {
         let mut i = index;
         let data = chunk.data.borrow();
@@ -975,8 +1136,7 @@ impl VM {
                     let i_upper = data[i];
                     i = i + 1;
                     let i_lower = data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00)
-                        | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let mut done = false;
                     if chunk.has_constant_int(i2 as i32) {
                         let n = chunk.get_constant_int(i2 as i32);
@@ -991,16 +1151,16 @@ impl VM {
                         };
                     }
                     if !done {
-			let op_fn_opt = SIMPLE_OPS[OpCode::Add as usize];
+                        let op_fn_opt = SIMPLE_OPS[OpCode::Add as usize];
                         self.stack.push(chunk.get_constant(i2 as i32));
-			let op_fn = op_fn_opt.unwrap();
-			let res = op_fn(self, chunk, i);
-			if res == 0 {
-			    return 0;
-			} else {
-			    i = i + 1;
-			    continue;
-			}
+                        let op_fn = op_fn_opt.unwrap();
+                        let res = op_fn(self, chunk, i);
+                        if res == 0 {
+                            return 0;
+                        } else {
+                            i = i + 1;
+                            continue;
+                        }
                     }
                 }
                 OpCode::SubtractConstant => {
@@ -1008,8 +1168,7 @@ impl VM {
                     let i_upper = data[i];
                     i = i + 1;
                     let i_lower = data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00)
-                        | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let mut done = false;
                     if chunk.has_constant_int(i2 as i32) {
                         let n = chunk.get_constant_int(i2 as i32);
@@ -1024,16 +1183,16 @@ impl VM {
                         };
                     }
                     if !done {
-			let op_fn_opt = SIMPLE_OPS[OpCode::Subtract as usize];
+                        let op_fn_opt = SIMPLE_OPS[OpCode::Subtract as usize];
                         self.stack.push(chunk.get_constant(i2 as i32));
-			let op_fn = op_fn_opt.unwrap();
-			let res = op_fn(self, chunk, i);
-			if res == 0 {
-			    return 0;
-			} else {
-			    i = i + 1;
-			    continue;
-			}
+                        let op_fn = op_fn_opt.unwrap();
+                        let res = op_fn(self, chunk, i);
+                        if res == 0 {
+                            return 0;
+                        } else {
+                            i = i + 1;
+                            continue;
+                        }
                     }
                 }
                 OpCode::MultiplyConstant => {
@@ -1041,8 +1200,7 @@ impl VM {
                     let i_upper = data[i];
                     i = i + 1;
                     let i_lower = data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00)
-                        | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let mut done = false;
                     if chunk.has_constant_int(i2 as i32) {
                         let n = chunk.get_constant_int(i2 as i32);
@@ -1057,16 +1215,16 @@ impl VM {
                         };
                     }
                     if !done {
-			let op_fn_opt = SIMPLE_OPS[OpCode::Multiply as usize];
+                        let op_fn_opt = SIMPLE_OPS[OpCode::Multiply as usize];
                         self.stack.push(chunk.get_constant(i2 as i32));
-			let op_fn = op_fn_opt.unwrap();
-			let res = op_fn(self, chunk, i);
-			if res == 0 {
-			    return 0;
-			} else {
-			    i = i + 1;
-			    continue;
-			}
+                        let op_fn = op_fn_opt.unwrap();
+                        let res = op_fn(self, chunk, i);
+                        if res == 0 {
+                            return 0;
+                        } else {
+                            i = i + 1;
+                            continue;
+                        }
                     }
                 }
                 OpCode::DivideConstant => {
@@ -1074,8 +1232,7 @@ impl VM {
                     let i_upper = data[i];
                     i = i + 1;
                     let i_lower = data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00)
-                        | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let mut done = false;
                     if chunk.has_constant_int(i2 as i32) {
                         let n = chunk.get_constant_int(i2 as i32);
@@ -1090,16 +1247,16 @@ impl VM {
                         };
                     }
                     if !done {
-			let op_fn_opt = SIMPLE_OPS[OpCode::Divide as usize];
+                        let op_fn_opt = SIMPLE_OPS[OpCode::Divide as usize];
                         self.stack.push(chunk.get_constant(i2 as i32));
-			let op_fn = op_fn_opt.unwrap();
-			let res = op_fn(self, chunk, i);
-			if res == 0 {
-			    return 0;
-			} else {
-			    i = i + 1;
-			    continue;
-			}
+                        let op_fn = op_fn_opt.unwrap();
+                        let res = op_fn(self, chunk, i);
+                        if res == 0 {
+                            return 0;
+                        } else {
+                            i = i + 1;
+                            continue;
+                        }
                     }
                 }
                 OpCode::EqConstant => {
@@ -1107,8 +1264,7 @@ impl VM {
                     let i_upper = data[i];
                     i = i + 1;
                     let i_lower = data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00)
-                        | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let n = chunk.get_constant_int(i2 as i32);
 
                     let len = self.stack.len();
@@ -1154,14 +1310,11 @@ impl VM {
                                     lst.push_front(self.stack.pop().unwrap());
                                 }
                                 if list_indexes.len() > 0 {
-                                    list_index_opt =
-                                        Some(list_indexes.pop().unwrap());
+                                    list_index_opt = Some(list_indexes.pop().unwrap());
                                 } else {
                                     list_index_opt = None;
                                 }
-                                self.stack.push(
-                                    Value::List(Rc::new(RefCell::new(lst),
-                                )));
+                                self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                             }
                             ListType::Hash => {
                                 let mut map = IndexMap::new();
@@ -1171,33 +1324,32 @@ impl VM {
                                     let key_str_s;
                                     let key_str_b;
                                     let key_str_str;
-                                    let key_str_bk : Option<String>;
-                                    let key_str_opt : Option<&str> =
-                                        match key_rr {
-                                            Value::String(sp) => {
-                                                key_str_s = sp;
-                                                key_str_b = key_str_s.borrow();
-                                                Some(&key_str_b.s)
-                                            }
-                                            _ => {
-                                                key_str_bk = key_rr.to_string();
-                                                match key_str_bk {
-                                                    Some(s) => { key_str_str = s; Some(&key_str_str) }
-                                                    _ => None
+                                    let key_str_bk: Option<String>;
+                                    let key_str_opt: Option<&str> = match key_rr {
+                                        Value::String(sp) => {
+                                            key_str_s = sp;
+                                            key_str_b = key_str_s.borrow();
+                                            Some(&key_str_b.s)
+                                        }
+                                        _ => {
+                                            key_str_bk = key_rr.to_string();
+                                            match key_str_bk {
+                                                Some(s) => {
+                                                    key_str_str = s;
+                                                    Some(&key_str_str)
                                                 }
+                                                _ => None,
                                             }
-                                        };
+                                        }
+                                    };
                                     map.insert(key_str_opt.unwrap().to_string(), value_rr);
                                 }
                                 if list_indexes.len() > 0 {
-                                    list_index_opt =
-                                        Some(list_indexes.pop().unwrap());
+                                    list_index_opt = Some(list_indexes.pop().unwrap());
                                 } else {
                                     list_index_opt = None;
                                 }
-                                self.stack.push(
-                                    Value::Hash(Rc::new(RefCell::new(map))),
-                                );
+                                self.stack.push(Value::Hash(Rc::new(RefCell::new(map))));
                             }
                         }
                     }
@@ -1213,8 +1365,7 @@ impl VM {
                     let i_upper = data[i];
                     i = i + 1;
                     let i_lower = data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00)
-                        | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value_rr = chunk.get_constant(i2 as i32);
                     let mut copy = false;
                     let mut fn_name = "".to_owned();
@@ -1230,25 +1381,21 @@ impl VM {
                             Value::String(ref sp) => {
                                 let s = &sp.borrow().s;
                                 match chunk_values.borrow().get(s) {
-                                    Some(cv_value_rr) => {
-                                        match cv_value_rr {
-                                            Value::String(_) => {
-                                                self.stack.push(
-                                                    Value::Function(
-                                                        Rc::new(RefCell::new(AnonymousFunction::new(
-                                                            s.to_string(),
-                                                            plvs_index as u32,
-                                                            plvs_ptr,
-                                                        ))),
-                                                    ),
-                                                );
-                                            }
-                                            _ => {
-                                                eprintln!("unexpected function value!");
-                                                std::process::abort();
-                                            }
+                                    Some(cv_value_rr) => match cv_value_rr {
+                                        Value::String(_) => {
+                                            self.stack.push(Value::Function(Rc::new(
+                                                RefCell::new(AnonymousFunction::new(
+                                                    s.to_string(),
+                                                    plvs_index as u32,
+                                                    plvs_ptr,
+                                                )),
+                                            )));
                                         }
-                                    }
+                                        _ => {
+                                            eprintln!("unexpected function value!");
+                                            std::process::abort();
+                                        }
+                                    },
                                     _ => {
                                         fn_name = s.clone();
                                         copy = true;
@@ -1262,19 +1409,19 @@ impl VM {
                         }
                     }
                     if copy {
-                        chunk_values.borrow_mut().insert(fn_name.clone().to_string(), value_rr);
+                        chunk_values
+                            .borrow_mut()
+                            .insert(fn_name.clone().to_string(), value_rr);
                         let cv_value_rr = chunk_values.borrow().get(&fn_name).unwrap().clone();
                         match cv_value_rr {
                             Value::String(sp) => {
-                                self.stack.push(
-                                    Value::Function(
-                                        Rc::new(RefCell::new(AnonymousFunction::new(
-                                            sp.borrow().s.to_string(),
-                                            plvs_index as u32,
-                                            plvs_ptr,
-                                        )))
-                                    )
-                                );
+                                self.stack.push(Value::Function(Rc::new(RefCell::new(
+                                    AnonymousFunction::new(
+                                        sp.borrow().s.to_string(),
+                                        plvs_index as u32,
+                                        plvs_ptr,
+                                    ),
+                                ))));
                             }
                             _ => {
                                 eprintln!("unexpected function value!");
@@ -1288,8 +1435,7 @@ impl VM {
                     let i_upper = data[i];
                     i = i + 1;
                     let i_lower = data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00)
-                        | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value_rr = chunk.get_constant(i2 as i32);
                     let mut copy = false;
                     let mut name = "".to_owned();
@@ -1312,7 +1458,9 @@ impl VM {
                         }
                     }
                     if copy {
-                        chunk_values.borrow_mut().insert(name.clone().to_string(), value_rr);
+                        chunk_values
+                            .borrow_mut()
+                            .insert(name.clone().to_string(), value_rr);
                         self.stack
                             .push(chunk_values.borrow().get(&name).unwrap().clone());
                     }
@@ -1325,8 +1473,7 @@ impl VM {
                     let i_upper = data[i];
                     i = i + 1;
                     let i_lower = data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00)
-                        | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
 
                     let (mut line, mut col) = line_col;
                     if line == 0 && col == 0 {
@@ -1343,9 +1490,9 @@ impl VM {
                         }
                     }
 
-		    let value_sd = &chunk.constants[i2 as usize];
-		    match value_sd {
-			ValueSD::String(ref sp) => {
+                    let value_sd = &chunk.constants[i2 as usize];
+                    match value_sd {
+                        ValueSD::String(ref sp) => {
                             let res = self.call(
                                 scopes,
                                 global_functions,
@@ -1371,11 +1518,11 @@ impl VM {
                                 return 0;
                             }
                         }
-			_ => {
+                        _ => {
                             eprintln!("expected string for callconstant!");
                             std::process::abort();
                         }
-		    };
+                    };
                 }
                 OpCode::Call | OpCode::CallImplicit => {
                     if self.stack.len() < 1 {
@@ -1498,11 +1645,7 @@ impl VM {
                                 var_name = sp.borrow().s.clone().to_string();
                             }
                             _ => {
-                                print_error(
-                                    chunk,
-                                    i,
-                                    "variable name must be a string",
-                                );
+                                print_error(chunk, i, "variable name must be a string");
                                 return 0;
                             }
                         }
@@ -1510,16 +1653,14 @@ impl VM {
 
                     match gen_global_vars {
                         Some(ref mut ggv) => {
-                            ggv.borrow_mut().insert(
-                                var_name.to_string(),
-                                Value::Int(0),
-                            );
+                            ggv.borrow_mut().insert(var_name.to_string(), Value::Int(0));
                         }
                         _ => {
-                            scopes.last().unwrap().borrow_mut().insert(
-                                var_name.to_string(),
-                                Value::Int(0),
-                            );
+                            scopes
+                                .last()
+                                .unwrap()
+                                .borrow_mut()
+                                .insert(var_name.to_string(), Value::Int(0));
                         }
                     }
                 }
@@ -1550,10 +1691,7 @@ impl VM {
                             if !done {
                                 for scope in scopes.iter().rev() {
                                     if scope.borrow().contains_key(s) {
-                                        scope.borrow_mut().insert(
-                                            s.to_string(),
-                                            value_rr.clone(),
-                                        );
+                                        scope.borrow_mut().insert(s.to_string(), value_rr.clone());
                                         done = true;
                                         break;
                                     }
@@ -1561,20 +1699,12 @@ impl VM {
                             }
 
                             if !done {
-                                print_error(
-                                    chunk,
-                                    i,
-                                    "could not find variable",
-                                );
+                                print_error(chunk, i, "could not find variable");
                                 return 0;
                             }
                         }
                         _ => {
-                            print_error(
-                                chunk,
-                                i,
-                                "variable name must be a string",
-                            );
+                            print_error(chunk, i, "variable name must be a string");
                             return 0;
                         }
                     }
@@ -1594,8 +1724,7 @@ impl VM {
                             match gen_global_vars {
                                 Some(ref mut ggv) => {
                                     if ggv.borrow().contains_key(s) {
-                                        self.stack
-                                            .push(ggv.borrow().get(s).unwrap().clone());
+                                        self.stack.push(ggv.borrow().get(s).unwrap().clone());
                                         done = true;
                                     }
                                 }
@@ -1605,33 +1734,19 @@ impl VM {
                             if !done {
                                 for scope in scopes.iter().rev() {
                                     if scope.borrow().contains_key(s) {
-                                        self.stack.push(
-                                            scope
-                                                .borrow()
-                                                .get(s)
-                                                .unwrap()
-                                                .clone(),
-                                        );
+                                        self.stack.push(scope.borrow().get(s).unwrap().clone());
                                         done = true;
                                         break;
                                     }
                                 }
                             }
                             if !done {
-                                print_error(
-                                    chunk,
-                                    i,
-                                    "could not find variable",
-                                );
+                                print_error(chunk, i, "could not find variable");
                                 return 0;
                             }
                         }
                         _ => {
-                            print_error(
-                                chunk,
-                                i,
-                                "variable name must be a string",
-                            );
+                            print_error(chunk, i, "variable name must be a string");
                             return 0;
                         }
                     }
@@ -1714,8 +1829,7 @@ impl VM {
                     let i_upper = data[i];
                     i = i + 1;
                     let i_lower = data[i];
-                    let i3 = (((i_upper as u16) << 8) & 0xFF00)
-                        | ((i_lower & 0xFF) as u16);
+                    let i3 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value_rr = self.stack.last().unwrap();
                     if chunk.has_constant_int(i3 as i32) {
                         let cmp_rr = chunk.get_constant_int(i3 as i32);
@@ -1801,22 +1915,24 @@ impl VM {
                     let error_str_s;
                     let error_str_b;
                     let error_str_str;
-                    let error_str_bk : Option<String>;
-                    let error_str_opt : Option<&str> =
-                        match error_rr {
-                            Value::String(sp) => {
-                                error_str_s = sp;
-                                error_str_b = error_str_s.borrow();
-                                Some(&error_str_b.s)
-                            }
-                            _ => {
-                                error_str_bk = error_rr.to_string();
-                                match error_str_bk {
-                                    Some(s) => { error_str_str = s; Some(&error_str_str) }
-                                    _ => None
+                    let error_str_bk: Option<String>;
+                    let error_str_opt: Option<&str> = match error_rr {
+                        Value::String(sp) => {
+                            error_str_s = sp;
+                            error_str_b = error_str_s.borrow();
+                            Some(&error_str_b.s)
+                        }
+                        _ => {
+                            error_str_bk = error_rr.to_string();
+                            match error_str_bk {
+                                Some(s) => {
+                                    error_str_str = s;
+                                    Some(&error_str_str)
                                 }
+                                _ => None,
                             }
-                        };
+                        }
+                    };
 
                     match error_str_opt {
                         Some(s) => {
@@ -1825,10 +1941,7 @@ impl VM {
                             return 0;
                         }
                         None => {
-                            let err_str = format!(
-                                "{}:{}: {}",
-                                line, col, "(unknown error)"
-                            );
+                            let err_str = format!("{}:{}: {}", line, col, "(unknown error)");
                             eprintln!("{}", err_str);
                             return 0;
                         }
@@ -1863,14 +1976,7 @@ impl VM {
         }
 
         if self.print_stack {
-            self.print_stack(
-                chunk,
-                i,
-                scopes,
-                global_functions,
-                running,
-                false,
-            );
+            self.print_stack(chunk, i, scopes, global_functions, running, false);
             self.stack.clear();
         }
 
@@ -1884,10 +1990,12 @@ impl VM {
     /// set of global variables, and the updated set of global
     /// functions.
     pub fn interpret(
-        &mut self, global_functions: HashMap<String, Chunk>,
+        &mut self,
+        global_functions: HashMap<String, Chunk>,
         variables: HashMap<String, Value>,
-        fh: &mut Box<dyn BufRead>, running: Arc<AtomicBool>,
-        name: &str
+        fh: &mut Box<dyn BufRead>,
+        running: Arc<AtomicBool>,
+        name: &str,
     ) -> (
         Option<Chunk>,
         HashMap<String, Value>,

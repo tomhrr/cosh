@@ -102,46 +102,44 @@ impl VM {
     /// Takes a command string, substitutes for the {num} and {}
     /// stack element placeholders as well as the ~ home directory
     /// placeholder, and returns the resulting string.
-    fn prepare_command(
-        &mut self, s: &str, chunk: &Chunk, i: usize,
-    ) -> Option<String> {
+    fn prepare_command(&mut self, s: &str, chunk: &Chunk, i: usize) -> Option<String> {
         let captures = CAPTURE_NUM.captures_iter(s);
         let mut final_s = s.to_string();
         for capture in captures {
             let capture_str = capture.get(1).unwrap().as_str();
             let capture_num_res = capture_str.parse::<usize>();
-            let capture_num =
-                match capture_num_res {
-                    Ok(n) => { n }
-                    Err(_) => {
-                        print_error(chunk, i, "invalid stack element");
-                        return None;
-                    }
-                };
+            let capture_num = match capture_num_res {
+                Ok(n) => n,
+                Err(_) => {
+                    print_error(chunk, i, "invalid stack element");
+                    return None;
+                }
+            };
 
-            let capture_el_rr_opt =
-                self.stack.get(self.stack.len() - 1 - capture_num);
+            let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - capture_num);
             match capture_el_rr_opt {
                 Some(capture_el_rr) => {
-		    let capture_el_str_s;
-		    let capture_el_str_b;
-		    let capture_el_str_str;
-		    let capture_el_str_bk : Option<String>;
-		    let capture_el_str_opt : Option<&str> =
-			match capture_el_rr {
-			    Value::String(sp) => {
-				capture_el_str_s = sp;
-				capture_el_str_b = capture_el_str_s.borrow();
-				Some(&capture_el_str_b.s)
-			    }
-			    _ => {
-				capture_el_str_bk = capture_el_rr.to_string();
-				match capture_el_str_bk {
-				    Some(s) => { capture_el_str_str = s; Some(&capture_el_str_str) }
-				    _ => None
-				}
-			    }
-			};
+                    let capture_el_str_s;
+                    let capture_el_str_b;
+                    let capture_el_str_str;
+                    let capture_el_str_bk: Option<String>;
+                    let capture_el_str_opt: Option<&str> = match capture_el_rr {
+                        Value::String(sp) => {
+                            capture_el_str_s = sp;
+                            capture_el_str_b = capture_el_str_s.borrow();
+                            Some(&capture_el_str_b.s)
+                        }
+                        _ => {
+                            capture_el_str_bk = capture_el_rr.to_string();
+                            match capture_el_str_bk {
+                                Some(s) => {
+                                    capture_el_str_str = s;
+                                    Some(&capture_el_str_str)
+                                }
+                                _ => None,
+                            }
+                        }
+                    };
                     match capture_el_str_opt {
                         Some(capture_el_str) => {
                             let capture_str_with_brackets = format!("\\{{{}\\}}", capture_str);
@@ -168,26 +166,28 @@ impl VM {
                 return None;
             }
 
-	    let value_rr = self.stack.pop().unwrap();
-	    let value_s;
-	    let value_b;
-	    let value_str;
-	    let value_bk : Option<String>;
-	    let value_opt : Option<&str> =
-		match value_rr {
-		    Value::String(sp) => {
-			value_s = sp;
-			value_b = value_s.borrow();
-			Some(&value_b.s)
-		    }
-		    _ => {
-			value_bk = value_rr.to_string();
-			match value_bk {
-			    Some(s) => { value_str = s; Some(&value_str) }
-			    _ => None
-			}
-		    }
-		};
+            let value_rr = self.stack.pop().unwrap();
+            let value_s;
+            let value_b;
+            let value_str;
+            let value_bk: Option<String>;
+            let value_opt: Option<&str> = match value_rr {
+                Value::String(sp) => {
+                    value_s = sp;
+                    value_b = value_s.borrow();
+                    Some(&value_b.s)
+                }
+                _ => {
+                    value_bk = value_rr.to_string();
+                    match value_bk {
+                        Some(s) => {
+                            value_str = s;
+                            Some(&value_str)
+                        }
+                        _ => None,
+                    }
+                }
+            };
 
             match value_opt {
                 Some(s) => {
@@ -212,7 +212,12 @@ impl VM {
         return Some(final_s);
     }
 
-    fn prepare_and_split_command(&mut self, cmd: &str, chunk: &Chunk, i: usize) -> Option<(String, Vec<String>)> {
+    fn prepare_and_split_command(
+        &mut self,
+        cmd: &str,
+        chunk: &Chunk,
+        i: usize,
+    ) -> Option<(String, Vec<String>)> {
         let prepared_cmd_opt = self.prepare_command(cmd, chunk, i);
         if prepared_cmd_opt.is_none() {
             return None;
@@ -232,8 +237,7 @@ impl VM {
             return None;
         }
         let executable = executable_opt.unwrap();
-        let executable_final =
-            LEADING_WS.replace_all(&executable, "").to_string();
+        let executable_final = LEADING_WS.replace_all(&executable, "").to_string();
         let args = element_iter.map(|v| v.to_string()).collect::<Vec<_>>();
         return Some((executable_final.to_string(), args));
     }
@@ -248,8 +252,10 @@ impl VM {
         }
         let (executable, args) = prepared_cmd_opt.unwrap();
 
-        let process_res =
-            Command::new(executable).args(args).stdout(Stdio::piped()).spawn();
+        let process_res = Command::new(executable)
+            .args(args)
+            .stdout(Stdio::piped())
+            .spawn();
         match process_res {
             Ok(process) => {
                 let upstream_stdout = process.stdout.unwrap();
@@ -268,9 +274,7 @@ impl VM {
 
     /// As per `core_command`, except that the output isn't captured
     /// and nothing is placed onto the stack.
-    pub fn core_command_uncaptured(
-        &mut self, cmd: &str, chunk: &Chunk, i: usize,
-    ) -> i32 {
+    pub fn core_command_uncaptured(&mut self, cmd: &str, chunk: &Chunk, i: usize) -> i32 {
         let prepared_cmd_opt = self.prepare_and_split_command(cmd, chunk, i);
         if prepared_cmd_opt.is_none() {
             return 0;
@@ -284,18 +288,14 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str = format!(
-                            "command execution failed: {}",
-                            e.to_string()
-                        );
+                        let err_str = format!("command execution failed: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }
                 }
             }
             Err(e) => {
-                let err_str =
-                    format!("unable to execute command: {}", e.to_string());
+                let err_str = format!("unable to execute command: {}", e.to_string());
                 print_error(chunk, i, &err_str);
                 return 0;
             }
@@ -312,7 +312,9 @@ impl VM {
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
-        chunk: &Chunk, i: usize, line_col: (u32, u32),
+        chunk: &Chunk,
+        i: usize,
+        line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 2 {
@@ -339,8 +341,7 @@ impl VM {
                     Ok(process) => {
                         let upstream_stdin_opt = process.stdin;
                         if upstream_stdin_opt.is_none() {
-                            let err_str =
-                                format!("unable to get stdin from parent");
+                            let err_str = format!("unable to get stdin from parent");
                             print_error(chunk, i, &err_str);
                             return 0;
                         }
@@ -350,17 +351,14 @@ impl VM {
                                 self.stack.pop();
                                 let upstream_stdout_opt = process.stdout;
                                 if upstream_stdout_opt.is_none() {
-                                    let err_str = format!(
-                                        "unable to get stdout from parent"
-                                    );
+                                    let err_str = format!("unable to get stdout from parent");
                                     print_error(chunk, i, &err_str);
                                     return 0;
                                 }
-                                let upstream_stdout =
-                                    upstream_stdout_opt.unwrap();
-                                let cmd_generator = Value::CommandGenerator(
-                                    Rc::new(RefCell::new(BufReader::new(upstream_stdout)))
-                                );
+                                let upstream_stdout = upstream_stdout_opt.unwrap();
+                                let cmd_generator = Value::CommandGenerator(Rc::new(RefCell::new(
+                                    BufReader::new(upstream_stdout),
+                                )));
                                 self.stack.push(cmd_generator);
                             }
                             Ok(ForkResult::Child) => {
@@ -388,30 +386,31 @@ impl VM {
                                         }
                                         _ => {}
                                     }
-				    let element_s;
-				    let element_b;
-				    let element_str;
-				    let element_bk : Option<String>;
-				    let element_str_opt : Option<&str> =
-					match element_rr {
-					    Value::String(sp) => {
-						element_s = sp;
-						element_b = element_s.borrow();
-						Some(&element_b.s)
-					    }
-					    _ => {
-						element_bk = element_rr.to_string();
-						match element_bk {
-						    Some(s) => { element_str = s; Some(&element_str) }
-						    _ => None
-						}
-					    }
-					};
+                                    let element_s;
+                                    let element_b;
+                                    let element_str;
+                                    let element_bk: Option<String>;
+                                    let element_str_opt: Option<&str> = match element_rr {
+                                        Value::String(sp) => {
+                                            element_s = sp;
+                                            element_b = element_s.borrow();
+                                            Some(&element_b.s)
+                                        }
+                                        _ => {
+                                            element_bk = element_rr.to_string();
+                                            match element_bk {
+                                                Some(s) => {
+                                                    element_str = s;
+                                                    Some(&element_str)
+                                                }
+                                                _ => None,
+                                            }
+                                        }
+                                    };
 
                                     match element_str_opt {
                                         Some(s) => {
-                                            let res = upstream_stdin
-                                                .write(s.as_bytes());
+                                            let res = upstream_stdin.write(s.as_bytes());
                                             match res {
                                                 Ok(_) => {}
                                                 _ => {
@@ -434,8 +433,7 @@ impl VM {
                         }
                     }
                     Err(e) => {
-                        let err_str =
-                            format!("unable to run command: {}", e.to_string());
+                        let err_str = format!("unable to run command: {}", e.to_string());
                         print_error(chunk, i, &err_str);
                         return 0;
                     }

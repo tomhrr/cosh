@@ -10,7 +10,6 @@ extern crate searchpath;
 extern crate tempfile;
 
 use std::borrow::Cow::{self, Borrowed};
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::env;
@@ -20,6 +19,7 @@ use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::io::{Seek, SeekFrom};
 use std::path::{self, Path};
+use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -27,20 +27,19 @@ use dirs_next::home_dir;
 use getopts::Options;
 use memchr::memchr;
 use regex::Regex;
-use rustyline::completion::{Completer, Pair, Candidate, unescape, escape, Quote};
+use rustyline::completion::{escape, unescape, Candidate, Completer, Pair, Quote};
 use rustyline::config::OutputStreamType;
 use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::validate::Validator;
-use rustyline::{CompletionType, Config, Context, Result, EditMode, Editor};
+use rustyline::{CompletionType, Config, Context, EditMode, Editor, Result};
 use rustyline_derive::Helper;
 use searchpath::search_path;
 use tempfile::tempfile;
 
 use cosh::compiler::Compiler;
 use cosh::vm::VM;
-//use cosh::chunk::StringPair;
 
 // Most of the code through to 'impl Completer for ShellCompleter' is
 // taken from kkawakam/rustyline#574 as at 3a41ee9, with some small
@@ -242,19 +241,15 @@ fn filename_complete(
 }
 
 fn bin_complete(path: &str, esc_char: Option<char>, break_chars: &[u8], quote: Quote) -> Vec<Pair> {
-     let mut entries: Vec<Pair> = Vec::new();
-     for file in search_path(
-         path,
-         std::env::var_os("PATH").as_deref(),
-         None
-     ) {
-         entries.push(Pair {
-             display: file.clone(),
-             replacement: escape(file, esc_char, break_chars, quote),
-         });
-     }
+    let mut entries: Vec<Pair> = Vec::new();
+    for file in search_path(path, std::env::var_os("PATH").as_deref(), None) {
+        entries.push(Pair {
+            display: file.clone(),
+            replacement: escape(file, esc_char, break_chars, quote),
+        });
+    }
 
-     entries
+    entries
 }
 
 pub struct ShellCompleter {
@@ -285,7 +280,7 @@ fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
         return false;
     }
     let index = index_opt.unwrap();
-    let before2_chars = &mut before[index+1..start].chars();
+    let before2_chars = &mut before[index + 1..start].chars();
     let mut hit_char = false;
     loop {
         let c_opt = before2_chars.next();
@@ -385,21 +380,16 @@ struct RLHelper {
 impl Completer for RLHelper {
     type Candidate = Pair;
 
-    fn complete(
-        &self, line: &str, pos: usize, ctx: &Context<'_>,
-    ) -> Result<(usize, Vec<Pair>)> {
+    fn complete(&self, line: &str, pos: usize, ctx: &Context<'_>) -> Result<(usize, Vec<Pair>)> {
         self.completer.complete(line, pos, ctx)
     }
 }
 
-impl Hinter for RLHelper {
-}
+impl Hinter for RLHelper {}
 
-impl Highlighter for RLHelper {
-}
+impl Highlighter for RLHelper {}
 
-impl Validator for RLHelper {
-}
+impl Validator for RLHelper {}
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options] file", program);
@@ -407,19 +397,6 @@ fn print_usage(program: &str, opts: Options) {
 }
 
 fn main() {
-    /*
-    let x1 = StringPair::new("asdf".to_string(),
-        None);
-    let x2 = Rc::new(RefCell::new(StringPair::new("qwer".to_string(),
-        None)));
-    let mut v = Vec::new();
-    for n in 1..20000000 {
-        let y = x2.clone();
-        v.push(y);
-    }
-    std::process::exit(0);
-    */ 
-
     let args: Vec<String> = env::args().collect();
     let program = args[0].clone();
 
@@ -443,9 +420,7 @@ fn main() {
         return;
     }
     if matches.opt_present("disassemble") && matches.opt_present("bytecode") {
-        println!(
-            "--bytecode and --disassemble options are mutually exclusive."
-        );
+        println!("--bytecode and --disassemble options are mutually exclusive.");
         print_usage(&program, opts);
         return;
     }
@@ -476,11 +451,9 @@ fn main() {
             scopes.push(RefCell::new(HashMap::new()));
             let mut functions = Vec::new();
             if !matches.opt_present("no-rt") {
-                let mut rtchunk_opt =
-                    compiler.deserialise("/usr/local/lib/cosh/rt.chc");
+                let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
                 if rtchunk_opt.is_none() {
-                    rtchunk_opt =
-                        compiler.deserialise("./rt.chc");
+                    rtchunk_opt = compiler.deserialise("./rt.chc");
                     if rtchunk_opt.is_none() {
                         eprintln!("unable to deserialise runtime library");
                         std::process::exit(1);
@@ -516,8 +489,7 @@ fn main() {
             match file_res {
                 Ok(_) => {}
                 Err(e) => {
-                    let err_str =
-                        format!("unable to open file: {}", e.to_string());
+                    let err_str = format!("unable to open file: {}", e.to_string());
                     eprintln!("{}", err_str);
                     std::process::exit(1);
                 }
@@ -536,9 +508,7 @@ fn main() {
                     Some(chunk) => {
                         let output_path_opt = matches.opt_str("o");
                         if output_path_opt.is_none() {
-                            eprintln!(
-                                "output path is required for compilation"
-                            );
+                            eprintln!("output path is required for compilation");
                             std::process::exit(1);
                         }
                         let output_path = output_path_opt.unwrap();
@@ -557,10 +527,7 @@ fn main() {
                             }
                         }
                         if res == false {
-                            eprintln!(
-                                "unable to write to path {}: {}",
-                                output_path, err_str
-                            );
+                            eprintln!("unable to write to path {}: {}", output_path, err_str);
                         }
                     }
                     _ => {}
@@ -571,11 +538,9 @@ fn main() {
                 let mut global_functions = HashMap::new();
 
                 if !matches.opt_present("no-rt") {
-                    let mut rtchunk_opt =
-                        compiler.deserialise("/usr/local/lib/cosh/rt.chc");
+                    let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
                     if rtchunk_opt.is_none() {
-                        rtchunk_opt =
-                            compiler.deserialise("./rt.chc");
+                        rtchunk_opt = compiler.deserialise("./rt.chc");
                         if rtchunk_opt.is_none() {
                             eprintln!("unable to deserialise runtime library");
                             std::process::exit(1);
@@ -595,7 +560,7 @@ fn main() {
                     variables.clone(),
                     &mut bufread,
                     running.clone(),
-                    "(main)"
+                    "(main)",
                 );
             }
         }
@@ -605,11 +570,9 @@ fn main() {
         let mut variables = HashMap::new();
 
         if !matches.opt_present("no-rt") {
-            let mut rtchunk_opt =
-                compiler.deserialise("/usr/local/lib/cosh/rt.chc");
+            let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
             if rtchunk_opt.is_none() {
-                rtchunk_opt =
-                    compiler.deserialise("./rt.chc");
+                rtchunk_opt = compiler.deserialise("./rt.chc");
                 if rtchunk_opt.is_none() {
                     eprintln!("unable to deserialise runtime library");
                     std::process::exit(1);
@@ -631,7 +594,7 @@ fn main() {
         })
         .unwrap();
 
-	if let Some(home) = home_dir() {
+        if let Some(home) = home_dir() {
             let coshrc_path = format!("{}/.coshrc", home.into_os_string().into_string().unwrap());
             if Path::new(&coshrc_path).exists() {
                 let file_res = fs::File::open(coshrc_path);
@@ -643,7 +606,7 @@ fn main() {
                             variables.clone(),
                             &mut bufread,
                             running.clone(),
-                            ".coshrc"
+                            ".coshrc",
                         );
                         if updated_functions.len() > 0 {
                             global_functions = updated_functions.remove(0).into_inner();
@@ -690,10 +653,7 @@ fn main() {
             match cwd_res {
                 Ok(_) => {}
                 Err(e) => {
-                    eprintln!(
-                        "unable to get current working directory: {}",
-                        e.to_string()
-                    );
+                    eprintln!("unable to get current working directory: {}", e.to_string());
                     std::process::exit(1);
                 }
             }
@@ -714,10 +674,7 @@ fn main() {
                     match file_res {
                         Ok(_) => {}
                         Err(e) => {
-                            eprintln!(
-                                "unable to create temporary REPL file: {}",
-                                e.to_string()
-                            );
+                            eprintln!("unable to create temporary REPL file: {}", e.to_string());
                             std::process::exit(1);
                         }
                     }
@@ -735,15 +692,14 @@ fn main() {
                     }
                     file.seek(SeekFrom::Start(0)).unwrap();
 
-                    let mut bufread: Box<dyn BufRead> =
-                        Box::new(BufReader::new(file));
+                    let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                     rl.add_history_entry(line.as_str());
                     let (chunk_opt, updated_variables, mut updated_functions) = vm.interpret(
                         global_functions,
                         variables.clone(),
                         &mut bufread,
                         running.clone(),
-                        "(main)"
+                        "(main)",
                     );
                     if updated_functions.len() > 0 {
                         global_functions = updated_functions.remove(0).into_inner();

@@ -6,7 +6,7 @@ use std::fmt;
 use std::fs::File;
 use std::fs::ReadDir;
 use std::io::BufReader;
-use std::io::LineWriter;
+use std::io::BufWriter;
 use std::rc::Rc;
 use std::str;
 
@@ -231,7 +231,7 @@ pub enum Value {
     /// A file reader value.
     FileReader(Rc<RefCell<BufReader<File>>>),
     /// A file writer value.
-    FileWriter(Rc<RefCell<LineWriter<File>>>),
+    FileWriter(Rc<RefCell<BufWriter<File>>>),
     /// A directory handle.
     DirectoryHandle(Rc<RefCell<ReadDir>>),
 }

@@ -3,7 +3,7 @@ use std::fs::metadata;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::io::LineWriter;
+use std::io::BufWriter;
 use std::io::Write;
 use std::rc::Rc;
 
@@ -73,7 +73,7 @@ impl VM {
                         match file_res {
                             Ok(file) => {
                                 self.stack.push(Value::FileWriter(Rc::new(RefCell::new(
-                                    LineWriter::new(file),
+                                    BufWriter::new(file),
                                 ))));
                             }
                             Err(e) => {

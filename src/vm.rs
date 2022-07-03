@@ -301,6 +301,264 @@ impl VM {
         return true;
     }
 
+    pub fn call_string<'a>(
+        &mut self,
+        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        global_functions: &mut RefCell<HashMap<String, Chunk>>,
+        call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
+        chunk_values: Rc<RefCell<HashMap<String, Value>>>,
+        chunk_functions: Rc<RefCell<Vec<Value>>>,
+        i: usize,
+        gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
+        gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
+        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
+        line_col: (u32, u32), running: Arc<AtomicBool>,
+        is_value_function: bool,
+        plvs_index: u32,
+        is_implicit: bool,
+        s: &str
+    ) -> bool {
+        let sf_fn_opt = SIMPLE_FORMS.get(s);
+        if !sf_fn_opt.is_none() {
+            let sf_fn = sf_fn_opt.unwrap();
+            let n = sf_fn(self, chunk, i);
+            if n == 0 {
+                return false;
+            }
+            return true;
+        }
+
+        let shift_fn_opt = SHIFT_FORMS.get(s);
+        if !shift_fn_opt.is_none() {
+            let shift_fn = shift_fn_opt.unwrap();
+            let n = shift_fn(self, scopes, global_functions, prev_local_vars_stacks, chunk, i, line_col, running);
+            if n == 0 {
+                return false;
+            }
+            return true;
+        }
+
+        if s == "toggle-mode" {
+            self.print_stack = !self.print_stack;
+        } else if s == ".s" {
+            self.print_stack(
+                chunk,
+                i,
+                scopes,
+                global_functions,
+                running,
+                true,
+            );
+        } else if s == "exc" {
+            if self.stack.len() < 1 {
+                print_error(chunk, i, "exc requires one argument");
+                return false;
+            }
+            let fn_rr = self.stack.pop().unwrap();
+            let backup_rr = fn_rr.clone();
+            let fn_s;
+            let fn_b;
+            let fn_str;
+            let fn_bk : Option<String>;
+            let fn_opt : Option<&str> =
+                match fn_rr {
+                    Value::String(sp) => {
+                        fn_s = sp;
+                        fn_b = fn_s.borrow();
+                        Some(&fn_b.s)
+                    }
+                    _ => {
+                        fn_bk = fn_rr.to_string();
+                        match fn_bk {
+                            Some(s) => { fn_str = s; Some(&fn_str) }
+                            _ => None
+                        }
+                    }
+                };
+
+            let mut pushed = false;
+            match fn_opt {
+                Some(s) => {
+                    let sf_fn_opt = SIMPLE_FORMS.get(&s as &str);
+                    if !sf_fn_opt.is_none() {
+                        let sf_fn = sf_fn_opt.unwrap();
+                        let nv = Value::CoreFunction(*sf_fn);
+                        self.stack.push(nv);
+                        pushed = true;
+                    } else {
+                        let shift_fn_opt = SHIFT_FORMS.get(&s as &str);
+                        if !shift_fn_opt.is_none() {
+                            let shift_fn = shift_fn_opt.unwrap();
+                            let nv = Value::ShiftFunction(*shift_fn);
+                            self.stack.push(nv);
+                            pushed = true;
+                        } else {
+                            let mut new_call_stack_chunks = call_stack_chunks.clone();
+                            new_call_stack_chunks.push(chunk);
+
+                            let call_stack_function;
+                            let global_function;
+                            let mut call_chunk_opt = None;
+
+                            for sf in new_call_stack_chunks.iter().rev() {
+                                if sf.functions.borrow().contains_key(s) {
+                                    call_stack_function = sf.functions.borrow();
+                                    call_chunk_opt = Some(call_stack_function.get(s).unwrap());
+                                    break;
+                                }
+                            }
+                            if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
+                                global_function = global_functions
+                                    .borrow()
+                                    .get(s)
+                                    .unwrap()
+                                    .clone();
+                                call_chunk_opt = Some(&global_function);
+                            }
+                            match call_chunk_opt {
+                                Some(call_chunk) => {
+                                    let nv =
+                                    Value::NamedFunction(Rc::new(RefCell::new(call_chunk.clone())));
+                                    self.stack.push(nv);
+                                    pushed = true;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                _ => {
+                }
+            }
+            if !pushed {
+                self.stack.push(backup_rr);
+            }
+        } else if s == "import" {
+            if self.stack.len() < 1 {
+                print_error(chunk, i, "import requires one argument");
+                return false;
+            }
+
+            let lib_rr = self.stack.pop().unwrap();
+            let lib_str_s;
+            let lib_str_b;
+            let lib_str_str;
+            let lib_str_bk : Option<String>;
+            let lib_str_opt : Option<&str> =
+                match lib_rr {
+                    Value::String(sp) => {
+                        lib_str_s = sp;
+                        lib_str_b = lib_str_s.borrow();
+                        Some(&lib_str_b.s)
+                    }
+                    _ => {
+                        lib_str_bk = lib_rr.to_string();
+                        match lib_str_bk {
+                            Some(s) => { lib_str_str = s; Some(&lib_str_str) }
+                            _ => None
+                        }
+                    }
+                };
+
+            match lib_str_opt {
+                Some(s) => {
+                    let mut compiler = Compiler::new(false);
+                    let import_chunk_opt = compiler.deserialise(s);
+                    match import_chunk_opt {
+                        Some(import_chunk) => {
+                            let mut global_functions_b =
+                                global_functions.borrow_mut();
+                            for (k, v) in
+                                import_chunk.functions.borrow().iter()
+                            {
+                                global_functions_b.insert(k.clone(), v.clone());
+                            }
+                        }
+                        None => {
+                            return false;
+                        }
+                    }
+                }
+                _ => {
+                    print_error(
+                        chunk,
+                        i,
+                        "import argument must be a string",
+                    );
+                    return false;
+                }
+            }
+        } else {
+            let mut new_call_stack_chunks = call_stack_chunks.clone();
+            new_call_stack_chunks.push(chunk);
+
+            let call_stack_function;
+            let global_function;
+            let mut call_chunk_opt = None;
+
+            for sf in new_call_stack_chunks.iter().rev() {
+                if sf.functions.borrow().contains_key(s) {
+                    call_stack_function = sf.functions.borrow();
+                    call_chunk_opt = Some(call_stack_function.get(s).unwrap());
+                    break;
+                }
+            }
+            if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
+                global_function = global_functions
+                    .borrow()
+                    .get(s)
+                    .unwrap()
+                    .clone();
+                call_chunk_opt = Some(&global_function);
+            }
+            match call_chunk_opt {
+                None => {
+                    if is_implicit {
+                        let value_rr = Value::String(
+                            Rc::new(RefCell::new(
+                                StringPair::new(
+                                    s.to_string(),
+                                    None,
+                                )
+                            ))
+                        );
+                        self.stack.push(value_rr);
+                    } else {
+                        print_error(chunk, i, "function not found");
+                        return false;
+                    }
+                }
+                Some(call_chunk) => {
+                    let call_chunk_rc =
+                        Rc::new(RefCell::new(call_chunk.clone()));
+                    return self.call_named_function(
+                        scopes,
+                        global_functions,
+                        call_stack_chunks,
+                        chunk,
+                        chunk_values.clone(),
+                        /* Need new chunk_functions
+                            * here, but it could be
+                            * cached in chunk_functions
+                            * itself. */
+                        Rc::new(RefCell::new(Vec::new())),
+                        0,
+                        gen_global_vars.clone(),
+                        gen_local_vars_stack.clone(),
+                        prev_local_vars_stacks,
+                        line_col,
+                        running.clone(),
+                        is_value_function,
+                        plvs_index,
+                        call_chunk_rc
+                    );
+                }
+            }
+        }
+
+        return true;
+    }
+
     /// Takes the set of scopes, the global functions, the call stack
     /// chunks, the current chunk, the values for the current chunk,
     /// the instruction index, the opcode for the call that is being
@@ -554,245 +812,28 @@ impl VM {
                     }
                 }
 
-                let sf_fn_opt = SIMPLE_FORMS.get(s);
-                if !sf_fn_opt.is_none() {
-                    let sf_fn = sf_fn_opt.unwrap();
-                    let n = sf_fn(self, chunk, i);
-                    if n == 0 {
-                        return false;
-                    }
-                    return true;
-                }
-
-                let shift_fn_opt = SHIFT_FORMS.get(s);
-                if !shift_fn_opt.is_none() {
-                    let shift_fn = shift_fn_opt.unwrap();
-                    let n = shift_fn(self, scopes, global_functions, prev_local_vars_stacks, chunk, i, line_col, running);
-                    if n == 0 {
-                        return false;
-                    }
-                    return true;
-                }
-
-                if s == "toggle-mode" {
-                    self.print_stack = !self.print_stack;
-                } else if s == ".s" {
-                    self.print_stack(
-                        chunk,
-                        i,
-                        scopes,
-                        global_functions,
-                        running,
-                        true,
-                    );
-                } else if s == "exc" {
-                    if self.stack.len() < 1 {
-                        print_error(chunk, i, "exc requires one argument");
-                        return false;
-                    }
-                    let fn_rr = self.stack.pop().unwrap();
-                    let backup_rr = fn_rr.clone();
-                    let fn_s;
-                    let fn_b;
-                    let fn_str;
-                    let fn_bk : Option<String>;
-                    let fn_opt : Option<&str> =
-                        match fn_rr {
-                            Value::String(sp) => {
-                                fn_s = sp;
-                                fn_b = fn_s.borrow();
-                                Some(&fn_b.s)
-                            }
-                            _ => {
-                                fn_bk = fn_rr.to_string();
-                                match fn_bk {
-                                    Some(s) => { fn_str = s; Some(&fn_str) }
-                                    _ => None
-                                }
-                            }
-                        };
-
-                    let mut pushed = false;
-                    match fn_opt {
-                        Some(s) => {
-                            let sf_fn_opt = SIMPLE_FORMS.get(&s as &str);
-                            if !sf_fn_opt.is_none() {
-                                let sf_fn = sf_fn_opt.unwrap();
-                                let nv = Value::CoreFunction(*sf_fn);
-                                self.stack.push(nv);
-                                pushed = true;
-                            } else {
-                                let shift_fn_opt = SHIFT_FORMS.get(&s as &str);
-                                if !shift_fn_opt.is_none() {
-                                    let shift_fn = shift_fn_opt.unwrap();
-                                    let nv = Value::ShiftFunction(*shift_fn);
-                                    self.stack.push(nv);
-                                    pushed = true;
-                                } else {
-                                    let mut new_call_stack_chunks = call_stack_chunks.clone();
-                                    new_call_stack_chunks.push(chunk);
-
-                                    let call_stack_function;
-                                    let global_function;
-                                    let mut call_chunk_opt = None;
-
-                                    for sf in new_call_stack_chunks.iter().rev() {
-                                        if sf.functions.borrow().contains_key(s) {
-                                            call_stack_function = sf.functions.borrow();
-                                            call_chunk_opt = Some(call_stack_function.get(s).unwrap());
-                                            break;
-                                        }
-                                    }
-                                    if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
-                                        global_function = global_functions
-                                            .borrow()
-                                            .get(s)
-                                            .unwrap()
-                                            .clone();
-                                        call_chunk_opt = Some(&global_function);
-                                    }
-                                    match call_chunk_opt {
-                                        Some(call_chunk) => {
-                                            let nv =
-                                            Value::NamedFunction(Rc::new(RefCell::new(call_chunk.clone())));
-                                            self.stack.push(nv);
-                                            pushed = true;
-                                        }
-                                        _ => {}
-                                    }
-                                }
-                            }
-                        }
-                        _ => {
-                        }
-                    }
-                    if !pushed {
-                        self.stack.push(backup_rr);
-                    }
-                } else if s == "import" {
-                    if self.stack.len() < 1 {
-                        print_error(chunk, i, "import requires one argument");
-                        return false;
-                    }
-
-                    let lib_rr = self.stack.pop().unwrap();
-                    let lib_str_s;
-                    let lib_str_b;
-                    let lib_str_str;
-                    let lib_str_bk : Option<String>;
-                    let lib_str_opt : Option<&str> =
-                        match lib_rr {
-                            Value::String(sp) => {
-                                lib_str_s = sp;
-                                lib_str_b = lib_str_s.borrow();
-                                Some(&lib_str_b.s)
-                            }
-                            _ => {
-                                lib_str_bk = lib_rr.to_string();
-                                match lib_str_bk {
-                                    Some(s) => { lib_str_str = s; Some(&lib_str_str) }
-                                    _ => None
-                                }
-                            }
-                        };
-
-                    match lib_str_opt {
-                        Some(s) => {
-                            let mut compiler = Compiler::new(false);
-                            let import_chunk_opt = compiler.deserialise(s);
-                            match import_chunk_opt {
-                                Some(import_chunk) => {
-                                    let mut global_functions_b =
-                                        global_functions.borrow_mut();
-                                    for (k, v) in
-                                        import_chunk.functions.borrow().iter()
-                                    {
-                                        global_functions_b.insert(k.clone(), v.clone());
-                                    }
-                                }
-                                None => {
-                                    return false;
-                                }
-                            }
-                        }
-                        _ => {
-                            print_error(
-                                chunk,
-                                i,
-                                "import argument must be a string",
-                            );
-                            return false;
-                        }
-                    }
-                } else {
-                    let mut new_call_stack_chunks = call_stack_chunks.clone();
-                    new_call_stack_chunks.push(chunk);
-
-                    let call_stack_function;
-                    let global_function;
-                    let mut call_chunk_opt = None;
-
-                    for sf in new_call_stack_chunks.iter().rev() {
-                        if sf.functions.borrow().contains_key(s) {
-                            call_stack_function = sf.functions.borrow();
-                            call_chunk_opt = Some(call_stack_function.get(s).unwrap());
-                            break;
-                        }
-                    }
-                    if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
-                        global_function = global_functions
-                            .borrow()
-                            .get(s)
-                            .unwrap()
-                            .clone();
-                        call_chunk_opt = Some(&global_function);
-                    }
-                    match call_chunk_opt {
-                        None => {
-                            if is_implicit {
-                                let value_rr = Value::String(
-                                    Rc::new(RefCell::new(
-                                        StringPair::new(
-                                            s.to_string(),
-                                            None,
-                                        )
-                                    ))
-                                );
-                                self.stack.push(value_rr);
-                            } else {
-                                print_error(chunk, i, "function not found");
-                                return false;
-                            }
-                        }
-                        Some(call_chunk) => {
-                            let call_chunk_rc =
-                                Rc::new(RefCell::new(call_chunk.clone()));
-                            return self.call_named_function(
-                                scopes,
-                                global_functions,
-                                call_stack_chunks,
-                                chunk,
-                                chunk_values.clone(),
-                                /* Need new chunk_functions
-                                    * here, but it could be
-                                    * cached in chunk_functions
-                                    * itself. */
-                                Rc::new(RefCell::new(Vec::new())),
-                                0,
-                                gen_global_vars.clone(),
-                                gen_local_vars_stack.clone(),
-                                prev_local_vars_stacks,
-                                line_col,
-                                running.clone(),
-                                is_value_function,
-                                plvs_index,
-                                call_chunk_rc
-                            );
-                        }
-                    }
-                }
-
-                return true;
+                return self.call_string(
+                    scopes,
+                    global_functions,
+                    call_stack_chunks,
+                    chunk,
+                    chunk_values.clone(),
+                    /* Need new chunk_functions
+                        * here, but it could be
+                        * cached in chunk_functions
+                        * itself. */
+                    Rc::new(RefCell::new(Vec::new())),
+                    0,
+                    gen_global_vars.clone(),
+                    gen_local_vars_stack.clone(),
+                    prev_local_vars_stacks,
+                    line_col,
+                    running.clone(),
+                    is_value_function,
+                    plvs_index,
+                    is_implicit,
+                    s
+                );
             }
             _ => {}
         }
@@ -851,241 +892,28 @@ impl VM {
             }
             Value::String(sp) => {
                 let s = &sp.borrow().s;
-                let sf_fn_opt = SIMPLE_FORMS.get(&s as &str);
-                if !sf_fn_opt.is_none() {
-                    let sf_fn = sf_fn_opt.unwrap();
-                    let n = sf_fn(self, chunk, i);
-                    if n == 0 {
-                        return false;
-                    }
-                    return true;
-                }
-
-                let shift_fn_opt = SHIFT_FORMS.get(&s as &str);
-                if !shift_fn_opt.is_none() {
-                    let shift_fn = shift_fn_opt.unwrap();
-                    let n = shift_fn(self, scopes, global_functions, prev_local_vars_stacks, chunk, i, line_col, running);
-                    if n == 0 {
-                        return false;
-                    }
-                    return true;
-                }
-
-                if s == "toggle-mode" {
-                    self.print_stack = !self.print_stack;
-                } else if s == ".s" {
-                    self.print_stack(
-                        chunk,
-                        i,
-                        scopes,
-                        global_functions,
-                        running,
-                        true,
-                    );
-                } else if s == "exc" {
-                    if self.stack.len() < 1 {
-                        print_error(chunk, i, "exc requires one argument");
-                        return false;
-                    }
-                    let fn_rr = self.stack.pop().unwrap();
-                    let backup_rr = fn_rr.clone();
-                    let fn_s;
-                    let fn_b;
-                    let fn_str;
-                    let fn_bk : Option<String>;
-                    let fn_opt : Option<&str> =
-                        match fn_rr {
-                            Value::String(sp) => {
-                                fn_s = sp;
-                                fn_b = fn_s.borrow();
-                                Some(&fn_b.s)
-                            }
-                            _ => {
-                                fn_bk = fn_rr.to_string();
-                                match fn_bk {
-                                    Some(s) => { fn_str = s; Some(&fn_str) }
-                                    _ => None
-                                }
-                            }
-                        };
-
-                    let mut pushed = false;
-                    match fn_opt {
-                        Some(s) => {
-                            let sf_fn_opt = SIMPLE_FORMS.get(&s as &str);
-                            if !sf_fn_opt.is_none() {
-                                let sf_fn = sf_fn_opt.unwrap();
-                                let nv = Value::CoreFunction(*sf_fn);
-                                self.stack.push(nv);
-                                pushed = true;
-                            } else {
-                                let shift_fn_opt = SHIFT_FORMS.get(&s as &str);
-                                if !shift_fn_opt.is_none() {
-                                    let shift_fn = shift_fn_opt.unwrap();
-                                    let nv = Value::ShiftFunction(*shift_fn);
-                                    self.stack.push(nv);
-                                    pushed = true;
-                                } else {
-                                    let mut new_call_stack_chunks = call_stack_chunks.clone();
-                                    new_call_stack_chunks.push(chunk);
-
-                                    let call_stack_function;
-                                    let global_function;
-                                    let mut call_chunk_opt = None;
-
-                                    for sf in new_call_stack_chunks.iter().rev() {
-                                        if sf.functions.borrow().contains_key(s) {
-                                            call_stack_function = sf.functions.borrow();
-                                            call_chunk_opt = Some(call_stack_function.get(s).unwrap());
-                                            break;
-                                        }
-                                    }
-                                    if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
-                                        global_function = global_functions
-                                            .borrow()
-                                            .get(s)
-                                            .unwrap()
-                                            .clone();
-                                        call_chunk_opt = Some(&global_function);
-                                    }
-                                    match call_chunk_opt {
-                                        Some(call_chunk) => {
-                                            let nv =
-                                            Value::NamedFunction(Rc::new(RefCell::new(call_chunk.clone())));
-                                            self.stack.push(nv);
-                                            pushed = true;
-                                        }
-                                        _ => {}
-                                    }
-                                }
-                            }
-                        }
-                        _ => {
-                        }
-                    }
-                    if !pushed {
-                        self.stack.push(backup_rr);
-                    }
-                } else if s == "import" {
-                    if self.stack.len() < 1 {
-                        print_error(chunk, i, "import requires one argument");
-                        return false;
-                    }
-
-                    let lib_rr = self.stack.pop().unwrap();
-                    let lib_str_s;
-                    let lib_str_b;
-                    let lib_str_str;
-                    let lib_str_bk : Option<String>;
-                    let lib_str_opt : Option<&str> =
-                        match lib_rr {
-                            Value::String(sp) => {
-                                lib_str_s = sp;
-                                lib_str_b = lib_str_s.borrow();
-                                Some(&lib_str_b.s)
-                            }
-                            _ => {
-                                lib_str_bk = lib_rr.to_string();
-                                match lib_str_bk {
-                                    Some(s) => { lib_str_str = s; Some(&lib_str_str) }
-                                    _ => None
-                                }
-                            }
-                        };
-
-                    match lib_str_opt {
-                        Some(s) => {
-                            let mut compiler = Compiler::new(false);
-                            let import_chunk_opt = compiler.deserialise(s);
-                            match import_chunk_opt {
-                                Some(import_chunk) => {
-                                    let mut global_functions_b =
-                                        global_functions.borrow_mut();
-                                    for (k, v) in
-                                        import_chunk.functions.borrow().iter()
-                                    {
-                                        global_functions_b.insert(k.clone(), v.clone());
-                                    }
-                                }
-                                None => {
-                                    return false;
-                                }
-                            }
-                        }
-                        _ => {
-                            print_error(
-                                chunk,
-                                i,
-                                "import argument must be a string",
-                            );
-                            return false;
-                        }
-                    }
-                } else {
-                    let mut new_call_stack_chunks = call_stack_chunks.clone();
-                    new_call_stack_chunks.push(chunk);
-
-                    let call_stack_function;
-                    let global_function;
-                    let mut call_chunk_opt = None;
-
-                    for sf in new_call_stack_chunks.iter().rev() {
-                        if sf.functions.borrow().contains_key(s) {
-                            call_stack_function = sf.functions.borrow();
-                            call_chunk_opt = Some(call_stack_function.get(s).unwrap());
-                            break;
-                        }
-                    }
-                    if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
-                        global_function = global_functions
-                            .borrow()
-                            .get(s)
-                            .unwrap()
-                            .clone();
-                        call_chunk_opt = Some(&global_function);
-                    }
-                    match call_chunk_opt {
-                        None => {
-                            if is_implicit {
-                                let value_rr = Value::String(
-                                    Rc::new(RefCell::new(
-                                        StringPair::new(
-                                            s.to_string(),
-                                            None,
-                                        )
-                                    ))
-                                );
-                                self.stack.push(value_rr);
-                            } else {
-                                print_error(chunk, i, "function not found");
-                                return false;
-                            }
-                        }
-                        Some(call_chunk) => {
-                            return self.call_named_function(
-                                scopes,
-                                global_functions,
-                                call_stack_chunks,
-                                chunk,
-                                chunk_values.clone(),
-                                /* Need new chunk_functions
-                                    * here, but it could be
-                                    * cached in chunk_functions
-                                    * itself. */
-                                Rc::new(RefCell::new(Vec::new())),
-                                0,
-                                gen_global_vars.clone(),
-                                gen_local_vars_stack.clone(),
-                                prev_local_vars_stacks,
-                                line_col,
-                                running.clone(),
-                                is_value_function,
-                                plvs_index,
-                                Rc::new(RefCell::new(call_chunk.clone()))
-                            );
-                        }
-                    }
-                }
+                return self.call_string(
+                    scopes,
+                    global_functions,
+                    call_stack_chunks,
+                    chunk,
+                    chunk_values.clone(),
+                    /* Need new chunk_functions
+                        * here, but it could be
+                        * cached in chunk_functions
+                        * itself. */
+                    Rc::new(RefCell::new(Vec::new())),
+                    0,
+                    gen_global_vars.clone(),
+                    gen_local_vars_stack.clone(),
+                    prev_local_vars_stacks,
+                    line_col,
+                    running.clone(),
+                    is_value_function,
+                    plvs_index,
+                    is_implicit,
+                    &s
+                );
             }
             _ => {
                 if is_implicit {

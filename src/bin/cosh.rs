@@ -493,6 +493,7 @@ fn main() {
                 call_stack_chunks.push(&functions[0]);
             }
             let chunk_values = HashMap::new();
+            let chunk_functions = Vec::new();
             let mut prev_local_vars_stacks = vec![];
             let mut global_functions = RefCell::new(HashMap::new());
             let running = Arc::new(AtomicBool::new(true));
@@ -502,6 +503,7 @@ fn main() {
                 &mut call_stack_chunks,
                 &chunk,
                 Rc::new(RefCell::new(chunk_values)),
+                Rc::new(RefCell::new(chunk_functions)),
                 0,
                 None,
                 None,

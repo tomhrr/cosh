@@ -199,7 +199,72 @@ pub enum Value {
 
 impl fmt::Debug for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "((Value))")
+        match self {
+            Value::Null => {
+                write!(f, "Null")
+            }
+            Value::Int(i) => {
+                write!(f, "{}", i)
+            }
+            Value::BigInt(i) => {
+                write!(f, "{}", i)
+            }
+            Value::Float(i) => {
+                write!(f, "{}", i)
+            }
+            Value::String(s) => {
+                let ss = &s.borrow().s;
+                write!(f, "\"{}\"", ss)
+            }
+            Value::Command(s) => {
+                write!(f, "Command \"{}\"", s.borrow())
+            }
+            Value::CommandUncaptured(s) => {
+                write!(f, "CommandUncaptured \"{}\"", s.borrow())
+            }
+            Value::List(ls) => {
+                write!(f, "{:?}", ls)
+            }
+            Value::Hash(hs) => {
+                write!(f, "{:?}", hs)
+            }
+            Value::Function(_) => {
+                write!(f, "((Function))")
+            }
+            Value::CoreFunction(_) => {
+                write!(f, "((CoreFunction))")
+            }
+            Value::ShiftFunction(_) => {
+                write!(f, "((ShiftFunction))")
+            }
+            Value::NamedFunction(_) => {
+                write!(f, "((NamedFunction))")
+            }
+            Value::Generator(_) => {
+                write!(f, "((Generator))")
+            }
+            Value::CommandGenerator(_) => {
+                write!(f, "((CommandGenerator))")
+            }
+            Value::KeysGenerator(_) => {
+                write!(f, "((KeysGenerator))")
+            }
+            Value::ValuesGenerator(_) => {
+                write!(f, "((ValuesGenerator))")
+            }
+            Value::EachGenerator(_) => {
+                write!(f, "((EachGenerator))")
+            }
+            Value::FileReader(_) => {
+                write!(f, "((FileReader))")
+            }
+            Value::FileWriter(_) => {
+                write!(f, "((FileWriter))")
+            }
+            Value::DirectoryHandle(_) => {
+                write!(f, "((DirectoryHandle))")
+            }
+        }
     }
 }
 

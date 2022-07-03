@@ -299,6 +299,9 @@ impl VM {
                                 &call_stack_chunks_sub,
                                 chunk,
                                 generator_object.chunk_values.clone(),
+                                /* todo: replace with generator_object
+                                 * vector. */
+                                Rc::new(RefCell::new(Vec::new())),
                                 index,
                                 Some(global_vars),
                                 Some(local_vars_stack),

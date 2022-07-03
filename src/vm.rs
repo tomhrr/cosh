@@ -202,10 +202,13 @@ impl VM {
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
-        chunk_values: Rc<RefCell<HashMap<String, Value>>>, i: usize,
+        chunk_values: Rc<RefCell<HashMap<String, Value>>>, 
+        chunk_functions: Rc<RefCell<Vec<Value>>>,
+        i: usize,
         call_opcode: OpCode,
         mut function_rr: Option<Value>,
         function_str: Option<&str>,
+        function_str_index: i32,
         gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
@@ -282,6 +285,322 @@ impl VM {
 
         match function_str {
             Some(s) => {
+                if function_str_index > -1 {
+                    if self.debug {
+                        eprintln!("function str is {:?}", s);
+                        eprintln!("function str index is {:?}", function_str_index);
+                    }
+                    {
+                        let cfb = chunk_functions.borrow();
+                        let cv = cfb.get(function_str_index as usize);
+                        match cv {
+                            Some(Value::CoreFunction(cf)) => {
+                                if self.debug {
+                                    eprintln!("function str {:?} matches core function",
+                                            s);
+                                }
+                                let n = cf(self, chunk, i);
+                                if n == 0 {
+                                    return false;
+                                }
+                                return true;
+                            }
+                            Some(Value::ShiftFunction(sf)) => {
+                                if self.debug {
+                                    eprintln!("function str {:?} matches shift function",
+                                            s);
+                                }
+                                let n = sf(self, scopes, global_functions, prev_local_vars_stacks, chunk, i, line_col, running);
+                                if n == 0 {
+                                    return false;
+                                }
+                                return true;
+                            }
+                            Some(Value::NamedFunction(call_chunk_rc)) => {
+                                if self.debug {
+                                    eprintln!("function str {:?} matches named function",
+                                            s);
+                                }
+                                let call_chunk = call_chunk_rc.borrow();
+                                let mut new_call_stack_chunks = call_stack_chunks.clone();
+                                new_call_stack_chunks.push(chunk);
+                                if call_chunk.is_generator {
+                                    let mut gen_args = Vec::new();
+                                    let req_arg_count = call_chunk.req_arg_count;
+                                    if self.stack.len() < req_arg_count.try_into().unwrap() {
+                                        let err_str = format!(
+                                            "generator requires {} argument{}",
+                                            req_arg_count,
+                                            if req_arg_count > 1 { "s" } else { "" }
+                                        );
+                                        print_error(chunk, i, &err_str);
+                                        return false;
+                                    }
+                                    let mut arg_count = call_chunk.arg_count;
+                                    if arg_count != 0 {
+                                        while arg_count > 0 && self.stack.len() > 0 {
+                                            gen_args.push(self.stack.pop().unwrap());
+                                            arg_count = arg_count - 1;
+                                        }
+                                    }
+                                    if gen_args.len() == 0 {
+                                        gen_args.push(Value::Null);
+                                    }
+                                    let mut gen_call_stack_chunks = Vec::new();
+                                    for i in new_call_stack_chunks.iter() {
+                                        gen_call_stack_chunks.push((*i).clone());
+                                    }
+                                    let gen_rr =
+                                        Value::Generator(
+                                            Rc::new(RefCell::new(
+                                                GeneratorObject::new(
+                                                    Rc::new(RefCell::new(HashMap::new())),
+                                                    Rc::new(RefCell::new(Vec::new())),
+                                                    0,
+                                                    call_chunk.clone(),
+                                                    Rc::new(RefCell::new(gen_call_stack_chunks)),
+                                                    gen_args,
+                                                    Rc::new(RefCell::new(HashMap::new())),
+                                                )
+                                            ))
+                                        );
+                                    self.stack.push(gen_rr);
+                                } else {
+                                    if call_chunk.has_vars {
+                                        scopes.push(RefCell::new(HashMap::new()));
+                                    }
+
+                                    if is_value_function {
+                                        self.local_var_stack =
+                                            (*(prev_local_vars_stacks
+                                                .get(plvs_index as usize)
+                                                .unwrap()))
+                                            .clone();
+                                    } else if call_chunk.nested {
+                                        self.local_var_stack =
+                                            (*(prev_local_vars_stacks
+                                                .last()
+                                                .unwrap()))
+                                            .clone();
+                                    }
+
+                                    let res = self.run(
+                                        scopes,
+                                        global_functions,
+                                        &new_call_stack_chunks,
+                                        &call_chunk,
+                                        chunk_values.clone(),
+                                        /* Need new chunk_functions
+                                         * here, but it could be
+                                         * cached in chunk_functions
+                                         * itself. */
+                                        Rc::new(RefCell::new(Vec::new())),
+                                        0,
+                                        gen_global_vars.clone(),
+                                        gen_local_vars_stack.clone(),
+                                        prev_local_vars_stacks,
+                                        line_col,
+                                        running.clone(),
+                                    );
+
+                                    if is_value_function {
+                                        prev_local_vars_stacks[plvs_index as usize] =
+                                            self.local_var_stack.clone();
+                                    } else if call_chunk.nested {
+                                        let plvs_len = prev_local_vars_stacks.len();
+                                        prev_local_vars_stacks[plvs_len - 1] =
+                                            self.local_var_stack.clone();
+                                    }
+
+                                    if res == 0 {
+                                        return false;
+                                    }
+                                }
+                                return true;
+                            }
+                            Some(Value::Null) => {
+                                if self.debug {
+                                    eprintln!("function str {:?} not cached", s);
+                                }
+                            }
+                            Some(s) => {
+                                if self.debug {
+                                    eprintln!("unexpected cached function!");
+                                    eprintln!("{:?}", s);
+                                }
+                                std::process::abort();
+                            }
+                            None => {
+                                if self.debug {
+                                    eprintln!("function str {:?} not cached", s);
+                                }
+                            }
+                        };
+                    }
+                    let sf_fn_opt = SIMPLE_FORMS.get(&s as &str);
+                    if !sf_fn_opt.is_none() {
+                        let sf_fn = sf_fn_opt.unwrap();
+                        let nv = Value::CoreFunction(*sf_fn);
+                        chunk_functions.borrow_mut().resize((function_str_index as usize) + 1, Value::Null);
+                        chunk_functions.borrow_mut().insert(function_str_index as usize, nv);
+                        if self.debug {
+                            eprintln!("function str {:?} found, inserted as core function", s);
+                        }
+                        let n = sf_fn(self, chunk, i);
+                        if n == 0 {
+                            return false;
+                        }
+                        return true;
+                    } else {
+                        let shift_fn_opt = SHIFT_FORMS.get(&s as &str);
+                        if !shift_fn_opt.is_none() {
+                            let shift_fn = shift_fn_opt.unwrap();
+                            let nv = Value::ShiftFunction(*shift_fn);
+                            chunk_functions.borrow_mut().resize((function_str_index as usize) + 1, Value::Null);
+                            chunk_functions.borrow_mut().insert(function_str_index as usize, nv);
+                            if self.debug {
+                                eprintln!("function str {:?} found, inserted as shift function", s);
+                            }
+                            let n = shift_fn(self, scopes, global_functions, prev_local_vars_stacks, chunk, i, line_col, running);
+                            if n == 0 {
+                                return false;
+                            }
+                            return true;
+                        } else {
+                            let mut new_call_stack_chunks = call_stack_chunks.clone();
+                            new_call_stack_chunks.push(chunk);
+
+                            let call_stack_function;
+                            let global_function;
+                            let mut call_chunk_opt = None;
+
+                            for sf in new_call_stack_chunks.iter().rev() {
+                                if sf.functions.borrow().contains_key(s) {
+                                    call_stack_function = sf.functions.borrow();
+                                    call_chunk_opt = Some(call_stack_function.get(s).unwrap());
+                                    break;
+                                }
+                            }
+                            if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
+                                global_function = global_functions
+                                    .borrow()
+                                    .get(s)
+                                    .unwrap()
+                                    .clone();
+                                call_chunk_opt = Some(&global_function);
+                            }
+                            match call_chunk_opt {
+                                Some(call_chunk) => {
+                                    let nv =
+                                    Value::NamedFunction(Rc::new(RefCell::new(call_chunk.clone())));
+                                    chunk_functions.borrow_mut().resize((function_str_index as usize) + 1, Value::Null);
+                                    chunk_functions.borrow_mut().insert(function_str_index as usize, nv);
+                                    if self.debug {
+                                        eprintln!("function str {:?} found, inserted as named function", s);
+                                    }
+                                    let mut new_call_stack_chunks = call_stack_chunks.clone();
+                                    new_call_stack_chunks.push(chunk);
+                                    if call_chunk.is_generator {
+                                        let mut gen_args = Vec::new();
+                                        let req_arg_count = call_chunk.req_arg_count;
+                                        if self.stack.len() < req_arg_count.try_into().unwrap() {
+                                            let err_str = format!(
+                                                "generator requires {} argument{}",
+                                                req_arg_count,
+                                                if req_arg_count > 1 { "s" } else { "" }
+                                            );
+                                            print_error(chunk, i, &err_str);
+                                            return false;
+                                        }
+                                        let mut arg_count = call_chunk.arg_count;
+                                        if arg_count != 0 {
+                                            while arg_count > 0 && self.stack.len() > 0 {
+                                                gen_args.push(self.stack.pop().unwrap());
+                                                arg_count = arg_count - 1;
+                                            }
+                                        }
+                                        if gen_args.len() == 0 {
+                                            gen_args.push(Value::Null);
+                                        }
+                                        let mut gen_call_stack_chunks = Vec::new();
+                                        for i in new_call_stack_chunks.iter() {
+                                            gen_call_stack_chunks.push((*i).clone());
+                                        }
+                                        let gen_rr =
+                                            Value::Generator(
+                                                Rc::new(RefCell::new(
+                                                    GeneratorObject::new(
+                                                        Rc::new(RefCell::new(HashMap::new())),
+                                                        Rc::new(RefCell::new(Vec::new())),
+                                                        0,
+                                                        call_chunk.clone(),
+                                                        Rc::new(RefCell::new(gen_call_stack_chunks)),
+                                                        gen_args,
+                                                        Rc::new(RefCell::new(HashMap::new())),
+                                                    )
+                                                ))
+                                            );
+                                        self.stack.push(gen_rr);
+                                    } else {
+                                        if call_chunk.has_vars {
+                                            scopes.push(RefCell::new(HashMap::new()));
+                                        }
+
+                                        if is_value_function {
+                                            self.local_var_stack =
+                                                (*(prev_local_vars_stacks
+                                                    .get(plvs_index as usize)
+                                                    .unwrap()))
+                                                .clone();
+                                        } else if call_chunk.nested {
+                                            self.local_var_stack =
+                                                (*(prev_local_vars_stacks
+                                                    .last()
+                                                    .unwrap()))
+                                                .clone();
+                                        }
+
+                                        let res = self.run(
+                                            scopes,
+                                            global_functions,
+                                            &new_call_stack_chunks,
+                                            &call_chunk,
+                                            chunk_values.clone(),
+                                            /* Need new
+                                             * chunk_functions here,
+                                             * but it could be cached
+                                             * in chunk_functions
+                                             * itself. */
+                                            Rc::new(RefCell::new(Vec::new())),
+                                            0,
+                                            gen_global_vars,
+                                            gen_local_vars_stack,
+                                            prev_local_vars_stacks,
+                                            line_col,
+                                            running,
+                                        );
+
+                                        if is_value_function {
+                                            prev_local_vars_stacks[plvs_index as usize] =
+                                                self.local_var_stack.clone();
+                                        } else if call_chunk.nested {
+                                            let plvs_len = prev_local_vars_stacks.len();
+                                            prev_local_vars_stacks[plvs_len - 1] =
+                                                self.local_var_stack.clone();
+                                        }
+
+                                        if res == 0 {
+                                            return false;
+                                        }
+                                    }
+                                    return true;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+
                 let sf_fn_opt = SIMPLE_FORMS.get(s);
                 if !sf_fn_opt.is_none() {
                     let sf_fn = sf_fn_opt.unwrap();
@@ -559,6 +878,10 @@ impl VM {
                                     &new_call_stack_chunks,
                                     &call_chunk,
                                     chunk_values,
+                                    /* Need new chunk_functions here,
+                                     * but it could be cached
+                                     * somewhere. */
+                                    Rc::new(RefCell::new(Vec::new())),
                                     0,
                                     gen_global_vars,
                                     gen_local_vars_stack,
@@ -688,6 +1011,8 @@ impl VM {
                         &new_call_stack_chunks,
                         &call_chunk,
                         chunk_values,
+                        /* Need new chunk_functions here. */
+                        Rc::new(RefCell::new(Vec::new())),
                         0,
                         gen_global_vars,
                         gen_local_vars_stack,
@@ -989,6 +1314,9 @@ impl VM {
                                     &new_call_stack_chunks,
                                     &call_chunk,
                                     chunk_values,
+                                    /* Need new chunk_functions here.
+                                     * */
+                                    Rc::new(RefCell::new(Vec::new())),
                                     0,
                                     gen_global_vars,
                                     gen_local_vars_stack,
@@ -1040,7 +1368,9 @@ impl VM {
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>, chunk: &'a Chunk,
-        chunk_values: Rc<RefCell<HashMap<String, Value>>>, index: usize,
+        chunk_values: Rc<RefCell<HashMap<String, Value>>>,
+        chunk_functions: Rc<RefCell<Vec<Value>>>,
+        index: usize,
         mut gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         mut gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
@@ -1360,10 +1690,12 @@ impl VM {
                                 call_stack_chunks,
                                 chunk,
                                 chunk_values.clone(),
+                                chunk_functions.clone(),
                                 i,
                                 op,
                                 None,
                                 Some(sp),
+                                (i2 as u32).try_into().unwrap(),
                                 None,
                                 None,
                                 prev_local_vars_stacks,
@@ -1415,10 +1747,12 @@ impl VM {
                         call_stack_chunks,
                         chunk,
                         chunk_values.clone(),
+                        chunk_functions.clone(),
                         i,
                         op,
                         Some(function_rr),
                         None,
+                        -1,
                         None,
                         None,
                         prev_local_vars_stacks,
@@ -1904,6 +2238,7 @@ impl VM {
         let call_stack_chunks = vec![];
         let mut scopes = vec![RefCell::new(variables)];
         let chunk_values = Rc::new(RefCell::new(HashMap::new()));
+        let chunk_functions = Rc::new(RefCell::new(Vec::new()));
         let mut prev_local_vars_stacks = vec![];
 
         self.run(
@@ -1912,6 +2247,7 @@ impl VM {
             &call_stack_chunks,
             &chunk,
             chunk_values,
+            chunk_functions,
             0,
             None,
             None,

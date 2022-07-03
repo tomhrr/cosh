@@ -805,11 +805,53 @@ impl Compiler {
                             }
                         }
                     } else if s == "-" {
-                        chunk.add_opcode(OpCode::Subtract);
+                        match chunk.get_third_last_opcode() {
+                            OpCode::Constant => {
+                                let mlen = chunk.data.borrow().len() - 1;
+                                chunk.set_previous_point(
+                                    mlen,
+                                    token.line_number, token.column_number
+                                );
+                                chunk.set_third_last_opcode(
+                                    OpCode::SubtractConstant
+                                );
+                            },
+                            _ => {
+                                chunk.add_opcode(OpCode::Subtract);
+                            }
+                        }
                     } else if s == "*" {
-                        chunk.add_opcode(OpCode::Multiply);
+                        match chunk.get_third_last_opcode() {
+                            OpCode::Constant => {
+                                let mlen = chunk.data.borrow().len() - 1;
+                                chunk.set_previous_point(
+                                    mlen,
+                                    token.line_number, token.column_number
+                                );
+                                chunk.set_third_last_opcode(
+                                    OpCode::MultiplyConstant
+                                );
+                            },
+                            _ => {
+                                chunk.add_opcode(OpCode::Multiply);
+                            }
+                        }
                     } else if s == "/" {
-                        chunk.add_opcode(OpCode::Divide);
+                        match chunk.get_third_last_opcode() {
+                            OpCode::Constant => {
+                                let mlen = chunk.data.borrow().len() - 1;
+                                chunk.set_previous_point(
+                                    mlen,
+                                    token.line_number, token.column_number
+                                );
+                                chunk.set_third_last_opcode(
+                                    OpCode::DivideConstant
+                                );
+                            },
+                            _ => {
+                                chunk.add_opcode(OpCode::Divide);
+                            }
+                        }
                     } else if s == ">" {
                         chunk.add_opcode(OpCode::Gt);
                     } else if s == "<" {

@@ -55,6 +55,9 @@ pub enum OpCode {
     DupIsNull = 52,
     CallConstant = 53,
     JumpR = 54,
+    SubtractConstant = 55,
+    MultiplyConstant = 56,
+    DivideConstant = 57,
     Unknown = 255,
 }
 
@@ -115,6 +118,9 @@ pub fn to_opcode(value: u8) -> OpCode {
         52 => OpCode::DupIsNull,
         53 => OpCode::CallConstant,
         54 => OpCode::JumpR,
+        55 => OpCode::SubtractConstant,
+        56 => OpCode::MultiplyConstant,
+        57 => OpCode::DivideConstant,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

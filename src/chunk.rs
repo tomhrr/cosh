@@ -655,6 +655,36 @@ impl Chunk {
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_ADDCONSTANT {:?}", value);
                 }
+                OpCode::SubtractConstant => {
+                    i = i + 1;
+                    let i_upper = data_b[i];
+                    i = i + 1;
+                    let i_lower = data_b[i];
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00)
+                        | ((i_lower & 0xFF) as u16);
+                    let value = self.get_constant(constant_i as i32);
+                    println!("OP_SUBTRACTCONSTANT {:?}", value);
+                }
+                OpCode::DivideConstant => {
+                    i = i + 1;
+                    let i_upper = data_b[i];
+                    i = i + 1;
+                    let i_lower = data_b[i];
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00)
+                        | ((i_lower & 0xFF) as u16);
+                    let value = self.get_constant(constant_i as i32);
+                    println!("OP_DIVIDECONSTANT {:?}", value);
+                }
+                OpCode::MultiplyConstant => {
+                    i = i + 1;
+                    let i_upper = data_b[i];
+                    i = i + 1;
+                    let i_lower = data_b[i];
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00)
+                        | ((i_lower & 0xFF) as u16);
+                    let value = self.get_constant(constant_i as i32);
+                    println!("OP_MULTIPLYCONSTANT {:?}", value);
+                }
                 OpCode::EqConstant => {
                     i = i + 1;
                     let i_upper = data_b[i];

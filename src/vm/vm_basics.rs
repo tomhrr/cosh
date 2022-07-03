@@ -45,14 +45,12 @@ impl VM {
 
     /// Swap the top two elements from the stack.
     pub fn opcode_swap(&mut self, chunk: &Chunk, i: usize) -> i32 {
-        if self.stack.len() < 2 {
+        let len = self.stack.len();
+        if len < 2 {
             print_error(chunk, i, "swap requires two arguments");
             return 0;
         }
-        let first_rr = self.stack.pop().unwrap();
-        let second_rr = self.stack.pop().unwrap();
-        self.stack.push(first_rr);
-        self.stack.push(second_rr);
+        self.stack.swap(len - 1, len - 2);
         return 1;
     }
 

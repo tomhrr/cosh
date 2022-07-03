@@ -1716,20 +1716,24 @@ impl VM {
                     let i_lower = data[i];
                     let i3 = (((i_upper as u16) << 8) & 0xFF00)
                         | ((i_lower & 0xFF) as u16);
-                    let cmp_rr = chunk.get_constant_int(i3 as i32);
-
                     let value_rr = self.stack.last().unwrap();
+                    if chunk.has_constant_int(i3 as i32) {
+                        let cmp_rr = chunk.get_constant_int(i3 as i32);
 
-                    match &*value_rr {
-                        Value::Int(n2) => {
-                            if cmp_rr != *n2 {
-                                i = i - jmp_len;
-                            };
+                        match &*value_rr {
+                            Value::Int(n2) => {
+                                if cmp_rr != *n2 {
+                                    i = i - jmp_len;
+                                };
+                            }
+                            _ => {
+                                eprintln!("unexpected jumpnereqc value!");
+                                std::process::abort();
+                            }
                         }
-                        _ => {
-                            eprintln!("unexpected jumpnereqc value!");
-                            std::process::abort();
-                        }
+                    } else {
+                        eprintln!("unexpected jumpnereqc constant!");
+                        std::process::abort();
                     }
                 }
                 OpCode::Shift => {

@@ -1208,6 +1208,7 @@ impl Compiler {
                     } else if s == "until" {
                         match begin_index {
                             Some(n) => {
+                                let mut done = false;
                                 match (chunk.get_third_last_opcode(),
                                        chunk.get_fourth_last_opcode()) {
                                     (OpCode::EqConstant, OpCode::Dup) => {
@@ -1216,53 +1217,58 @@ impl Compiler {
                                         );
                                         let cb1 = chunk.get_second_last_byte();
                                         let cb2 = chunk.get_last_byte();
-
-                                        let jmp_len =
-                                            chunk.data.borrow().len() - n + 1;
-                                        chunk.set_third_last_byte(
-                                            ((jmp_len >> 8) & 0xff).try_into().unwrap()
-                                        );
-                                        chunk.set_second_last_byte(
-                                            (jmp_len & 0xff).try_into().unwrap(),
-                                        );
-                                        chunk.set_last_byte(cb1);
-                                        chunk.add_byte(cb2);
-                                    },
-                                    _ => {
-                                        let mut done = false;
-                                        match chunk.get_third_last_opcode() {
-                                            OpCode::Constant => {
-                                                let i_upper = chunk.get_second_last_byte();
-                                                let i_lower = chunk.get_last_byte();
-                                                let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
-                                                let v = chunk.get_constant(constant_i.into());
-                                                match v {
-                                                    Value::Int(0) => {
-                                                        chunk.set_third_last_opcode(OpCode::JumpR);
-                                                        let jmp_len = chunk.data.borrow().len() - n;
-                                                        chunk.set_second_last_byte(
-                                                            ((jmp_len >> 8) & 0xff).try_into().unwrap(),
-                                                        );
-                                                        chunk.set_last_byte(
-                                                            (jmp_len & 0xff).try_into().unwrap(),
-                                                        );
-                                                        done = true;
-                                                    }
-                                                    _ => {}
-                                                }
-                                            }
-                                            _ => {}
-                                        };
-                                        if !done {
-                                            chunk.add_opcode(OpCode::JumpNeR);
-                                            let jmp_len = chunk.data.borrow().len() - n + 2;
-                                            chunk.add_byte(
-                                                ((jmp_len >> 8) & 0xff).try_into().unwrap(),
+					let i3 = (((cb1 as u16) << 8) & 0xFF00)
+					    | ((cb2 & 0xFF) as u16);
+                                        if chunk.has_constant_int(i3 as i32) {
+                                            let jmp_len =
+                                                chunk.data.borrow().len() - n + 1;
+                                            chunk.set_third_last_byte(
+                                                ((jmp_len >> 8) & 0xff).try_into().unwrap()
                                             );
-                                            chunk.add_byte(
+                                            chunk.set_second_last_byte(
                                                 (jmp_len & 0xff).try_into().unwrap(),
                                             );
+                                            chunk.set_last_byte(cb1);
+                                            chunk.add_byte(cb2);
+                                            done = true;
                                         }
+                                    },
+                                    _ => {}
+                                };
+                                if !done {
+                                    let mut done2 = false;
+                                    match chunk.get_third_last_opcode() {
+                                        OpCode::Constant => {
+                                            let i_upper = chunk.get_second_last_byte();
+                                            let i_lower = chunk.get_last_byte();
+                                            let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                                            let v = chunk.get_constant(constant_i.into());
+                                            match v {
+                                                Value::Int(0) => {
+                                                    chunk.set_third_last_opcode(OpCode::JumpR);
+                                                    let jmp_len = chunk.data.borrow().len() - n;
+                                                    chunk.set_second_last_byte(
+                                                        ((jmp_len >> 8) & 0xff).try_into().unwrap(),
+                                                    );
+                                                    chunk.set_last_byte(
+                                                        (jmp_len & 0xff).try_into().unwrap(),
+                                                    );
+                                                    done2 = true;
+                                                }
+                                                _ => {}
+                                            }
+                                        }
+                                        _ => {}
+                                    };
+                                    if !done2 {
+                                        chunk.add_opcode(OpCode::JumpNeR);
+                                        let jmp_len = chunk.data.borrow().len() - n + 2;
+                                        chunk.add_byte(
+                                            ((jmp_len >> 8) & 0xff).try_into().unwrap(),
+                                        );
+                                        chunk.add_byte(
+                                            (jmp_len & 0xff).try_into().unwrap(),
+                                        );
                                     }
                                 }
                             }

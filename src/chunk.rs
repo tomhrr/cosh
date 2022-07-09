@@ -126,7 +126,7 @@ pub struct GeneratorObject {
     pub gen_args: Vec<Value>,
     /// A hash of cached values for the chunk of the associated
     /// generator function.
-    pub chunk_values: Rc<RefCell<HashMap<String, Value>>>,
+    pub chunk_values: Rc<RefCell<Vec<Value>>>,
     /// A vector of cached functions for the chunk of the associated
     /// generator function (indexed by constant identifier).
     pub chunk_functions: Rc<RefCell<Vec<CFPair>>>,
@@ -141,7 +141,7 @@ impl GeneratorObject {
         chunk: Chunk,
         call_stack_chunks: Rc<RefCell<Vec<Chunk>>>,
         gen_args: Vec<Value>,
-        chunk_values: Rc<RefCell<HashMap<String, Value>>>,
+        chunk_values: Rc<RefCell<Vec<Value>>>,
     ) -> GeneratorObject {
         GeneratorObject {
             global_vars: global_vars,
@@ -217,7 +217,7 @@ pub enum Value {
         ) -> i32,
     ),
     /// A named function.
-    NamedFunction(Rc<RefCell<Chunk>>),
+    NamedFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<CFPair>>>),
     /// A generator constructed by way of a generator function.
     Generator(Rc<RefCell<GeneratorObject>>),
     /// A generator for getting the output of a Command.
@@ -276,7 +276,7 @@ impl fmt::Debug for Value {
             Value::ShiftFunction(_) => {
                 write!(f, "((ShiftFunction))")
             }
-            Value::NamedFunction(_) => {
+            Value::NamedFunction(_, _) => {
                 write!(f, "((NamedFunction))")
             }
             Value::Generator(_) => {
@@ -1034,6 +1034,20 @@ impl Value {
     pub fn gen_regex(&mut self, chunk: &Chunk, i: usize) -> bool {
         match self {
             Value::String(sp) => {
+                match sp.borrow().r {
+                    None => {}
+                    _ => {
+                        return true;
+                    }
+                }
+            },
+            _ => {
+                eprintln!("unable to make regex from non-string!");
+                std::process::abort();
+            }
+        }
+        match self {
+            Value::String(sp) => {
                 let regex_res = Regex::new(&sp.borrow().s);
                 match regex_res {
                     Ok(regex) => {
@@ -1052,33 +1066,7 @@ impl Value {
                     }
                 }
             }
-            _ => {
-                eprintln!("unable to make regex from non-string!");
-                std::process::abort();
-            }
+            _ => {}
         }
     }
-
-    /*
-    /// For a string value, return the corresponding regex.  For this
-    /// function to work, gen_regex must have been called on the
-    /// string value beforehand.
-    pub fn to_regex(&self) -> Option<&Regex> {
-        match self {
-            Value::String(sp) => {
-                match sp.borrow().r {
-                    Some(ref regex) => Some(regex),
-                    _ => {
-                        eprintln!("gen_regex must be called before to_regex!");
-                        std::process::abort();
-                    }
-                }
-            }
-            _ => {
-                eprintln!("gen_regex must be called before to_regex!");
-                std::process::abort();
-            }
-        }
-    }
-    */
 }

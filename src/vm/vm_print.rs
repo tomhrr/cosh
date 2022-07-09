@@ -205,7 +205,7 @@ impl VM {
                         return lines_to_print;
                     }
                 }
-                Value::NamedFunction(_) => {
+                Value::NamedFunction(_, _) => {
                     let s = format!("{{NamedFunction}}");
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);

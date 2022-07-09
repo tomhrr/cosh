@@ -1492,36 +1492,6 @@ impl VM {
                             eprintln!("CF post: {:?}", chunk_functions);
                         }
                     }
-
-                    /*
-                    let mut copy = false;
-                    let mut name = "".to_owned();
-                    {
-                        match value_rr {
-                            Value::String(ref sp) => {
-                                match chunk_values.borrow().get(&sp.borrow().s) {
-                                    Some(cv_value_rr) => {
-                                        self.stack.push(cv_value_rr.clone());
-                                    }
-                                    _ => {
-                                        name = sp.borrow().s.clone();
-                                        copy = true;
-                                    }
-                                }
-                            }
-                            _ => {
-                                self.stack.push(value_rr.clone());
-                            }
-                        }
-                    }
-                    if copy {
-                        chunk_values
-                            .borrow_mut()
-                            .insert(name.clone().to_string(), value_rr);
-                        self.stack
-                            .push(chunk_values.borrow().get(&name).unwrap().clone());
-                    }
-                    */
                 }
                 OpCode::CallConstant => {
                     prev_local_vars_stacks.push(self.local_var_stack.clone());

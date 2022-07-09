@@ -465,7 +465,6 @@ fn main() {
             if functions.len() > 0 {
                 call_stack_chunks.push(&functions[0]);
             }
-            let chunk_values = Vec::new();
             let chunk_functions = Vec::new();
             let mut prev_local_vars_stacks = vec![];
             let mut global_functions = RefCell::new(HashMap::new());
@@ -475,7 +474,6 @@ fn main() {
                 &mut global_functions,
                 &mut call_stack_chunks,
                 &chunk,
-                Rc::new(RefCell::new(chunk_values)),
                 Rc::new(RefCell::new(chunk_functions)),
                 0,
                 None,

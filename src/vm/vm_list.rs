@@ -293,7 +293,6 @@ impl VM {
                                 global_functions,
                                 &call_stack_chunks_sub,
                                 chunk,
-                                generator_object.chunk_values.clone(),
                                 generator_object.chunk_functions.clone(),
                                 index,
                                 Some(global_vars),

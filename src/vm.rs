@@ -340,7 +340,6 @@ impl VM {
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>,
         chunk: &'a Chunk,
-        chunk_values: Rc<RefCell<Vec<Value>>>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
@@ -387,8 +386,7 @@ impl VM {
                 0,
                 call_chunk.clone(),
                 Rc::new(RefCell::new(gen_call_stack_chunks)),
-                gen_args,
-                Rc::new(RefCell::new(Vec::new())),
+                gen_args
             ))));
             self.stack.push(gen_rr);
         } else {
@@ -408,7 +406,6 @@ impl VM {
                 global_functions,
                 &new_call_stack_chunks,
                 &call_chunk,
-                chunk_values.clone(),
                 chunk_functions,
                 0,
                 gen_global_vars.clone(),
@@ -438,7 +435,6 @@ impl VM {
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>,
         chunk: &'a Chunk,
-        chunk_values: Rc<RefCell<Vec<Value>>>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
@@ -657,7 +653,6 @@ impl VM {
                         global_functions,
                         call_stack_chunks,
                         chunk,
-                        chunk_values.clone(),
                         chunk_functions,
                         0,
                         gen_global_vars.clone(),
@@ -692,7 +687,6 @@ impl VM {
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>,
         chunk: &'a Chunk,
-        chunk_values: Rc<RefCell<Vec<Value>>>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         call_opcode: OpCode,
@@ -924,7 +918,6 @@ impl VM {
                                     global_functions,
                                     call_stack_chunks,
                                     chunk,
-                                    chunk_values.clone(),
                                     cfs.clone(),
                                     0,
                                     gen_global_vars.clone(),
@@ -968,7 +961,6 @@ impl VM {
                     global_functions,
                     call_stack_chunks,
                     chunk,
-                    chunk_values.clone(),
                     Rc::new(RefCell::new(Vec::new())),
                     0,
                     gen_global_vars.clone(),
@@ -1032,7 +1024,6 @@ impl VM {
                     global_functions,
                     call_stack_chunks,
                     chunk,
-                    chunk_values.clone(),
                     cfs.clone(),
                     0,
                     gen_global_vars.clone(),
@@ -1055,7 +1046,6 @@ impl VM {
                     global_functions,
                     call_stack_chunks,
                     chunk,
-                    chunk_values.clone(),
                     Rc::new(RefCell::new(Vec::new())),
                     0,
                     gen_global_vars.clone(),
@@ -1096,7 +1086,6 @@ impl VM {
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>,
         chunk: &'a Chunk,
-        chunk_values: Rc<RefCell<Vec<Value>>>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         index: usize,
         mut gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
@@ -1526,7 +1515,6 @@ impl VM {
                                 global_functions,
                                 call_stack_chunks,
                                 chunk,
-                                chunk_values.clone(),
                                 chunk_functions.clone(),
                                 i,
                                 op,
@@ -1583,7 +1571,6 @@ impl VM {
                         global_functions,
                         call_stack_chunks,
                         chunk,
-                        chunk_values.clone(),
                         chunk_functions.clone(),
                         i,
                         op,
@@ -2039,7 +2026,6 @@ impl VM {
         let mut global_functions_rr = RefCell::new(global_functions);
         let call_stack_chunks = vec![];
         let mut scopes = vec![RefCell::new(variables)];
-        let chunk_values = Rc::new(RefCell::new(Vec::new()));
         let chunk_functions = Rc::new(RefCell::new(Vec::new()));
         let mut prev_local_vars_stacks = vec![];
 
@@ -2048,7 +2034,6 @@ impl VM {
             &mut global_functions_rr,
             &call_stack_chunks,
             &chunk,
-            chunk_values,
             chunk_functions,
             0,
             None,

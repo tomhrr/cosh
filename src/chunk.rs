@@ -124,9 +124,6 @@ pub struct GeneratorObject {
     /// The values that need to be passed into the generator when
     /// it is first called.
     pub gen_args: Vec<Value>,
-    /// A hash of cached values for the chunk of the associated
-    /// generator function.
-    pub chunk_values: Rc<RefCell<Vec<Value>>>,
     /// A vector of cached functions for the chunk of the associated
     /// generator function (indexed by constant identifier).
     pub chunk_functions: Rc<RefCell<Vec<CFPair>>>,
@@ -140,8 +137,7 @@ impl GeneratorObject {
         index: usize,
         chunk: Chunk,
         call_stack_chunks: Rc<RefCell<Vec<Chunk>>>,
-        gen_args: Vec<Value>,
-        chunk_values: Rc<RefCell<Vec<Value>>>,
+        gen_args: Vec<Value>
     ) -> GeneratorObject {
         GeneratorObject {
             global_vars: global_vars,
@@ -150,7 +146,6 @@ impl GeneratorObject {
             chunk: chunk,
             call_stack_chunks: call_stack_chunks,
             gen_args: gen_args,
-            chunk_values: chunk_values,
             chunk_functions: Rc::new(RefCell::new(Vec::new())),
         }
     }

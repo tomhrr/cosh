@@ -1068,5 +1068,6 @@ impl Value {
             }
             _ => {}
         }
+        return true;
     }
 }

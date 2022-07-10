@@ -5,16 +5,10 @@ use std::rc::Rc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-use lazy_static::lazy_static;
 use regex::Regex;
 
 use chunk::{print_error, Chunk, StringPair, Value};
 use vm::*;
-
-lazy_static! {
-    static ref START_QUOTE: Regex = Regex::new(r#"^\s*""#).unwrap();
-    static ref END_QUOTE: Regex = Regex::new(r#""\s*$"#).unwrap();
-}
 
 impl VM {
     /// Takes two string arguments, appends them together, and adds
@@ -158,26 +152,44 @@ impl VM {
                 // applicable.
                 let mut buffer = Vec::new();
                 for e in elements {
-                    let e_str = e.to_string();
+                    let mut e_str = e.to_string();
                     if buffer.len() > 0 {
                         if e_str.len() > 0 {
                             if e_str.chars().last().unwrap() == '"' {
                                 buffer.push(e_str);
-                                let new_str = buffer.join(separator);
-                                let new_str2 = START_QUOTE.replace(&new_str, "");
-                                let new_str3 = END_QUOTE.replace(&new_str2, "");
-                                final_elements.push(new_str3.to_string());
+                                let mut new_str = buffer.join(separator);
+                                if new_str.len() > 0 {
+                                    if new_str.chars().next().unwrap() == '"' {
+                                        new_str.remove(0);
+                                    }
+                                    if new_str.len() > 0 {
+                                        if new_str.chars().last().unwrap() == '"' {
+                                            new_str.remove(new_str.len() - 1);
+                                        }
+                                    }
+                                }
+                                final_elements.push(new_str.to_string());
                                 buffer.clear();
                             } else {
                                 buffer.push(e_str);
                             }
                         }
-                    } else if START_QUOTE.is_match(&e_str) && !END_QUOTE.is_match(&e_str) {
+                    } else if (e_str.len() > 0)
+                                && (e_str.chars().next().unwrap() == '"')
+                                && (e_str.chars().last().unwrap() != '"') {
                         buffer.push(e_str);
                     } else {
-                        let new_str = START_QUOTE.replace(&e_str, "");
-                        let new_str2 = END_QUOTE.replace(&new_str, "");
-                        final_elements.push(new_str2.to_string());
+                        if e_str.len() > 0 {
+                            if e_str.chars().next().unwrap() == '"' {
+                                e_str.remove(0);
+                            }
+                            if e_str.len() > 0 {
+                                if e_str.chars().last().unwrap() == '"' {
+                                    e_str.remove(e_str.len() - 1);
+                                }
+                            }
+                        }
+                        final_elements.push(e_str);
                     }
                 }
                 if buffer.len() > 0 {

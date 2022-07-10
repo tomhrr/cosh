@@ -10,7 +10,7 @@ impl VM {
             print_error(chunk, i, "drop requires one argument");
             return 0;
         }
-        self.stack.pop().unwrap();
+        self.stack.pop();
         return 1;
     }
 
@@ -134,7 +134,6 @@ impl VM {
             &Value::Null => 1,
             _ => 0,
         };
-
         self.stack.push(Value::Int(is_null));
         return 1;
     }

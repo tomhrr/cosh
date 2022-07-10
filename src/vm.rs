@@ -708,6 +708,9 @@ impl VM {
             OpCode::CallImplicit => {
                 is_implicit = true;
             }
+            OpCode::CallImplicitConstant => {
+                is_implicit = true;
+            }
             OpCode::Call => {
                 is_implicit = false;
             }
@@ -1482,7 +1485,7 @@ impl VM {
                         }
                     }
                 }
-                OpCode::CallConstant => {
+                OpCode::CallConstant | OpCode::CallImplicitConstant => {
                     prev_local_vars_stacks.push(self.local_var_stack.clone());
                     self.local_var_stack = Rc::new(RefCell::new(vec![]));
 

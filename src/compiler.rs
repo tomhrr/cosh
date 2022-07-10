@@ -1256,12 +1256,11 @@ impl Compiler {
                         let i = chunk.add_constant(s_rr);
 
                         if is_implicit {
-                            chunk.add_opcode(OpCode::Constant);
+                            chunk.add_opcode(OpCode::CallImplicitConstant);
                             let i_upper = (i >> 8) & 0xFF;
                             let i_lower = i & 0xFF;
                             chunk.add_byte(i_upper as u8);
                             chunk.add_byte(i_lower as u8);
-                            chunk.add_opcode(OpCode::CallImplicit);
                         } else {
                             chunk.add_opcode(OpCode::CallConstant);
                             let i_upper = (i >> 8) & 0xFF;

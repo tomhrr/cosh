@@ -58,6 +58,7 @@ pub enum OpCode {
     SubtractConstant = 55,
     MultiplyConstant = 56,
     DivideConstant = 57,
+    CallImplicitConstant = 58,
     Unknown = 255,
 }
 
@@ -121,6 +122,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         55 => OpCode::SubtractConstant,
         56 => OpCode::MultiplyConstant,
         57 => OpCode::DivideConstant,
+        58 => OpCode::CallImplicitConstant,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

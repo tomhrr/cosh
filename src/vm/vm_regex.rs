@@ -11,54 +11,6 @@ lazy_static! {
     static ref RE_ADJUST: Regex = Regex::new(r"\\([\d+])").unwrap();
 }
 
-/// Takes a wrapped value as its single argument, and returns a
-/// wrapped value for the stringified representation of the argument.
-fn to_string_value(value_rr: Value) -> Option<Value> {
-    let is_string;
-    {
-        match value_rr {
-            Value::String(_) => {
-                is_string = true;
-            }
-            _ => {
-                is_string = false;
-            }
-        }
-    }
-    if is_string {
-        return Some(value_rr);
-    } else {
-        let value_s;
-        let value_b;
-        let value_str;
-        let value_bk: Option<String>;
-        let value_opt: Option<&str> = match value_rr {
-            Value::String(sp) => {
-                value_s = sp;
-                value_b = value_s.borrow();
-                Some(&value_b.s)
-            }
-            _ => {
-                value_bk = value_rr.to_string();
-                match value_bk {
-                    Some(s) => {
-                        value_str = s;
-                        Some(&value_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
-        match value_opt {
-            Some(s) => Some(Value::String(Rc::new(RefCell::new(StringPair::new(
-                s.to_string(),
-                None,
-            ))))),
-            _ => None,
-        }
-    }
-}
-
 impl VM {
     /// Takes a value that can be stringified and a regex string as
     /// its arguments.  Tests whether the value matches as against the
@@ -70,7 +22,7 @@ impl VM {
         }
 
         let regex_rr = self.stack.pop().unwrap();
-        let regex_str_rr_opt = to_string_value(regex_rr);
+        let regex_str_rr_opt = VM::to_string_value(regex_rr);
         if regex_str_rr_opt.is_none() {
             print_error(chunk, i, "regex must be a string");
             return 0;
@@ -159,7 +111,7 @@ impl VM {
         }
 
         let repl_rr = self.stack.pop().unwrap();
-        let repl_str_rr_opt = to_string_value(repl_rr);
+        let repl_str_rr_opt = VM::to_string_value(repl_rr);
         if repl_str_rr_opt.is_none() {
             print_error(chunk, i, "replacement must be a string");
             return 0;
@@ -167,7 +119,7 @@ impl VM {
         let repl_str_rr = repl_str_rr_opt.unwrap();
 
         let regex_rr = self.stack.pop().unwrap();
-        let regex_str_rr_opt = to_string_value(regex_rr);
+        let regex_str_rr_opt = VM::to_string_value(regex_rr);
         if regex_str_rr_opt.is_none() {
             print_error(chunk, i, "regex must be a string");
             return 0;
@@ -286,7 +238,7 @@ impl VM {
         }
 
         let regex_rr = self.stack.pop().unwrap();
-        let regex_str_rr_opt = to_string_value(regex_rr);
+        let regex_str_rr_opt = VM::to_string_value(regex_rr);
         if regex_str_rr_opt.is_none() {
             print_error(chunk, i, "regex must be a string");
             return 0;

@@ -40,16 +40,6 @@ pub enum ListType {
     Hash,
 }
 
-/// See Value.to_string.  This function takes the result of a call to
-/// that function, and returns a &str.
-pub fn to_string_2<'a>(v: &'a (Option<&str>, Option<String>)) -> Option<&'a str> {
-    match v {
-        (Some(s), _) => Some(s),
-        (_, Some(s)) => Some(&s),
-        _ => None,
-    }
-}
-
 /// For running compiled bytecode.
 pub struct VM {
     // Whether to print debug information to standard error while
@@ -167,6 +157,7 @@ lazy_static! {
             VM::core_is_dir as fn(&mut VM, &Chunk, usize) -> i32,
         );
         map.insert("split", VM::core_split as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("splitr", VM::core_splitr as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("at", VM::core_at as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("at!", VM::core_at_em as fn(&mut VM, &Chunk, usize) -> i32);
         map.insert("keys", VM::core_keys as fn(&mut VM, &Chunk, usize) -> i32);
@@ -332,6 +323,54 @@ impl VM {
             print_stack: print_stack,
             sys: System::new(),
         }
+    }
+
+    /// Takes a wrapped value as its single argument, and returns a
+    /// wrapped value for the stringified representation of the argument.
+    pub fn to_string_value(value_rr: Value) -> Option<Value> {
+	let is_string;
+	{
+	    match value_rr {
+		Value::String(_) => {
+		    is_string = true;
+		}
+		_ => {
+		    is_string = false;
+		}
+	    }
+	}
+	if is_string {
+	    return Some(value_rr);
+	} else {
+	    let value_s;
+	    let value_b;
+	    let value_str;
+	    let value_bk: Option<String>;
+	    let value_opt: Option<&str> = match value_rr {
+		Value::String(sp) => {
+		    value_s = sp;
+		    value_b = value_s.borrow();
+		    Some(&value_b.s)
+		}
+		_ => {
+		    value_bk = value_rr.to_string();
+		    match value_bk {
+			Some(s) => {
+			    value_str = s;
+			    Some(&value_str)
+			}
+			_ => None,
+		    }
+		}
+	    };
+	    match value_opt {
+		Some(s) => Some(Value::String(Rc::new(RefCell::new(StringPair::new(
+		    s.to_string(),
+		    None,
+		))))),
+		_ => None,
+	    }
+	}
     }
 
     pub fn call_named_function<'a>(

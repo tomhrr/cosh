@@ -463,6 +463,9 @@ different from `nth`, which does not alter the argument list.
 Both `split` and `join` handle quoting of values that contain either
 the delimiter, or a quotation mark.
 
+`splitr` splits a string based on a delimiter regex.  It does not
+handle quoting of values, though.
+
 ### String-handling functions
 
 `append` appends one string to another:

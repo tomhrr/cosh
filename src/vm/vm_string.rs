@@ -87,6 +87,104 @@ impl VM {
     }
 
     /// Takes a string and a separator as its arguments.  Splits the
+    /// string using the separator, treated as a regex, and puts the
+    /// resulting list onto the stack.
+    pub fn core_splitr(&mut self, chunk: &Chunk, i: usize) -> i32 {
+        if self.stack.len() < 2 {
+            print_error(chunk, i, "split requires two arguments");
+            return 0;
+        }
+
+        let regex_rr = self.stack.pop().unwrap();
+        let list_str_rr = self.stack.pop().unwrap();
+
+        let regex_str_rr_opt = VM::to_string_value(regex_rr);
+        if regex_str_rr_opt.is_none() {
+            print_error(chunk, i, "regex must be a string");
+            return 0;
+        }
+        let mut regex_str_rr = regex_str_rr_opt.unwrap();
+
+        {
+            let res = regex_str_rr.gen_regex(chunk, i);
+            if !res {
+                return 0;
+            }
+        }
+
+        let regex_s;
+        let regex_b;
+        let regex_rb;
+        let regex_opt: Option<&Regex> = match regex_str_rr {
+            Value::String(sp) => {
+                regex_s = sp;
+                regex_b = regex_s.borrow();
+                match regex_b.r {
+                    Some(ref rb) => {
+                        regex_rb = rb;
+                        Some(regex_rb)
+                    }
+                    None => {
+                        eprintln!("gen_regex must be called before to_regex!");
+                        std::process::abort();
+                    }
+                }
+            }
+            _ => {
+                eprintln!("gen_regex must be called before to_regex!");
+                std::process::abort();
+            }
+        };
+
+        let list_str_s;
+        let list_str_b;
+        let list_str_str;
+        let list_str_bk: Option<String>;
+        let list_str_opt: Option<&str> = match list_str_rr {
+            Value::String(sp) => {
+                list_str_s = sp;
+                list_str_b = list_str_s.borrow();
+                Some(&list_str_b.s)
+            }
+            _ => {
+                list_str_bk = list_str_rr.to_string();
+                match list_str_bk {
+                    Some(s) => {
+                        list_str_str = s;
+                        Some(&list_str_str)
+                    }
+                    _ => None,
+                }
+            }
+        };
+
+        match (regex_opt, list_str_opt) {
+            (Some(regex), Some(list_str)) => {
+                let elements = regex.split(list_str);
+                let mut final_elements = VecDeque::new();
+                for e in elements {
+                    final_elements.push_back(
+                        Value::String(Rc::new(RefCell::new(StringPair::new(
+                            e.to_string(),
+                            None,
+                        ))))
+                    );
+                }
+                self.stack.push(Value::List(Rc::new(RefCell::new(final_elements))));
+            }
+            (Some(_), _) => {
+                print_error(chunk, i, "first splitr argument must be string");
+                return 0;
+            }
+            _ => {
+                print_error(chunk, i, "second splitr argument must be string");
+                return 0;
+            }
+        }
+        return 1;
+    }
+
+    /// Takes a string and a separator as its arguments.  Splits the
     /// string using the separator, and puts the resulting list onto
     /// the stack.  Quotation by way of the double-quote character is
     /// taken into account.

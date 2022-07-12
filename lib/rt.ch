@@ -54,7 +54,7 @@
         if;
             drop;
             dhs @; len; 0 =; if; leave; then;
-            dhs @; dup; shift; nip; opendir; dh !;
+            dhs @; shift; opendir; dh !;
         else;
             dup; dup; is-dir; swap; no-upwards; and;
             if;
@@ -106,7 +106,7 @@
     lst var;
     lst !;
     begin;
-        lst @; dup; shift; nip;
+        lst @; shift;
         dup; is-null; if;
             drop;
             leave;
@@ -186,9 +186,7 @@
     lst var; lst !;
     begin;
         lst @;
-        dup;
         shift;
-        nip;
         dup; is-null; if;
             leave;
         then;
@@ -211,9 +209,7 @@
     () reslst var; reslst !;
     begin;
         lst @;
-        dup;
         shift;
-        nip;
         dup; is-null; if;
             drop;
             leave;
@@ -250,9 +246,7 @@
     lst var; lst !;
     begin;
         lst @;
-        dup;
         shift;
-        nip;
         dup; is-null; if;
             leave;
         then;
@@ -271,9 +265,7 @@
     () reslst var; reslst !;
     begin;
         lst @;
-        dup;
         shift;
-        nip;
         dup; is-null; if;
             drop;
             leave;
@@ -318,7 +310,7 @@
     then;
     fn var; exc; fn !;
     begin;
-        lst @; dup; shift; nip;
+        lst @; shift;
         dup; is-null; if;
             drop;
             leave;

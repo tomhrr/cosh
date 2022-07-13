@@ -1139,7 +1139,7 @@ impl VM {
         let mut i = index;
         let data = chunk.data.borrow();
 
-        let mut list_index_opt = None;
+        let mut list_count = 0;
         let mut list_indexes = Vec::new();
         let mut list_types = Vec::new();
 
@@ -1328,81 +1328,62 @@ impl VM {
                     }
                 }
                 OpCode::StartList => {
-                    match list_index_opt {
-                        Some(list_index) => {
-                            list_indexes.push(list_index);
-                        }
-                        _ => {}
-                    }
-                    list_index_opt = Some(self.stack.len());
+                    list_indexes.push(self.stack.len());
                     list_types.push(ListType::List);
+                    list_count = list_count + 1;
                 }
                 OpCode::StartHash => {
-                    match list_index_opt {
-                        Some(list_index) => {
-                            list_indexes.push(list_index);
-                        }
-                        _ => {}
-                    }
-                    list_index_opt = Some(self.stack.len());
+                    list_indexes.push(self.stack.len());
                     list_types.push(ListType::Hash);
+                    list_count = list_count + 1;
                 }
-                OpCode::EndList => match list_index_opt {
-                    Some(list_index) => {
-                        let list_type = list_types.pop().unwrap();
-                        match list_type {
-                            ListType::List => {
-                                let mut lst = VecDeque::new();
-                                while self.stack.len() > list_index {
-                                    lst.push_front(self.stack.pop().unwrap());
-                                }
-                                if list_indexes.len() > 0 {
-                                    list_index_opt = Some(list_indexes.pop().unwrap());
-                                } else {
-                                    list_index_opt = None;
-                                }
-                                self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
-                            }
-                            ListType::Hash => {
-                                let mut map = IndexMap::new();
-                                while self.stack.len() > list_index {
-                                    let value_rr = self.stack.pop().unwrap();
-                                    let key_rr = self.stack.pop().unwrap();
-                                    let key_str_s;
-                                    let key_str_b;
-                                    let key_str_str;
-                                    let key_str_bk: Option<String>;
-                                    let key_str_opt: Option<&str> = match key_rr {
-                                        Value::String(sp) => {
-                                            key_str_s = sp;
-                                            key_str_b = key_str_s.borrow();
-                                            Some(&key_str_b.s)
-                                        }
-                                        _ => {
-                                            key_str_bk = key_rr.to_string();
-                                            match key_str_bk {
-                                                Some(s) => {
-                                                    key_str_str = s;
-                                                    Some(&key_str_str)
-                                                }
-                                                _ => None,
-                                            }
-                                        }
-                                    };
-                                    map.insert(key_str_opt.unwrap().to_string(), value_rr);
-                                }
-                                if list_indexes.len() > 0 {
-                                    list_index_opt = Some(list_indexes.pop().unwrap());
-                                } else {
-                                    list_index_opt = None;
-                                }
-                                self.stack.push(Value::Hash(Rc::new(RefCell::new(map))));
-                            }
-                        }
-                    }
-                    None => {
+                OpCode::EndList => {
+                    if list_count == 0 {
                         print_error(chunk, i, "no start list found");
                         return 0;
+                    }
+                    let list_index = list_indexes.pop().unwrap();
+                    let list_type = list_types.pop().unwrap();
+                    list_count = list_count - 1;
+
+                    match list_type {
+                        ListType::List => {
+                            let mut lst = VecDeque::new();
+                            while self.stack.len() > list_index {
+                                lst.push_front(self.stack.pop().unwrap());
+                            }
+                            self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
+                        }
+                        ListType::Hash => {
+                            let mut map = IndexMap::new();
+                            while self.stack.len() > list_index {
+                                let value_rr = self.stack.pop().unwrap();
+                                let key_rr = self.stack.pop().unwrap();
+                                let key_str_s;
+                                let key_str_b;
+                                let key_str_str;
+                                let key_str_bk: Option<String>;
+                                let key_str_opt: Option<&str> = match key_rr {
+                                    Value::String(sp) => {
+                                        key_str_s = sp;
+                                        key_str_b = key_str_s.borrow();
+                                        Some(&key_str_b.s)
+                                    }
+                                    _ => {
+                                        key_str_bk = key_rr.to_string();
+                                        match key_str_bk {
+                                            Some(s) => {
+                                                key_str_str = s;
+                                                Some(&key_str_str)
+                                            }
+                                            _ => None,
+                                        }
+                                    }
+                                };
+                                map.insert(key_str_opt.unwrap().to_string(), value_rr);
+                            }
+                            self.stack.push(Value::Hash(Rc::new(RefCell::new(map))));
+                        }
                     }
                 },
                 OpCode::Function => {
@@ -2035,12 +2016,9 @@ impl VM {
             i = i + 1;
         }
 
-        match list_index_opt {
-            Some(_) => {
-                print_error(chunk, i, "unterminated list start");
-                return 0;
-            }
-            _ => {}
+        if list_count > 0 {
+            print_error(chunk, i, "unterminated list start");
+            return 0;
         }
 
         if self.print_stack {

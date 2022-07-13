@@ -59,6 +59,8 @@ pub enum OpCode {
     MultiplyConstant = 56,
     DivideConstant = 57,
     CallImplicitConstant = 58,
+    GLVShift = 59,
+    GLVCall = 60,
     Unknown = 255,
 }
 
@@ -123,6 +125,8 @@ pub fn to_opcode(value: u8) -> OpCode {
         56 => OpCode::MultiplyConstant,
         57 => OpCode::DivideConstant,
         58 => OpCode::CallImplicitConstant,
+        59 => OpCode::GLVShift,
+        60 => OpCode::GLVCall,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

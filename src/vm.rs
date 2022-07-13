@@ -1624,6 +1624,66 @@ impl VM {
                         return 0;
                     }
                 }
+                OpCode::GLVCall => {
+                    i = i + 1;
+                    let var_index: u8 = data[i].try_into().unwrap();
+
+                    let function_rr;
+                    match gen_local_vars_stack {
+                        Some(ref mut glvs) => {
+                            function_rr = glvs.borrow()[var_index as usize].clone();
+                        }
+                        _ => {
+                            function_rr = self
+                                .local_var_stack
+                                .borrow()
+                                .index(var_index as usize)
+                                .clone();
+                        }
+                    }
+
+                    prev_local_vars_stacks.push(self.local_var_stack.clone());
+                    self.local_var_stack = Rc::new(RefCell::new(vec![]));
+
+                    let (mut line, mut col) = line_col;
+                    if line == 0 && col == 0 {
+                        let point = chunk.get_point(i);
+                        match point {
+                            Some((point_line, point_col)) => {
+                                line = point_line;
+                                col = point_col;
+                            }
+                            _ => {
+                                line = 1;
+                                col = 1;
+                            }
+                        }
+                    }
+
+                    let res = self.call(
+                        scopes,
+                        global_functions,
+                        call_stack_chunks,
+                        chunk,
+                        chunk_functions.clone(),
+                        i,
+                        OpCode::Call,
+                        Some(function_rr),
+                        None,
+                        -1,
+                        None,
+                        None,
+                        prev_local_vars_stacks,
+                        (line, col),
+                        running.clone(),
+                    );
+
+                    self.local_var_stack = prev_local_vars_stacks.pop().unwrap();
+
+                    if !res {
+                        return 0;
+                    }
+                }
                 OpCode::SetLocalVar => {
                     if self.stack.len() < 1 {
                         print_error(chunk, i, "! requires one argument");
@@ -1669,6 +1729,47 @@ impl VM {
                                 .index(var_index as usize)
                                 .clone();
                             self.stack.push(value_rr);
+                        }
+                    }
+                }
+                OpCode::GLVShift => {
+                    i = i + 1;
+                    let var_index: u8 = data[i].try_into().unwrap();
+
+                    match gen_local_vars_stack {
+                        Some(ref mut glvs) => {
+                            let pt = &mut glvs.borrow_mut()[var_index as usize];
+                            let i2 = self.opcode_shift_inner(
+                                scopes,
+                                global_functions,
+                                prev_local_vars_stacks,
+                                chunk,
+                                i,
+                                line_col,
+                                running.clone(),
+                                pt
+                            );
+                            if i2 == 0 {
+                                return 0;
+                            }
+                        }
+                        _ => {
+                            let mut pt = self.local_var_stack
+                                .borrow().index(var_index as
+                                usize).clone();
+                            let i2 = self.opcode_shift_inner(
+                                scopes,
+                                global_functions,
+                                prev_local_vars_stacks,
+                                chunk,
+                                i,
+                                line_col,
+                                running.clone(),
+                                &mut pt
+                            );
+                            if i2 == 0 {
+                                return 0;
+                            }
                         }
                     }
                 }

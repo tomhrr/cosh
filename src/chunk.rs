@@ -757,6 +757,16 @@ impl Chunk {
                     let var_i = data_b[i];
                     println!("OP_GETLOCALVAR {}", var_i);
                 }
+                OpCode::GLVShift => {
+                    i = i + 1;
+                    let var_i = data_b[i];
+                    println!("OP_GLVSHIFT {}", var_i);
+                }
+                OpCode::GLVCall => {
+                    i = i + 1;
+                    let var_i = data_b[i];
+                    println!("OP_GLVCALL {}", var_i);
+                }
                 OpCode::PopLocalVar => {
                     println!("OP_POPLOCALVAR");
                 }

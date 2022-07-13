@@ -1005,9 +1005,33 @@ impl Compiler {
                     } else if s == "drop" {
                         chunk.add_opcode(OpCode::Drop);
                     } else if s == "funcall" {
-                        chunk.add_opcode(OpCode::Call);
+                        let mut done = false;
+                        match chunk.get_second_last_opcode() {
+                            OpCode::GetLocalVar => {
+                                chunk.set_second_last_opcode(
+                                    OpCode::GLVCall
+                                );
+                                done = true;
+                            }
+                            _ => {}
+                        }
+                        if !done {
+                            chunk.add_opcode(OpCode::Call);
+                        }
                     } else if s == "shift" {
-                        chunk.add_opcode(OpCode::Shift);
+                        let mut done = false;
+                        match chunk.get_second_last_opcode() {
+                            OpCode::GetLocalVar => {
+                                chunk.set_second_last_opcode(
+                                    OpCode::GLVShift
+                                );
+                                done = true;
+                            }
+                            _ => {}
+                        }
+                        if !done {
+                            chunk.add_opcode(OpCode::Shift);
+                        }
                     } else if s == "yield" {
                         chunk.add_opcode(OpCode::Yield);
                     } else if s == "clear" {

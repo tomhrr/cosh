@@ -221,9 +221,7 @@ impl VM {
         return 1;
     }
 
-    /// Takes a shiftable object as its single argument.  Shifts an
-    /// element from that object and puts it onto the stack.
-    pub fn opcode_shift<'a>(
+    pub fn opcode_shift_inner<'a>(
         &mut self,
         scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
@@ -232,19 +230,14 @@ impl VM {
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
+        shiftable_rr: &mut Value
     ) -> i32 {
-        if self.stack.len() < 1 {
-            print_error(chunk, i, "shift requires one argument");
-            return 0;
-        }
-
         let mut repush = false;
         let mut stack_len = 0;
         let mut new_stack_len = 0;
 
-        let mut shiftable_rr = self.stack.pop().unwrap();
         {
-            match shiftable_rr {
+            match *shiftable_rr {
                 Value::Generator(ref mut generator_object_) => {
                     // todo: set to none, error later if still none.
                     let mut new_i = 0;
@@ -444,6 +437,31 @@ impl VM {
         }
 
         return 1;
+    }
+
+
+    /// Takes a shiftable object as its single argument.  Shifts an
+    /// element from that object and puts it onto the stack.
+    pub fn opcode_shift<'a>(
+        &mut self,
+        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        global_functions: &mut RefCell<HashMap<String, Chunk>>,
+        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
+        chunk: &Chunk,
+        i: usize,
+        line_col: (u32, u32),
+        running: Arc<AtomicBool>,
+    ) -> i32 {
+        if self.stack.len() < 1 {
+            print_error(chunk, i, "shift requires one argument");
+            return 0;
+        }
+
+        let mut shiftable_rr = self.stack.pop().unwrap();
+        return self.opcode_shift_inner(
+            scopes, global_functions, prev_local_vars_stacks,
+            chunk, i, line_col, running, &mut shiftable_rr
+        );
     }
 
     /// Takes a shiftable object as its single argument, and places

@@ -25,6 +25,10 @@ impl VM {
 
         match (index_int_opt, lst_rr) {
             (Some(index), Value::List(lst)) => {
+                if lst.borrow().len() <= (index as usize) {
+                    print_error(chunk, i, "nth index is out of bounds");
+                    return 0;
+                }
                 let element = lst.borrow()[index as usize].clone();
                 self.stack.push(element);
             }
@@ -58,6 +62,10 @@ impl VM {
         {
             match (index_int_opt, &mut lst_rr) {
                 (Some(index), Value::List(lst)) => {
+                    if lst.borrow().len() <= (index as usize) {
+                        print_error(chunk, i, "nth! index is out of bounds");
+                        return 0;
+                    }
                     lst.borrow_mut()[index as usize] = val_rr;
                 }
                 (Some(_), _) => {

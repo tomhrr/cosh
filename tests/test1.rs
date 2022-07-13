@@ -700,3 +700,15 @@ fn search_replace_test() {
 fn eq_test() {
     basic_test("asdf asdf =", "1");
 }
+
+#[test]
+fn nth_bounds_test1() {
+    basic_error_test("10 range; take-all; 15 nth",
+                     "1:24: nth index is out of bounds");
+}
+
+#[test]
+fn nth_bounds_test2() {
+    basic_error_test("10 range; take-all; 10 15 nth!",
+                     "1:27: nth! index is out of bounds");
+}

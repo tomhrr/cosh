@@ -695,3 +695,8 @@ fn conv_test() {
 fn search_replace_test() {
     basic_test("asdf \"(as)(df)\" as\\2\\1df s;", "asdfasdf");
 }
+
+#[test]
+fn eq_test() {
+    basic_test("asdf asdf =", "1");
+}

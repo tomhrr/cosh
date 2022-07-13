@@ -1305,6 +1305,7 @@ impl VM {
 
                     let len = self.stack.len();
                     let v1_rr = self.stack.get_mut(len - 1).unwrap();
+                    let mut done = false;
                     match v1_rr {
                         Value::Int(ref mut n1) => {
                             if *n1 == n {
@@ -1312,9 +1313,19 @@ impl VM {
                             } else {
                                 *n1 = 0;
                             }
+                            done = true;
                         }
                         _ => {}
                     };
+                    if !done {
+                        let op_fn_opt = SIMPLE_OPS[OpCode::Eq as usize];
+                        self.stack.push(chunk.get_constant(i2 as i32));
+                        let op_fn = op_fn_opt.unwrap();
+                        let res = op_fn(self, chunk, i);
+                        if res == 0 {
+                            return 0;
+                        }
+                    }
                 }
                 OpCode::StartList => {
                     match list_index_opt {

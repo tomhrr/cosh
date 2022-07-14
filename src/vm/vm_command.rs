@@ -309,7 +309,7 @@ impl VM {
     /// output onto the stack.
     pub fn core_pipe(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        scopes: &mut Vec<HashMap<String, Value>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: &Chunk,

@@ -87,7 +87,7 @@ impl VM {
     /// onto the stack.
     pub fn core_gnth(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        scopes: &mut Vec<HashMap<String, Value>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: &Chunk,
@@ -223,7 +223,7 @@ impl VM {
 
     pub fn opcode_shift_inner<'a>(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        scopes: &mut Vec<HashMap<String, Value>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: &Chunk,
@@ -444,7 +444,7 @@ impl VM {
     /// element from that object and puts it onto the stack.
     pub fn opcode_shift<'a>(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        scopes: &mut Vec<HashMap<String, Value>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: &Chunk,
@@ -469,7 +469,7 @@ impl VM {
     /// the order that they are shifted.
     pub fn core_shift_all(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        scopes: &mut Vec<HashMap<String, Value>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: &Chunk,

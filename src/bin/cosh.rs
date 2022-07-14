@@ -448,7 +448,7 @@ fn main() {
             let chunk = chunk_opt.unwrap();
             let mut vm = VM::new(true, debug);
             let mut scopes = Vec::new();
-            scopes.push(RefCell::new(HashMap::new()));
+            scopes.push(HashMap::new());
             let mut functions = Vec::new();
             if !matches.opt_present("no-rt") {
                 let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");

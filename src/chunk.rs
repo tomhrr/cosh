@@ -202,7 +202,7 @@ pub enum Value {
     ShiftFunction(
         fn(
             &mut VM,
-            &mut Vec<RefCell<HashMap<String, Value>>>,
+            &mut Vec<HashMap<String, Value>>,
             &mut RefCell<HashMap<String, Chunk>>,
             &mut Vec<Rc<RefCell<Vec<Value>>>>,
             &Chunk,

@@ -192,7 +192,7 @@ lazy_static! {
         &'static str,
         fn(
             &mut VM,
-            &mut Vec<RefCell<HashMap<String, Value>>>,
+            &mut Vec<HashMap<String, Value>>,
             &mut RefCell<HashMap<String, Chunk>>,
             &mut Vec<Rc<RefCell<Vec<Value>>>>,
             &Chunk,
@@ -207,7 +207,7 @@ lazy_static! {
             VM::opcode_shift
                 as fn(
                     &mut VM,
-                    &mut Vec<RefCell<HashMap<String, Value>>>,
+                    &mut Vec<HashMap<String, Value>>,
                     &mut RefCell<HashMap<String, Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     &Chunk,
@@ -221,7 +221,7 @@ lazy_static! {
             VM::core_gnth
                 as fn(
                     &mut VM,
-                    &mut Vec<RefCell<HashMap<String, Value>>>,
+                    &mut Vec<HashMap<String, Value>>,
                     &mut RefCell<HashMap<String, Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     &Chunk,
@@ -235,7 +235,7 @@ lazy_static! {
             VM::core_pipe
                 as fn(
                     &mut VM,
-                    &mut Vec<RefCell<HashMap<String, Value>>>,
+                    &mut Vec<HashMap<String, Value>>,
                     &mut RefCell<HashMap<String, Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     &Chunk,
@@ -249,7 +249,7 @@ lazy_static! {
             VM::core_shift_all
                 as fn(
                     &mut VM,
-                    &mut Vec<RefCell<HashMap<String, Value>>>,
+                    &mut Vec<HashMap<String, Value>>,
                     &mut RefCell<HashMap<String, Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     &Chunk,
@@ -263,7 +263,7 @@ lazy_static! {
             VM::core_join
                 as fn(
                     &mut VM,
-                    &mut Vec<RefCell<HashMap<String, Value>>>,
+                    &mut Vec<HashMap<String, Value>>,
                     &mut RefCell<HashMap<String, Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     &Chunk,
@@ -375,7 +375,7 @@ impl VM {
 
     pub fn call_named_function<'a>(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        scopes: &mut Vec<HashMap<String, Value>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>,
         chunk: &'a Chunk,
@@ -430,7 +430,7 @@ impl VM {
             self.stack.push(gen_rr);
         } else {
             if call_chunk.has_vars {
-                scopes.push(RefCell::new(HashMap::new()));
+                scopes.push(HashMap::new());
             }
 
             if is_value_function {
@@ -470,7 +470,7 @@ impl VM {
 
     pub fn call_string<'a>(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        scopes: &mut Vec<HashMap<String, Value>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>,
         chunk: &'a Chunk,
@@ -722,7 +722,7 @@ impl VM {
     /// called).
     pub fn call<'a>(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        scopes: &mut Vec<HashMap<String, Value>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>,
         chunk: &'a Chunk,
@@ -1124,7 +1124,7 @@ impl VM {
     /// specified instruction index.
     pub fn run<'a>(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        scopes: &mut Vec<HashMap<String, Value>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         call_stack_chunks: &Vec<&Chunk>,
         chunk: &'a Chunk,
@@ -1807,9 +1807,8 @@ impl VM {
                         }
                         _ => {
                             scopes
-                                .last()
+                                .last_mut()
                                 .unwrap()
-                                .borrow_mut()
                                 .insert(var_name.to_string(), Value::Int(0));
                         }
                     }
@@ -1839,9 +1838,9 @@ impl VM {
                             }
 
                             if !done {
-                                for scope in scopes.iter().rev() {
-                                    if scope.borrow().contains_key(s) {
-                                        scope.borrow_mut().insert(s.to_string(), value_rr.clone());
+                                for scope in scopes.iter_mut().rev() {
+                                    if scope.contains_key(s) {
+                                        scope.insert(s.to_string(), value_rr.clone());
                                         done = true;
                                         break;
                                     }
@@ -1883,8 +1882,8 @@ impl VM {
 
                             if !done {
                                 for scope in scopes.iter().rev() {
-                                    if scope.borrow().contains_key(s) {
-                                        self.stack.push(scope.borrow().get(s).unwrap().clone());
+                                    if scope.contains_key(s) {
+                                        self.stack.push(scope.get(s).unwrap().clone());
                                         done = true;
                                         break;
                                     }
@@ -2157,7 +2156,7 @@ impl VM {
         let chunk = chunk_opt.unwrap();
         let mut global_functions_rr = RefCell::new(global_functions);
         let call_stack_chunks = vec![];
-        let mut scopes = vec![RefCell::new(variables)];
+        let mut scopes = vec![variables];
         let chunk_functions = Rc::new(RefCell::new(Vec::new()));
         let mut prev_local_vars_stacks = vec![];
 
@@ -2178,7 +2177,7 @@ impl VM {
             self.stack.clear();
         }
         let updated_variables = match scopes.first() {
-            Some(scope) => scope.borrow().clone(),
+            Some(scope) => scope.clone(),
             _ => HashMap::new(),
         };
         return (Some(chunk), updated_variables, vec![global_functions_rr]);

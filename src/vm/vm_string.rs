@@ -322,7 +322,7 @@ impl VM {
     /// resulting joined string onto the stack.
     pub fn core_join(
         &mut self,
-        scopes: &mut Vec<RefCell<HashMap<String, Value>>>,
+        scopes: &mut Vec<HashMap<String, Value>>,
         global_functions: &mut RefCell<HashMap<String, Chunk>>,
         prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: &Chunk,

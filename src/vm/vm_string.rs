@@ -13,9 +13,9 @@ use vm::*;
 impl VM {
     /// Takes two string arguments, appends them together, and adds
     /// the resulting string back onto the stack.
-    pub fn core_append(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_append(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "append requires two arguments");
+            print_error(chunk.clone(), i, "append requires two arguments");
             return 0;
         }
 
@@ -75,11 +75,11 @@ impl VM {
                     )))));
             }
             (Some(_), _) => {
-                print_error(chunk, i, "second append argument must be string");
+                print_error(chunk.clone(), i, "second append argument must be string");
                 return 0;
             }
             (_, _) => {
-                print_error(chunk, i, "first append argument must be string");
+                print_error(chunk.clone(), i, "first append argument must be string");
                 return 0;
             }
         }
@@ -89,9 +89,9 @@ impl VM {
     /// Takes a string and a separator as its arguments.  Splits the
     /// string using the separator, treated as a regex, and puts the
     /// resulting list onto the stack.
-    pub fn core_splitr(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_splitr(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "split requires two arguments");
+            print_error(chunk.clone(), i, "split requires two arguments");
             return 0;
         }
 
@@ -100,13 +100,13 @@ impl VM {
 
         let regex_str_rr_opt = VM::to_string_value(regex_rr);
         if regex_str_rr_opt.is_none() {
-            print_error(chunk, i, "regex must be a string");
+            print_error(chunk.clone(), i, "regex must be a string");
             return 0;
         }
         let mut regex_str_rr = regex_str_rr_opt.unwrap();
 
         {
-            let res = regex_str_rr.gen_regex(chunk, i);
+            let res = regex_str_rr.gen_regex(chunk.clone(), i);
             if !res {
                 return 0;
             }
@@ -173,11 +173,11 @@ impl VM {
                 self.stack.push(Value::List(Rc::new(RefCell::new(final_elements))));
             }
             (Some(_), _) => {
-                print_error(chunk, i, "first splitr argument must be string");
+                print_error(chunk.clone(), i, "first splitr argument must be string");
                 return 0;
             }
             _ => {
-                print_error(chunk, i, "second splitr argument must be string");
+                print_error(chunk.clone(), i, "second splitr argument must be string");
                 return 0;
             }
         }
@@ -188,9 +188,9 @@ impl VM {
     /// string using the separator, and puts the resulting list onto
     /// the stack.  Quotation by way of the double-quote character is
     /// taken into account.
-    pub fn core_split(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_split(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "split requires two arguments");
+            print_error(chunk.clone(), i, "split requires two arguments");
             return 0;
         }
 
@@ -291,7 +291,7 @@ impl VM {
                     }
                 }
                 if buffer.len() > 0 {
-                    print_error(chunk, i, "error in string syntax in split");
+                    print_error(chunk.clone(), i, "error in string syntax in split");
                     return 0;
                 }
 
@@ -305,11 +305,11 @@ impl VM {
                 self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
             }
             (Some(_), _) => {
-                print_error(chunk, i, "first split argument must be string");
+                print_error(chunk.clone(), i, "first split argument must be string");
                 return 0;
             }
             _ => {
-                print_error(chunk, i, "second split argument must be string");
+                print_error(chunk.clone(), i, "second split argument must be string");
                 return 0;
             }
         }
@@ -323,15 +323,15 @@ impl VM {
     pub fn core_join(
         &mut self,
         scopes: &mut Vec<HashMap<String, Value>>,
-        global_functions: &mut RefCell<HashMap<String, Chunk>>,
+        global_functions: &mut HashMap<String, Rc<Chunk>>,
         prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
-        chunk: &Chunk,
+        chunk: Rc<Chunk>,
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "join requires two arguments");
+            print_error(chunk.clone(), i, "join requires two arguments");
             return 0;
         }
 
@@ -370,7 +370,7 @@ impl VM {
                 let mut final_elements = Vec::new();
                 match separator_regex_res {
                     Ok(separator_regex) => loop {
-                        let dup_res = self.opcode_dup(chunk, i);
+                        let dup_res = self.opcode_dup(chunk.clone(), i);
                         if dup_res == 0 {
                             return 0;
                         }
@@ -378,7 +378,7 @@ impl VM {
                             scopes,
                             global_functions,
                             prev_localvarstacks,
-                            chunk,
+                            chunk.clone(),
                             i,
                             line_col,
                             running.clone(),
@@ -439,7 +439,7 @@ impl VM {
                                         }
                                     }
                                     _ => {
-                                        print_error(chunk, i, "cannot join non-string");
+                                        print_error(chunk.clone(), i, "cannot join non-string");
                                         return 0;
                                     }
                                 }
@@ -447,7 +447,7 @@ impl VM {
                         }
                     },
                     Err(_) => {
-                        print_error(chunk, i, "invalid separator regular expression");
+                        print_error(chunk.clone(), i, "invalid separator regular expression");
                         return 0;
                     }
                 }
@@ -462,7 +462,7 @@ impl VM {
                     )))));
             }
             _ => {
-                print_error(chunk, i, "second join argument must be string");
+                print_error(chunk.clone(), i, "second join argument must be string");
                 return 0;
             }
         }

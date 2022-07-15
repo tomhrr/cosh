@@ -102,7 +102,7 @@ impl VM {
     /// Takes a command string, substitutes for the {num} and {}
     /// stack element placeholders as well as the ~ home directory
     /// placeholder, and returns the resulting string.
-    fn prepare_command(&mut self, s: &str, chunk: &Chunk, i: usize) -> Option<String> {
+    fn prepare_command(&mut self, s: &str, chunk: Rc<Chunk>, i: usize) -> Option<String> {
         let captures = CAPTURE_NUM.captures_iter(s);
         let mut final_s = s.to_string();
         for capture in captures {
@@ -111,7 +111,7 @@ impl VM {
             let capture_num = match capture_num_res {
                 Ok(n) => n,
                 Err(_) => {
-                    print_error(chunk, i, "invalid stack element");
+                    print_error(chunk.clone(), i, "invalid stack element");
                     return None;
                 }
             };
@@ -147,14 +147,14 @@ impl VM {
                             final_s = cswb_regex.replace_all(&final_s, capture_el_str).to_string();
                         }
                         _ => {
-                            print_error(chunk, i, "unable to parse command");
+                            print_error(chunk.clone(), i, "unable to parse command");
                             return None;
                         }
                     }
                 }
                 None => {
                     let err_str = format!("stack element {} not present", capture_num);
-                    print_error(chunk, i, &err_str);
+                    print_error(chunk.clone(), i, &err_str);
                     return None;
                 }
             }
@@ -162,7 +162,7 @@ impl VM {
 
         while CAPTURE_WITHOUT_NUM.is_match(&final_s) {
             if self.stack.len() < 1 {
-                print_error(chunk, i, "no more elements to pop from stack");
+                print_error(chunk.clone(), i, "no more elements to pop from stack");
                 return None;
             }
 
@@ -194,7 +194,7 @@ impl VM {
                     final_s = CAPTURE_WITHOUT_NUM.replace(&final_s, s).to_string();
                 }
                 _ => {
-                    print_error(chunk, i, "unable to parse command");
+                    print_error(chunk.clone(), i, "unable to parse command");
                     return None;
                 }
             }
@@ -215,17 +215,17 @@ impl VM {
     fn prepare_and_split_command(
         &mut self,
         cmd: &str,
-        chunk: &Chunk,
+        chunk: Rc<Chunk>,
         i: usize,
     ) -> Option<(String, Vec<String>)> {
-        let prepared_cmd_opt = self.prepare_command(cmd, chunk, i);
+        let prepared_cmd_opt = self.prepare_command(cmd, chunk.clone(), i);
         if prepared_cmd_opt.is_none() {
             return None;
         }
         let prepared_cmd = prepared_cmd_opt.unwrap();
         let elements_opt = split_command(&prepared_cmd);
         if elements_opt.is_none() {
-            print_error(chunk, i, "syntax error in command");
+            print_error(chunk.clone(), i, "syntax error in command");
             return None;
         }
         let elements = elements_opt.unwrap();
@@ -233,7 +233,7 @@ impl VM {
         let mut element_iter = elements.iter();
         let executable_opt = element_iter.next();
         if executable_opt.is_none() {
-            print_error(chunk, i, "unable to execute empty command");
+            print_error(chunk.clone(), i, "unable to execute empty command");
             return None;
         }
         let executable = executable_opt.unwrap();
@@ -245,8 +245,9 @@ impl VM {
     /// Takes a command string as its single argument.  Substitutes
     /// for placeholders, executes the command, and places a generator
     /// over the standard output of the command onto the stack.
-    pub fn core_command(&mut self, cmd: &str, chunk: &Chunk, i: usize) -> i32 {
-        let prepared_cmd_opt = self.prepare_and_split_command(cmd, chunk, i);
+    pub fn core_command(&mut self, cmd: &str, chunk: Rc<Chunk>, i: usize) -> i32 {
+        let prepared_cmd_opt = self.prepare_and_split_command(cmd,
+            chunk.clone(), i);
         if prepared_cmd_opt.is_none() {
             return 0;
         }
@@ -265,7 +266,7 @@ impl VM {
             }
             Err(e) => {
                 let err_str = format!("unable to run command: {}", e.to_string());
-                print_error(chunk, i, &err_str);
+                print_error(chunk.clone(), i, &err_str);
                 return 0;
             }
         }
@@ -274,8 +275,9 @@ impl VM {
 
     /// As per `core_command`, except that the output isn't captured
     /// and nothing is placed onto the stack.
-    pub fn core_command_uncaptured(&mut self, cmd: &str, chunk: &Chunk, i: usize) -> i32 {
-        let prepared_cmd_opt = self.prepare_and_split_command(cmd, chunk, i);
+    pub fn core_command_uncaptured(&mut self, cmd: &str, chunk: Rc<Chunk>, i: usize) -> i32 {
+        let prepared_cmd_opt = self.prepare_and_split_command(cmd,
+            chunk.clone(), i);
         if prepared_cmd_opt.is_none() {
             return 0;
         }
@@ -289,14 +291,14 @@ impl VM {
                     Ok(_) => {}
                     Err(e) => {
                         let err_str = format!("command execution failed: {}", e.to_string());
-                        print_error(chunk, i, &err_str);
+                        print_error(chunk.clone(), i, &err_str);
                         return 0;
                     }
                 }
             }
             Err(e) => {
                 let err_str = format!("unable to execute command: {}", e.to_string());
-                print_error(chunk, i, &err_str);
+                print_error(chunk.clone(), i, &err_str);
                 return 0;
             }
         }
@@ -310,15 +312,15 @@ impl VM {
     pub fn core_pipe(
         &mut self,
         scopes: &mut Vec<HashMap<String, Value>>,
-        global_functions: &mut RefCell<HashMap<String, Chunk>>,
+        global_functions: &mut HashMap<String, Rc<Chunk>>,
         prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
-        chunk: &Chunk,
+        chunk: Rc<Chunk>,
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "| requires two arguments");
+            print_error(chunk.clone(), i, "| requires two arguments");
             return 0;
         }
 
@@ -326,7 +328,9 @@ impl VM {
 
         match cmd_rr {
             Value::Command(s) => {
-                let prepared_cmd_opt = self.prepare_and_split_command(&s.borrow(), chunk, i);
+                let prepared_cmd_opt =
+                    self.prepare_and_split_command(&s.borrow(),
+                        chunk.clone(), i);
                 if prepared_cmd_opt.is_none() {
                     return 0;
                 }
@@ -342,7 +346,7 @@ impl VM {
                         let upstream_stdin_opt = process.stdin;
                         if upstream_stdin_opt.is_none() {
                             let err_str = format!("unable to get stdin from parent");
-                            print_error(chunk, i, &err_str);
+                            print_error(chunk.clone(), i, &err_str);
                             return 0;
                         }
                         let mut upstream_stdin = upstream_stdin_opt.unwrap();
@@ -352,7 +356,7 @@ impl VM {
                                 let upstream_stdout_opt = process.stdout;
                                 if upstream_stdout_opt.is_none() {
                                     let err_str = format!("unable to get stdout from parent");
-                                    print_error(chunk, i, &err_str);
+                                    print_error(chunk.clone(), i, &err_str);
                                     return 0;
                                 }
                                 let upstream_stdout = upstream_stdout_opt.unwrap();
@@ -363,7 +367,8 @@ impl VM {
                             }
                             Ok(ForkResult::Child) => {
                                 loop {
-                                    let dup_res = self.opcode_dup(chunk, i);
+                                    let dup_res =
+                                        self.opcode_dup(chunk.clone(), i);
                                     if dup_res == 0 {
                                         return 0;
                                     }
@@ -371,7 +376,7 @@ impl VM {
                                         scopes,
                                         global_functions,
                                         prev_localvarstacks,
-                                        chunk,
+                                        chunk.clone(),
                                         i,
                                         line_col,
                                         running.clone(),
@@ -434,13 +439,13 @@ impl VM {
                     }
                     Err(e) => {
                         let err_str = format!("unable to run command: {}", e.to_string());
-                        print_error(chunk, i, &err_str);
+                        print_error(chunk.clone(), i, &err_str);
                         return 0;
                     }
                 }
             }
             _ => {
-                print_error(chunk, i, "| argument must be a command");
+                print_error(chunk.clone(), i, "| argument must be a command");
             }
         }
         return 1;

@@ -15,22 +15,22 @@ impl VM {
     /// Takes a value that can be stringified and a regex string as
     /// its arguments.  Tests whether the value matches as against the
     /// regex and puts a boolean onto the stack accordingly.
-    pub fn core_m(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_m(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "m requires two arguments");
+            print_error(chunk.clone(), i, "m requires two arguments");
             return 0;
         }
 
         let regex_rr = self.stack.pop().unwrap();
         let regex_str_rr_opt = VM::to_string_value(regex_rr);
         if regex_str_rr_opt.is_none() {
-            print_error(chunk, i, "regex must be a string");
+            print_error(chunk.clone(), i, "regex must be a string");
             return 0;
         }
         let mut regex_str_rr = regex_str_rr_opt.unwrap();
 
         {
-            let res = regex_str_rr.gen_regex(chunk, i);
+            let res = regex_str_rr.gen_regex(chunk.clone(), i);
             if !res {
                 return 0;
             }
@@ -89,11 +89,11 @@ impl VM {
                 self.stack.push(Value::Int(res));
             }
             (_, Some(_)) => {
-                print_error(chunk, i, "first m argument must be string");
+                print_error(chunk.clone(), i, "first m argument must be string");
                 return 0;
             }
             (_, _) => {
-                print_error(chunk, i, "second m argument must be string");
+                print_error(chunk.clone(), i, "second m argument must be string");
                 return 0;
             }
         }
@@ -104,16 +104,16 @@ impl VM {
     /// replacement string as its arguments.  Runs a
     /// search-and-replace against the string based on the regex, and
     /// puts the resulting string onto the stack.
-    pub fn core_s(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_s(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 3 {
-            print_error(chunk, i, "s requires three arguments");
+            print_error(chunk.clone(), i, "s requires three arguments");
             return 0;
         }
 
         let repl_rr = self.stack.pop().unwrap();
         let repl_str_rr_opt = VM::to_string_value(repl_rr);
         if repl_str_rr_opt.is_none() {
-            print_error(chunk, i, "replacement must be a string");
+            print_error(chunk.clone(), i, "replacement must be a string");
             return 0;
         }
         let repl_str_rr = repl_str_rr_opt.unwrap();
@@ -121,13 +121,13 @@ impl VM {
         let regex_rr = self.stack.pop().unwrap();
         let regex_str_rr_opt = VM::to_string_value(regex_rr);
         if regex_str_rr_opt.is_none() {
-            print_error(chunk, i, "regex must be a string");
+            print_error(chunk.clone(), i, "regex must be a string");
             return 0;
         }
         let mut regex_str_rr = regex_str_rr_opt.unwrap();
 
         {
-            let res = regex_str_rr.gen_regex(chunk, i);
+            let res = regex_str_rr.gen_regex(chunk.clone(), i);
             if !res {
                 return 0;
             }
@@ -213,15 +213,15 @@ impl VM {
                     )))));
             }
             (_, _, Some(_)) => {
-                print_error(chunk, i, "first s argument must be string");
+                print_error(chunk.clone(), i, "first s argument must be string");
                 return 0;
             }
             (_, Some(_), _) => {
-                print_error(chunk, i, "second s argument must be string");
+                print_error(chunk.clone(), i, "second s argument must be string");
                 return 0;
             }
             (_, _, _) => {
-                print_error(chunk, i, "third s argument must be string");
+                print_error(chunk.clone(), i, "third s argument must be string");
                 return 0;
             }
         }
@@ -231,22 +231,22 @@ impl VM {
     /// Takes a value that can be stringified and a regex string as
     /// its arguments.  Gets the regex captures from the value, puts
     /// them into a list, and then puts that list onto the stack.
-    pub fn core_c(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_c(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "c requires two arguments");
+            print_error(chunk.clone(), i, "c requires two arguments");
             return 0;
         }
 
         let regex_rr = self.stack.pop().unwrap();
         let regex_str_rr_opt = VM::to_string_value(regex_rr);
         if regex_str_rr_opt.is_none() {
-            print_error(chunk, i, "regex must be a string");
+            print_error(chunk.clone(), i, "regex must be a string");
             return 0;
         }
         let mut regex_str_rr = regex_str_rr_opt.unwrap();
 
         {
-            let res = regex_str_rr.gen_regex(chunk, i);
+            let res = regex_str_rr.gen_regex(chunk.clone(), i);
             if !res {
                 return 0;
             }
@@ -311,11 +311,11 @@ impl VM {
                 self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
             }
             (_, Some(_)) => {
-                print_error(chunk, i, "first c argument must be string");
+                print_error(chunk.clone(), i, "first c argument must be string");
                 return 0;
             }
             (_, _) => {
-                print_error(chunk, i, "second c argument must be string");
+                print_error(chunk.clone(), i, "second c argument must be string");
                 return 0;
             }
         }

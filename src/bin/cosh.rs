@@ -445,7 +445,7 @@ fn main() {
                 eprintln!("unable to deserialise file");
                 std::process::exit(1);
             }
-            let chunk = chunk_opt.unwrap();
+            let chunk = Rc::new(chunk_opt.unwrap());
             let mut vm = VM::new(true, debug);
             let mut scopes = Vec::new();
             scopes.push(HashMap::new());
@@ -459,21 +459,21 @@ fn main() {
                         std::process::exit(1);
                     }
                 }
-                functions.push(rtchunk_opt.unwrap());
+                functions.push(Rc::new(rtchunk_opt.unwrap()));
             }
             let mut call_stack_chunks = Vec::new();
             if functions.len() > 0 {
-                call_stack_chunks.push(&functions[0]);
+                call_stack_chunks.push(functions[0].clone());
             }
             let chunk_functions = Vec::new();
             let mut prev_local_vars_stacks = vec![];
-            let mut global_functions = RefCell::new(HashMap::new());
+            let mut global_functions = HashMap::new();
             let running = Arc::new(AtomicBool::new(true));
             vm.run(
                 &mut scopes,
                 &mut global_functions,
                 &mut call_stack_chunks,
-                &chunk,
+                chunk,
                 Rc::new(RefCell::new(chunk_functions)),
                 0,
                 None,
@@ -545,8 +545,7 @@ fn main() {
                         }
                     }
                     let rtchunk = rtchunk_opt.unwrap();
-                    let functions = rtchunk.functions.borrow_mut();
-                    for (k, v) in functions.iter() {
+                    for (k, v) in rtchunk.functions.iter() {
                         global_functions.insert(k.clone(), v.clone());
                     }
                 }
@@ -554,7 +553,7 @@ fn main() {
                 let variables = HashMap::new();
                 let running = Arc::new(AtomicBool::new(true));
                 vm.interpret(
-                    global_functions.clone(),
+                    &mut global_functions,
                     variables.clone(),
                     &mut bufread,
                     running.clone(),
@@ -577,8 +576,7 @@ fn main() {
                 }
             }
             let rtchunk = rtchunk_opt.unwrap();
-            let functions = rtchunk.functions.borrow_mut();
-            for (k, v) in functions.iter() {
+            for (k, v) in rtchunk.functions.iter() {
                 global_functions.insert(k.clone(), v.clone());
             }
         }
@@ -599,25 +597,19 @@ fn main() {
                 match file_res {
                     Ok(file) => {
                         let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                        let (chunk_opt, updated_variables, mut updated_functions) = vm.interpret(
-                            global_functions,
+                        let (chunk_opt, updated_variables) = vm.interpret(
+                            &mut global_functions,
                             variables.clone(),
                             &mut bufread,
                             running.clone(),
                             ".coshrc",
                         );
-                        if updated_functions.len() > 0 {
-                            global_functions = updated_functions.remove(0).into_inner();
-                        } else {
-                            global_functions = HashMap::new();
-                        }
                         for (k, v) in updated_variables.iter() {
                             variables.insert(k.clone(), v.clone());
                         }
                         match chunk_opt {
                             Some(chunk) => {
-                                let chunk_functions = chunk.functions.borrow();
-                                for (k, v) in chunk_functions.iter() {
+                                for (k, v) in chunk.functions.iter() {
                                     if !k.starts_with("anon") {
                                         global_functions.insert(k.clone(), v.clone());
                                     }
@@ -692,25 +684,19 @@ fn main() {
 
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                     rl.add_history_entry(line.as_str());
-                    let (chunk_opt, updated_variables, mut updated_functions) = vm.interpret(
-                        global_functions,
+                    let (chunk_opt, updated_variables) = vm.interpret(
+                        &mut global_functions,
                         variables.clone(),
                         &mut bufread,
                         running.clone(),
                         "(main)",
                     );
-                    if updated_functions.len() > 0 {
-                        global_functions = updated_functions.remove(0).into_inner();
-                    } else {
-                        global_functions = HashMap::new();
-                    }
                     for (k, v) in updated_variables.iter() {
                         variables.insert(k.clone(), v.clone());
                     }
                     match chunk_opt {
                         Some(chunk) => {
-                            let chunk_functions = chunk.functions.borrow();
-                            for (k, v) in chunk_functions.iter() {
+                            for (k, v) in chunk.functions.iter() {
                                 if !k.starts_with("anon") {
                                     global_functions.insert(k.clone(), v.clone());
                                 }

@@ -85,7 +85,7 @@ fn convert_to_json(v: &Value) -> String {
 impl VM {
     /// Takes a JSON string, converts it into a hash, and puts the
     /// result onto the stack.
-    pub fn core_from_json(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_from_json(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "from-json requires one argument");
             return 0;
@@ -141,7 +141,7 @@ impl VM {
 
     /// Takes a hash, converts it into a JSON string representation,
     /// and puts the result onto the stack.
-    pub fn core_to_json(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_to_json(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "to-json requires one argument");
             return 0;

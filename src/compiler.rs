@@ -623,8 +623,7 @@ impl Compiler {
                     }
                     chunk
                         .functions
-                        .borrow_mut()
-                        .insert(name_str, generator_chunk);
+                        .insert(name_str, Rc::new(generator_chunk));
                 }
                 TokenType::StartFunction => {
                     let mut function_chunk = Chunk::new_standard(chunk.name.to_string());
@@ -659,8 +658,7 @@ impl Compiler {
                     }
                     chunk
                         .functions
-                        .borrow_mut()
-                        .insert(name_str, function_chunk);
+                        .insert(name_str, Rc::new(function_chunk));
                 }
                 TokenType::EndFunction => {
                     self.decrease_scope_depth(chunk);
@@ -703,8 +701,7 @@ impl Compiler {
                     chunk.add_byte(i_lower as u8);
                     chunk
                         .functions
-                        .borrow_mut()
-                        .insert(name_str, function_chunk);
+                        .insert(name_str, Rc::new(function_chunk));
                 }
                 TokenType::RightBracket => {
                     match chunk.get_second_last_opcode() {
@@ -758,7 +755,7 @@ impl Compiler {
                     if s == "+" {
                         match chunk.get_third_last_opcode() {
                             OpCode::Constant => {
-                                let mlen = chunk.data.borrow().len() - 1;
+                                let mlen = chunk.data.len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
                                     token.line_number,
@@ -773,7 +770,7 @@ impl Compiler {
                     } else if s == "-" {
                         match chunk.get_third_last_opcode() {
                             OpCode::Constant => {
-                                let mlen = chunk.data.borrow().len() - 1;
+                                let mlen = chunk.data.len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
                                     token.line_number,
@@ -788,7 +785,7 @@ impl Compiler {
                     } else if s == "*" {
                         match chunk.get_third_last_opcode() {
                             OpCode::Constant => {
-                                let mlen = chunk.data.borrow().len() - 1;
+                                let mlen = chunk.data.len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
                                     token.line_number,
@@ -803,7 +800,7 @@ impl Compiler {
                     } else if s == "/" {
                         match chunk.get_third_last_opcode() {
                             OpCode::Constant => {
-                                let mlen = chunk.data.borrow().len() - 1;
+                                let mlen = chunk.data.len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
                                     token.line_number,
@@ -1081,7 +1078,7 @@ impl Compiler {
                             }
                             _ => {}
                         }
-                        if_index = Some(chunk.data.borrow().len());
+                        if_index = Some(chunk.data.len());
                         else_index = None;
                         chunk.add_byte(0);
                         chunk.add_byte(0);
@@ -1089,10 +1086,10 @@ impl Compiler {
                         let mut has_else = false;
                         match else_index {
                             Some(n) => {
-                                let jmp_len = chunk.data.borrow().len() - n - 2;
-                                chunk.data.borrow_mut()[n] =
+                                let jmp_len = chunk.data.len() - n - 2;
+                                chunk.data[n] =
                                     ((jmp_len >> 8) & 0xff).try_into().unwrap();
-                                chunk.data.borrow_mut()[n + 1] =
+                                chunk.data[n + 1] =
                                     (jmp_len & 0xff).try_into().unwrap();
                                 has_else = true;
                                 else_index = None;
@@ -1102,10 +1099,10 @@ impl Compiler {
                         if !has_else {
                             match if_index {
                                 Some(n) => {
-                                    let jmp_len = chunk.data.borrow().len() - n - 2;
-                                    chunk.data.borrow_mut()[n] =
+                                    let jmp_len = chunk.data.len() - n - 2;
+                                    chunk.data[n] =
                                         ((jmp_len >> 8) & 0xff).try_into().unwrap();
-                                    chunk.data.borrow_mut()[n + 1] =
+                                    chunk.data[n + 1] =
                                         (jmp_len & 0xff).try_into().unwrap();
                                     if_index = None;
                                 }
@@ -1135,15 +1132,15 @@ impl Compiler {
                             }
                             _ => {}
                         }
-                        else_index = Some(chunk.data.borrow().len());
+                        else_index = Some(chunk.data.len());
                         chunk.add_byte(0);
                         chunk.add_byte(0);
                         match if_index {
                             Some(n) => {
-                                let jmp_len = chunk.data.borrow().len() - n - 2;
-                                chunk.data.borrow_mut()[n] =
+                                let jmp_len = chunk.data.len() - n - 2;
+                                chunk.data[n] =
                                     ((jmp_len >> 8) & 0xff).try_into().unwrap();
-                                chunk.data.borrow_mut()[n + 1] =
+                                chunk.data[n + 1] =
                                     (jmp_len & 0xff).try_into().unwrap();
                             }
                             _ => {
@@ -1162,12 +1159,12 @@ impl Compiler {
                             }
                             _ => {}
                         }
-                        begin_index = Some(chunk.data.borrow().len());
+                        begin_index = Some(chunk.data.len());
                     } else if s == "leave" {
                         match begin_index {
                             Some(_) => {
                                 chunk.add_opcode(OpCode::Jump);
-                                leave_indexes.push(chunk.data.borrow().len());
+                                leave_indexes.push(chunk.data.len());
                                 chunk.add_byte(0);
                                 chunk.add_byte(0);
                             }
@@ -1194,7 +1191,7 @@ impl Compiler {
                                         let i3 =
                                             (((cb1 as u16) << 8) & 0xFF00) | ((cb2 & 0xFF) as u16);
                                         if chunk.has_constant_int(i3 as i32) {
-                                            let jmp_len = chunk.data.borrow().len() - n + 1;
+                                            let jmp_len = chunk.data.len() - n + 1;
                                             chunk.set_third_last_byte(
                                                 ((jmp_len >> 8) & 0xff).try_into().unwrap(),
                                             );
@@ -1220,7 +1217,7 @@ impl Compiler {
                                             match v {
                                                 Value::Int(0) => {
                                                     chunk.set_third_last_opcode(OpCode::JumpR);
-                                                    let jmp_len = chunk.data.borrow().len() - n;
+                                                    let jmp_len = chunk.data.len() - n;
                                                     chunk.set_second_last_byte(
                                                         ((jmp_len >> 8) & 0xff).try_into().unwrap(),
                                                     );
@@ -1236,7 +1233,7 @@ impl Compiler {
                                     };
                                     if !done2 {
                                         chunk.add_opcode(OpCode::JumpNeR);
-                                        let jmp_len = chunk.data.borrow().len() - n + 2;
+                                        let jmp_len = chunk.data.len() - n + 2;
                                         chunk.add_byte(((jmp_len >> 8) & 0xff).try_into().unwrap());
                                         chunk.add_byte((jmp_len & 0xff).try_into().unwrap());
                                     }
@@ -1251,10 +1248,10 @@ impl Compiler {
                             }
                         }
                         for leave_index in leave_indexes.iter() {
-                            let jmp_len = chunk.data.borrow().len() - *leave_index - 2;
-                            chunk.data.borrow_mut()[*leave_index] =
+                            let jmp_len = chunk.data.len() - *leave_index - 2;
+                            chunk.data[*leave_index] =
                                 ((jmp_len >> 8) & 0xff).try_into().unwrap();
-                            chunk.data.borrow_mut()[*leave_index + 1] =
+                            chunk.data[*leave_index + 1] =
                                 (jmp_len & 0xff).try_into().unwrap();
                         }
                         if begin_indexes.len() > 0 {

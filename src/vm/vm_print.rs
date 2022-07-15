@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::io;
@@ -77,7 +76,7 @@ fn psv_helper(
 impl VM {
     /// Takes a value that can be stringified as its single argument,
     /// and prints that value to standard output.
-    pub fn opcode_print(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_print(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "print requires one argument");
             return 0;
@@ -120,7 +119,7 @@ impl VM {
 
     /// Takes a value that can be stringified as its single argument,
     /// and prints that value followed by newline to standard output.
-    pub fn core_println(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_println(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "println requires one argument");
             return 0;
@@ -172,10 +171,10 @@ impl VM {
     fn print_stack_value<'a>(
         &mut self,
         value_rr: &Value,
-        chunk: &Chunk,
+        chunk: Rc<Chunk>,
         i: usize,
         scopes: &mut Vec<HashMap<String, Value>>,
-        global_functions: &mut RefCell<HashMap<String, Chunk>>,
+        global_functions: &mut HashMap<String, Rc<Chunk>>,
         indent: i32,
         no_first_indent: bool,
         window_height: i32,
@@ -347,7 +346,7 @@ impl VM {
                         for element in list.borrow().iter() {
                             lines_to_print = self.print_stack_value(
                                 element,
-                                chunk,
+                                chunk.clone(),
                                 i,
                                 scopes,
                                 global_functions,
@@ -413,7 +412,7 @@ impl VM {
 
                             lines_to_print = self.print_stack_value(
                                 v,
-                                chunk,
+                                chunk.clone(),
                                 i,
                                 scopes,
                                 global_functions,
@@ -456,7 +455,7 @@ impl VM {
             self.stack.push(value_rr.clone());
             let mut prev_local_var_stacks = vec![];
             loop {
-                let dup_res = self.opcode_dup(chunk, i);
+                let dup_res = self.opcode_dup(chunk.clone(), i);
                 if dup_res == 0 {
                     return lines_to_print;
                 }
@@ -464,7 +463,7 @@ impl VM {
                     scopes,
                     global_functions,
                     &mut prev_local_var_stacks,
-                    chunk,
+                    chunk.clone(),
                     i,
                     (1, 1),
                     running.clone(),
@@ -496,7 +495,7 @@ impl VM {
                     }
                     lines_to_print = self.print_stack_value(
                         &value_rr,
-                        chunk,
+                        chunk.clone(),
                         i,
                         scopes,
                         global_functions,
@@ -533,10 +532,10 @@ impl VM {
     /// the stack is printed.  Prints the stack to standard output.
     pub fn print_stack<'a>(
         &mut self,
-        chunk: &Chunk,
+        chunk: Rc<Chunk>,
         i: usize,
         scopes: &mut Vec<HashMap<String, Value>>,
-        global_functions: &mut RefCell<HashMap<String, Chunk>>,
+        global_functions: &mut HashMap<String, Rc<Chunk>>,
         running: Arc<AtomicBool>,
         no_remove: bool,
     ) {
@@ -555,7 +554,7 @@ impl VM {
             let value_rr = self.stack.remove(0);
             lines_to_print = self.print_stack_value(
                 &value_rr,
-                chunk,
+                chunk.clone(),
                 i,
                 scopes,
                 global_functions,

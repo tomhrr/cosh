@@ -5,7 +5,7 @@ use vm::*;
 
 impl VM {
     /// Remove the top element from the stack.
-    pub fn opcode_drop(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_drop(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() == 0 {
             print_error(chunk, i, "drop requires one argument");
             return 0;
@@ -16,14 +16,14 @@ impl VM {
 
     /// Remove all elements from the stack.
     #[allow(unused_variables)]
-    pub fn opcode_clear(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_clear(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         self.stack.clear();
         return 1;
     }
 
     /// Take the top element from the stack, duplicate it, and add it
     /// onto the stack.
-    pub fn opcode_dup(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_dup(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() == 0 {
             print_error(chunk, i, "dup requires one argument");
             return 0;
@@ -34,7 +34,7 @@ impl VM {
 
     /// Take the second element from the top from the stack, duplicate
     /// it, and add it onto the stack.
-    pub fn opcode_over(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_over(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk, i, "over requires two arguments");
             return 0;
@@ -44,7 +44,7 @@ impl VM {
     }
 
     /// Swap the top two elements from the stack.
-    pub fn opcode_swap(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_swap(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         let len = self.stack.len();
         if len < 2 {
             print_error(chunk, i, "swap requires two arguments");
@@ -58,7 +58,7 @@ impl VM {
     /// becomes the second from top element, the second from top
     /// element becomes the third from top element, and the third from
     /// top element becomes the top element.
-    pub fn opcode_rot(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_rot(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 3 {
             print_error(chunk, i, "rot requires three arguments");
             return 0;
@@ -74,7 +74,7 @@ impl VM {
 
     /// Push the current depth of the stack onto the stack.
     #[allow(unused_variables)]
-    pub fn opcode_depth(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_depth(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         self.stack.push(Value::Int(self.stack.len() as i32));
         return 1;
     }
@@ -82,7 +82,7 @@ impl VM {
     /// If the topmost element is a list, adds the length of that list
     /// onto the stack.  If the topmost element is a string, adds the
     /// length of that sting onto the stack.
-    pub fn core_len(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_len(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "len requires one argument");
             return 0;
@@ -108,7 +108,7 @@ impl VM {
 
     /// Adds a boolean onto the stack indicating whether the topmost
     /// element is a null value.
-    pub fn opcode_isnull(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_isnull(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "is-null requires one argument");
             return 0;
@@ -123,7 +123,7 @@ impl VM {
         return 1;
     }
 
-    pub fn opcode_dupisnull(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_dupisnull(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "is-null requires one argument");
             return 0;
@@ -140,7 +140,7 @@ impl VM {
 
     /// Adds a boolean onto the stack indicating whether the topmost
     /// element is a list.
-    pub fn opcode_islist(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_islist(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "is-list requires one argument");
             return 0;
@@ -159,7 +159,7 @@ impl VM {
     /// element can be called.  (In the case of a string, this doesn't
     /// currently check that the string name maps to a function or
     /// core form, though.)
-    pub fn opcode_iscallable(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_iscallable(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "is-callable requires one argument");
             return 0;
@@ -180,7 +180,7 @@ impl VM {
     }
 
     /// Convert a value into a string value.
-    pub fn opcode_str(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_str(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "str requires one argument");
             return 0;
@@ -240,7 +240,7 @@ impl VM {
     }
 
     /// Convert a value into an integer/bigint value.
-    pub fn opcode_int(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_int(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "int requires one argument");
             return 0;
@@ -287,7 +287,7 @@ impl VM {
     }
 
     /// Convert a value into a floating-point value.
-    pub fn opcode_flt(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_flt(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "flt requires one argument");
             return 0;
@@ -322,7 +322,7 @@ impl VM {
     }
 
     /// Get a random floating-point value.
-    pub fn opcode_rand(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn opcode_rand(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "rand requires one argument");
             return 0;

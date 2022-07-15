@@ -31,15 +31,15 @@ pub struct Chunk {
     /// the REPL.
     pub name: String,
     /// The bytecode for the chunk.
-    pub data: RefCell<Vec<u8>>,
+    pub data: Vec<u8>,
     /// The line and column number information for the chunk.  The
     /// entries in this vector correspond to the entries in the
     /// bytecode vector.
-    pub points: RefCell<Vec<(u32, u32)>>,
+    pub points: Vec<(u32, u32)>,
     /// The set of constant values for the chunk.
     pub constants: Vec<ValueSD>,
     /// The functions defined within the chunk.
-    pub functions: RefCell<HashMap<String, Chunk>>,
+    pub functions: HashMap<String, Rc<Chunk>>,
     /// Whether the chunk is for a generator function.
     pub is_generator: bool,
     /// Whether the chunk deals with global variables.
@@ -118,9 +118,9 @@ pub struct GeneratorObject {
     /// The current instruction index.
     pub index: usize,
     /// The chunk of the associated generator function.
-    pub chunk: Chunk,
+    pub chunk: Rc<Chunk>,
     /// The chunks of the other functions in the call stack.
-    pub call_stack_chunks: Rc<RefCell<Vec<Chunk>>>,
+    pub call_stack_chunks: Vec<Rc<Chunk>>,
     /// The values that need to be passed into the generator when
     /// it is first called.
     pub gen_args: Vec<Value>,
@@ -135,8 +135,8 @@ impl GeneratorObject {
         global_vars: Rc<RefCell<HashMap<String, Value>>>,
         local_vars_stack: Rc<RefCell<Vec<Value>>>,
         index: usize,
-        chunk: Chunk,
-        call_stack_chunks: Rc<RefCell<Vec<Chunk>>>,
+        chunk: Rc<Chunk>,
+        call_stack_chunks: Vec<Rc<Chunk>>,
         gen_args: Vec<Value>
     ) -> GeneratorObject {
         GeneratorObject {
@@ -196,23 +196,23 @@ pub enum Value {
     /// pointer value).
     Function(Rc<RefCell<AnonymousFunction>>),
     /// A core function.  See SIMPLE_FORMS in the VM.
-    CoreFunction(fn(&mut VM, &Chunk, usize) -> i32),
+    CoreFunction(fn(&mut VM, Rc<Chunk>, usize) -> i32),
     /// A shift function (i.e. a function that shifts an element from
     /// some value).  See SHIFT_FORMS in the VM.
     ShiftFunction(
         fn(
             &mut VM,
             &mut Vec<HashMap<String, Value>>,
-            &mut RefCell<HashMap<String, Chunk>>,
+            &mut HashMap<String, Rc<Chunk>>,
             &mut Vec<Rc<RefCell<Vec<Value>>>>,
-            &Chunk,
+            Rc<Chunk>,
             usize,
             (u32, u32),
             Arc<AtomicBool>,
         ) -> i32,
     ),
     /// A named function.
-    NamedFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<CFPair>>>),
+    NamedFunction(Rc<Chunk>, Rc<RefCell<Vec<CFPair>>>),
     /// A generator constructed by way of a generator function.
     Generator(Rc<RefCell<GeneratorObject>>),
     /// A generator for getting the output of a Command.
@@ -319,7 +319,7 @@ pub enum ValueSD {
 /// Takes a chunk, an instruction index, and an error message as its
 /// arguments.  Prints the error message, including filename, line number
 /// and column number elements (if applicable).
-pub fn print_error(chunk: &Chunk, i: usize, error: &str) {
+pub fn print_error(chunk: Rc<Chunk>, i: usize, error: &str) {
     let point = chunk.get_point(i);
     let name = &chunk.name;
     let error_start = if name == "(main)" {
@@ -342,10 +342,10 @@ impl Chunk {
     pub fn new_standard(name: String) -> Chunk {
         Chunk {
             name: name,
-            data: RefCell::new(Vec::new()),
-            points: RefCell::new(Vec::new()),
+            data: Vec::new(),
+            points: Vec::new(),
             constants: Vec::new(),
-            functions: RefCell::new(HashMap::new()),
+            functions: HashMap::new(),
             is_generator: false,
             has_vars: true,
             uses_local_vars: false,
@@ -360,10 +360,10 @@ impl Chunk {
     pub fn new_generator(name: String, arg_count: i32, req_arg_count: i32) -> Chunk {
         Chunk {
             name: name,
-            data: RefCell::new(Vec::new()),
-            points: RefCell::new(Vec::new()),
+            data: Vec::new(),
+            points: Vec::new(),
             constants: Vec::new(),
-            functions: RefCell::new(HashMap::new()),
+            functions: HashMap::new(),
             is_generator: true,
             has_vars: true,
             uses_local_vars: false,
@@ -438,12 +438,12 @@ impl Chunk {
 
     /// Add an opcode to the current chunk's data.
     pub fn add_opcode(&mut self, opcode: OpCode) {
-        self.data.borrow_mut().push(opcode as u8);
+        self.data.push(opcode as u8);
     }
 
     /// Get the last opcode from the current chunk's data.
     pub fn get_last_opcode(&self) -> OpCode {
-        return to_opcode(*self.data.borrow().last().unwrap());
+        return to_opcode(*self.data.last().unwrap());
     }
 
     /// Get the second-last opcode from the current chunk's data.
@@ -451,144 +451,132 @@ impl Chunk {
     /// least two opcodes.  Used for adding implicit call opcodes, if
     /// required.
     pub fn get_second_last_opcode(&self) -> OpCode {
-        if self.data.borrow().len() < 2 {
+        if self.data.len() < 2 {
             return OpCode::Call;
         }
         return to_opcode(
             *self
                 .data
-                .borrow()
-                .get(self.data.borrow().len() - 2)
+                .get(self.data.len() - 2)
                 .unwrap(),
         );
     }
 
     /// Get the third-last opcode from the current chunk's data.
     pub fn get_third_last_opcode(&self) -> OpCode {
-        if self.data.borrow().len() < 3 {
+        if self.data.len() < 3 {
             return OpCode::Call;
         }
         return to_opcode(
             *self
                 .data
-                .borrow()
-                .get(self.data.borrow().len() - 3)
+                .get(self.data.len() - 3)
                 .unwrap(),
         );
     }
 
     /// Get the fourth-last opcode from the current chunk's data.
     pub fn get_fourth_last_opcode(&self) -> OpCode {
-        if self.data.borrow().len() < 4 {
+        if self.data.len() < 4 {
             return OpCode::Call;
         }
         return to_opcode(
             *self
                 .data
-                .borrow()
-                .get(self.data.borrow().len() - 4)
+                .get(self.data.len() - 4)
                 .unwrap(),
         );
     }
 
     /// Set the second-last opcode for the current chunk's data.
     pub fn set_second_last_opcode(&mut self, opcode: OpCode) {
-        let len = self.data.borrow().len();
-        let mut bm = self.data.borrow_mut();
-        if let Some(el) = bm.get_mut(len - 2) {
+        let len = self.data.len();
+        if let Some(el) = self.data.get_mut(len - 2) {
             *el = opcode as u8;
         }
     }
 
     /// Set the third-last opcode for the current chunk's data.
     pub fn set_third_last_opcode(&mut self, opcode: OpCode) {
-        let len = self.data.borrow().len();
-        let mut bm = self.data.borrow_mut();
-        if let Some(el) = bm.get_mut(len - 3) {
+        let len = self.data.len();
+        if let Some(el) = self.data.get_mut(len - 3) {
             *el = opcode as u8;
         }
     }
 
     /// Set the fourth-last opcode for the current chunk's data.
     pub fn set_fourth_last_opcode(&mut self, opcode: OpCode) {
-        let len = self.data.borrow().len();
-        let mut bm = self.data.borrow_mut();
-        if let Some(el) = bm.get_mut(len - 4) {
+        let len = self.data.len();
+        if let Some(el) = self.data.get_mut(len - 4) {
             *el = opcode as u8;
         }
     }
 
     /// Set the last opcode for the current chunk's data.
     pub fn set_last_opcode(&mut self, opcode: OpCode) {
-        let len = self.data.borrow().len();
-        let mut bm = self.data.borrow_mut();
-        if let Some(el) = bm.get_mut(len - 1) {
+        let len = self.data.len();
+        if let Some(el) = self.data.get_mut(len - 1) {
             *el = opcode as u8;
         }
     }
 
     /// Add a raw byte to the current chunk's data.
     pub fn add_byte(&mut self, byte: u8) {
-        self.data.borrow_mut().push(byte);
+        self.data.push(byte);
     }
 
     /// Remove the last byte from the current chunk's data.
     pub fn pop_byte(&mut self) {
-        self.data.borrow_mut().pop();
+        self.data.pop();
     }
 
     /// Get the last byte from the current chunk's data.
     pub fn get_last_byte(&self) -> u8 {
-        return *self.data.borrow().last().unwrap();
+        return *self.data.last().unwrap();
     }
 
     /// Get the second-last byte from the current chunk's data.
     pub fn get_second_last_byte(&self) -> u8 {
-        if self.data.borrow().len() < 2 {
+        if self.data.len() < 2 {
             return 0;
         }
         return *self
             .data
-            .borrow()
-            .get(self.data.borrow().len() - 2)
+            .get(self.data.len() - 2)
             .unwrap();
     }
 
     /// Get the third-last byte from the current chunk's data.
     pub fn get_third_last_byte(&self) -> u8 {
-        if self.data.borrow().len() < 3 {
+        if self.data.len() < 3 {
             return 0;
         }
         return *self
             .data
-            .borrow()
-            .get(self.data.borrow().len() - 3)
+            .get(self.data.len() - 3)
             .unwrap();
     }
 
     /// Set the last byte for the current chunk's data.
     pub fn set_last_byte(&mut self, byte: u8) {
-        let len = self.data.borrow().len();
-        let mut bm = self.data.borrow_mut();
-        if let Some(el) = bm.get_mut(len - 1) {
+        let len = self.data.len();
+        if let Some(el) = self.data.get_mut(len - 1) {
             *el = byte;
         }
     }
 
     /// Set the second-last byte for the current chunk's data.
     pub fn set_second_last_byte(&mut self, byte: u8) {
-        let len = self.data.borrow().len();
-        let mut bm = self.data.borrow_mut();
-        if let Some(el) = bm.get_mut(len - 2) {
+        let len = self.data.len();
+        if let Some(el) = self.data.get_mut(len - 2) {
             *el = byte;
         }
     }
 
     /// Set the third-last byte for the current chunk's data.
     pub fn set_third_last_byte(&mut self, byte: u8) {
-        let len = self.data.borrow().len();
-        let mut bm = self.data.borrow_mut();
-        if let Some(el) = bm.get_mut(len - 3) {
+        let len = self.data.len();
+        if let Some(el) = self.data.get_mut(len - 3) {
             *el = byte;
         }
     }
@@ -604,27 +592,25 @@ impl Chunk {
     /// those opcodes/bytes by using the most recently-added point
     /// data (putting aside the current call), too.
     pub fn set_next_point(&mut self, line_number: u32, column_number: u32) {
-        let data_len = self.data.borrow().len();
-        let mut points_b = self.points.borrow_mut();
-        let points_len = points_b.len();
+        let data_len = self.data.len();
+        let points_len = self.points.len();
         let mut prev_line_number = 0;
         let mut prev_column_number = 0;
         if points_len > 0 {
-            let last_point = points_b.get(points_len - 1).unwrap();
+            let last_point = self.points.get(points_len - 1).unwrap();
             let (prev_line_number_p, prev_column_number_p) = last_point;
             prev_line_number = *prev_line_number_p;
             prev_column_number = *prev_column_number_p;
         }
-        while points_b.len() < data_len {
-            points_b.push((prev_line_number, prev_column_number));
+        while self.points.len() < data_len {
+            self.points.push((prev_line_number, prev_column_number));
         }
-        points_b.insert(data_len, (line_number, column_number));
+        self.points.insert(data_len, (line_number, column_number));
     }
 
     /// Get the point data for the given index.
     pub fn get_point(&self, i: usize) -> Option<(u32, u32)> {
-        let points_b = self.points.borrow();
-        let point = points_b.get(i);
+        let point = self.points.get(i);
         match point {
             Some((0, 0)) => None,
             Some((_, _)) => Some(*(point.unwrap())),
@@ -635,8 +621,7 @@ impl Chunk {
     /// Reset the values for a previous point.  Required where
     /// existing data is being replaced/adjusted during compilation.
     pub fn set_previous_point(&mut self, i: usize, line_number: u32, column_number: u32) {
-        let mut points_b = self.points.borrow_mut();
-        let point = points_b.get_mut(i);
+        let point = self.points.get_mut(i);
         match point {
             Some((ref mut a, ref mut b)) => {
                 *a = line_number;
@@ -653,63 +638,62 @@ impl Chunk {
     /// output.
     pub fn disassemble(&self, name: &str) {
         println!("== {} ==", name);
-        let data_b = self.data.borrow();
 
         let mut i = 0;
-        while i < data_b.len() {
-            let opcode = to_opcode(data_b[i]);
+        while i < self.data.len() {
+            let opcode = to_opcode(self.data[i]);
             print!("{:^4} ", i);
             match opcode {
                 OpCode::Constant => {
                     i = i + 1;
-                    let i_upper = data_b[i];
+                    let i_upper = self.data[i];
                     i = i + 1;
-                    let i_lower = data_b[i];
+                    let i_lower = self.data[i];
                     let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_CONSTANT {:?}", value);
                 }
                 OpCode::AddConstant => {
                     i = i + 1;
-                    let i_upper = data_b[i];
+                    let i_upper = self.data[i];
                     i = i + 1;
-                    let i_lower = data_b[i];
+                    let i_lower = self.data[i];
                     let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_ADDCONSTANT {:?}", value);
                 }
                 OpCode::SubtractConstant => {
                     i = i + 1;
-                    let i_upper = data_b[i];
+                    let i_upper = self.data[i];
                     i = i + 1;
-                    let i_lower = data_b[i];
+                    let i_lower = self.data[i];
                     let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_SUBTRACTCONSTANT {:?}", value);
                 }
                 OpCode::DivideConstant => {
                     i = i + 1;
-                    let i_upper = data_b[i];
+                    let i_upper = self.data[i];
                     i = i + 1;
-                    let i_lower = data_b[i];
+                    let i_lower = self.data[i];
                     let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_DIVIDECONSTANT {:?}", value);
                 }
                 OpCode::MultiplyConstant => {
                     i = i + 1;
-                    let i_upper = data_b[i];
+                    let i_upper = self.data[i];
                     i = i + 1;
-                    let i_lower = data_b[i];
+                    let i_lower = self.data[i];
                     let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_MULTIPLYCONSTANT {:?}", value);
                 }
                 OpCode::EqConstant => {
                     i = i + 1;
-                    let i_upper = data_b[i];
+                    let i_upper = self.data[i];
                     i = i + 1;
-                    let i_lower = data_b[i];
+                    let i_lower = self.data[i];
                     let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_EQCONSTANT {:?}", value);
@@ -749,22 +733,22 @@ impl Chunk {
                 }
                 OpCode::SetLocalVar => {
                     i = i + 1;
-                    let var_i = data_b[i];
+                    let var_i = self.data[i];
                     println!("OP_SETLOCALVAR {}", var_i);
                 }
                 OpCode::GetLocalVar => {
                     i = i + 1;
-                    let var_i = data_b[i];
+                    let var_i = self.data[i];
                     println!("OP_GETLOCALVAR {}", var_i);
                 }
                 OpCode::GLVShift => {
                     i = i + 1;
-                    let var_i = data_b[i];
+                    let var_i = self.data[i];
                     println!("OP_GLVSHIFT {}", var_i);
                 }
                 OpCode::GLVCall => {
                     i = i + 1;
-                    let var_i = data_b[i];
+                    let var_i = self.data[i];
                     println!("OP_GLVCALL {}", var_i);
                 }
                 OpCode::PopLocalVar => {
@@ -772,47 +756,47 @@ impl Chunk {
                 }
                 OpCode::Jump => {
                     i = i + 1;
-                    let i1: usize = data_b[i].try_into().unwrap();
+                    let i1: usize = self.data[i].try_into().unwrap();
                     i = i + 1;
-                    let i2: usize = data_b[i].try_into().unwrap();
+                    let i2: usize = self.data[i].try_into().unwrap();
                     let jump_i: usize = (i1 << 8) | i2;
                     println!("OP_JUMP {:?}", jump_i);
                 }
                 OpCode::JumpR => {
                     i = i + 1;
-                    let i1: usize = data_b[i].try_into().unwrap();
+                    let i1: usize = self.data[i].try_into().unwrap();
                     i = i + 1;
-                    let i2: usize = data_b[i].try_into().unwrap();
+                    let i2: usize = self.data[i].try_into().unwrap();
                     let jump_i: usize = (i1 << 8) | i2;
                     println!("OP_JUMPR {:?}", jump_i);
                 }
                 OpCode::JumpNe => {
                     i = i + 1;
-                    let i1: usize = data_b[i].try_into().unwrap();
+                    let i1: usize = self.data[i].try_into().unwrap();
                     i = i + 1;
-                    let i2: usize = data_b[i].try_into().unwrap();
+                    let i2: usize = self.data[i].try_into().unwrap();
                     let jump_i: usize = (i1 << 8) | i2;
                     println!("OP_JUMPNE {:?}", jump_i);
                 }
                 OpCode::JumpNeR => {
                     i = i + 1;
-                    let i1: usize = data_b[i].try_into().unwrap();
+                    let i1: usize = self.data[i].try_into().unwrap();
                     i = i + 1;
-                    let i2: usize = data_b[i].try_into().unwrap();
+                    let i2: usize = self.data[i].try_into().unwrap();
                     let jump_i: usize = (i1 << 8) | i2;
                     println!("OP_JUMPNER {:?}", jump_i);
                 }
                 OpCode::JumpNeREqC => {
                     i = i + 1;
-                    let i1: usize = data_b[i].try_into().unwrap();
+                    let i1: usize = self.data[i].try_into().unwrap();
                     i = i + 1;
-                    let i2: usize = data_b[i].try_into().unwrap();
+                    let i2: usize = self.data[i].try_into().unwrap();
                     let jump_i: usize = (i1 << 8) | i2;
 
                     i = i + 1;
-                    let i_upper = data_b[i];
+                    let i_upper = self.data[i];
                     i = i + 1;
-                    let i_lower = data_b[i];
+                    let i_lower = self.data[i];
                     let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value = self.get_constant(constant_i as i32);
 
@@ -913,18 +897,18 @@ impl Chunk {
                 }
                 OpCode::CallConstant => {
                     i = i + 1;
-                    let i_upper = data_b[i];
+                    let i_upper = self.data[i];
                     i = i + 1;
-                    let i_lower = data_b[i];
+                    let i_lower = self.data[i];
                     let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_CALLCONSTANT {:?}", value);
                 }
                 OpCode::CallImplicitConstant => {
                     i = i + 1;
-                    let i_upper = data_b[i];
+                    let i_upper = self.data[i];
                     i = i + 1;
-                    let i_lower = data_b[i];
+                    let i_lower = self.data[i];
                     let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_CALLIMPLICITCONSTANT {:?}", value);
@@ -936,7 +920,7 @@ impl Chunk {
             i = i + 1;
         }
 
-        for (k, v) in self.functions.borrow().iter() {
+        for (k, v) in self.functions.iter() {
             println!("== {}.{} ==", name, k);
             v.disassemble(k);
         }
@@ -1045,7 +1029,7 @@ impl Value {
     /// For a string value, generate the corresponding regex for the
     /// string value and store it in the value.  If called on a
     /// non-string value, this will abort the current process.
-    pub fn gen_regex(&mut self, chunk: &Chunk, i: usize) -> bool {
+    pub fn gen_regex(&mut self, chunk: Rc<Chunk>, i: usize) -> bool {
         match self {
             Value::String(sp) => {
                 match sp.borrow().r {

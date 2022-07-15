@@ -57,135 +57,135 @@ pub struct VM {
 }
 
 lazy_static! {
-    static ref SIMPLE_FORMS: HashMap<&'static str, fn(&mut VM, &Chunk, usize) -> i32> = {
+    static ref SIMPLE_FORMS: HashMap<&'static str, fn(&mut VM, Rc<Chunk>, usize) -> i32> = {
         let mut map = HashMap::new();
-        map.insert("+", VM::opcode_add as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("+", VM::opcode_add as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "-",
-            VM::opcode_subtract as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::opcode_subtract as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
         map.insert(
             "*",
-            VM::opcode_multiply as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::opcode_multiply as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("/", VM::opcode_divide as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("=", VM::opcode_eq as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert(">", VM::opcode_gt as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("<", VM::opcode_lt as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("/", VM::opcode_divide as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("=", VM::opcode_eq as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert(">", VM::opcode_gt as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("<", VM::opcode_lt as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "print",
-            VM::opcode_print as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::opcode_print as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("drop", VM::opcode_drop as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("drop", VM::opcode_drop as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "clear",
-            VM::opcode_clear as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::opcode_clear as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("dup", VM::opcode_dup as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("over", VM::opcode_over as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("swap", VM::opcode_swap as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("rot", VM::opcode_rot as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("dup", VM::opcode_dup as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("over", VM::opcode_over as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("swap", VM::opcode_swap as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("rot", VM::opcode_rot as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "depth",
-            VM::opcode_depth as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::opcode_depth as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
         map.insert(
             "is-null",
-            VM::opcode_isnull as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::opcode_isnull as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
         map.insert(
             "is-list",
-            VM::opcode_islist as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::opcode_islist as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
         map.insert(
             "is-callable",
-            VM::opcode_iscallable as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::opcode_iscallable as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
         map.insert(
             "is-shiftable",
-            VM::opcode_isshiftable as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::opcode_isshiftable as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("open", VM::opcode_open as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("open", VM::opcode_open as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "readline",
-            VM::opcode_readline as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::opcode_readline as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
         map.insert(
             "println",
-            VM::core_println as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_println as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("rm", VM::core_rm as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("rm", VM::core_rm as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "writeline",
-            VM::core_writeline as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_writeline as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("close", VM::core_close as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("close", VM::core_close as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "opendir",
-            VM::core_opendir as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_opendir as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
         map.insert(
             "readdir",
-            VM::core_readdir as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_readdir as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("cp", VM::core_cp as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("mv", VM::core_mv as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("cd", VM::core_cd as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("pwd", VM::core_pwd as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("touch", VM::core_touch as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("stat", VM::core_stat as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("ps", VM::core_ps as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("kill", VM::core_kill as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("m", VM::core_m as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("s", VM::core_s as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("c", VM::core_c as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("nth", VM::core_nth as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("nth!", VM::core_nth_em as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("cp", VM::core_cp as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("mv", VM::core_mv as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("cd", VM::core_cd as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("pwd", VM::core_pwd as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("touch", VM::core_touch as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("stat", VM::core_stat as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("ps", VM::core_ps as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("kill", VM::core_kill as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("m", VM::core_m as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("s", VM::core_s as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("c", VM::core_c as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("nth", VM::core_nth as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("nth!", VM::core_nth_em as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "append",
-            VM::core_append as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_append as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("push", VM::opcode_push as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("push", VM::opcode_push as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "unshift",
-            VM::core_unshift as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_unshift as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("pop", VM::opcode_pop as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("len", VM::core_len as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("pop", VM::opcode_pop as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("len", VM::core_len as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "is-dir",
-            VM::core_is_dir as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_is_dir as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("split", VM::core_split as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("splitr", VM::core_splitr as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("at", VM::core_at as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("at!", VM::core_at_em as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("keys", VM::core_keys as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("split", VM::core_split as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("splitr", VM::core_splitr as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("at", VM::core_at as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("at!", VM::core_at_em as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("keys", VM::core_keys as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "values",
-            VM::core_values as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_values as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("each", VM::core_each as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("each", VM::core_each as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map.insert(
             "from-json",
-            VM::core_from_json as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_from_json as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
         map.insert(
             "to-json",
-            VM::core_to_json as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_to_json as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
         map.insert(
             "from-xml",
-            VM::core_from_xml as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_from_xml as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
         map.insert(
             "to-xml",
-            VM::core_to_xml as fn(&mut VM, &Chunk, usize) -> i32,
+            VM::core_to_xml as fn(&mut VM, Rc<Chunk>, usize) -> i32,
         );
-        map.insert("str", VM::opcode_str as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("int", VM::opcode_int as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("flt", VM::opcode_flt as fn(&mut VM, &Chunk, usize) -> i32);
-        map.insert("rand", VM::opcode_rand as fn(&mut VM, &Chunk, usize) -> i32);
+        map.insert("str", VM::opcode_str as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("int", VM::opcode_int as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("flt", VM::opcode_flt as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        map.insert("rand", VM::opcode_rand as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         map
     };
     static ref SHIFT_FORMS: HashMap<
@@ -193,9 +193,9 @@ lazy_static! {
         fn(
             &mut VM,
             &mut Vec<HashMap<String, Value>>,
-            &mut RefCell<HashMap<String, Chunk>>,
+            &mut HashMap<String, Rc<Chunk>>,
             &mut Vec<Rc<RefCell<Vec<Value>>>>,
-            &Chunk,
+            Rc<Chunk>,
             usize,
             (u32, u32),
             Arc<AtomicBool>,
@@ -208,9 +208,9 @@ lazy_static! {
                 as fn(
                     &mut VM,
                     &mut Vec<HashMap<String, Value>>,
-                    &mut RefCell<HashMap<String, Chunk>>,
+                    &mut HashMap<String, Rc<Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
-                    &Chunk,
+                    Rc<Chunk>,
                     usize,
                     (u32, u32),
                     Arc<AtomicBool>,
@@ -222,9 +222,9 @@ lazy_static! {
                 as fn(
                     &mut VM,
                     &mut Vec<HashMap<String, Value>>,
-                    &mut RefCell<HashMap<String, Chunk>>,
+                    &mut HashMap<String, Rc<Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
-                    &Chunk,
+                    Rc<Chunk>,
                     usize,
                     (u32, u32),
                     Arc<AtomicBool>,
@@ -236,9 +236,9 @@ lazy_static! {
                 as fn(
                     &mut VM,
                     &mut Vec<HashMap<String, Value>>,
-                    &mut RefCell<HashMap<String, Chunk>>,
+                    &mut HashMap<String, Rc<Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
-                    &Chunk,
+                    Rc<Chunk>,
                     usize,
                     (u32, u32),
                     Arc<AtomicBool>,
@@ -250,9 +250,9 @@ lazy_static! {
                 as fn(
                     &mut VM,
                     &mut Vec<HashMap<String, Value>>,
-                    &mut RefCell<HashMap<String, Chunk>>,
+                    &mut HashMap<String, Rc<Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
-                    &Chunk,
+                    Rc<Chunk>,
                     usize,
                     (u32, u32),
                     Arc<AtomicBool>,
@@ -264,9 +264,9 @@ lazy_static! {
                 as fn(
                     &mut VM,
                     &mut Vec<HashMap<String, Value>>,
-                    &mut RefCell<HashMap<String, Chunk>>,
+                    &mut HashMap<String, Rc<Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
-                    &Chunk,
+                    Rc<Chunk>,
                     usize,
                     (u32, u32),
                     Arc<AtomicBool>,
@@ -274,42 +274,42 @@ lazy_static! {
         );
         map
     };
-    static ref SIMPLE_OPS: Vec<Option<fn(&mut VM, &Chunk, usize) -> i32>> = {
+    static ref SIMPLE_OPS: Vec<Option<fn(&mut VM, Rc<Chunk>, usize) -> i32>> = {
         let mut vec = vec![None; 255];
-        vec[OpCode::Add as usize] = Some(VM::opcode_add as fn(&mut VM, &Chunk, usize) -> i32);
+        vec[OpCode::Add as usize] = Some(VM::opcode_add as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         vec[OpCode::Subtract as usize] =
-            Some(VM::opcode_subtract as fn(&mut VM, &Chunk, usize) -> i32);
+            Some(VM::opcode_subtract as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         vec[OpCode::Multiply as usize] =
-            Some(VM::opcode_multiply as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Divide as usize] = Some(VM::opcode_divide as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Eq as usize] = Some(VM::opcode_eq as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Gt as usize] = Some(VM::opcode_gt as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Lt as usize] = Some(VM::opcode_lt as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Print as usize] = Some(VM::opcode_print as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Drop as usize] = Some(VM::opcode_drop as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Clear as usize] = Some(VM::opcode_clear as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Dup as usize] = Some(VM::opcode_dup as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Over as usize] = Some(VM::opcode_over as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Swap as usize] = Some(VM::opcode_swap as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Rot as usize] = Some(VM::opcode_rot as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Depth as usize] = Some(VM::opcode_depth as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::IsNull as usize] = Some(VM::opcode_isnull as fn(&mut VM, &Chunk, usize) -> i32);
+            Some(VM::opcode_multiply as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Divide as usize] = Some(VM::opcode_divide as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Eq as usize] = Some(VM::opcode_eq as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Gt as usize] = Some(VM::opcode_gt as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Lt as usize] = Some(VM::opcode_lt as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Print as usize] = Some(VM::opcode_print as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Drop as usize] = Some(VM::opcode_drop as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Clear as usize] = Some(VM::opcode_clear as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Dup as usize] = Some(VM::opcode_dup as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Over as usize] = Some(VM::opcode_over as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Swap as usize] = Some(VM::opcode_swap as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Rot as usize] = Some(VM::opcode_rot as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Depth as usize] = Some(VM::opcode_depth as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::IsNull as usize] = Some(VM::opcode_isnull as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         vec[OpCode::DupIsNull as usize] =
-            Some(VM::opcode_dupisnull as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::IsList as usize] = Some(VM::opcode_islist as fn(&mut VM, &Chunk, usize) -> i32);
+            Some(VM::opcode_dupisnull as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::IsList as usize] = Some(VM::opcode_islist as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         vec[OpCode::IsCallable as usize] =
-            Some(VM::opcode_iscallable as fn(&mut VM, &Chunk, usize) -> i32);
+            Some(VM::opcode_iscallable as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         vec[OpCode::IsShiftable as usize] =
-            Some(VM::opcode_isshiftable as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Open as usize] = Some(VM::opcode_open as fn(&mut VM, &Chunk, usize) -> i32);
+            Some(VM::opcode_isshiftable as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Open as usize] = Some(VM::opcode_open as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         vec[OpCode::Readline as usize] =
-            Some(VM::opcode_readline as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Str as usize] = Some(VM::opcode_str as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Int as usize] = Some(VM::opcode_int as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Flt as usize] = Some(VM::opcode_flt as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Rand as usize] = Some(VM::opcode_rand as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Push as usize] = Some(VM::opcode_push as fn(&mut VM, &Chunk, usize) -> i32);
-        vec[OpCode::Pop as usize] = Some(VM::opcode_pop as fn(&mut VM, &Chunk, usize) -> i32);
+            Some(VM::opcode_readline as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Str as usize] = Some(VM::opcode_str as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Int as usize] = Some(VM::opcode_int as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Flt as usize] = Some(VM::opcode_flt as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Rand as usize] = Some(VM::opcode_rand as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Push as usize] = Some(VM::opcode_push as fn(&mut VM, Rc<Chunk>, usize) -> i32);
+        vec[OpCode::Pop as usize] = Some(VM::opcode_pop as fn(&mut VM, Rc<Chunk>, usize) -> i32);
         vec
     };
 }
@@ -376,9 +376,9 @@ impl VM {
     pub fn call_named_function<'a>(
         &mut self,
         scopes: &mut Vec<HashMap<String, Value>>,
-        global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        call_stack_chunks: &Vec<&Chunk>,
-        chunk: &'a Chunk,
+        global_functions: &mut HashMap<String, Rc<Chunk>>,
+        call_stack_chunks: &mut Vec<Rc<Chunk>>,
+        chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
@@ -388,11 +388,9 @@ impl VM {
         running: Arc<AtomicBool>,
         is_value_function: bool,
         plvs_index: u32,
-        call_chunk_rc: Rc<RefCell<Chunk>>,
+        call_chunk: Rc<Chunk>,
     ) -> bool {
-        let call_chunk = call_chunk_rc.borrow();
-        let mut new_call_stack_chunks = call_stack_chunks.clone();
-        new_call_stack_chunks.push(chunk);
+        call_stack_chunks.push(chunk.clone());
         if call_chunk.is_generator {
             let mut gen_args = Vec::new();
             let req_arg_count = call_chunk.req_arg_count;
@@ -402,7 +400,7 @@ impl VM {
                     req_arg_count,
                     if req_arg_count > 1 { "s" } else { "" }
                 );
-                print_error(chunk, i, &err_str);
+                print_error(chunk.clone(), i, &err_str);
                 return false;
             }
             let mut arg_count = call_chunk.arg_count;
@@ -416,15 +414,15 @@ impl VM {
                 gen_args.push(Value::Null);
             }
             let mut gen_call_stack_chunks = Vec::new();
-            for i in new_call_stack_chunks.iter() {
+            for i in call_stack_chunks.iter() {
                 gen_call_stack_chunks.push((*i).clone());
             }
             let gen_rr = Value::Generator(Rc::new(RefCell::new(GeneratorObject::new(
                 Rc::new(RefCell::new(HashMap::new())),
                 Rc::new(RefCell::new(Vec::new())),
                 0,
-                call_chunk.clone(),
-                Rc::new(RefCell::new(gen_call_stack_chunks)),
+                call_chunk,
+                gen_call_stack_chunks,
                 gen_args
             ))));
             self.stack.push(gen_rr);
@@ -443,8 +441,8 @@ impl VM {
             let res = self.run(
                 scopes,
                 global_functions,
-                &new_call_stack_chunks,
-                &call_chunk,
+                call_stack_chunks,
+                call_chunk.clone(),
                 chunk_functions,
                 0,
                 gen_global_vars.clone(),
@@ -461,6 +459,8 @@ impl VM {
                 prev_local_vars_stacks[plvs_len - 1] = self.local_var_stack.clone();
             }
 
+            call_stack_chunks.pop();
+
             if res == 0 {
                 return false;
             }
@@ -471,9 +471,9 @@ impl VM {
     pub fn call_string<'a>(
         &mut self,
         scopes: &mut Vec<HashMap<String, Value>>,
-        global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        call_stack_chunks: &Vec<&Chunk>,
-        chunk: &'a Chunk,
+        global_functions: &mut HashMap<String, Rc<Chunk>>,
+        call_stack_chunks: &mut Vec<Rc<Chunk>>,
+        chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
@@ -565,29 +565,27 @@ impl VM {
                             self.stack.push(nv);
                             pushed = true;
                         } else {
-                            let mut new_call_stack_chunks = call_stack_chunks.clone();
-                            new_call_stack_chunks.push(chunk);
+                            call_stack_chunks.push(chunk);
 
-                            let call_stack_function;
                             let global_function;
                             let mut call_chunk_opt = None;
 
-                            for sf in new_call_stack_chunks.iter().rev() {
-                                if sf.functions.borrow().contains_key(s) {
-                                    call_stack_function = sf.functions.borrow();
-                                    call_chunk_opt = Some(call_stack_function.get(s).unwrap());
+                            for sf in call_stack_chunks.iter().rev() {
+                                if sf.functions.contains_key(s) {
+                                    call_chunk_opt =
+                                        Some(sf.functions.get(s).unwrap());
                                     break;
                                 }
                             }
-                            if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s)
+                            if call_chunk_opt.is_none() && global_functions.contains_key(s)
                             {
-                                global_function = global_functions.borrow().get(s).unwrap().clone();
+                                global_function = global_functions.get(s).unwrap().clone();
                                 call_chunk_opt = Some(&global_function);
                             }
                             match call_chunk_opt {
                                 Some(call_chunk) => {
                                     let nv = Value::NamedFunction(
-                                        Rc::new(RefCell::new(call_chunk.clone())),
+                                        call_chunk.clone(),
                                         Rc::new(RefCell::new(Vec::new()))
                                     );
                                     self.stack.push(nv);
@@ -595,6 +593,7 @@ impl VM {
                                 }
                                 _ => {}
                             }
+                            call_stack_chunks.pop();
                         }
                     }
                 }
@@ -638,9 +637,8 @@ impl VM {
                     let import_chunk_opt = compiler.deserialise(s);
                     match import_chunk_opt {
                         Some(import_chunk) => {
-                            let mut global_functions_b = global_functions.borrow_mut();
-                            for (k, v) in import_chunk.functions.borrow().iter() {
-                                global_functions_b.insert(k.clone(), v.clone());
+                            for (k, v) in import_chunk.functions.iter() {
+                                global_functions.insert(k.clone(), v.clone());
                             }
                         }
                         None => {
@@ -654,26 +652,28 @@ impl VM {
                 }
             }
         } else {
-            let mut new_call_stack_chunks = call_stack_chunks.clone();
-            new_call_stack_chunks.push(chunk);
+            call_stack_chunks.push(chunk.clone());
 
-            let call_stack_function;
+            //let call_stack_function;
             let global_function;
             let mut call_chunk_opt = None;
 
-            for sf in new_call_stack_chunks.iter().rev() {
-                if sf.functions.borrow().contains_key(s) {
-                    call_stack_function = sf.functions.borrow();
-                    call_chunk_opt = Some(call_stack_function.get(s).unwrap());
-                    break;
+            {
+                for sf in call_stack_chunks.iter().rev() {
+                    if sf.functions.contains_key(s) {
+                        call_chunk_opt =
+                            Some(sf.functions.get(s).unwrap().clone());
+                        break;
+                    }
                 }
-            }
-            if call_chunk_opt.is_none() && global_functions.borrow().contains_key(s) {
-                global_function = global_functions.borrow().get(s).unwrap().clone();
-                call_chunk_opt = Some(&global_function);
+                if call_chunk_opt.is_none() && global_functions.contains_key(s) {
+                    global_function = global_functions.get(s).unwrap().clone();
+                    call_chunk_opt = Some(global_function);
+                }
             }
             match call_chunk_opt {
                 None => {
+                    call_stack_chunks.pop();
                     if is_implicit {
                         let value_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
                             s.to_string(),
@@ -686,12 +686,11 @@ impl VM {
                     }
                 }
                 Some(call_chunk) => {
-                    let call_chunk_rc = Rc::new(RefCell::new(call_chunk.clone()));
-                    return self.call_named_function(
+                    let res = self.call_named_function(
                         scopes,
                         global_functions,
                         call_stack_chunks,
-                        chunk,
+                        chunk.clone(),
                         chunk_functions,
                         0,
                         gen_global_vars.clone(),
@@ -701,8 +700,10 @@ impl VM {
                         running.clone(),
                         is_value_function,
                         plvs_index,
-                        call_chunk_rc,
+                        call_chunk.clone(),
                     );
+                    call_stack_chunks.pop();
+                    return res;
                 }
             }
         }
@@ -723,9 +724,9 @@ impl VM {
     pub fn call<'a>(
         &mut self,
         scopes: &mut Vec<HashMap<String, Value>>,
-        global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        call_stack_chunks: &Vec<&Chunk>,
-        chunk: &'a Chunk,
+        global_functions: &mut HashMap<String, Rc<Chunk>>,
+        call_stack_chunks: &mut Vec<Rc<Chunk>>,
+        chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         call_opcode: OpCode,
@@ -771,7 +772,6 @@ impl VM {
         {
             match function_rr {
                 Some(Value::Function(ref vf)) => {
-                    //s, vf_plvs_index, vf_plvs_ptr) => {
                     let af = vf.borrow();
                     let s = &af.f;
                     let vf_plvs_index = af.local_var_stack_index;
@@ -861,34 +861,30 @@ impl VM {
                                     );
                                 }
                             } else {
-                                let mut new_call_stack_chunks = call_stack_chunks.clone();
-                                new_call_stack_chunks.push(chunk);
+                                call_stack_chunks.push(chunk.clone());
 
-                                let call_stack_function;
                                 let global_function;
                                 let mut call_chunk_opt = None;
 
-                                for sf in new_call_stack_chunks.iter().rev() {
-                                    if sf.functions.borrow().contains_key(s) {
-                                        call_stack_function = sf.functions.borrow();
-                                        call_chunk_opt = Some(call_stack_function.get(s).unwrap());
+                                for sf in call_stack_chunks.iter().rev() {
+                                    if sf.functions.contains_key(s) {
+                                        call_chunk_opt =
+                                        Some(sf.functions.get(s).unwrap());
                                         break;
                                     }
                                 }
                                 if call_chunk_opt.is_none()
-                                    && global_functions.borrow().contains_key(s)
+                                    && global_functions.contains_key(s)
                                 {
                                     global_function =
-                                        global_functions.borrow().get(s).unwrap().clone();
-                                    call_chunk_opt = Some(&global_function);
+                                        global_functions.get(s).unwrap();
+                                    call_chunk_opt = Some(global_function);
                                 }
                                 match call_chunk_opt {
                                     Some(call_chunk) => {
-                                        let call_chunk_rc =
-                                            Rc::new(RefCell::new(call_chunk.clone()));
                                         let nv =
                                             Value::NamedFunction(
-                                                call_chunk_rc.clone(),
+                                                call_chunk.clone(),
                                                 Rc::new(RefCell::new(Vec::new()))
                                             );
                                         chunk_functions.borrow_mut().resize(
@@ -905,6 +901,7 @@ impl VM {
                                     }
                                     _ => {}
                                 }
+                                call_stack_chunks.pop();
                             }
                         }
                     }
@@ -959,7 +956,7 @@ impl VM {
                                     scopes,
                                     global_functions,
                                     call_stack_chunks,
-                                    chunk,
+                                    chunk.clone(),
                                     cfs.clone(),
                                     0,
                                     gen_global_vars.clone(),
@@ -1125,9 +1122,9 @@ impl VM {
     pub fn run<'a>(
         &mut self,
         scopes: &mut Vec<HashMap<String, Value>>,
-        global_functions: &mut RefCell<HashMap<String, Chunk>>,
-        call_stack_chunks: &Vec<&Chunk>,
-        chunk: &'a Chunk,
+        global_functions: &mut HashMap<String, Rc<Chunk>>,
+        call_stack_chunks: &mut Vec<Rc<Chunk>>,
+        chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         index: usize,
         mut gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
@@ -1137,19 +1134,18 @@ impl VM {
         running: Arc<AtomicBool>,
     ) -> usize {
         let mut i = index;
-        let data = chunk.data.borrow();
 
         let mut list_count = 0;
         let mut list_indexes = Vec::new();
         let mut list_types = Vec::new();
 
-        while i < data.len() {
+        while i < chunk.data.len() {
             if !running.load(Ordering::SeqCst) {
                 running.store(true, Ordering::SeqCst);
                 self.stack.clear();
                 return 0;
             }
-            let op = to_opcode(data[i]);
+            let op = to_opcode(chunk.data[i]);
             if self.debug {
                 eprintln!(">  Opcode: {:?}", op);
                 eprintln!(" > Stack:  {:?}", self.stack);
@@ -1158,7 +1154,7 @@ impl VM {
             let op_fn_opt = SIMPLE_OPS[op as usize];
             if !op_fn_opt.is_none() {
                 let op_fn = op_fn_opt.unwrap();
-                let res = op_fn(self, chunk, i);
+                let res = op_fn(self, chunk.clone(), i);
                 if res == 0 {
                     return 0;
                 } else {
@@ -1169,9 +1165,9 @@ impl VM {
             match op {
                 OpCode::AddConstant => {
                     i = i + 1;
-                    let i_upper = data[i];
+                    let i_upper = chunk.data[i];
                     i = i + 1;
-                    let i_lower = data[i];
+                    let i_lower = chunk.data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let mut done = false;
                     if chunk.has_constant_int(i2 as i32) {
@@ -1190,7 +1186,7 @@ impl VM {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Add as usize];
                         self.stack.push(chunk.get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
-                        let res = op_fn(self, chunk, i);
+                        let res = op_fn(self, chunk.clone(), i);
                         if res == 0 {
                             return 0;
                         } else {
@@ -1201,9 +1197,9 @@ impl VM {
                 }
                 OpCode::SubtractConstant => {
                     i = i + 1;
-                    let i_upper = data[i];
+                    let i_upper = chunk.data[i];
                     i = i + 1;
-                    let i_lower = data[i];
+                    let i_lower = chunk.data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let mut done = false;
                     if chunk.has_constant_int(i2 as i32) {
@@ -1222,7 +1218,7 @@ impl VM {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Subtract as usize];
                         self.stack.push(chunk.get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
-                        let res = op_fn(self, chunk, i);
+                        let res = op_fn(self, chunk.clone(), i);
                         if res == 0 {
                             return 0;
                         } else {
@@ -1233,9 +1229,9 @@ impl VM {
                 }
                 OpCode::MultiplyConstant => {
                     i = i + 1;
-                    let i_upper = data[i];
+                    let i_upper = chunk.data[i];
                     i = i + 1;
-                    let i_lower = data[i];
+                    let i_lower = chunk.data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let mut done = false;
                     if chunk.has_constant_int(i2 as i32) {
@@ -1254,7 +1250,7 @@ impl VM {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Multiply as usize];
                         self.stack.push(chunk.get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
-                        let res = op_fn(self, chunk, i);
+                        let res = op_fn(self, chunk.clone(), i);
                         if res == 0 {
                             return 0;
                         } else {
@@ -1265,9 +1261,9 @@ impl VM {
                 }
                 OpCode::DivideConstant => {
                     i = i + 1;
-                    let i_upper = data[i];
+                    let i_upper = chunk.data[i];
                     i = i + 1;
-                    let i_lower = data[i];
+                    let i_lower = chunk.data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let mut done = false;
                     if chunk.has_constant_int(i2 as i32) {
@@ -1286,7 +1282,7 @@ impl VM {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Divide as usize];
                         self.stack.push(chunk.get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
-                        let res = op_fn(self, chunk, i);
+                        let res = op_fn(self, chunk.clone(), i);
                         if res == 0 {
                             return 0;
                         } else {
@@ -1297,9 +1293,9 @@ impl VM {
                 }
                 OpCode::EqConstant => {
                     i = i + 1;
-                    let i_upper = data[i];
+                    let i_upper = chunk.data[i];
                     i = i + 1;
-                    let i_lower = data[i];
+                    let i_lower = chunk.data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let n = chunk.get_constant_int(i2 as i32);
 
@@ -1321,7 +1317,7 @@ impl VM {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Eq as usize];
                         self.stack.push(chunk.get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
-                        let res = op_fn(self, chunk, i);
+                        let res = op_fn(self, chunk.clone(), i);
                         if res == 0 {
                             return 0;
                         }
@@ -1390,9 +1386,9 @@ impl VM {
                     // todo: The logic here is awkward, and needs
                     // reviewing.
                     i = i + 1;
-                    let i_upper = data[i];
+                    let i_upper = chunk.data[i];
                     i = i + 1;
-                    let i_lower = data[i];
+                    let i_lower = chunk.data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value_rr = chunk.get_constant(i2 as i32);
                     let mut copy = false;
@@ -1408,7 +1404,8 @@ impl VM {
                         match value_rr {
                             Value::String(ref sp) => {
                                 let s = &sp.borrow().s;
-                                match chunk_functions.borrow().get(i2 as usize) {
+                                let cfb = chunk_functions.borrow();
+                                match cfb.get(i2 as usize) {
                                     Some(CFPair { ffn: cv_value_rr, cfs: _ }) => match cv_value_rr {
                                         Value::String(_) => {
                                             self.stack.push(Value::Function(Rc::new(
@@ -1443,7 +1440,8 @@ impl VM {
                         chunk_functions
                             .borrow_mut()
                             .insert(i2 as usize, cfpair);
-                        let cv_value_rr = chunk_functions.borrow().get(i2 as usize).unwrap().clone();
+                        let cfb = chunk_functions.borrow();
+                        let cv_value_rr = cfb.get(i2 as usize).unwrap().clone();
                         match cv_value_rr {
                             CFPair { ffn: Value::String(sp), cfs: _ } => {
                                 self.stack.push(Value::Function(Rc::new(RefCell::new(
@@ -1462,9 +1460,9 @@ impl VM {
                 }
                 OpCode::Constant => {
                     i = i + 1;
-                    let i_upper = data[i];
+                    let i_upper = chunk.data[i];
                     i = i + 1;
-                    let i_lower = data[i];
+                    let i_lower = chunk.data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let mut inst = false;
 
@@ -1475,8 +1473,8 @@ impl VM {
                     }
 
                     {
-                        let cvb = chunk_functions.borrow();
-                        let iv = cvb.get(i2 as usize);
+                        let cfb = chunk_functions.borrow();
+                        let iv = cfb.get(i2 as usize);
                         if self.debug {
                             eprintln!("CFP: {:?}", iv);
                         }
@@ -1521,9 +1519,9 @@ impl VM {
                     self.local_var_stack = Rc::new(RefCell::new(vec![]));
 
                     i = i + 1;
-                    let i_upper = data[i];
+                    let i_upper = chunk.data[i];
                     i = i + 1;
-                    let i_lower = data[i];
+                    let i_lower = chunk.data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
 
                     let (mut line, mut col) = line_col;
@@ -1548,7 +1546,7 @@ impl VM {
                                 scopes,
                                 global_functions,
                                 call_stack_chunks,
-                                chunk,
+                                chunk.clone(),
                                 chunk_functions.clone(),
                                 i,
                                 op,
@@ -1604,7 +1602,7 @@ impl VM {
                         scopes,
                         global_functions,
                         call_stack_chunks,
-                        chunk,
+                        chunk.clone(),
                         chunk_functions.clone(),
                         i,
                         op,
@@ -1626,7 +1624,7 @@ impl VM {
                 }
                 OpCode::GLVCall => {
                     i = i + 1;
-                    let var_index: u8 = data[i].try_into().unwrap();
+                    let var_index: u8 = chunk.data[i].try_into().unwrap();
 
                     let function_rr;
                     match gen_local_vars_stack {
@@ -1664,7 +1662,7 @@ impl VM {
                         scopes,
                         global_functions,
                         call_stack_chunks,
-                        chunk,
+                        chunk.clone(),
                         chunk_functions.clone(),
                         i,
                         OpCode::Call,
@@ -1691,7 +1689,7 @@ impl VM {
                     }
 
                     i = i + 1;
-                    let var_index: u8 = data[i].try_into().unwrap();
+                    let var_index: u8 = chunk.data[i].try_into().unwrap();
                     let value_rr = self.stack.pop().unwrap();
 
                     match gen_local_vars_stack {
@@ -1715,7 +1713,7 @@ impl VM {
                 }
                 OpCode::GetLocalVar => {
                     i = i + 1;
-                    let var_index: u8 = data[i].try_into().unwrap();
+                    let var_index: u8 = chunk.data[i].try_into().unwrap();
 
                     match gen_local_vars_stack {
                         Some(ref mut glvs) => {
@@ -1734,7 +1732,7 @@ impl VM {
                 }
                 OpCode::GLVShift => {
                     i = i + 1;
-                    let var_index: u8 = data[i].try_into().unwrap();
+                    let var_index: u8 = chunk.data[i].try_into().unwrap();
 
                     match gen_local_vars_stack {
                         Some(ref mut glvs) => {
@@ -1743,7 +1741,7 @@ impl VM {
                                 scopes,
                                 global_functions,
                                 prev_local_vars_stacks,
-                                chunk,
+                                chunk.clone(),
                                 i,
                                 line_col,
                                 running.clone(),
@@ -1761,7 +1759,7 @@ impl VM {
                                 scopes,
                                 global_functions,
                                 prev_local_vars_stacks,
-                                chunk,
+                                chunk.clone(),
                                 i,
                                 line_col,
                                 running.clone(),
@@ -1909,9 +1907,9 @@ impl VM {
                     let value_rr = self.stack.pop().unwrap();
 
                     i = i + 1;
-                    let i1: usize = data[i].try_into().unwrap();
+                    let i1: usize = chunk.data[i].try_into().unwrap();
                     i = i + 1;
-                    let i2: usize = data[i].try_into().unwrap();
+                    let i2: usize = chunk.data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
 
                     match value_rr {
@@ -1940,9 +1938,9 @@ impl VM {
                     let value_rr = self.stack.pop().unwrap();
 
                     i = i + 1;
-                    let i1: usize = data[i].try_into().unwrap();
+                    let i1: usize = chunk.data[i].try_into().unwrap();
                     i = i + 1;
-                    let i2: usize = data[i].try_into().unwrap();
+                    let i2: usize = chunk.data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
 
                     match value_rr {
@@ -1969,15 +1967,15 @@ impl VM {
                     }
 
                     i = i + 1;
-                    let i1: usize = data[i].try_into().unwrap();
+                    let i1: usize = chunk.data[i].try_into().unwrap();
                     i = i + 1;
-                    let i2: usize = data[i].try_into().unwrap();
+                    let i2: usize = chunk.data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
 
                     i = i + 1;
-                    let i_upper = data[i];
+                    let i_upper = chunk.data[i];
                     i = i + 1;
-                    let i_lower = data[i];
+                    let i_lower = chunk.data[i];
                     let i3 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
                     let value_rr = self.stack.last().unwrap();
                     if chunk.has_constant_int(i3 as i32) {
@@ -2004,7 +2002,7 @@ impl VM {
                         scopes,
                         global_functions,
                         prev_local_vars_stacks,
-                        chunk,
+                        chunk.clone(),
                         i,
                         line_col,
                         running.clone(),
@@ -2024,17 +2022,17 @@ impl VM {
                 }
                 OpCode::Jump => {
                     i = i + 1;
-                    let i1: usize = data[i].try_into().unwrap();
+                    let i1: usize = chunk.data[i].try_into().unwrap();
                     i = i + 1;
-                    let i2: usize = data[i].try_into().unwrap();
+                    let i2: usize = chunk.data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
                     i = i + jmp_len;
                 }
                 OpCode::JumpR => {
                     i = i + 1;
-                    let i1: usize = data[i].try_into().unwrap();
+                    let i1: usize = chunk.data[i].try_into().unwrap();
                     i = i + 1;
-                    let i2: usize = data[i].try_into().unwrap();
+                    let i2: usize = chunk.data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
                     i = i - jmp_len;
                 }
@@ -2117,12 +2115,12 @@ impl VM {
         }
 
         if list_count > 0 {
-            print_error(chunk, i, "unterminated list start");
+            print_error(chunk.clone(), i, "unterminated list start");
             return 0;
         }
 
         if self.print_stack {
-            self.print_stack(chunk, i, scopes, global_functions, running, false);
+            self.print_stack(chunk.clone(), i, scopes, global_functions, running, false);
             self.stack.clear();
         }
 
@@ -2137,34 +2135,32 @@ impl VM {
     /// functions.
     pub fn interpret(
         &mut self,
-        global_functions: HashMap<String, Chunk>,
+        global_functions: &mut HashMap<String, Rc<Chunk>>,
         variables: HashMap<String, Value>,
         fh: &mut Box<dyn BufRead>,
         running: Arc<AtomicBool>,
         name: &str,
     ) -> (
-        Option<Chunk>,
-        HashMap<String, Value>,
-        Vec<RefCell<HashMap<String, Chunk>>>,
+        Option<Rc<Chunk>>,
+        HashMap<String, Value>
     ) {
         let mut compiler = Compiler::new(self.debug);
         let chunk_opt = compiler.compile(fh, name);
         match chunk_opt {
-            None => return (None, HashMap::new(), Vec::new()),
+            None => return (None, HashMap::new()),
             _ => {}
         }
-        let chunk = chunk_opt.unwrap();
-        let mut global_functions_rr = RefCell::new(global_functions);
-        let call_stack_chunks = vec![];
+        let chunk = Rc::new(chunk_opt.unwrap());
+        let mut call_stack_chunks = vec![];
         let mut scopes = vec![variables];
         let chunk_functions = Rc::new(RefCell::new(Vec::new()));
         let mut prev_local_vars_stacks = vec![];
 
         self.run(
             &mut scopes,
-            &mut global_functions_rr,
-            &call_stack_chunks,
-            &chunk,
+            global_functions,
+            &mut call_stack_chunks,
+            chunk.clone(),
             chunk_functions,
             0,
             None,
@@ -2180,6 +2176,6 @@ impl VM {
             Some(scope) => scope.clone(),
             _ => HashMap::new(),
         };
-        return (Some(chunk), updated_variables, vec![global_functions_rr]);
+        return (Some(chunk), updated_variables);
     }
 }

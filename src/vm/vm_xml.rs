@@ -192,7 +192,7 @@ fn convert_to_xml(v: &Value) -> Option<String> {
 impl VM {
     /// Takes an XML string, converts it into a hash, and puts the
     /// result onto the stack.
-    pub fn core_from_xml(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_from_xml(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "from-xml requires one argument");
             return 0;
@@ -249,7 +249,7 @@ impl VM {
     /// Takes a hash that is the result of calling `from-xml`, converts
     /// it into a string representation, and puts the result onto the
     /// stack.
-    pub fn core_to_xml(&mut self, chunk: &Chunk, i: usize) -> i32 {
+    pub fn core_to_xml(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "to-xml requires one argument");
             return 0;

@@ -448,7 +448,7 @@ fn main() {
             let chunk = Rc::new(chunk_opt.unwrap());
             let mut vm = VM::new(true, debug);
             let mut scopes = Vec::new();
-            scopes.push(HashMap::new());
+            scopes.push(Rc::new(RefCell::new(HashMap::new())));
             let mut functions = Vec::new();
             if !matches.opt_present("no-rt") {
                 let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
@@ -476,7 +476,6 @@ fn main() {
                 chunk,
                 Rc::new(RefCell::new(chunk_functions)),
                 0,
-                None,
                 None,
                 &mut prev_local_vars_stacks,
                 (0, 0),
@@ -550,11 +549,11 @@ fn main() {
                     }
                 }
 
-                let variables = HashMap::new();
+                let variables = Rc::new(RefCell::new(HashMap::new()));
                 let running = Arc::new(AtomicBool::new(true));
                 vm.interpret(
                     &mut global_functions,
-                    variables.clone(),
+                    variables,
                     &mut bufread,
                     running.clone(),
                     "(main)",
@@ -564,7 +563,7 @@ fn main() {
     } else {
         let mut compiler = Compiler::new(debug);
         let mut global_functions = HashMap::new();
-        let mut variables = HashMap::new();
+        let variables = Rc::new(RefCell::new(HashMap::new()));
 
         if !matches.opt_present("no-rt") {
             let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
@@ -597,16 +596,13 @@ fn main() {
                 match file_res {
                     Ok(file) => {
                         let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                        let (chunk_opt, updated_variables) = vm.interpret(
+                        let chunk_opt = vm.interpret(
                             &mut global_functions,
                             variables.clone(),
                             &mut bufread,
                             running.clone(),
                             ".coshrc",
                         );
-                        for (k, v) in updated_variables.iter() {
-                            variables.insert(k.clone(), v.clone());
-                        }
                         match chunk_opt {
                             Some(chunk) => {
                                 for (k, v) in chunk.functions.iter() {
@@ -684,16 +680,13 @@ fn main() {
 
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                     rl.add_history_entry(line.as_str());
-                    let (chunk_opt, updated_variables) = vm.interpret(
+                    let chunk_opt = vm.interpret(
                         &mut global_functions,
                         variables.clone(),
                         &mut bufread,
                         running.clone(),
                         "(main)",
                     );
-                    for (k, v) in updated_variables.iter() {
-                        variables.insert(k.clone(), v.clone());
-                    }
                     match chunk_opt {
                         Some(chunk) => {
                             for (k, v) in chunk.functions.iter() {

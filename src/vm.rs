@@ -192,7 +192,7 @@ lazy_static! {
         &'static str,
         fn(
             &mut VM,
-            &mut Vec<HashMap<String, Value>>,
+            &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
             &mut HashMap<String, Rc<Chunk>>,
             &mut Vec<Rc<RefCell<Vec<Value>>>>,
             Rc<Chunk>,
@@ -207,7 +207,7 @@ lazy_static! {
             VM::opcode_shift
                 as fn(
                     &mut VM,
-                    &mut Vec<HashMap<String, Value>>,
+                    &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     Rc<Chunk>,
@@ -221,7 +221,7 @@ lazy_static! {
             VM::core_gnth
                 as fn(
                     &mut VM,
-                    &mut Vec<HashMap<String, Value>>,
+                    &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     Rc<Chunk>,
@@ -235,7 +235,7 @@ lazy_static! {
             VM::core_pipe
                 as fn(
                     &mut VM,
-                    &mut Vec<HashMap<String, Value>>,
+                    &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     Rc<Chunk>,
@@ -249,7 +249,7 @@ lazy_static! {
             VM::core_shift_all
                 as fn(
                     &mut VM,
-                    &mut Vec<HashMap<String, Value>>,
+                    &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     Rc<Chunk>,
@@ -263,7 +263,7 @@ lazy_static! {
             VM::core_join
                 as fn(
                     &mut VM,
-                    &mut Vec<HashMap<String, Value>>,
+                    &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<Chunk>>,
                     &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     Rc<Chunk>,
@@ -375,13 +375,12 @@ impl VM {
 
     pub fn call_named_function<'a>(
         &mut self,
-        scopes: &mut Vec<HashMap<String, Value>>,
+        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<Chunk>>,
         call_stack_chunks: &mut Vec<Rc<Chunk>>,
         chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
-        gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
@@ -428,7 +427,7 @@ impl VM {
             self.stack.push(gen_rr);
         } else {
             if call_chunk.has_vars {
-                scopes.push(HashMap::new());
+                scopes.push(Rc::new(RefCell::new(HashMap::new())));
             }
 
             if is_value_function {
@@ -445,7 +444,6 @@ impl VM {
                 call_chunk.clone(),
                 chunk_functions,
                 0,
-                gen_global_vars.clone(),
                 gen_local_vars_stack.clone(),
                 prev_local_vars_stacks,
                 line_col,
@@ -470,13 +468,12 @@ impl VM {
 
     pub fn call_string<'a>(
         &mut self,
-        scopes: &mut Vec<HashMap<String, Value>>,
+        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<Chunk>>,
         call_stack_chunks: &mut Vec<Rc<Chunk>>,
         chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
-        gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
@@ -693,7 +690,6 @@ impl VM {
                         chunk.clone(),
                         chunk_functions,
                         0,
-                        gen_global_vars.clone(),
                         gen_local_vars_stack.clone(),
                         prev_local_vars_stacks,
                         line_col,
@@ -723,7 +719,7 @@ impl VM {
     /// called).
     pub fn call<'a>(
         &mut self,
-        scopes: &mut Vec<HashMap<String, Value>>,
+        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<Chunk>>,
         call_stack_chunks: &mut Vec<Rc<Chunk>>,
         chunk: Rc<Chunk>,
@@ -733,7 +729,6 @@ impl VM {
         mut function_rr: Option<Value>,
         function_str: Option<&str>,
         function_str_index: i32,
-        gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
@@ -959,7 +954,6 @@ impl VM {
                                     chunk.clone(),
                                     cfs.clone(),
                                     0,
-                                    gen_global_vars.clone(),
                                     gen_local_vars_stack.clone(),
                                     prev_local_vars_stacks,
                                     line_col,
@@ -1002,7 +996,6 @@ impl VM {
                     chunk,
                     Rc::new(RefCell::new(Vec::new())),
                     0,
-                    gen_global_vars.clone(),
                     gen_local_vars_stack.clone(),
                     prev_local_vars_stacks,
                     line_col,
@@ -1065,7 +1058,6 @@ impl VM {
                     chunk,
                     cfs.clone(),
                     0,
-                    gen_global_vars.clone(),
                     gen_local_vars_stack.clone(),
                     prev_local_vars_stacks,
                     line_col,
@@ -1087,7 +1079,6 @@ impl VM {
                     chunk,
                     Rc::new(RefCell::new(Vec::new())),
                     0,
-                    gen_global_vars.clone(),
                     gen_local_vars_stack.clone(),
                     prev_local_vars_stacks,
                     line_col,
@@ -1121,13 +1112,12 @@ impl VM {
     /// specified instruction index.
     pub fn run<'a>(
         &mut self,
-        scopes: &mut Vec<HashMap<String, Value>>,
+        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<Chunk>>,
         call_stack_chunks: &mut Vec<Rc<Chunk>>,
         chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         index: usize,
-        mut gen_global_vars: Option<Rc<RefCell<HashMap<String, Value>>>>,
         mut gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
@@ -1554,7 +1544,6 @@ impl VM {
                                 Some(sp),
                                 (i2 as u32).try_into().unwrap(),
                                 None,
-                                None,
                                 prev_local_vars_stacks,
                                 (line, col),
                                 running.clone(),
@@ -1609,7 +1598,6 @@ impl VM {
                         Some(function_rr),
                         None,
                         -1,
-                        None,
                         None,
                         prev_local_vars_stacks,
                         (line, col),
@@ -1669,7 +1657,6 @@ impl VM {
                         Some(function_rr),
                         None,
                         -1,
-                        None,
                         None,
                         prev_local_vars_stacks,
                         (line, col),
@@ -1799,17 +1786,11 @@ impl VM {
                         }
                     }
 
-                    match gen_global_vars {
-                        Some(ref mut ggv) => {
-                            ggv.borrow_mut().insert(var_name.to_string(), Value::Int(0));
-                        }
-                        _ => {
-                            scopes
-                                .last_mut()
-                                .unwrap()
-                                .insert(var_name.to_string(), Value::Int(0));
-                        }
-                    }
+                    scopes
+                        .last_mut()
+                        .unwrap()
+                        .borrow_mut()
+                        .insert(var_name.to_string(), Value::Int(0));
                 }
                 OpCode::SetVar => {
                     if self.stack.len() < 2 {
@@ -1825,23 +1806,11 @@ impl VM {
                             let mut done = false;
                             let s = &sp.borrow().s;
 
-                            match gen_global_vars {
-                                Some(ref mut ggv) => {
-                                    if ggv.borrow().contains_key(s) {
-                                        ggv.borrow_mut().insert(s.clone(), value_rr.clone());
-                                        done = true;
-                                    }
-                                }
-                                _ => {}
-                            }
-
-                            if !done {
-                                for scope in scopes.iter_mut().rev() {
-                                    if scope.contains_key(s) {
-                                        scope.insert(s.to_string(), value_rr.clone());
-                                        done = true;
-                                        break;
-                                    }
+                            for scope in scopes.iter_mut().rev() {
+                                if scope.borrow().contains_key(s) {
+                                    scope.borrow_mut().insert(s.to_string(), value_rr.clone());
+                                    done = true;
+                                    break;
                                 }
                             }
 
@@ -1868,23 +1837,11 @@ impl VM {
                             let mut done = false;
                             let s = &sp.borrow().s;
 
-                            match gen_global_vars {
-                                Some(ref mut ggv) => {
-                                    if ggv.borrow().contains_key(s) {
-                                        self.stack.push(ggv.borrow().get(s).unwrap().clone());
-                                        done = true;
-                                    }
-                                }
-                                _ => {}
-                            }
-
-                            if !done {
-                                for scope in scopes.iter().rev() {
-                                    if scope.contains_key(s) {
-                                        self.stack.push(scope.get(s).unwrap().clone());
-                                        done = true;
-                                        break;
-                                    }
+                            for scope in scopes.iter().rev() {
+                                if scope.borrow().contains_key(s) {
+                                    self.stack.push(scope.borrow().get(s).unwrap().clone());
+                                    done = true;
+                                    break;
                                 }
                             }
                             if !done {
@@ -2012,11 +1969,9 @@ impl VM {
                     }
                 }
                 OpCode::Yield => {
-                    match gen_global_vars {
-                        None => {
-                            eprintln!("yield without generator");
-                        }
-                        _ => {}
+                    if !chunk.is_generator {
+                        eprintln!("error: yield without generator");
+                        return 0;
                     }
                     return i + 1;
                 }
@@ -2136,18 +2091,15 @@ impl VM {
     pub fn interpret(
         &mut self,
         global_functions: &mut HashMap<String, Rc<Chunk>>,
-        variables: HashMap<String, Value>,
+        variables: Rc<RefCell<HashMap<String, Value>>>,
         fh: &mut Box<dyn BufRead>,
         running: Arc<AtomicBool>,
         name: &str,
-    ) -> (
-        Option<Rc<Chunk>>,
-        HashMap<String, Value>
-    ) {
+    ) -> Option<Rc<Chunk>> {
         let mut compiler = Compiler::new(self.debug);
         let chunk_opt = compiler.compile(fh, name);
         match chunk_opt {
-            None => return (None, HashMap::new()),
+            None => return None,
             _ => {}
         }
         let chunk = Rc::new(chunk_opt.unwrap());
@@ -2164,7 +2116,6 @@ impl VM {
             chunk_functions,
             0,
             None,
-            None,
             &mut prev_local_vars_stacks,
             (0, 0),
             running.clone(),
@@ -2172,10 +2123,6 @@ impl VM {
         if self.print_stack {
             self.stack.clear();
         }
-        let updated_variables = match scopes.first() {
-            Some(scope) => scope.clone(),
-            _ => HashMap::new(),
-        };
-        return (Some(chunk), updated_variables);
+        return Some(chunk);
     }
 }

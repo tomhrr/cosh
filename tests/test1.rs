@@ -712,3 +712,9 @@ fn nth_bounds_test2() {
     basic_error_test("10 range; take-all; 10 15 nth!",
                      "1:27: nth! index is out of bounds");
 }
+
+#[test]
+fn anon_fn_var_test() {
+    basic_test("3 range; [drop; x var; 3 x !; x @] map;",
+               "(\n    3\n    3\n    3\n)");
+}

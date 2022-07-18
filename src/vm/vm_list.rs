@@ -285,8 +285,8 @@ impl VM {
                         self.stack.push(Value::Null);
                     } else {
                         scopes.push(global_vars);
-			prev_local_vars_stacks.push(self.local_var_stack.clone());
-			self.local_var_stack = local_vars_stack;
+                        prev_local_vars_stacks.push(self.local_var_stack.clone());
+                        self.local_var_stack = local_vars_stack;
                         let res = self.run(
                             scopes,
                             global_functions,

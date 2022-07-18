@@ -381,7 +381,6 @@ impl VM {
         chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
-        gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -444,7 +443,6 @@ impl VM {
                 call_chunk.clone(),
                 chunk_functions,
                 0,
-                gen_local_vars_stack.clone(),
                 prev_local_vars_stacks,
                 line_col,
                 running.clone(),
@@ -474,7 +472,6 @@ impl VM {
         chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
-        gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -690,7 +687,6 @@ impl VM {
                         chunk.clone(),
                         chunk_functions,
                         0,
-                        gen_local_vars_stack.clone(),
                         prev_local_vars_stacks,
                         line_col,
                         running.clone(),
@@ -729,7 +725,6 @@ impl VM {
         mut function_rr: Option<Value>,
         function_str: Option<&str>,
         function_str_index: i32,
-        gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -954,7 +949,6 @@ impl VM {
                                     chunk.clone(),
                                     cfs.clone(),
                                     0,
-                                    gen_local_vars_stack.clone(),
                                     prev_local_vars_stacks,
                                     line_col,
                                     running.clone(),
@@ -996,7 +990,6 @@ impl VM {
                     chunk,
                     Rc::new(RefCell::new(Vec::new())),
                     0,
-                    gen_local_vars_stack.clone(),
                     prev_local_vars_stacks,
                     line_col,
                     running.clone(),
@@ -1058,7 +1051,6 @@ impl VM {
                     chunk,
                     cfs.clone(),
                     0,
-                    gen_local_vars_stack.clone(),
                     prev_local_vars_stacks,
                     line_col,
                     running.clone(),
@@ -1079,7 +1071,6 @@ impl VM {
                     chunk,
                     Rc::new(RefCell::new(Vec::new())),
                     0,
-                    gen_local_vars_stack.clone(),
                     prev_local_vars_stacks,
                     line_col,
                     running.clone(),
@@ -1118,7 +1109,6 @@ impl VM {
         chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         index: usize,
-        mut gen_local_vars_stack: Option<Rc<RefCell<Vec<Value>>>>,
         prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -1543,7 +1533,6 @@ impl VM {
                                 None,
                                 Some(sp),
                                 (i2 as u32).try_into().unwrap(),
-                                None,
                                 prev_local_vars_stacks,
                                 (line, col),
                                 running.clone(),
@@ -1598,7 +1587,6 @@ impl VM {
                         Some(function_rr),
                         None,
                         -1,
-                        None,
                         prev_local_vars_stacks,
                         (line, col),
                         running.clone(),
@@ -1614,19 +1602,11 @@ impl VM {
                     i = i + 1;
                     let var_index: u8 = chunk.data[i].try_into().unwrap();
 
-                    let function_rr;
-                    match gen_local_vars_stack {
-                        Some(ref mut glvs) => {
-                            function_rr = glvs.borrow()[var_index as usize].clone();
-                        }
-                        _ => {
-                            function_rr = self
-                                .local_var_stack
-                                .borrow()
-                                .index(var_index as usize)
-                                .clone();
-                        }
-                    }
+                    let function_rr = self
+                        .local_var_stack
+                        .borrow()
+                        .index(var_index as usize)
+                        .clone();
 
                     prev_local_vars_stacks.push(self.local_var_stack.clone());
                     self.local_var_stack = Rc::new(RefCell::new(vec![]));
@@ -1657,7 +1637,6 @@ impl VM {
                         Some(function_rr),
                         None,
                         -1,
-                        None,
                         prev_local_vars_stacks,
                         (line, col),
                         running.clone(),
@@ -1679,92 +1658,48 @@ impl VM {
                     let var_index: u8 = chunk.data[i].try_into().unwrap();
                     let value_rr = self.stack.pop().unwrap();
 
-                    match gen_local_vars_stack {
-                        Some(ref mut glvs) => {
-                            if var_index == (glvs.borrow().len() as u8) {
-                                glvs.borrow_mut().push(value_rr);
-                            } else {
-                                glvs.borrow_mut()[var_index as usize] = value_rr;
-                            }
-                        }
-                        _ => {
-                            if var_index == (self.local_var_stack.borrow().len() as u8) {
-                                self.local_var_stack.borrow_mut().push(value_rr);
-                            } else {
-                                let lvs_b = &mut self.local_var_stack.borrow_mut();
-                                let existing_value_rr_ptr = lvs_b.index_mut(var_index as usize);
-                                *existing_value_rr_ptr = value_rr;
-                            }
-                        }
+                    if var_index == (self.local_var_stack.borrow().len() as u8) {
+                        self.local_var_stack.borrow_mut().push(value_rr);
+                    } else {
+                        let lvs_b = &mut self.local_var_stack.borrow_mut();
+                        let existing_value_rr_ptr = lvs_b.index_mut(var_index as usize);
+                        *existing_value_rr_ptr = value_rr;
                     }
                 }
                 OpCode::GetLocalVar => {
                     i = i + 1;
                     let var_index: u8 = chunk.data[i].try_into().unwrap();
 
-                    match gen_local_vars_stack {
-                        Some(ref mut glvs) => {
-                            let value_rr = glvs.borrow()[var_index as usize].clone();
-                            self.stack.push(value_rr);
-                        }
-                        _ => {
-                            let value_rr = self
-                                .local_var_stack
-                                .borrow()
-                                .index(var_index as usize)
-                                .clone();
-                            self.stack.push(value_rr);
-                        }
-                    }
+                    let value_rr = self
+                        .local_var_stack
+                        .borrow()
+                        .index(var_index as usize)
+                        .clone();
+                    self.stack.push(value_rr);
                 }
                 OpCode::GLVShift => {
                     i = i + 1;
                     let var_index: u8 = chunk.data[i].try_into().unwrap();
 
-                    match gen_local_vars_stack {
-                        Some(ref mut glvs) => {
-                            let pt = &mut glvs.borrow_mut()[var_index as usize];
-                            let i2 = self.opcode_shift_inner(
-                                scopes,
-                                global_functions,
-                                prev_local_vars_stacks,
-                                chunk.clone(),
-                                i,
-                                line_col,
-                                running.clone(),
-                                pt
-                            );
-                            if i2 == 0 {
-                                return 0;
-                            }
-                        }
-                        _ => {
-                            let mut pt = self.local_var_stack
-                                .borrow().index(var_index as
-                                usize).clone();
-                            let i2 = self.opcode_shift_inner(
-                                scopes,
-                                global_functions,
-                                prev_local_vars_stacks,
-                                chunk.clone(),
-                                i,
-                                line_col,
-                                running.clone(),
-                                &mut pt
-                            );
-                            if i2 == 0 {
-                                return 0;
-                            }
-                        }
+                    let mut pt = self.local_var_stack
+                        .borrow().index(var_index as
+                        usize).clone();
+                    let i2 = self.opcode_shift_inner(
+                        scopes,
+                        global_functions,
+                        prev_local_vars_stacks,
+                        chunk.clone(),
+                        i,
+                        line_col,
+                        running.clone(),
+                        &mut pt
+                    );
+                    if i2 == 0 {
+                        return 0;
                     }
                 }
-                OpCode::PopLocalVar => match gen_local_vars_stack {
-                    Some(ref mut glvs) => {
-                        glvs.borrow_mut().pop();
-                    }
-                    _ => {
-                        self.local_var_stack.borrow_mut().pop();
-                    }
+                OpCode::PopLocalVar => {
+                    self.local_var_stack.borrow_mut().pop();
                 },
                 OpCode::Var => {
                     if self.stack.len() < 1 {
@@ -2115,7 +2050,6 @@ impl VM {
             chunk.clone(),
             chunk_functions,
             0,
-            None,
             &mut prev_local_vars_stacks,
             (0, 0),
             running.clone(),

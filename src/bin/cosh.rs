@@ -476,7 +476,6 @@ fn main() {
                 chunk,
                 Rc::new(RefCell::new(chunk_functions)),
                 0,
-                None,
                 &mut prev_local_vars_stacks,
                 (0, 0),
                 running.clone(),

@@ -279,8 +279,8 @@ impl VM {
                         return lines_to_print;
                     }
                 }
-                Value::Function(f) => {
-                    let fs = &f.borrow().f;
+                Value::Function(f, _) => {
+                    let fs = &f.borrow();
                     let s = format!("{{Function: {}}}", fs);
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);

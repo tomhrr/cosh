@@ -15,7 +15,7 @@ use lazy_static::lazy_static;
 use sysinfo::{System, SystemExt};
 
 use chunk::{
-    print_error, AnonymousFunction, CFPair, Chunk, GeneratorObject, StringPair, Value, ValueSD,
+    print_error, CFPair, Chunk, GeneratorObject, StringPair, Value, ValueSD,
 };
 use compiler::Compiler;
 use opcode::{to_opcode, OpCode};
@@ -385,7 +385,7 @@ impl VM {
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
         is_value_function: bool,
-        plvs_index: u32,
+        plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         call_chunk: Rc<Chunk>,
     ) -> bool {
         call_stack_chunks.push(chunk.clone());
@@ -430,8 +430,7 @@ impl VM {
             }
 
             if is_value_function {
-                self.local_var_stack =
-                    (*(prev_local_vars_stacks.get(plvs_index as usize).unwrap())).clone();
+                self.local_var_stack = plvs_stack.unwrap();
             } else if call_chunk.nested {
                 self.local_var_stack = (*(prev_local_vars_stacks.last().unwrap())).clone();
             }
@@ -448,9 +447,7 @@ impl VM {
                 running.clone(),
             );
 
-            if is_value_function {
-                prev_local_vars_stacks[plvs_index as usize] = self.local_var_stack.clone();
-            } else if call_chunk.nested {
+            if call_chunk.nested {
                 let plvs_len = prev_local_vars_stacks.len();
                 prev_local_vars_stacks[plvs_len - 1] = self.local_var_stack.clone();
             }
@@ -476,7 +473,7 @@ impl VM {
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
         is_value_function: bool,
-        plvs_index: u32,
+        plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         is_implicit: bool,
         s: &str,
     ) -> bool {
@@ -691,7 +688,7 @@ impl VM {
                         line_col,
                         running.clone(),
                         is_value_function,
-                        plvs_index,
+                        plvs_stack,
                         call_chunk.clone(),
                     );
                     call_stack_chunks.pop();
@@ -757,29 +754,15 @@ impl VM {
         // that the correct local variable stack is still available,
         // and store that value so the right stack is used later on.
         let mut is_value_function = false;
-        let mut plvs_index = 0;
+        let mut plvs_stack = None;
         let mut value_function_str = "".to_owned();
         {
             match function_rr {
-                Some(Value::Function(ref vf)) => {
-                    let af = vf.borrow();
-                    let s = &af.f;
-                    let vf_plvs_index = af.local_var_stack_index;
-                    let vf_plvs_ptr = af.stack_id;
-
+                Some(Value::Function(ref s, ref lvs)) => {
+                    value_function_str =
+                        s.clone().borrow().to_string();
+                    plvs_stack = Some(lvs.clone());
                     is_value_function = true;
-                    plvs_index = vf_plvs_index;
-                    value_function_str = s.clone();
-                    if (plvs_index + 1) > (prev_local_vars_stacks.len() as u32) {
-                        print_error(chunk, i, "cannot call function, as stack has gone away");
-                        return false;
-                    }
-                    let plvs_ptr =
-                        prev_local_vars_stacks[plvs_index as usize].as_ptr() as *const _ as u64;
-                    if vf_plvs_ptr != plvs_ptr {
-                        print_error(chunk, i, "cannot call function, as stack has gone away");
-                        return false;
-                    }
                 }
                 _ => {}
             }
@@ -953,7 +936,7 @@ impl VM {
                                     line_col,
                                     running.clone(),
                                     is_value_function,
-                                    plvs_index,
+                                    plvs_stack,
                                     call_chunk_rc.clone(),
                                 );
                             }
@@ -994,7 +977,7 @@ impl VM {
                     line_col,
                     running.clone(),
                     is_value_function,
-                    plvs_index,
+                    plvs_stack,
                     is_implicit,
                     s,
                 );
@@ -1055,7 +1038,7 @@ impl VM {
                     line_col,
                     running.clone(),
                     is_value_function,
-                    plvs_index,
+                    plvs_stack,
                     call_chunk_rc,
                 );
             }
@@ -1075,7 +1058,7 @@ impl VM {
                     line_col,
                     running.clone(),
                     is_value_function,
-                    plvs_index,
+                    plvs_stack,
                     is_implicit,
                     &s,
                 );
@@ -1373,43 +1356,33 @@ impl VM {
                     let value_rr = chunk.get_constant(i2 as i32);
                     let mut copy = false;
 
-                    // The index is the length, because when the
-                    // function is called, you want it to go to the
-                    // current local_var_stack (which will have been
-                    // pushed onto plvs if this function has been
-                    // called).
-                    let plvs_index = prev_local_vars_stacks.len();
-                    let plvs_ptr = self.local_var_stack.as_ptr() as *const _ as u64;
-                    {
-                        match value_rr {
-                            Value::String(ref sp) => {
-                                let s = &sp.borrow().s;
-                                let cfb = chunk_functions.borrow();
-                                match cfb.get(i2 as usize) {
-                                    Some(CFPair { ffn: cv_value_rr, cfs: _ }) => match cv_value_rr {
-                                        Value::String(_) => {
-                                            self.stack.push(Value::Function(Rc::new(
-                                                RefCell::new(AnonymousFunction::new(
-                                                    s.to_string(),
-                                                    plvs_index as u32,
-                                                    plvs_ptr,
-                                                )),
-                                            )));
-                                        }
-                                        _ => {
-                                            eprintln!("unexpected function value!");
-                                            std::process::abort();
-                                        }
-                                    },
-                                    _ => {
-                                        copy = true;
+                    match value_rr {
+                        Value::String(ref sp) => {
+                            let s = &sp.borrow().s;
+                            let cfb = chunk_functions.borrow();
+                            match cfb.get(i2 as usize) {
+                                Some(CFPair { ffn: cv_value_rr, cfs: _ }) => match cv_value_rr {
+                                    Value::String(_) => {
+                                        self.stack.push(
+                                            Value::Function(
+                                                Rc::new(RefCell::new(s.to_string())),
+                                                self.local_var_stack.clone()
+                                            )
+                                        )
                                     }
+                                    _ => {
+                                        eprintln!("unexpected function value!");
+                                        std::process::abort();
+                                    }
+                                },
+                                _ => {
+                                    copy = true;
                                 }
                             }
-                            _ => {
-                                eprintln!("unexpected function value!");
-                                std::process::abort();
-                            }
+                        }
+                        _ => {
+                            eprintln!("unexpected function value!");
+                            std::process::abort();
                         }
                     }
                     if copy {
@@ -1424,12 +1397,12 @@ impl VM {
                         let cv_value_rr = cfb.get(i2 as usize).unwrap().clone();
                         match cv_value_rr {
                             CFPair { ffn: Value::String(sp), cfs: _ } => {
-                                self.stack.push(Value::Function(Rc::new(RefCell::new(
-                                    AnonymousFunction::new(
-                                        sp.borrow().s.to_string(),
-                                        plvs_index as u32,
-                                        plvs_ptr,
-                                    )))));
+                                self.stack.push(
+                                    Value::Function(
+                                        Rc::new(RefCell::new(sp.borrow().s.to_string())),
+                                        self.local_var_stack.clone()
+                                    )
+                                )
                             }
                             _ => {
                                 eprintln!("unexpected function value!");

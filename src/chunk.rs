@@ -88,25 +88,6 @@ impl CFPair {
     }
 }
 
-/// An anonymous function, along with its variable stack index and the
-/// pointer value for the associated stack.
-#[derive(Debug)]
-pub struct AnonymousFunction {
-    pub f: String,
-    pub local_var_stack_index: u32,
-    pub stack_id: u64,
-}
-
-impl AnonymousFunction {
-    pub fn new(f: String, lvsi: u32, si: u64) -> AnonymousFunction {
-        AnonymousFunction {
-            f: f,
-            local_var_stack_index: lvsi,
-            stack_id: si,
-        }
-    }
-}
-
 /// A generator object, containing a generator chunk along with all of
 /// its associated state.
 #[derive(Debug, Clone)]
@@ -194,7 +175,7 @@ pub enum Value {
     /// second value is the local variable stack index and the third
     /// value is a unique identifier for that stack (currently its
     /// pointer value).
-    Function(Rc<RefCell<AnonymousFunction>>),
+    Function(Rc<RefCell<String>>, Rc<RefCell<Vec<Value>>>),
     /// A core function.  See SIMPLE_FORMS in the VM.
     CoreFunction(fn(&mut VM, Rc<Chunk>, usize) -> i32),
     /// A shift function (i.e. a function that shifts an element from
@@ -262,7 +243,7 @@ impl fmt::Debug for Value {
             Value::Hash(hs) => {
                 write!(f, "{:?}", hs)
             }
-            Value::Function(_) => {
+            Value::Function(_, _) => {
                 write!(f, "((Function))")
             }
             Value::CoreFunction(_) => {

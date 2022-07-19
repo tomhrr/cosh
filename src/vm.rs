@@ -429,10 +429,12 @@ impl VM {
                 scopes.push(Rc::new(RefCell::new(HashMap::new())));
             }
 
+            let mut prev_stack = None;
             if is_value_function {
                 self.local_var_stack = plvs_stack.unwrap();
-            } else if call_chunk.nested {
-                self.local_var_stack = (*(prev_local_vars_stacks.last().unwrap())).clone();
+            } else if !call_chunk.nested {
+                prev_stack = Some(self.local_var_stack.clone());
+                self.local_var_stack = Rc::new(RefCell::new(vec![]));
             }
 
             let res = self.run(
@@ -447,9 +449,8 @@ impl VM {
                 running.clone(),
             );
 
-            if call_chunk.nested {
-                let plvs_len = prev_local_vars_stacks.len();
-                prev_local_vars_stacks[plvs_len - 1] = self.local_var_stack.clone();
+            if !is_value_function && !call_chunk.nested {
+                self.local_var_stack = prev_stack.unwrap();
             }
 
             call_stack_chunks.pop();
@@ -1468,9 +1469,6 @@ impl VM {
                     }
                 }
                 OpCode::CallConstant | OpCode::CallImplicitConstant => {
-                    prev_local_vars_stacks.push(self.local_var_stack.clone());
-                    self.local_var_stack = Rc::new(RefCell::new(vec![]));
-
                     i = i + 1;
                     let i_upper = chunk.data[i];
                     i = i + 1;
@@ -1511,8 +1509,6 @@ impl VM {
                                 running.clone(),
                             );
 
-                            self.local_var_stack = prev_local_vars_stacks.pop().unwrap();
-
                             if !res {
                                 return 0;
                             }
@@ -1528,9 +1524,6 @@ impl VM {
                         print_error(chunk, i, "call requires one argument");
                         return 0;
                     }
-
-                    prev_local_vars_stacks.push(self.local_var_stack.clone());
-                    self.local_var_stack = Rc::new(RefCell::new(vec![]));
 
                     let function_rr = self.stack.pop().unwrap();
 
@@ -1565,8 +1558,6 @@ impl VM {
                         running.clone(),
                     );
 
-                    self.local_var_stack = prev_local_vars_stacks.pop().unwrap();
-
                     if !res {
                         return 0;
                     }
@@ -1580,9 +1571,6 @@ impl VM {
                         .borrow()
                         .index(var_index as usize)
                         .clone();
-
-                    prev_local_vars_stacks.push(self.local_var_stack.clone());
-                    self.local_var_stack = Rc::new(RefCell::new(vec![]));
 
                     let (mut line, mut col) = line_col;
                     if line == 0 && col == 0 {
@@ -1614,8 +1602,6 @@ impl VM {
                         (line, col),
                         running.clone(),
                     );
-
-                    self.local_var_stack = prev_local_vars_stacks.pop().unwrap();
 
                     if !res {
                         return 0;

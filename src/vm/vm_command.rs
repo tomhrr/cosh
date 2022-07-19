@@ -313,7 +313,6 @@ impl VM {
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<Chunk>>,
-        prev_localvarstacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: Rc<Chunk>,
         i: usize,
         line_col: (u32, u32),
@@ -375,7 +374,6 @@ impl VM {
                                     let shift_res = self.opcode_shift(
                                         scopes,
                                         global_functions,
-                                        prev_localvarstacks,
                                         chunk.clone(),
                                         i,
                                         line_col,

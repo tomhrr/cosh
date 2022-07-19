@@ -89,7 +89,6 @@ impl VM {
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<Chunk>>,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: Rc<Chunk>,
         i: usize,
         line_col: (u32, u32),
@@ -113,7 +112,6 @@ impl VM {
                     let shift_res = self.opcode_shift(
                         scopes,
                         global_functions,
-                        prev_local_vars_stacks,
                         chunk.clone(),
                         i,
                         line_col,
@@ -225,7 +223,6 @@ impl VM {
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<Chunk>>,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: Rc<Chunk>,
         i: usize,
         line_col: (u32, u32),
@@ -294,7 +291,6 @@ impl VM {
                             chunk,
                             chunk_functions,
                             index,
-                            prev_local_vars_stacks,
                             line_col,
                             running,
                         );
@@ -443,7 +439,6 @@ impl VM {
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<Chunk>>,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: Rc<Chunk>,
         i: usize,
         line_col: (u32, u32),
@@ -456,7 +451,7 @@ impl VM {
 
         let mut shiftable_rr = self.stack.pop().unwrap();
         return self.opcode_shift_inner(
-            scopes, global_functions, prev_local_vars_stacks,
+            scopes, global_functions,
             chunk, i, line_col, running, &mut shiftable_rr
         );
     }
@@ -468,7 +463,6 @@ impl VM {
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<Chunk>>,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         chunk: Rc<Chunk>,
         i: usize,
         line_col: (u32, u32),
@@ -487,7 +481,6 @@ impl VM {
             let shift_res = self.opcode_shift(
                 scopes,
                 global_functions,
-                prev_local_vars_stacks,
                 chunk.clone(),
                 i,
                 line_col,

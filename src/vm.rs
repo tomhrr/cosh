@@ -194,7 +194,6 @@ lazy_static! {
             &mut VM,
             &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
             &mut HashMap<String, Rc<Chunk>>,
-            &mut Vec<Rc<RefCell<Vec<Value>>>>,
             Rc<Chunk>,
             usize,
             (u32, u32),
@@ -209,7 +208,6 @@ lazy_static! {
                     &mut VM,
                     &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<Chunk>>,
-                    &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     Rc<Chunk>,
                     usize,
                     (u32, u32),
@@ -223,7 +221,6 @@ lazy_static! {
                     &mut VM,
                     &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<Chunk>>,
-                    &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     Rc<Chunk>,
                     usize,
                     (u32, u32),
@@ -237,7 +234,6 @@ lazy_static! {
                     &mut VM,
                     &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<Chunk>>,
-                    &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     Rc<Chunk>,
                     usize,
                     (u32, u32),
@@ -251,7 +247,6 @@ lazy_static! {
                     &mut VM,
                     &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<Chunk>>,
-                    &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     Rc<Chunk>,
                     usize,
                     (u32, u32),
@@ -265,7 +260,6 @@ lazy_static! {
                     &mut VM,
                     &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<Chunk>>,
-                    &mut Vec<Rc<RefCell<Vec<Value>>>>,
                     Rc<Chunk>,
                     usize,
                     (u32, u32),
@@ -381,7 +375,6 @@ impl VM {
         chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
         is_value_function: bool,
@@ -444,7 +437,6 @@ impl VM {
                 call_chunk.clone(),
                 chunk_functions,
                 0,
-                prev_local_vars_stacks,
                 line_col,
                 running.clone(),
             );
@@ -470,7 +462,6 @@ impl VM {
         chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
         is_value_function: bool,
@@ -495,7 +486,6 @@ impl VM {
                 self,
                 scopes,
                 global_functions,
-                prev_local_vars_stacks,
                 chunk,
                 i,
                 line_col,
@@ -685,7 +675,6 @@ impl VM {
                         chunk.clone(),
                         chunk_functions,
                         0,
-                        prev_local_vars_stacks,
                         line_col,
                         running.clone(),
                         is_value_function,
@@ -723,7 +712,6 @@ impl VM {
         mut function_rr: Option<Value>,
         function_str: Option<&str>,
         function_str_index: i32,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> bool {
@@ -908,7 +896,6 @@ impl VM {
                                     self,
                                     scopes,
                                     global_functions,
-                                    prev_local_vars_stacks,
                                     chunk,
                                     i,
                                     line_col,
@@ -933,7 +920,6 @@ impl VM {
                                     chunk.clone(),
                                     cfs.clone(),
                                     0,
-                                    prev_local_vars_stacks,
                                     line_col,
                                     running.clone(),
                                     is_value_function,
@@ -974,7 +960,6 @@ impl VM {
                     chunk,
                     Rc::new(RefCell::new(Vec::new())),
                     0,
-                    prev_local_vars_stacks,
                     line_col,
                     running.clone(),
                     is_value_function,
@@ -1013,7 +998,6 @@ impl VM {
                     self,
                     scopes,
                     global_functions,
-                    prev_local_vars_stacks,
                     chunk,
                     i,
                     line_col,
@@ -1035,7 +1019,6 @@ impl VM {
                     chunk,
                     cfs.clone(),
                     0,
-                    prev_local_vars_stacks,
                     line_col,
                     running.clone(),
                     is_value_function,
@@ -1055,7 +1038,6 @@ impl VM {
                     chunk,
                     Rc::new(RefCell::new(Vec::new())),
                     0,
-                    prev_local_vars_stacks,
                     line_col,
                     running.clone(),
                     is_value_function,
@@ -1093,7 +1075,6 @@ impl VM {
         chunk: Rc<Chunk>,
         chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         index: usize,
-        prev_local_vars_stacks: &mut Vec<Rc<RefCell<Vec<Value>>>>,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> usize {
@@ -1504,7 +1485,6 @@ impl VM {
                                 None,
                                 Some(sp),
                                 (i2 as u32).try_into().unwrap(),
-                                prev_local_vars_stacks,
                                 (line, col),
                                 running.clone(),
                             );
@@ -1553,7 +1533,6 @@ impl VM {
                         Some(function_rr),
                         None,
                         -1,
-                        prev_local_vars_stacks,
                         (line, col),
                         running.clone(),
                     );
@@ -1598,7 +1577,6 @@ impl VM {
                         Some(function_rr),
                         None,
                         -1,
-                        prev_local_vars_stacks,
                         (line, col),
                         running.clone(),
                     );
@@ -1646,7 +1624,6 @@ impl VM {
                     let i2 = self.opcode_shift_inner(
                         scopes,
                         global_functions,
-                        prev_local_vars_stacks,
                         chunk.clone(),
                         i,
                         line_col,
@@ -1852,7 +1829,6 @@ impl VM {
                     let i2 = self.opcode_shift(
                         scopes,
                         global_functions,
-                        prev_local_vars_stacks,
                         chunk.clone(),
                         i,
                         line_col,
@@ -2000,7 +1976,6 @@ impl VM {
         let mut call_stack_chunks = vec![];
         let mut scopes = vec![variables];
         let chunk_functions = Rc::new(RefCell::new(Vec::new()));
-        let mut prev_local_vars_stacks = vec![];
 
         self.run(
             &mut scopes,
@@ -2009,7 +1984,6 @@ impl VM {
             chunk.clone(),
             chunk_functions,
             0,
-            &mut prev_local_vars_stacks,
             (0, 0),
             running.clone(),
         );

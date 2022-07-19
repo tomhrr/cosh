@@ -466,7 +466,6 @@ fn main() {
                 call_stack_chunks.push(functions[0].clone());
             }
             let chunk_functions = Vec::new();
-            let mut prev_local_vars_stacks = vec![];
             let mut global_functions = HashMap::new();
             let running = Arc::new(AtomicBool::new(true));
             vm.run(
@@ -476,7 +475,6 @@ fn main() {
                 chunk,
                 Rc::new(RefCell::new(chunk_functions)),
                 0,
-                &mut prev_local_vars_stacks,
                 (0, 0),
                 running.clone(),
             );

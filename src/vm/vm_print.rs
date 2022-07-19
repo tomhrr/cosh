@@ -453,7 +453,6 @@ impl VM {
         if is_generator {
             let mut has_elements = false;
             self.stack.push(value_rr.clone());
-            let mut prev_local_var_stacks = vec![];
             loop {
                 let dup_res = self.opcode_dup(chunk.clone(), i);
                 if dup_res == 0 {
@@ -462,7 +461,6 @@ impl VM {
                 let shift_res = self.opcode_shift(
                     scopes,
                     global_functions,
-                    &mut prev_local_var_stacks,
                     chunk.clone(),
                     i,
                     (1, 1),

@@ -273,7 +273,6 @@ impl VM {
                     let global_vars = generator_object.global_vars.clone();
                     let local_vars_stack = generator_object.local_vars_stack.clone();
                     let chunk = generator_object.chunk.clone();
-                    let chunk_functions = generator_object.chunk_functions.clone();
                     let call_stack_chunks = &mut generator_object.call_stack_chunks;
 
                     let current_index = index;
@@ -289,7 +288,6 @@ impl VM {
                             global_functions,
                             call_stack_chunks,
                             chunk,
-                            chunk_functions,
                             index,
                             line_col,
                             running,

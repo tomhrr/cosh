@@ -74,22 +74,6 @@ impl StringPair {
     }
 }
 
-/// A function value paired with its chunk function cache.
-#[derive(Debug, Clone)]
-pub struct CFPair {
-    pub ffn: Value,
-    pub cfs: Rc<RefCell<Vec<CFPair>>>,
-}
-
-impl CFPair {
-    pub fn new(ffn: Value) -> CFPair {
-        CFPair {
-            ffn: ffn,
-            cfs: Rc::new(RefCell::new(Vec::new())),
-        }
-    }
-}
-
 /// A generator object, containing a generator chunk along with all of
 /// its associated state.
 #[derive(Debug, Clone)]
@@ -107,9 +91,6 @@ pub struct GeneratorObject {
     /// The values that need to be passed into the generator when
     /// it is first called.
     pub gen_args: Vec<Value>,
-    /// A vector of cached functions for the chunk of the associated
-    /// generator function (indexed by constant identifier).
-    pub chunk_functions: Rc<RefCell<Vec<CFPair>>>,
 }
 
 impl GeneratorObject {
@@ -129,7 +110,6 @@ impl GeneratorObject {
             chunk: chunk,
             call_stack_chunks: call_stack_chunks,
             gen_args: gen_args,
-            chunk_functions: Rc::new(RefCell::new(Vec::new())),
         }
     }
 }
@@ -194,7 +174,7 @@ pub enum Value {
         ) -> i32,
     ),
     /// A named function.
-    NamedFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<CFPair>>>),
+    NamedFunction(Rc<RefCell<Chunk>>),
     /// A generator constructed by way of a generator function.
     Generator(Rc<RefCell<GeneratorObject>>),
     /// A generator for getting the output of a Command.
@@ -253,7 +233,7 @@ impl fmt::Debug for Value {
             Value::ShiftFunction(_) => {
                 write!(f, "((ShiftFunction))")
             }
-            Value::NamedFunction(_, _) => {
+            Value::NamedFunction(_) => {
                 write!(f, "((NamedFunction))")
             }
             Value::Generator(_) => {
@@ -403,7 +383,7 @@ impl Chunk {
     pub fn get_constant_value(&self, i: i32) -> Value {
         let value = self.constant_values.get(i as usize);
         match value {
-            Some(v) => { return v; }
+            Some(v) => { return v.clone(); }
             _ => { return Value::Null; }
         }
     }

@@ -15,7 +15,7 @@ use lazy_static::lazy_static;
 use sysinfo::{System, SystemExt};
 
 use chunk::{
-    print_error, CFPair, Chunk, GeneratorObject, StringPair, Value, ValueSD,
+    print_error, Chunk, GeneratorObject, StringPair, Value, ValueSD,
 };
 use compiler::Compiler;
 use opcode::{to_opcode, OpCode};
@@ -373,7 +373,6 @@ impl VM {
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
-        chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -435,7 +434,6 @@ impl VM {
                 global_functions,
                 call_stack_chunks,
                 call_chunk.clone(),
-                chunk_functions,
                 0,
                 line_col,
                 running.clone(),
@@ -460,7 +458,6 @@ impl VM {
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
-        chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -568,8 +565,7 @@ impl VM {
                             match call_chunk_opt {
                                 Some(call_chunk) => {
                                     let nv = Value::NamedFunction(
-                                        call_chunk.clone(),
-                                        Rc::new(RefCell::new(Vec::new()))
+                                        call_chunk.clone()
                                     );
                                     self.stack.push(nv);
                                     pushed = true;
@@ -675,7 +671,6 @@ impl VM {
                         global_functions,
                         call_stack_chunks,
                         chunk.clone(),
-                        chunk_functions,
                         0,
                         line_col,
                         running.clone(),
@@ -708,7 +703,6 @@ impl VM {
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
-        chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         i: usize,
         call_opcode: OpCode,
         mut function_rr: Option<Value>,
@@ -717,9 +711,6 @@ impl VM {
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
     ) -> bool {
-        if self.debug {
-            eprintln!("Chunk functions: {:?}", chunk_functions);
-        }
         // Determine whether the function has been called implicitly.
         let is_implicit;
         match call_opcode {
@@ -848,8 +839,7 @@ impl VM {
                                     Some(call_chunk) => {
                                         let nv =
                                             Value::NamedFunction(
-                                                call_chunk.clone(),
-                                                Rc::new(RefCell::new(Vec::new()))
+                                                call_chunk.clone()
                                             );
                                         chunk.borrow_mut().constant_values.resize(
                                             function_str_index as usize,
@@ -901,17 +891,15 @@ impl VM {
                                 }
                                 return true;
                             }
-                            Value::NamedFunction(call_chunk_rc, _) => {
+                            Value::NamedFunction(call_chunk_rc) => {
                                 if self.debug {
                                     eprintln!("function str {:?} matches named function", s);
                                 }
-                                let cfs = Rc::new(RefCell::new(Vec::new()));
                                 return self.call_named_function(
                                     scopes,
                                     global_functions,
                                     call_stack_chunks,
                                     chunk.clone(),
-                                    cfs,
                                     0,
                                     line_col,
                                     running.clone(),
@@ -941,7 +929,6 @@ impl VM {
                     global_functions,
                     call_stack_chunks,
                     chunk,
-                    Rc::new(RefCell::new(Vec::new())),
                     0,
                     line_col,
                     running.clone(),
@@ -991,16 +978,12 @@ impl VM {
                 }
                 return true;
             }
-            Value::NamedFunction(call_chunk_rc, cfs) => {
-                if self.debug {
-                    eprintln!("NamedFunction call: chunk_functions: {:?}", cfs);
-                }
+            Value::NamedFunction(call_chunk_rc) => {
                 return self.call_named_function(
                     scopes,
                     global_functions,
                     call_stack_chunks,
                     chunk,
-                    cfs.clone(),
                     0,
                     line_col,
                     running.clone(),
@@ -1019,7 +1002,6 @@ impl VM {
                     global_functions,
                     call_stack_chunks,
                     chunk,
-                    Rc::new(RefCell::new(Vec::new())),
                     0,
                     line_col,
                     running.clone(),
@@ -1056,7 +1038,6 @@ impl VM {
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
-        chunk_functions: Rc<RefCell<Vec<CFPair>>>,
         index: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -1448,7 +1429,6 @@ impl VM {
                                 global_functions,
                                 call_stack_chunks,
                                 chunk.clone(),
-                                chunk_functions.clone(),
                                 i,
                                 op,
                                 None,
@@ -1496,7 +1476,6 @@ impl VM {
                         global_functions,
                         call_stack_chunks,
                         chunk.clone(),
-                        chunk_functions.clone(),
                         i,
                         op,
                         Some(function_rr),
@@ -1540,7 +1519,6 @@ impl VM {
                         global_functions,
                         call_stack_chunks,
                         chunk.clone(),
-                        chunk_functions.clone(),
                         i,
                         OpCode::Call,
                         Some(function_rr),
@@ -1944,14 +1922,12 @@ impl VM {
         let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
         let mut call_stack_chunks = vec![];
         let mut scopes = vec![variables];
-        let chunk_functions = Rc::new(RefCell::new(Vec::new()));
 
         self.run(
             &mut scopes,
             global_functions,
             &mut call_stack_chunks,
             chunk.clone(),
-            chunk_functions,
             0,
             (0, 0),
             running.clone(),

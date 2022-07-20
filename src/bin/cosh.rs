@@ -465,7 +465,6 @@ fn main() {
             if functions.len() > 0 {
                 call_stack_chunks.push(functions[0].clone());
             }
-            let chunk_functions = Vec::new();
             let mut global_functions = HashMap::new();
             let running = Arc::new(AtomicBool::new(true));
             vm.run(
@@ -473,7 +472,6 @@ fn main() {
                 &mut global_functions,
                 &mut call_stack_chunks,
                 chunk,
-                Rc::new(RefCell::new(chunk_functions)),
                 0,
                 (0, 0),
                 running.clone(),

@@ -170,7 +170,7 @@ impl VM {
             Value::Function(_, _) => 1,
             Value::CoreFunction(_) => 1,
             Value::ShiftFunction(_) => 1,
-            Value::NamedFunction(_, _) => 1,
+            Value::NamedFunction(_) => 1,
             /* This could be better. */
             Value::String(_) => 1,
             _ => 0,

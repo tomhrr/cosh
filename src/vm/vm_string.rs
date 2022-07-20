@@ -13,7 +13,7 @@ use vm::*;
 impl VM {
     /// Takes two string arguments, appends them together, and adds
     /// the resulting string back onto the stack.
-    pub fn core_append(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_append(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk.clone(), i, "append requires two arguments");
             return 0;
@@ -89,7 +89,7 @@ impl VM {
     /// Takes a string and a separator as its arguments.  Splits the
     /// string using the separator, treated as a regex, and puts the
     /// resulting list onto the stack.
-    pub fn core_splitr(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_splitr(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk.clone(), i, "split requires two arguments");
             return 0;
@@ -188,7 +188,7 @@ impl VM {
     /// string using the separator, and puts the resulting list onto
     /// the stack.  Quotation by way of the double-quote character is
     /// taken into account.
-    pub fn core_split(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_split(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk.clone(), i, "split requires two arguments");
             return 0;
@@ -323,8 +323,8 @@ impl VM {
     pub fn core_join(
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
-        global_functions: &mut HashMap<String, Rc<Chunk>>,
-        chunk: Rc<Chunk>,
+        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
+        chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,

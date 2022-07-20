@@ -76,7 +76,7 @@ fn psv_helper(
 impl VM {
     /// Takes a value that can be stringified as its single argument,
     /// and prints that value to standard output.
-    pub fn opcode_print(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_print(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "print requires one argument");
             return 0;
@@ -119,7 +119,7 @@ impl VM {
 
     /// Takes a value that can be stringified as its single argument,
     /// and prints that value followed by newline to standard output.
-    pub fn core_println(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_println(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "println requires one argument");
             return 0;
@@ -171,10 +171,10 @@ impl VM {
     fn print_stack_value<'a>(
         &mut self,
         value_rr: &Value,
-        chunk: Rc<Chunk>,
+        chunk: Rc<RefCell<Chunk>>,
         i: usize,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
-        global_functions: &mut HashMap<String, Rc<Chunk>>,
+        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         indent: i32,
         no_first_indent: bool,
         window_height: i32,
@@ -530,10 +530,10 @@ impl VM {
     /// the stack is printed.  Prints the stack to standard output.
     pub fn print_stack<'a>(
         &mut self,
-        chunk: Rc<Chunk>,
+        chunk: Rc<RefCell<Chunk>>,
         i: usize,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
-        global_functions: &mut HashMap<String, Rc<Chunk>>,
+        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         running: Arc<AtomicBool>,
         no_remove: bool,
     ) {

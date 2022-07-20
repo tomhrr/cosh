@@ -102,7 +102,7 @@ impl VM {
     /// Takes a command string, substitutes for the {num} and {}
     /// stack element placeholders as well as the ~ home directory
     /// placeholder, and returns the resulting string.
-    fn prepare_command(&mut self, s: &str, chunk: Rc<Chunk>, i: usize) -> Option<String> {
+    fn prepare_command(&mut self, s: &str, chunk: Rc<RefCell<Chunk>>, i: usize) -> Option<String> {
         let captures = CAPTURE_NUM.captures_iter(s);
         let mut final_s = s.to_string();
         for capture in captures {
@@ -215,7 +215,7 @@ impl VM {
     fn prepare_and_split_command(
         &mut self,
         cmd: &str,
-        chunk: Rc<Chunk>,
+        chunk: Rc<RefCell<Chunk>>,
         i: usize,
     ) -> Option<(String, Vec<String>)> {
         let prepared_cmd_opt = self.prepare_command(cmd, chunk.clone(), i);
@@ -245,7 +245,7 @@ impl VM {
     /// Takes a command string as its single argument.  Substitutes
     /// for placeholders, executes the command, and places a generator
     /// over the standard output of the command onto the stack.
-    pub fn core_command(&mut self, cmd: &str, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_command(&mut self, cmd: &str, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         let prepared_cmd_opt = self.prepare_and_split_command(cmd,
             chunk.clone(), i);
         if prepared_cmd_opt.is_none() {
@@ -275,7 +275,7 @@ impl VM {
 
     /// As per `core_command`, except that the output isn't captured
     /// and nothing is placed onto the stack.
-    pub fn core_command_uncaptured(&mut self, cmd: &str, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_command_uncaptured(&mut self, cmd: &str, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         let prepared_cmd_opt = self.prepare_and_split_command(cmd,
             chunk.clone(), i);
         if prepared_cmd_opt.is_none() {
@@ -312,8 +312,8 @@ impl VM {
     pub fn core_pipe(
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
-        global_functions: &mut HashMap<String, Rc<Chunk>>,
-        chunk: Rc<Chunk>,
+        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
+        chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,

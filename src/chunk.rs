@@ -39,7 +39,9 @@ pub struct Chunk {
     /// The set of constant values for the chunk.
     pub constants: Vec<ValueSD>,
     /// The functions defined within the chunk.
-    pub functions: HashMap<String, Rc<Chunk>>,
+    pub functions: HashMap<String, Rc<RefCell<Chunk>>>,
+    #[serde(skip)]
+    pub constant_values: Vec<Value>,
     /// Whether the chunk is for a generator function.
     pub is_generator: bool,
     /// Whether the chunk deals with global variables.
@@ -99,9 +101,9 @@ pub struct GeneratorObject {
     /// The current instruction index.
     pub index: usize,
     /// The chunk of the associated generator function.
-    pub chunk: Rc<Chunk>,
+    pub chunk: Rc<RefCell<Chunk>>,
     /// The chunks of the other functions in the call stack.
-    pub call_stack_chunks: Vec<Rc<Chunk>>,
+    pub call_stack_chunks: Vec<Rc<RefCell<Chunk>>>,
     /// The values that need to be passed into the generator when
     /// it is first called.
     pub gen_args: Vec<Value>,
@@ -116,8 +118,8 @@ impl GeneratorObject {
         global_vars: Rc<RefCell<HashMap<String, Value>>>,
         local_vars_stack: Rc<RefCell<Vec<Value>>>,
         index: usize,
-        chunk: Rc<Chunk>,
-        call_stack_chunks: Vec<Rc<Chunk>>,
+        chunk: Rc<RefCell<Chunk>>,
+        call_stack_chunks: Vec<Rc<RefCell<Chunk>>>,
         gen_args: Vec<Value>
     ) -> GeneratorObject {
         GeneratorObject {
@@ -177,22 +179,22 @@ pub enum Value {
     /// pointer value).
     Function(Rc<RefCell<String>>, Rc<RefCell<Vec<Value>>>),
     /// A core function.  See SIMPLE_FORMS in the VM.
-    CoreFunction(fn(&mut VM, Rc<Chunk>, usize) -> i32),
+    CoreFunction(fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32),
     /// A shift function (i.e. a function that shifts an element from
     /// some value).  See SHIFT_FORMS in the VM.
     ShiftFunction(
         fn(
             &mut VM,
             &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
-            &mut HashMap<String, Rc<Chunk>>,
-            Rc<Chunk>,
+            &mut HashMap<String, Rc<RefCell<Chunk>>>,
+            Rc<RefCell<Chunk>>,
             usize,
             (u32, u32),
             Arc<AtomicBool>,
         ) -> i32,
     ),
     /// A named function.
-    NamedFunction(Rc<Chunk>, Rc<RefCell<Vec<CFPair>>>),
+    NamedFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<CFPair>>>),
     /// A generator constructed by way of a generator function.
     Generator(Rc<RefCell<GeneratorObject>>),
     /// A generator for getting the output of a Command.
@@ -299,9 +301,9 @@ pub enum ValueSD {
 /// Takes a chunk, an instruction index, and an error message as its
 /// arguments.  Prints the error message, including filename, line number
 /// and column number elements (if applicable).
-pub fn print_error(chunk: Rc<Chunk>, i: usize, error: &str) {
-    let point = chunk.get_point(i);
-    let name = &chunk.name;
+pub fn print_error(chunk: Rc<RefCell<Chunk>>, i: usize, error: &str) {
+    let point = chunk.borrow().get_point(i);
+    let name = &chunk.borrow().name;
     let error_start = if name == "(main)" {
         format!("")
     } else {
@@ -333,6 +335,7 @@ impl Chunk {
             req_arg_count: 0,
             nested: false,
             scope_depth: 0,
+            constant_values: Vec::new(),
         }
     }
 
@@ -351,6 +354,7 @@ impl Chunk {
             req_arg_count: req_arg_count,
             nested: false,
             scope_depth: 0,
+            constant_values: Vec::new(),
         }
     }
 
@@ -394,6 +398,14 @@ impl Chunk {
             }
         };
         return value;
+    }
+
+    pub fn get_constant_value(&self, i: i32) -> Value {
+        let value = self.constant_values.get(i as usize);
+        match value {
+            Some(v) => { return v; }
+            _ => { return Value::Null; }
+        }
     }
 
     /// Get a constant int value from the current chunk.
@@ -902,7 +914,7 @@ impl Chunk {
 
         for (k, v) in self.functions.iter() {
             println!("== {}.{} ==", name, k);
-            v.disassemble(k);
+            v.borrow().disassemble(k);
         }
     }
 }
@@ -1009,7 +1021,7 @@ impl Value {
     /// For a string value, generate the corresponding regex for the
     /// string value and store it in the value.  If called on a
     /// non-string value, this will abort the current process.
-    pub fn gen_regex(&mut self, chunk: Rc<Chunk>, i: usize) -> bool {
+    pub fn gen_regex(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> bool {
         match self {
             Value::String(sp) => {
                 match sp.borrow().r {

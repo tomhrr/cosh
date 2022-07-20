@@ -72,7 +72,7 @@ impl VM {
     /// Helper function for adding two values together and placing the
     /// result onto the stack.  Returns an integer indicating whether
     /// the values were able to be added together.
-    fn opcode_add_inner(&mut self, chunk: Rc<Chunk>, i: usize, v1: &Value, v2: &Value) -> i32 {
+    fn opcode_add_inner(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n1 + n2);
@@ -140,7 +140,7 @@ impl VM {
 
     /// Takes two values as its arguments, adds them together, and
     /// places the result onto the stack.
-    pub fn opcode_add(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_add(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         let len = self.stack.len();
         if len < 2 {
             print_error(chunk.clone(), i, "+ requires two arguments");
@@ -173,7 +173,7 @@ impl VM {
     /// Helper function for subtracting two values and placing the
     /// result onto the stack.  Returns an integer indicating whether
     /// the values were able to be subtracted.
-    fn opcode_subtract_inner(&mut self, chunk: Rc<Chunk>, i: usize, v1: &Value, v2: &Value) -> i32 {
+    fn opcode_subtract_inner(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n2 - n1);
@@ -241,7 +241,7 @@ impl VM {
 
     /// Takes two values as its arguments, subtracts them, and places
     /// the result onto the stack.
-    pub fn opcode_subtract(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_subtract(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         let len = self.stack.len();
         if len < 2 {
             print_error(chunk.clone(), i, "- requires two arguments");
@@ -275,7 +275,7 @@ impl VM {
     /// placing the result onto the stack.  Returns an integer
     /// indicating whether the values were able to be multiplied
     /// together.
-    fn opcode_multiply_inner(&mut self, chunk: Rc<Chunk>, i: usize, v1: &Value, v2: &Value) -> i32 {
+    fn opcode_multiply_inner(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n1 * n2);
@@ -343,7 +343,7 @@ impl VM {
 
     /// Takes two values as its arguments, multiplies them together,
     /// and places the result onto the stack.
-    pub fn opcode_multiply(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_multiply(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         let len = self.stack.len();
         if len < 2 {
             print_error(chunk.clone(), i, "* requires two arguments");
@@ -376,7 +376,7 @@ impl VM {
     /// Helper function for dividing two values and placing the result
     /// onto the stack.  Returns an integer indicating whether the
     /// values were able to be divided.
-    fn opcode_divide_inner(&mut self, chunk: Rc<Chunk>, i: usize, v1: &Value, v2: &Value) -> i32 {
+    fn opcode_divide_inner(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n2 / n1);
@@ -444,7 +444,7 @@ impl VM {
 
     /// Takes two values as its arguments, subtracts them, and places
     /// the result onto the stack.
-    pub fn opcode_divide(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_divide(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         let len = self.stack.len();
         if len < 2 {
             print_error(chunk.clone(), i, "/ requires two arguments");
@@ -478,7 +478,7 @@ impl VM {
     /// placing a boolean onto the stack indicating whether they are
     /// equal.  Returns an integer indicating whether the values were
     /// able to be compared for equality.
-    fn opcode_eq_inner(&mut self, chunk: Rc<Chunk>, i: usize, v1: &Value, v2: &Value) -> i32 {
+    fn opcode_eq_inner(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let res = if n1 == n2 { 1 } else { 0 };
@@ -604,7 +604,7 @@ impl VM {
 
     /// Takes two values as its arguments, compares them for equality,
     /// and places the result onto the stack.
-    pub fn opcode_eq(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_eq(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk.clone(), i, "= requires two arguments");
             return 0;
@@ -625,7 +625,7 @@ impl VM {
     /// another, and placing a boolean onto the stack indicating
     /// whether that is so.  Returns an integer indicating whether the
     /// values were able to be compared.
-    fn opcode_gt_inner(&mut self, chunk: Rc<Chunk>, i: usize, v1: &Value, v2: &Value) -> i32 {
+    fn opcode_gt_inner(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let res = if n2 > n1 { 1 } else { 0 };
@@ -751,7 +751,7 @@ impl VM {
 
     /// Takes two values as its arguments, checks whether the first is
     /// greater than the second, and places the result onto the stack.
-    pub fn opcode_gt(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_gt(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk.clone(), i, "> requires two arguments");
             return 0;
@@ -772,7 +772,7 @@ impl VM {
     /// another, and placing a boolean onto the stack indicating
     /// whether that is so.  Returns an integer indicating whether the
     /// values were able to be compared.
-    fn opcode_lt_inner(&mut self, chunk: Rc<Chunk>, i: usize, v1: &Value, v2: &Value) -> i32 {
+    fn opcode_lt_inner(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let res = if n2 < n1 { 1 } else { 0 };
@@ -897,7 +897,7 @@ impl VM {
 
     /// Takes two values as its arguments, checks whether the first is
     /// less than the second, and places the result onto the stack.
-    pub fn opcode_lt(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_lt(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk.clone(), i, "< requires two arguments");
             return 0;

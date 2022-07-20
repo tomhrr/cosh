@@ -623,7 +623,7 @@ impl Compiler {
                     }
                     chunk
                         .functions
-                        .insert(name_str, Rc::new(generator_chunk));
+                        .insert(name_str, Rc::new(RefCell::new(generator_chunk)));
                 }
                 TokenType::StartFunction => {
                     let mut function_chunk = Chunk::new_standard(chunk.name.to_string());
@@ -658,7 +658,7 @@ impl Compiler {
                     }
                     chunk
                         .functions
-                        .insert(name_str, Rc::new(function_chunk));
+                        .insert(name_str, Rc::new(RefCell::new(function_chunk)));
                 }
                 TokenType::EndFunction => {
                     self.decrease_scope_depth(chunk);
@@ -701,7 +701,7 @@ impl Compiler {
                     chunk.add_byte(i_lower as u8);
                     chunk
                         .functions
-                        .insert(name_str, Rc::new(function_chunk));
+                        .insert(name_str, Rc::new(RefCell::new(function_chunk)));
                 }
                 TokenType::RightBracket => {
                     match chunk.get_second_last_opcode() {

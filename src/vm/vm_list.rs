@@ -12,7 +12,7 @@ use vm::VM;
 impl VM {
     /// Takes a list and an index as its arguments.  Gets the element
     /// at the given index from the list and places it onto the stack.
-    pub fn core_nth(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_nth(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk, i, "nth requires two arguments");
             return 0;
@@ -46,7 +46,7 @@ impl VM {
 
     /// Takes a list, an index, and a value as its arguments.  Places
     /// the value at the given index in the list.
-    pub fn core_nth_em(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_nth_em(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 3 {
             print_error(chunk, i, "nth! requires three arguments");
             return 0;
@@ -88,8 +88,8 @@ impl VM {
     pub fn core_gnth(
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
-        global_functions: &mut HashMap<String, Rc<Chunk>>,
-        chunk: Rc<Chunk>,
+        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
+        chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -139,7 +139,7 @@ impl VM {
 
     /// Takes a list and a value as its arguments.  Pushes the value
     /// onto the list and places the updated list onto the stack.
-    pub fn opcode_push(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_push(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk, i, "push requires two arguments");
             return 0;
@@ -167,7 +167,7 @@ impl VM {
     /// Takes a list and a value as its arguments.  Pushes the value
     /// onto the start of the list and places the updated list onto
     /// the stack.
-    pub fn core_unshift(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_unshift(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk, i, "unshift requires two arguments");
             return 0;
@@ -194,7 +194,7 @@ impl VM {
 
     /// Takes a list as its single argument.  Pops a value from the
     /// end of the list and places that value onto the stack.
-    pub fn opcode_pop(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_pop(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "pop requires one argument");
             return 0;
@@ -222,8 +222,8 @@ impl VM {
     pub fn opcode_shift_inner<'a>(
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
-        global_functions: &mut HashMap<String, Rc<Chunk>>,
-        chunk: Rc<Chunk>,
+        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
+        chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -277,7 +277,7 @@ impl VM {
                     let call_stack_chunks = &mut generator_object.call_stack_chunks;
 
                     let current_index = index;
-                    if current_index == chunk.data.len() {
+                    if current_index == chunk.borrow().data.len() {
                         /* At end of function: push null. */
                         self.stack.push(Value::Null);
                     } else {
@@ -438,8 +438,8 @@ impl VM {
     pub fn opcode_shift<'a>(
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
-        global_functions: &mut HashMap<String, Rc<Chunk>>,
-        chunk: Rc<Chunk>,
+        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
+        chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -462,8 +462,8 @@ impl VM {
     pub fn core_shift_all(
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
-        global_functions: &mut HashMap<String, Rc<Chunk>>,
-        chunk: Rc<Chunk>,
+        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
+        chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
@@ -519,7 +519,7 @@ impl VM {
     /// Takes an arbitrary value as its single argument.  Places a
     /// boolean onto the stack indicating whether the argument can be
     /// shifted.
-    pub fn opcode_isshiftable(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_isshiftable(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "is-shiftable requires one argument");
             return 0;

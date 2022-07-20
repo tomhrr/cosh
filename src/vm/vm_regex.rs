@@ -15,7 +15,7 @@ impl VM {
     /// Takes a value that can be stringified and a regex string as
     /// its arguments.  Tests whether the value matches as against the
     /// regex and puts a boolean onto the stack accordingly.
-    pub fn core_m(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_m(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk.clone(), i, "m requires two arguments");
             return 0;
@@ -104,7 +104,7 @@ impl VM {
     /// replacement string as its arguments.  Runs a
     /// search-and-replace against the string based on the regex, and
     /// puts the resulting string onto the stack.
-    pub fn core_s(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_s(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 3 {
             print_error(chunk.clone(), i, "s requires three arguments");
             return 0;
@@ -231,7 +231,7 @@ impl VM {
     /// Takes a value that can be stringified and a regex string as
     /// its arguments.  Gets the regex captures from the value, puts
     /// them into a list, and then puts that list onto the stack.
-    pub fn core_c(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_c(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk.clone(), i, "c requires two arguments");
             return 0;

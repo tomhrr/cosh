@@ -14,7 +14,7 @@ impl VM {
     /// Takes a file path and a mode string (either 'r' or 'w') as its
     /// arguments, and puts a FileReader or FileWriter object on the
     /// stack as appropriate.
-    pub fn opcode_open(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_open(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk, i, "open requires two arguments");
             return 0;
@@ -104,7 +104,7 @@ impl VM {
     /// Takes a FileReader object as its single argument.  Reads one
     /// line from that object and places it onto the stack (including
     /// the ending newline).
-    pub fn opcode_readline(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn opcode_readline(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "readline requires one argument");
             return 0;
@@ -142,7 +142,7 @@ impl VM {
 
     /// Takes a FileWriter object and a line as its arguments.  Writes
     /// the line to the file.
-    pub fn core_writeline(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_writeline(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk, i, "writeline requires two arguments");
             return 0;
@@ -206,7 +206,7 @@ impl VM {
 
     /// Takes a FileReader or FileWriter object as its single
     /// argument.  Closes the object, if required.
-    pub fn core_close(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_close(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "close requires one argument");
             return 0;
@@ -242,7 +242,7 @@ impl VM {
     /// Takes a directory path as its single argument.  Opens the
     /// directory and places a DirectoryHandle object for the
     /// directory onto the stack.
-    pub fn core_opendir(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_opendir(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "opendir requires one argument");
             return 0;
@@ -297,7 +297,7 @@ impl VM {
     /// Takes a DirectoryHandle object as its single argument.  Reads
     /// the next entry from the corresponding handle and places it
     /// onto the stack.
-    pub fn core_readdir(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_readdir(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "readdir requires one argument");
             return 0;
@@ -331,7 +331,7 @@ impl VM {
 
     /// Takes a path as its single argument.  Places a boolean onto
     /// the stack indicating whether the path maps to a directory.
-    pub fn core_is_dir(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_is_dir(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "is-dir requires one argument");
             return 0;

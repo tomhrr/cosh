@@ -8,7 +8,7 @@ impl VM {
     /// Takes a hash value and a key string as its arguments.  Puts
     /// the value at that hash key onto the stack, or the null value
     /// if no such hash key exists.
-    pub fn core_at(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_at(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk, i, "at requires two arguments");
             return 0;
@@ -67,7 +67,7 @@ impl VM {
     /// Takes a hash value, a key string, and a value as its
     /// arguments.  Puts the value into the hash against the specified
     /// key, and puts the updated hash back onto the stack.
-    pub fn core_at_em(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_at_em(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 3 {
             print_error(chunk, i, "at! requires three arguments");
             return 0;
@@ -121,7 +121,7 @@ impl VM {
 
     /// Takes a hash value and returns a generator over the keys of
     /// the hash.
-    pub fn core_keys(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_keys(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "keys requires one argument");
             return 0;
@@ -150,7 +150,7 @@ impl VM {
 
     /// Takes a hash value and returns a generator over the values of
     /// the hash.
-    pub fn core_values(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_values(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "values requires one argument");
             return 0;
@@ -179,7 +179,7 @@ impl VM {
 
     /// Takes a hash value and returns a generator over the key-value
     /// pairs from that hash.
-    pub fn core_each(&mut self, chunk: Rc<Chunk>, i: usize) -> i32 {
+    pub fn core_each(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "each requires one argument");
             return 0;

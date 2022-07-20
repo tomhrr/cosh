@@ -445,7 +445,7 @@ fn main() {
                 eprintln!("unable to deserialise file");
                 std::process::exit(1);
             }
-            let chunk = Rc::new(chunk_opt.unwrap());
+            let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
             let mut vm = VM::new(true, debug);
             let mut scopes = Vec::new();
             scopes.push(Rc::new(RefCell::new(HashMap::new())));
@@ -459,7 +459,7 @@ fn main() {
                         std::process::exit(1);
                     }
                 }
-                functions.push(Rc::new(rtchunk_opt.unwrap()));
+                functions.push(Rc::new(RefCell::new(rtchunk_opt.unwrap())));
             }
             let mut call_stack_chunks = Vec::new();
             if functions.len() > 0 {
@@ -602,7 +602,7 @@ fn main() {
                         );
                         match chunk_opt {
                             Some(chunk) => {
-                                for (k, v) in chunk.functions.iter() {
+                                for (k, v) in chunk.borrow().functions.iter() {
                                     if !k.starts_with("anon") {
                                         global_functions.insert(k.clone(), v.clone());
                                     }
@@ -686,7 +686,7 @@ fn main() {
                     );
                     match chunk_opt {
                         Some(chunk) => {
-                            for (k, v) in chunk.functions.iter() {
+                            for (k, v) in chunk.borrow().functions.iter() {
                                 if !k.starts_with("anon") {
                                     global_functions.insert(k.clone(), v.clone());
                                 }

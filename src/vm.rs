@@ -322,49 +322,49 @@ impl VM {
     /// Takes a wrapped value as its single argument, and returns a
     /// wrapped value for the stringified representation of the argument.
     pub fn to_string_value(value_rr: Value) -> Option<Value> {
-	let is_string;
-	{
-	    match value_rr {
-		Value::String(_) => {
-		    is_string = true;
-		}
-		_ => {
-		    is_string = false;
-		}
-	    }
-	}
-	if is_string {
-	    return Some(value_rr);
-	} else {
-	    let value_s;
-	    let value_b;
-	    let value_str;
-	    let value_bk: Option<String>;
-	    let value_opt: Option<&str> = match value_rr {
-		Value::String(sp) => {
-		    value_s = sp;
-		    value_b = value_s.borrow();
-		    Some(&value_b.s)
-		}
-		_ => {
-		    value_bk = value_rr.to_string();
-		    match value_bk {
-			Some(s) => {
-			    value_str = s;
-			    Some(&value_str)
-			}
-			_ => None,
-		    }
-		}
-	    };
-	    match value_opt {
-		Some(s) => Some(Value::String(Rc::new(RefCell::new(StringPair::new(
-		    s.to_string(),
-		    None,
-		))))),
-		_ => None,
-	    }
-	}
+        let is_string;
+        {
+            match value_rr {
+                Value::String(_) => {
+                    is_string = true;
+                }
+                _ => {
+                    is_string = false;
+                }
+            }
+        }
+        if is_string {
+            return Some(value_rr);
+        } else {
+            let value_s;
+            let value_b;
+            let value_str;
+            let value_bk: Option<String>;
+            let value_opt: Option<&str> = match value_rr {
+                Value::String(sp) => {
+                    value_s = sp;
+                    value_b = value_s.borrow();
+                    Some(&value_b.s)
+                }
+                _ => {
+                    value_bk = value_rr.to_string();
+                    match value_bk {
+                        Some(s) => {
+                            value_str = s;
+                            Some(&value_str)
+                        }
+                        _ => None,
+                    }
+                }
+            };
+            match value_opt {
+                Some(s) => Some(Value::String(Rc::new(RefCell::new(StringPair::new(
+                    s.to_string(),
+                    None,
+                ))))),
+                _ => None,
+            }
+        }
     }
 
     pub fn call_named_function<'a>(
@@ -452,7 +452,61 @@ impl VM {
         return true;
     }
 
-    pub fn call_string<'a>(
+    pub fn string_to_callable(
+        &mut self,
+        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
+        call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
+        chunk: Rc<RefCell<Chunk>>,
+        s: &str
+    ) -> Option<Value> {
+        let sf_fn_opt = SIMPLE_FORMS.get(s);
+        if !sf_fn_opt.is_none() {
+            let sf_fn = sf_fn_opt.unwrap();
+            let nv = Value::CoreFunction(*sf_fn);
+            return Some(nv);
+        }
+
+        let shift_fn_opt = SHIFT_FORMS.get(&s as &str);
+        if !shift_fn_opt.is_none() {
+            let shift_fn = shift_fn_opt.unwrap();
+            let nv = Value::ShiftFunction(*shift_fn);
+            return Some(nv);
+        }
+
+        call_stack_chunks.push(chunk);
+
+        let global_function;
+        let mut call_chunk_opt = None;
+
+        for sf in call_stack_chunks.iter().rev() {
+            let sfb = sf.borrow();
+            if sfb.functions.contains_key(s) {
+                let call_chunk = sfb.functions.get(s).unwrap();
+                call_chunk_opt = Some(call_chunk.clone());
+                break;
+            }
+        }
+        if call_chunk_opt.is_none() && global_functions.contains_key(s) {
+            global_function = global_functions.get(s).unwrap().clone();
+            call_chunk_opt = Some(global_function.clone());
+        }
+        match call_chunk_opt {
+            Some(call_chunk) => {
+                let nv = Value::NamedFunction(
+                    call_chunk.clone()
+                );
+                call_stack_chunks.pop();
+                return Some(nv);
+            }
+            _ => {}
+        }
+
+        call_stack_chunks.pop();
+
+        return None;
+    }
+
+    pub fn call_string(
         &mut self,
         scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
@@ -465,32 +519,49 @@ impl VM {
         is_implicit: bool,
         s: &str,
     ) -> bool {
-        let sf_fn_opt = SIMPLE_FORMS.get(s);
-        if !sf_fn_opt.is_none() {
-            let sf_fn = sf_fn_opt.unwrap();
-            let n = sf_fn(self, chunk, i);
-            if n == 0 {
-                return false;
+        let sv = self.string_to_callable(
+            global_functions, call_stack_chunks, chunk.clone(), s
+        );
+        match sv {
+            Some(Value::CoreFunction(sf_fn)) => {
+                let n = sf_fn(self, chunk, i);
+                if n == 0 {
+                    return false;
+                }
+                return true;
             }
-            return true;
-        }
-
-        let shift_fn_opt = SHIFT_FORMS.get(s);
-        if !shift_fn_opt.is_none() {
-            let shift_fn = shift_fn_opt.unwrap();
-            let n = shift_fn(
-                self,
-                scopes,
-                global_functions,
-                chunk,
-                i,
-                line_col,
-                running,
-            );
-            if n == 0 {
-                return false;
+            Some(Value::ShiftFunction(shift_fn)) => {
+                let n = shift_fn(
+                    self,
+                    scopes,
+                    global_functions,
+                    chunk,
+                    i,
+                    line_col,
+                    running,
+                );
+                if n == 0 {
+                    return false;
+                }
+                return true;
             }
-            return true;
+            Some(Value::NamedFunction(named_fn)) => {
+                call_stack_chunks.push(chunk.clone());
+                let res = self.call_named_function(
+                    scopes,
+                    global_functions,
+                    call_stack_chunks,
+                    chunk.clone(),
+                    0,
+                    line_col,
+                    running.clone(),
+                    plvs_stack,
+                    named_fn.clone(),
+                );
+                call_stack_chunks.pop();
+                return res;
+            }
+            _ => {}
         }
 
         if s == "toggle-mode" {
@@ -529,50 +600,16 @@ impl VM {
             let mut pushed = false;
             match fn_opt {
                 Some(s) => {
-                    let sf_fn_opt = SIMPLE_FORMS.get(&s as &str);
-                    if !sf_fn_opt.is_none() {
-                        let sf_fn = sf_fn_opt.unwrap();
-                        let nv = Value::CoreFunction(*sf_fn);
-                        self.stack.push(nv);
-                        pushed = true;
-                    } else {
-                        let shift_fn_opt = SHIFT_FORMS.get(&s as &str);
-                        if !shift_fn_opt.is_none() {
-                            let shift_fn = shift_fn_opt.unwrap();
-                            let nv = Value::ShiftFunction(*shift_fn);
-                            self.stack.push(nv);
+                    let sv = self.string_to_callable(
+                        global_functions, call_stack_chunks,
+                        chunk, s
+                    );
+                    match sv {
+                        Some(v) => {
+                            self.stack.push(v);
                             pushed = true;
-                        } else {
-                            call_stack_chunks.push(chunk);
-
-                            let global_function;
-                            let mut call_chunk_opt = None;
-
-                            for sf in call_stack_chunks.iter().rev() {
-                                let sfb = sf.borrow();
-                                if sfb.functions.contains_key(s) {
-                                    let call_chunk = sfb.functions.get(s).unwrap();
-                                    call_chunk_opt = Some(call_chunk.clone());
-                                    break;
-                                }
-                            }
-                            if call_chunk_opt.is_none() && global_functions.contains_key(s)
-                            {
-                                global_function = global_functions.get(s).unwrap().clone();
-                                call_chunk_opt = Some(global_function.clone());
-                            }
-                            match call_chunk_opt {
-                                Some(call_chunk) => {
-                                    let nv = Value::NamedFunction(
-                                        call_chunk.clone()
-                                    );
-                                    self.stack.push(nv);
-                                    pushed = true;
-                                }
-                                _ => {}
-                            }
-                            call_stack_chunks.pop();
                         }
+                        _ => {}
                     }
                 }
                 _ => {}
@@ -630,55 +667,15 @@ impl VM {
                 }
             }
         } else {
-            call_stack_chunks.push(chunk.clone());
-
-            //let call_stack_function;
-            let global_function;
-            let mut call_chunk_opt = None;
-
-            {
-                for sf in call_stack_chunks.iter().rev() {
-                    let sfb = sf.borrow();
-                    if sfb.functions.contains_key(s) {
-                        let call_chunk = sfb.functions.get(s).unwrap();
-                        call_chunk_opt = Some(call_chunk.clone());
-                        break;
-                    }
-                }
-                if call_chunk_opt.is_none() && global_functions.contains_key(s) {
-                    global_function = global_functions.get(s).unwrap().clone();
-                    call_chunk_opt = Some(global_function);
-                }
-            }
-            match call_chunk_opt {
-                None => {
-                    call_stack_chunks.pop();
-                    if is_implicit {
-                        let value_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
-                            s.to_string(),
-                            None,
-                        ))));
-                        self.stack.push(value_rr);
-                    } else {
-                        print_error(chunk, i, "function not found");
-                        return false;
-                    }
-                }
-                Some(call_chunk) => {
-                    let res = self.call_named_function(
-                        scopes,
-                        global_functions,
-                        call_stack_chunks,
-                        chunk.clone(),
-                        0,
-                        line_col,
-                        running.clone(),
-                        plvs_stack,
-                        call_chunk.clone(),
-                    );
-                    call_stack_chunks.pop();
-                    return res;
-                }
+            if is_implicit {
+                let value_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
+                    s.to_string(),
+                    None,
+                ))));
+                self.stack.push(value_rr);
+            } else {
+                print_error(chunk, i, "function not found");
+                return false;
             }
         }
 
@@ -753,26 +750,12 @@ impl VM {
                         }
                     }
                     if not_present {
-                        let sf_fn_opt = SIMPLE_FORMS.get(&s as &str);
-                        if !sf_fn_opt.is_none() {
-                            let sf_fn = sf_fn_opt.unwrap();
-                            let nv = Value::CoreFunction(*sf_fn);
-                            chunk
-                                .borrow_mut()
-                                .constant_values
-                                .resize(function_str_index as usize, Value::Null);
-                            chunk
-                                .borrow_mut()
-                                .constant_values
-                                .insert(function_str_index as usize, nv);
-                            if self.debug {
-                                eprintln!("function str {:?} found, inserted as core function", s);
-                            }
-                        } else {
-                            let shift_fn_opt = SHIFT_FORMS.get(&s as &str);
-                            if !shift_fn_opt.is_none() {
-                                let shift_fn = shift_fn_opt.unwrap();
-                                let nv = Value::ShiftFunction(*shift_fn);
+                        let sv = self.string_to_callable(
+                            global_functions, call_stack_chunks,
+                            chunk.clone(), s
+                        );
+                        match sv {
+                            Some(v) => {
                                 chunk
                                     .borrow_mut()
                                     .constant_values
@@ -780,57 +763,9 @@ impl VM {
                                 chunk
                                     .borrow_mut()
                                     .constant_values
-                                    .insert(function_str_index as usize, nv);
-                                if self.debug {
-                                    eprintln!(
-                                        "function str {:?} found, inserted as shift function",
-                                        s
-                                    );
-                                }
-                            } else {
-                                call_stack_chunks.push(chunk.clone());
-
-                                let global_function;
-                                let mut call_chunk_opt = None;
-
-                                for sf in call_stack_chunks.iter().rev() {
-                                    if sf.borrow().functions.contains_key(s) {
-                                        let sfb = sf.borrow();
-                                        let f = sfb.functions.get(s).unwrap().clone();
-                                        call_chunk_opt = Some(f);
-                                        break;
-                                    }
-                                }
-                                if call_chunk_opt.is_none()
-                                    && global_functions.contains_key(s)
-                                {
-                                    global_function =
-                                        global_functions.get(s).unwrap();
-                                    call_chunk_opt =
-                                        Some(global_function.clone());
-                                }
-                                match call_chunk_opt {
-                                    Some(call_chunk) => {
-                                        let nv =
-                                            Value::NamedFunction(
-                                                call_chunk.clone()
-                                            );
-                                        chunk.borrow_mut().constant_values.resize(
-                                            function_str_index as usize,
-                                            Value::Null
-                                        );
-                                        chunk
-                                            .borrow_mut()
-                                            .constant_values
-                                            .insert(function_str_index as usize, nv);
-                                        if self.debug {
-                                            eprintln!("function str {:?} found, inserted as named function", s);
-                                        }
-                                    }
-                                    _ => {}
-                                }
-                                call_stack_chunks.pop();
+                                    .insert(function_str_index as usize, v);
                             }
+                            _ => {}
                         }
                     }
 

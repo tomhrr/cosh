@@ -167,7 +167,7 @@ impl VM {
 
         let i1_rr = self.stack.pop().unwrap();
         let is_callable = match i1_rr {
-            Value::Function(_, _) => 1,
+            Value::AnonymousFunction(_, _) => 1,
             Value::CoreFunction(_) => 1,
             Value::ShiftFunction(_) => 1,
             Value::NamedFunction(_) => 1,

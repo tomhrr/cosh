@@ -153,11 +153,9 @@ pub enum Value {
     List(Rc<RefCell<VecDeque<Value>>>),
     /// A hash.
     Hash(Rc<RefCell<IndexMap<String, Value>>>),
-    /// An anonymous function that refers to a local stack, where the
-    /// second value is the local variable stack index and the third
-    /// value is a unique identifier for that stack (currently its
-    /// pointer value).
-    Function(Rc<RefCell<String>>, Rc<RefCell<Vec<Value>>>),
+    /// An anonymous function (includes reference to local variable
+    /// stack).
+    AnonymousFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<Value>>>),
     /// A core function.  See SIMPLE_FORMS in the VM.
     CoreFunction(fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32),
     /// A shift function (i.e. a function that shifts an element from
@@ -224,7 +222,7 @@ impl fmt::Debug for Value {
             Value::Hash(hs) => {
                 write!(f, "{:?}", hs)
             }
-            Value::Function(_, _) => {
+            Value::AnonymousFunction(_, _) => {
                 write!(f, "((Function))")
             }
             Value::CoreFunction(_) => {

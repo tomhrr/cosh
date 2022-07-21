@@ -376,7 +376,6 @@ impl VM {
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
-        is_value_function: bool,
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         call_chunk: Rc<RefCell<Chunk>>,
     ) -> bool {
@@ -422,7 +421,8 @@ impl VM {
             }
 
             let mut prev_stack = None;
-            if is_value_function {
+            let has_plvs_stack = !plvs_stack.is_none();
+            if has_plvs_stack {
                 self.local_var_stack = plvs_stack.unwrap();
             } else if !call_chunk.borrow().nested {
                 prev_stack = Some(self.local_var_stack.clone());
@@ -439,7 +439,7 @@ impl VM {
                 running.clone(),
             );
 
-            if !is_value_function && !call_chunk.borrow().nested {
+            if !has_plvs_stack && !call_chunk.borrow().nested {
                 self.local_var_stack = prev_stack.unwrap();
             }
 
@@ -461,7 +461,6 @@ impl VM {
         i: usize,
         line_col: (u32, u32),
         running: Arc<AtomicBool>,
-        is_value_function: bool,
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         is_implicit: bool,
         s: &str,
@@ -674,7 +673,6 @@ impl VM {
                         0,
                         line_col,
                         running.clone(),
-                        is_value_function,
                         plvs_stack,
                         call_chunk.clone(),
                     );
@@ -705,7 +703,7 @@ impl VM {
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         call_opcode: OpCode,
-        mut function_rr: Option<Value>,
+        function_rr: Option<Value>,
         function_str: Option<&str>,
         function_str_index: i32,
         line_col: (u32, u32),
@@ -730,30 +728,6 @@ impl VM {
                 eprintln!("unexpected opcode!");
                 std::process::abort();
             }
-        }
-
-        // If the value being called is a function value, then confirm
-        // that the correct local variable stack is still available,
-        // and store that value so the right stack is used later on.
-        let mut is_value_function = false;
-        let mut plvs_stack = None;
-        let mut value_function_str = "".to_owned();
-        {
-            match function_rr {
-                Some(Value::Function(ref s, ref lvs)) => {
-                    value_function_str =
-                        s.clone().borrow().to_string();
-                    plvs_stack = Some(lvs.clone());
-                    is_value_function = true;
-                }
-                _ => {}
-            }
-        }
-        if is_value_function {
-            function_rr = Some(Value::String(Rc::new(RefCell::new(StringPair::new(
-                value_function_str.to_string(),
-                None,
-            )))));
         }
 
         match function_str {
@@ -891,6 +865,19 @@ impl VM {
                                 }
                                 return true;
                             }
+                            Value::AnonymousFunction(call_chunk_rc, lvs) => {
+                                return self.call_named_function(
+                                    scopes,
+                                    global_functions,
+                                    call_stack_chunks,
+                                    chunk.clone(),
+                                    0,
+                                    line_col,
+                                    running.clone(),
+                                    Some(lvs),
+                                    call_chunk_rc.clone(),
+                                );
+                            }
                             Value::NamedFunction(call_chunk_rc) => {
                                 if self.debug {
                                     eprintln!("function str {:?} matches named function", s);
@@ -903,8 +890,7 @@ impl VM {
                                     0,
                                     line_col,
                                     running.clone(),
-                                    is_value_function,
-                                    plvs_stack,
+                                    None,
                                     call_chunk_rc.clone(),
                                 );
                             }
@@ -932,8 +918,7 @@ impl VM {
                     0,
                     line_col,
                     running.clone(),
-                    is_value_function,
-                    plvs_stack,
+                    None,
                     is_implicit,
                     s,
                 );
@@ -987,9 +972,21 @@ impl VM {
                     0,
                     line_col,
                     running.clone(),
-                    is_value_function,
-                    plvs_stack,
+                    None,
                     call_chunk_rc,
+                );
+            }
+            Value::AnonymousFunction(call_chunk_rc, lvs) => {
+                return self.call_named_function(
+                    scopes,
+                    global_functions,
+                    call_stack_chunks,
+                    chunk.clone(),
+                    0,
+                    line_col,
+                    running.clone(),
+                    Some(lvs),
+                    call_chunk_rc.clone(),
                 );
             }
             Value::String(sp) => {
@@ -1005,8 +1002,7 @@ impl VM {
                     0,
                     line_col,
                     running.clone(),
-                    is_value_function,
-                    plvs_stack,
+                    None,
                     is_implicit,
                     &s,
                 );
@@ -1309,8 +1305,8 @@ impl VM {
                             match cfb.get(i2 as usize) {
                                 Some(Value::String(_)) => {
                                     self.stack.push(
-                                        Value::Function(
-                                            Rc::new(RefCell::new(s.to_string())),
+                                        Value::AnonymousFunction(
+                                            chunk.borrow().functions.get(s).unwrap().clone(),
                                             self.local_var_stack.clone()
                                         )
                                     )
@@ -1341,10 +1337,10 @@ impl VM {
                         let cfb = &chunk.borrow().constant_values;
                         let cv_value_rr = cfb.get(i2 as usize).unwrap().clone();
                         match cv_value_rr {
-                            Value::String(sp) => {
+                            Value::String(ref sp) => {
                                 self.stack.push(
-                                    Value::Function(
-                                        Rc::new(RefCell::new(sp.borrow().s.to_string())),
+                                    Value::AnonymousFunction(
+                                        chunk.borrow().functions.get(&sp.borrow().s.to_string()).unwrap().clone(),
                                         self.local_var_stack.clone()
                                     )
                                 )

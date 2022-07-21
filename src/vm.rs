@@ -709,16 +709,10 @@ impl VM {
         // Determine whether the function has been called implicitly.
         let is_implicit;
         match call_opcode {
-            OpCode::CallImplicit => {
+            OpCode::CallImplicit | OpCode::CallImplicitConstant => {
                 is_implicit = true;
             }
-            OpCode::CallImplicitConstant => {
-                is_implicit = true;
-            }
-            OpCode::Call => {
-                is_implicit = false;
-            }
-            OpCode::CallConstant => {
+            OpCode::Call | OpCode::CallConstant => {
                 is_implicit = false;
             }
             _ => {
@@ -727,6 +721,7 @@ impl VM {
             }
         }
 
+        let mut cv = Value::Null;
         match function_str {
             Some(s) => {
                 if function_str_index > -1 {
@@ -769,101 +764,32 @@ impl VM {
                         }
                     }
 
-                    {
-                        let cv = chunk.borrow().get_constant_value(function_str_index);
-                        match cv {
-                            Value::CoreFunction(cf) => {
-                                if self.debug {
-                                    eprintln!("function str {:?} matches core function", s);
-                                }
-                                let n = cf(self, chunk, i);
-                                if n == 0 {
-                                    return false;
-                                }
-                                return true;
-                            }
-                            Value::ShiftFunction(sf) => {
-                                if self.debug {
-                                    eprintln!("function str {:?} matches shift function", s);
-                                }
-                                let n = sf(
-                                    self,
-                                    scopes,
-                                    global_functions,
-                                    chunk,
-                                    i,
-                                    line_col,
-                                    running,
-                                );
-                                if n == 0 {
-                                    return false;
-                                }
-                                return true;
-                            }
-                            Value::AnonymousFunction(call_chunk_rc, lvs) => {
-                                return self.call_named_function(
-                                    scopes,
-                                    global_functions,
-                                    call_stack_chunks,
-                                    chunk.clone(),
-                                    0,
-                                    line_col,
-                                    running.clone(),
-                                    Some(lvs),
-                                    call_chunk_rc.clone(),
-                                );
-                            }
-                            Value::NamedFunction(call_chunk_rc) => {
-                                if self.debug {
-                                    eprintln!("function str {:?} matches named function", s);
-                                }
-                                return self.call_named_function(
-                                    scopes,
-                                    global_functions,
-                                    call_stack_chunks,
-                                    chunk.clone(),
-                                    0,
-                                    line_col,
-                                    running.clone(),
-                                    None,
-                                    call_chunk_rc.clone(),
-                                );
-                            }
-                            Value::Null => {
-                                if self.debug {
-                                    eprintln!("function str {:?} not cached", s);
-                                }
-                            }
-                            _ => {
-                                if self.debug {
-                                    eprintln!("function str {:?} not cached", s);
-                                }
-                            }
-                        };
+                    cv = chunk.borrow().get_constant_value(function_str_index);
+                }
+                match cv {
+                    Value::Null => {
+                        return self.call_string(
+                            scopes,
+                            global_functions,
+                            call_stack_chunks,
+                            chunk,
+                            0,
+                            line_col,
+                            running.clone(),
+                            None,
+                            is_implicit,
+                            s,
+                        );
                     }
+                    _ => {}
                 }
-                if self.debug {
-                    eprintln!("instantiating new chunk functions for string {:?}", s);
-                }
-                return self.call_string(
-                    scopes,
-                    global_functions,
-                    call_stack_chunks,
-                    chunk,
-                    0,
-                    line_col,
-                    running.clone(),
-                    None,
-                    is_implicit,
-                    s,
-                );
             }
-            _ => {}
+            _ => {
+                cv = function_rr.unwrap();
+            }
         }
 
-        let frr = function_rr.unwrap();
-
-        match frr {
+        match cv {
             Value::Command(s) => {
                 let i2 = self.core_command(&s.borrow(), chunk, i);
                 if i2 == 0 {
@@ -944,7 +870,7 @@ impl VM {
             }
             _ => {
                 if is_implicit {
-                    self.stack.push(frr.clone());
+                    self.stack.push(cv.clone());
                 } else {
                     print_error(chunk, i, "function not found");
                     return false;

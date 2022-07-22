@@ -58,6 +58,8 @@ pub struct VM {
     global_functions: HashMap<String, Rc<RefCell<Chunk>>>,
     // The call stack chunks.
     pub call_stack_chunks: Vec<Rc<RefCell<Chunk>>>,
+    // A flag for interrupting execution.
+    pub running: Arc<AtomicBool>,
     // A System object, for getting process information.
     sys: System,
 }
@@ -201,7 +203,6 @@ lazy_static! {
             Rc<RefCell<Chunk>>,
             usize,
             (u32, u32),
-            Arc<AtomicBool>,
         ) -> i32,
     > = {
         let mut map = HashMap::new();
@@ -213,7 +214,6 @@ lazy_static! {
                     Rc<RefCell<Chunk>>,
                     usize,
                     (u32, u32),
-                    Arc<AtomicBool>,
                 ) -> i32,
         );
         map.insert(
@@ -224,7 +224,6 @@ lazy_static! {
                     Rc<RefCell<Chunk>>,
                     usize,
                     (u32, u32),
-                    Arc<AtomicBool>,
                 ) -> i32,
         );
         map.insert(
@@ -235,7 +234,6 @@ lazy_static! {
                     Rc<RefCell<Chunk>>,
                     usize,
                     (u32, u32),
-                    Arc<AtomicBool>,
                 ) -> i32,
         );
         map.insert(
@@ -246,7 +244,6 @@ lazy_static! {
                     Rc<RefCell<Chunk>>,
                     usize,
                     (u32, u32),
-                    Arc<AtomicBool>,
                 ) -> i32,
         );
         map.insert(
@@ -257,7 +254,6 @@ lazy_static! {
                     Rc<RefCell<Chunk>>,
                     usize,
                     (u32, u32),
-                    Arc<AtomicBool>,
                 ) -> i32,
         );
         map
@@ -312,6 +308,7 @@ impl VM {
             scopes: vec![Rc::new(RefCell::new(HashMap::new()))],
             global_functions: HashMap::new(),
             call_stack_chunks: Vec::new(),
+            running: Arc::new(AtomicBool::new(true)),
             sys: System::new(),
         }
     }
@@ -369,7 +366,6 @@ impl VM {
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
-        running: Arc<AtomicBool>,
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         call_chunk: Rc<RefCell<Chunk>>,
     ) -> bool {
@@ -426,8 +422,7 @@ impl VM {
             let res = self.run(
                 call_chunk.clone(),
                 0,
-                line_col,
-                running.clone(),
+                line_col
             );
 
             if !has_plvs_stack && !call_chunk.borrow().nested {
@@ -500,7 +495,6 @@ impl VM {
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
-        running: Arc<AtomicBool>,
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         is_implicit: bool,
         s: &str,
@@ -521,8 +515,7 @@ impl VM {
                     self,
                     chunk,
                     i,
-                    line_col,
-                    running,
+                    line_col
                 );
                 if n == 0 {
                     return false;
@@ -535,7 +528,6 @@ impl VM {
                     chunk.clone(),
                     0,
                     line_col,
-                    running.clone(),
                     plvs_stack,
                     named_fn.clone(),
                 );
@@ -548,7 +540,7 @@ impl VM {
         if s == "toggle-mode" {
             self.print_stack = !self.print_stack;
         } else if s == ".s" {
-            self.print_stack(chunk, i, running, true);
+            self.print_stack(chunk, i, true);
         } else if s == "exc" {
             if self.stack.len() < 1 {
                 print_error(chunk, i, "exc requires one argument");
@@ -681,7 +673,6 @@ impl VM {
         function_str: Option<&str>,
         function_str_index: i32,
         line_col: (u32, u32),
-        running: Arc<AtomicBool>,
     ) -> bool {
         // Determine whether the function has been called implicitly.
         let is_implicit;
@@ -748,7 +739,6 @@ impl VM {
                             chunk,
                             0,
                             line_col,
-                            running.clone(),
                             None,
                             is_implicit,
                             s,
@@ -788,7 +778,6 @@ impl VM {
                     chunk,
                     i,
                     line_col,
-                    running,
                 );
                 if n == 0 {
                     return false;
@@ -800,7 +789,6 @@ impl VM {
                     chunk,
                     0,
                     line_col,
-                    running.clone(),
                     None,
                     call_chunk_rc,
                 );
@@ -810,7 +798,6 @@ impl VM {
                     chunk.clone(),
                     0,
                     line_col,
-                    running.clone(),
                     Some(lvs),
                     call_chunk_rc.clone(),
                 );
@@ -824,7 +811,6 @@ impl VM {
                     chunk,
                     0,
                     line_col,
-                    running.clone(),
                     None,
                     is_implicit,
                     &s,
@@ -847,16 +833,15 @@ impl VM {
     /// chunk, the values for the current chunk, the instruction
     /// index, the global variables for the current generator (if
     /// applicable), the local variables for the current generator (if
-    /// applicable), the previous local variable stacks, the current
-    /// line and column number, and the running flag as its arguments.
-    /// Runs the code from the chunk, beginning at the specified
-    /// instruction index.
+    /// applicable), the previous local variable stacks, and the
+    /// current line and column number as its arguments.  Runs the
+    /// code from the chunk, beginning at the specified instruction
+    /// index.
     pub fn run<'a>(
         &mut self,
         chunk: Rc<RefCell<Chunk>>,
         index: usize,
         line_col: (u32, u32),
-        running: Arc<AtomicBool>,
     ) -> usize {
         let mut i = index;
 
@@ -865,8 +850,8 @@ impl VM {
         let mut list_types = Vec::new();
 
         while i < chunk.borrow().data.len() {
-            if !running.load(Ordering::SeqCst) {
-                running.store(true, Ordering::SeqCst);
+            if !self.running.load(Ordering::SeqCst) {
+                self.running.store(true, Ordering::SeqCst);
                 self.stack.clear();
                 return 0;
             }
@@ -1248,7 +1233,6 @@ impl VM {
                                 Some(sp),
                                 (i2 as u32).try_into().unwrap(),
                                 (line, col),
-                                running.clone(),
                             );
 
                             if !res {
@@ -1292,7 +1276,6 @@ impl VM {
                         None,
                         -1,
                         (line, col),
-                        running.clone(),
                     );
 
                     if !res {
@@ -1332,7 +1315,6 @@ impl VM {
                         None,
                         -1,
                         (line, col),
-                        running.clone(),
                     );
 
                     if !res {
@@ -1379,7 +1361,6 @@ impl VM {
                         chunk.clone(),
                         i,
                         line_col,
-                        running.clone(),
                         &mut pt
                     );
                     if i2 == 0 {
@@ -1582,7 +1563,6 @@ impl VM {
                         chunk.clone(),
                         i,
                         line_col,
-                        running.clone(),
                     );
                     if i2 == 0 {
                         return 0;
@@ -1695,22 +1675,20 @@ impl VM {
         }
 
         if self.print_stack {
-            self.print_stack(chunk.clone(), i, running, false);
+            self.print_stack(chunk.clone(), i, false);
             self.stack.clear();
         }
 
         return i + 1;
     }
 
-    /// Takes the global functions, the file to
-    /// read the program code from, and the running flag as its
-    /// arguments.  Compiles the program code and executes it,
-    /// returning the chunk (if compiled successfully).
+    /// Takes the global functions and the file to read the program
+    /// code from as its arguments.  Compiles the program code and
+    /// executes it, returning the chunk (if compiled successfully).
     pub fn interpret(
         &mut self,
         global_functions: &HashMap<String, Rc<RefCell<Chunk>>>,
         fh: &mut Box<dyn BufRead>,
-        running: Arc<AtomicBool>,
         name: &str,
     ) -> Option<Rc<RefCell<Chunk>>> {
 	for (k, v) in global_functions.iter() {
@@ -1729,7 +1707,6 @@ impl VM {
             chunk.clone(),
             0,
             (0, 0),
-            running.clone(),
         );
         if self.print_stack {
             self.stack.clear();

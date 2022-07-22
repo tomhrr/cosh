@@ -3,8 +3,6 @@ use std::collections::VecDeque;
 use std::io::BufRead;
 use std::mem;
 use std::rc::Rc;
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 
 use chunk::{print_error, Chunk, StringPair, Value};
 use vm::VM;
@@ -90,7 +88,6 @@ impl VM {
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
-        running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk, i, "gnth requires two arguments");
@@ -111,7 +108,6 @@ impl VM {
                         chunk.clone(),
                         i,
                         line_col,
-                        running.clone(),
                     );
                     if shift_res == 0 {
                         return 0;
@@ -220,7 +216,6 @@ impl VM {
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
-        running: Arc<AtomicBool>,
         shiftable_rr: &mut Value
     ) -> i32 {
         let mut repush = false;
@@ -284,7 +279,6 @@ impl VM {
                             chunk,
                             index,
                             line_col,
-                            running,
                         );
                         self.scopes.pop();
                         self.local_var_stack = plvs_stack;
@@ -433,7 +427,6 @@ impl VM {
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
-        running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "shift requires one argument");
@@ -442,7 +435,7 @@ impl VM {
 
         let mut shiftable_rr = self.stack.pop().unwrap();
         return self.opcode_shift_inner(
-            chunk, i, line_col, running, &mut shiftable_rr
+            chunk, i, line_col, &mut shiftable_rr
         );
     }
 
@@ -454,7 +447,6 @@ impl VM {
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
-        running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 1 {
             print_error(chunk, i, "shift-all requires one argument");
@@ -470,7 +462,6 @@ impl VM {
                 chunk.clone(),
                 i,
                 line_col,
-                running.clone(),
             );
             if shift_res == 0 {
                 self.stack.pop();

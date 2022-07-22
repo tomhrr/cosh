@@ -1,8 +1,6 @@
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 
 use regex::Regex;
 
@@ -324,7 +322,6 @@ impl VM {
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
-        running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk.clone(), i, "join requires two arguments");
@@ -374,7 +371,6 @@ impl VM {
                             chunk.clone(),
                             i,
                             line_col,
-                            running.clone(),
                         );
                         if shift_res == 0 {
                             return 0;

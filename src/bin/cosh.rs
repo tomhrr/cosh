@@ -20,8 +20,7 @@ use std::io::{BufRead, BufReader};
 use std::io::{Seek, SeekFrom};
 use std::path::{self, Path};
 use std::rc::Rc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::atomic::Ordering;
 
 use dirs_next::home_dir;
 use getopts::Options;
@@ -462,12 +461,10 @@ fn main() {
             if functions.len() > 0 {
                 vm.call_stack_chunks.push(functions[0].clone());
             }
-            let running = Arc::new(AtomicBool::new(true));
             vm.run(
                 chunk,
                 0,
-                (0, 0),
-                running.clone(),
+                (0, 0)
             );
         } else {
             let file_res = fs::File::open(path);
@@ -537,11 +534,9 @@ fn main() {
                     }
                 }
 
-                let running = Arc::new(AtomicBool::new(true));
                 vm.interpret(
                     &global_functions,
                     &mut bufread,
-                    running.clone(),
                     "(main)",
                 );
             }
@@ -567,8 +562,7 @@ fn main() {
 
         let mut vm = VM::new(true, debug);
 
-        let running = Arc::new(AtomicBool::new(true));
-        let running_clone = running.clone();
+        let running_clone = vm.running.clone();
         ctrlc::set_handler(move || {
             running_clone.store(false, Ordering::SeqCst);
         })
@@ -584,7 +578,6 @@ fn main() {
                         let chunk_opt = vm.interpret(
                             &global_functions,
                             &mut bufread,
-                            running.clone(),
                             ".coshrc",
                         );
                         match chunk_opt {
@@ -667,7 +660,6 @@ fn main() {
                     let chunk_opt = vm.interpret(
                         &global_functions,
                         &mut bufread,
-                        running.clone(),
                         "(main)",
                     );
                     match chunk_opt {

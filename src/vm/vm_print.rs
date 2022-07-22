@@ -2,8 +2,6 @@ use std::convert::TryInto;
 use std::io;
 use std::io::Write;
 use std::str;
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
@@ -162,11 +160,11 @@ impl VM {
     /// Used by print_stack to print a single stack value.  Takes a
     /// wrapped value, the current chunk, the instruction index, the
     /// map of global functions, the current indent, the window height
-    /// (if run interactively), the number of lines that can be
-    /// printed without waiting for user input, and the running flag
-    /// as its arguments.  Prints the stack value to standard output,
-    /// returning the new number of lines that can be printed without
-    /// waiting for user input.
+    /// (if run interactively), and the number of lines that can be
+    /// printed without waiting for user input as its arguments.
+    /// Prints the stack value to standard output, returning the new
+    /// number of lines that can be printed without waiting for user
+    /// input.
     fn print_stack_value<'a>(
         &mut self,
         value_rr: &Value,
@@ -176,7 +174,6 @@ impl VM {
         no_first_indent: bool,
         window_height: i32,
         mut lines_to_print: i32,
-        running: Arc<AtomicBool>,
     ) -> i32 {
         let mut is_generator = false;
         {
@@ -348,7 +345,6 @@ impl VM {
                                 false,
                                 window_height,
                                 lines_to_print,
-                                running.clone(),
                             );
                             if lines_to_print == -1 {
                                 return lines_to_print;
@@ -412,7 +408,6 @@ impl VM {
                                 true,
                                 window_height,
                                 lines_to_print,
-                                running.clone(),
                             );
                             if lines_to_print == -1 {
                                 return lines_to_print;
@@ -454,7 +449,6 @@ impl VM {
                     chunk.clone(),
                     i,
                     (1, 1),
-                    running.clone(),
                 );
                 if shift_res == 0 {
                     self.stack.pop();
@@ -489,7 +483,6 @@ impl VM {
                         false,
                         window_height,
                         lines_to_print,
-                        running.clone(),
                     );
                     if lines_to_print == -1 {
                         return lines_to_print;
@@ -513,14 +506,13 @@ impl VM {
     }
 
     /// Takes the current chunk, the instruction index, the map of
-    /// global functions, the running flag, and a boolean indicating
-    /// whether the stack needs to be cleared after the stack is
-    /// printed.  Prints the stack to standard output.
+    /// global functions, and a boolean indicating whether the stack
+    /// needs to be cleared after the stack is printed.  Prints the
+    /// stack to standard output.
     pub fn print_stack<'a>(
         &mut self,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
-        running: Arc<AtomicBool>,
         no_remove: bool,
     ) {
         let mut window_height: i32 = 0;
@@ -544,7 +536,6 @@ impl VM {
                 false,
                 window_height,
                 lines_to_print,
-                running.clone(),
             );
             if lines_to_print == -1 {
                 if !no_remove {

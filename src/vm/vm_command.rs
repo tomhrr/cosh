@@ -4,8 +4,6 @@ use std::io::BufReader;
 use std::io::Write;
 use std::rc::Rc;
 use std::str;
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 
 use lazy_static::lazy_static;
 use nix::unistd::{fork, ForkResult};
@@ -313,7 +311,6 @@ impl VM {
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
-        running: Arc<AtomicBool>,
     ) -> i32 {
         if self.stack.len() < 2 {
             print_error(chunk.clone(), i, "| requires two arguments");
@@ -372,7 +369,6 @@ impl VM {
                                         chunk.clone(),
                                         i,
                                         line_col,
-                                        running.clone(),
                                     );
                                     if shift_res == 0 {
                                         return 0;

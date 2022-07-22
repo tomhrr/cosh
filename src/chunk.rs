@@ -17,8 +17,6 @@ use num_bigint::BigInt;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::ChildStdout;
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 
 use opcode::{to_opcode, OpCode};
 use vm::VM;
@@ -166,7 +164,6 @@ pub enum Value {
             Rc<RefCell<Chunk>>,
             usize,
             (u32, u32),
-            Arc<AtomicBool>,
         ) -> i32,
     ),
     /// A named function.

@@ -52,6 +52,8 @@ pub struct VM {
     print_stack: bool,
     // The local variable stack.
     local_var_stack: Rc<RefCell<Vec<Value>>>,
+    // The scopes.
+    scopes: Vec<Rc<RefCell<HashMap<String, Value>>>>,
     // A System object, for getting process information.
     sys: System,
 }
@@ -192,7 +194,6 @@ lazy_static! {
         &'static str,
         fn(
             &mut VM,
-            &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
             &mut HashMap<String, Rc<RefCell<Chunk>>>,
             Rc<RefCell<Chunk>>,
             usize,
@@ -206,7 +207,6 @@ lazy_static! {
             VM::opcode_shift
                 as fn(
                     &mut VM,
-                    &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<RefCell<Chunk>>>,
                     Rc<RefCell<Chunk>>,
                     usize,
@@ -219,7 +219,6 @@ lazy_static! {
             VM::core_gnth
                 as fn(
                     &mut VM,
-                    &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<RefCell<Chunk>>>,
                     Rc<RefCell<Chunk>>,
                     usize,
@@ -232,7 +231,6 @@ lazy_static! {
             VM::core_pipe
                 as fn(
                     &mut VM,
-                    &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<RefCell<Chunk>>>,
                     Rc<RefCell<Chunk>>,
                     usize,
@@ -245,7 +243,6 @@ lazy_static! {
             VM::core_shift_all
                 as fn(
                     &mut VM,
-                    &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<RefCell<Chunk>>>,
                     Rc<RefCell<Chunk>>,
                     usize,
@@ -258,7 +255,6 @@ lazy_static! {
             VM::core_join
                 as fn(
                     &mut VM,
-                    &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
                     &mut HashMap<String, Rc<RefCell<Chunk>>>,
                     Rc<RefCell<Chunk>>,
                     usize,
@@ -315,6 +311,7 @@ impl VM {
             stack: Vec::new(),
             local_var_stack: Rc::new(RefCell::new(Vec::new())),
             print_stack: print_stack,
+            scopes: vec![Rc::new(RefCell::new(HashMap::new()))],
             sys: System::new(),
         }
     }
@@ -369,7 +366,6 @@ impl VM {
 
     pub fn call_named_function<'a>(
         &mut self,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
@@ -417,7 +413,7 @@ impl VM {
             self.stack.push(gen_rr);
         } else {
             if call_chunk.borrow().has_vars {
-                scopes.push(Rc::new(RefCell::new(HashMap::new())));
+                self.scopes.push(Rc::new(RefCell::new(HashMap::new())));
             }
 
             let mut prev_stack = None;
@@ -430,7 +426,6 @@ impl VM {
             }
 
             let res = self.run(
-                scopes,
                 global_functions,
                 call_stack_chunks,
                 call_chunk.clone(),
@@ -508,7 +503,6 @@ impl VM {
 
     pub fn call_string(
         &mut self,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
@@ -533,7 +527,6 @@ impl VM {
             Some(Value::ShiftFunction(shift_fn)) => {
                 let n = shift_fn(
                     self,
-                    scopes,
                     global_functions,
                     chunk,
                     i,
@@ -548,7 +541,6 @@ impl VM {
             Some(Value::NamedFunction(named_fn)) => {
                 call_stack_chunks.push(chunk.clone());
                 let res = self.call_named_function(
-                    scopes,
                     global_functions,
                     call_stack_chunks,
                     chunk.clone(),
@@ -567,7 +559,7 @@ impl VM {
         if s == "toggle-mode" {
             self.print_stack = !self.print_stack;
         } else if s == ".s" {
-            self.print_stack(chunk, i, scopes, global_functions, running, true);
+            self.print_stack(chunk, i, global_functions, running, true);
         } else if s == "exc" {
             if self.stack.len() < 1 {
                 print_error(chunk, i, "exc requires one argument");
@@ -694,7 +686,6 @@ impl VM {
     /// called).
     pub fn call<'a>(
         &mut self,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
@@ -769,7 +760,6 @@ impl VM {
                 match cv {
                     Value::Null => {
                         return self.call_string(
-                            scopes,
                             global_functions,
                             call_stack_chunks,
                             chunk,
@@ -812,7 +802,6 @@ impl VM {
             Value::ShiftFunction(sf) => {
                 let n = sf(
                     self,
-                    scopes,
                     global_functions,
                     chunk,
                     i,
@@ -826,7 +815,6 @@ impl VM {
             }
             Value::NamedFunction(call_chunk_rc) => {
                 return self.call_named_function(
-                    scopes,
                     global_functions,
                     call_stack_chunks,
                     chunk,
@@ -839,7 +827,6 @@ impl VM {
             }
             Value::AnonymousFunction(call_chunk_rc, lvs) => {
                 return self.call_named_function(
-                    scopes,
                     global_functions,
                     call_stack_chunks,
                     chunk.clone(),
@@ -856,7 +843,6 @@ impl VM {
                     eprintln!("instantiating new chunk functions for string: {}", s);
                 }
                 return self.call_string(
-                    scopes,
                     global_functions,
                     call_stack_chunks,
                     chunk,
@@ -881,17 +867,16 @@ impl VM {
         return true;
     }
 
-    /// Takes the set of scopes, the global functions, the call stack
-    /// chunks, the current chunk, the values for the current chunk,
-    /// the instruction index, the global variables for the current
-    /// generator (if applicable), the local variables for the current
-    /// generator (if applicable), the previous local variable stacks,
-    /// the current line and column number, and the running flag as
-    /// its arguments.  Runs the code from the chunk, beginning at the
-    /// specified instruction index.
+    /// Takes the global functions, the call stack chunks, the current
+    /// chunk, the values for the current chunk, the instruction
+    /// index, the global variables for the current generator (if
+    /// applicable), the local variables for the current generator (if
+    /// applicable), the previous local variable stacks, the current
+    /// line and column number, and the running flag as its arguments.
+    /// Runs the code from the chunk, beginning at the specified
+    /// instruction index.
     pub fn run<'a>(
         &mut self,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
@@ -1282,7 +1267,6 @@ impl VM {
                     match value_sd {
                         ValueSD::String(ref sp) => {
                             let res = self.call(
-                                scopes,
                                 global_functions,
                                 call_stack_chunks,
                                 chunk.clone(),
@@ -1329,7 +1313,6 @@ impl VM {
                     }
 
                     let res = self.call(
-                        scopes,
                         global_functions,
                         call_stack_chunks,
                         chunk.clone(),
@@ -1372,7 +1355,6 @@ impl VM {
                     }
 
                     let res = self.call(
-                        scopes,
                         global_functions,
                         call_stack_chunks,
                         chunk.clone(),
@@ -1426,7 +1408,6 @@ impl VM {
                         .borrow().index(var_index as
                         usize).clone();
                     let i2 = self.opcode_shift_inner(
-                        scopes,
                         global_functions,
                         chunk.clone(),
                         i,
@@ -1461,7 +1442,7 @@ impl VM {
                         }
                     }
 
-                    scopes
+                    self.scopes
                         .last_mut()
                         .unwrap()
                         .borrow_mut()
@@ -1481,7 +1462,7 @@ impl VM {
                             let mut done = false;
                             let s = &sp.borrow().s;
 
-                            for scope in scopes.iter_mut().rev() {
+                            for scope in self.scopes.iter_mut().rev() {
                                 if scope.borrow().contains_key(s) {
                                     scope.borrow_mut().insert(s.to_string(), value_rr.clone());
                                     done = true;
@@ -1512,7 +1493,7 @@ impl VM {
                             let mut done = false;
                             let s = &sp.borrow().s;
 
-                            for scope in scopes.iter().rev() {
+                            for scope in self.scopes.iter().rev() {
                                 if scope.borrow().contains_key(s) {
                                     self.stack.push(scope.borrow().get(s).unwrap().clone());
                                     done = true;
@@ -1631,7 +1612,6 @@ impl VM {
                 }
                 OpCode::Shift => {
                     let i2 = self.opcode_shift(
-                        scopes,
                         global_functions,
                         chunk.clone(),
                         i,
@@ -1725,13 +1705,13 @@ impl VM {
                 }
                 OpCode::EndFn => {
                     if !chunk.borrow().is_generator && chunk.borrow().has_vars {
-                        scopes.pop();
+                        self.scopes.pop();
                     }
                     return i + 1;
                 }
                 OpCode::Return => {
                     if !chunk.borrow().is_generator && chunk.borrow().has_vars {
-                        scopes.pop();
+                        self.scopes.pop();
                     }
                     return i + 1;
                 }
@@ -1749,23 +1729,20 @@ impl VM {
         }
 
         if self.print_stack {
-            self.print_stack(chunk.clone(), i, scopes, global_functions, running, false);
+            self.print_stack(chunk.clone(), i, global_functions, running, false);
             self.stack.clear();
         }
 
         return i + 1;
     }
 
-    /// Takes the global functions, the global variables, the file to
+    /// Takes the global functions, the file to
     /// read the program code from, and the running flag as its
     /// arguments.  Compiles the program code and executes it,
-    /// returning the chunk (if compiled successfully), the updated
-    /// set of global variables, and the updated set of global
-    /// functions.
+    /// returning the chunk (if compiled successfully).
     pub fn interpret(
         &mut self,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
-        variables: Rc<RefCell<HashMap<String, Value>>>,
         fh: &mut Box<dyn BufRead>,
         running: Arc<AtomicBool>,
         name: &str,
@@ -1778,10 +1755,8 @@ impl VM {
         }
         let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
         let mut call_stack_chunks = vec![];
-        let mut scopes = vec![variables];
 
         self.run(
-            &mut scopes,
             global_functions,
             &mut call_stack_chunks,
             chunk.clone(),

@@ -322,7 +322,6 @@ impl VM {
     /// resulting joined string onto the stack.
     pub fn core_join(
         &mut self,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -374,7 +373,6 @@ impl VM {
                             return 0;
                         }
                         let shift_res = self.opcode_shift(
-                            scopes,
                             global_functions,
                             chunk.clone(),
                             i,

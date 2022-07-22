@@ -87,7 +87,6 @@ impl VM {
     /// onto the stack.
     pub fn core_gnth(
         &mut self,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -110,7 +109,6 @@ impl VM {
                         return 0;
                     }
                     let shift_res = self.opcode_shift(
-                        scopes,
                         global_functions,
                         chunk.clone(),
                         i,
@@ -221,7 +219,6 @@ impl VM {
 
     pub fn opcode_shift_inner<'a>(
         &mut self,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -280,11 +277,10 @@ impl VM {
                         /* At end of function: push null. */
                         self.stack.push(Value::Null);
                     } else {
-                        scopes.push(global_vars);
+                        self.scopes.push(global_vars);
                         let plvs_stack = self.local_var_stack.clone();
                         self.local_var_stack = local_vars_stack;
                         let res = self.run(
-                            scopes,
                             global_functions,
                             call_stack_chunks,
                             chunk,
@@ -292,7 +288,7 @@ impl VM {
                             line_col,
                             running,
                         );
-                        scopes.pop();
+                        self.scopes.pop();
                         self.local_var_stack = plvs_stack;
                         match res {
                             0 => {
@@ -435,7 +431,6 @@ impl VM {
     /// element from that object and puts it onto the stack.
     pub fn opcode_shift<'a>(
         &mut self,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -449,7 +444,7 @@ impl VM {
 
         let mut shiftable_rr = self.stack.pop().unwrap();
         return self.opcode_shift_inner(
-            scopes, global_functions,
+            global_functions,
             chunk, i, line_col, running, &mut shiftable_rr
         );
     }
@@ -459,7 +454,6 @@ impl VM {
     /// the order that they are shifted.
     pub fn core_shift_all(
         &mut self,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -477,7 +471,6 @@ impl VM {
                 return 0;
             }
             let shift_res = self.opcode_shift(
-                scopes,
                 global_functions,
                 chunk.clone(),
                 i,

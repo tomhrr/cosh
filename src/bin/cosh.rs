@@ -447,8 +447,6 @@ fn main() {
             }
             let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
             let mut vm = VM::new(true, debug);
-            let mut scopes = Vec::new();
-            scopes.push(Rc::new(RefCell::new(HashMap::new())));
             let mut functions = Vec::new();
             if !matches.opt_present("no-rt") {
                 let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
@@ -468,7 +466,6 @@ fn main() {
             let mut global_functions = HashMap::new();
             let running = Arc::new(AtomicBool::new(true));
             vm.run(
-                &mut scopes,
                 &mut global_functions,
                 &mut call_stack_chunks,
                 chunk,
@@ -544,11 +541,9 @@ fn main() {
                     }
                 }
 
-                let variables = Rc::new(RefCell::new(HashMap::new()));
                 let running = Arc::new(AtomicBool::new(true));
                 vm.interpret(
                     &mut global_functions,
-                    variables,
                     &mut bufread,
                     running.clone(),
                     "(main)",
@@ -558,7 +553,6 @@ fn main() {
     } else {
         let mut compiler = Compiler::new(debug);
         let mut global_functions = HashMap::new();
-        let variables = Rc::new(RefCell::new(HashMap::new()));
 
         if !matches.opt_present("no-rt") {
             let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
@@ -593,7 +587,6 @@ fn main() {
                         let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                         let chunk_opt = vm.interpret(
                             &mut global_functions,
-                            variables.clone(),
                             &mut bufread,
                             running.clone(),
                             ".coshrc",
@@ -677,7 +670,6 @@ fn main() {
                     rl.add_history_entry(line.as_str());
                     let chunk_opt = vm.interpret(
                         &mut global_functions,
-                        variables.clone(),
                         &mut bufread,
                         running.clone(),
                         "(main)",

@@ -162,18 +162,17 @@ impl VM {
 
     /// Used by print_stack to print a single stack value.  Takes a
     /// wrapped value, the current chunk, the instruction index, the
-    /// set of scopes, the map of global functions, the current
-    /// indent, the window height (if run interactively), the number
-    /// of lines that can be printed without waiting for user input,
-    /// and the running flag as its arguments.  Prints the stack value
-    /// to standard output, returning the new number of lines that can
-    /// be printed without waiting for user input.
+    /// map of global functions, the current indent, the window height
+    /// (if run interactively), the number of lines that can be
+    /// printed without waiting for user input, and the running flag
+    /// as its arguments.  Prints the stack value to standard output,
+    /// returning the new number of lines that can be printed without
+    /// waiting for user input.
     fn print_stack_value<'a>(
         &mut self,
         value_rr: &Value,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         indent: i32,
         no_first_indent: bool,
@@ -347,7 +346,6 @@ impl VM {
                                 element,
                                 chunk.clone(),
                                 i,
-                                scopes,
                                 global_functions,
                                 new_indent,
                                 false,
@@ -413,7 +411,6 @@ impl VM {
                                 v,
                                 chunk.clone(),
                                 i,
-                                scopes,
                                 global_functions,
                                 new_indent,
                                 true,
@@ -458,7 +455,6 @@ impl VM {
                     return lines_to_print;
                 }
                 let shift_res = self.opcode_shift(
-                    scopes,
                     global_functions,
                     chunk.clone(),
                     i,
@@ -494,7 +490,6 @@ impl VM {
                         &value_rr,
                         chunk.clone(),
                         i,
-                        scopes,
                         global_functions,
                         indent + 4,
                         false,
@@ -523,15 +518,14 @@ impl VM {
         return lines_to_print;
     }
 
-    /// Takes the current chunk, the instruction index, the set of
-    /// scopes, the map of global functions, the running flag, and a
-    /// boolean indicating whether the stack needs to be cleared after
-    /// the stack is printed.  Prints the stack to standard output.
+    /// Takes the current chunk, the instruction index, the map of
+    /// global functions, the running flag, and a boolean indicating
+    /// whether the stack needs to be cleared after the stack is
+    /// printed.  Prints the stack to standard output.
     pub fn print_stack<'a>(
         &mut self,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         running: Arc<AtomicBool>,
         no_remove: bool,
@@ -553,7 +547,6 @@ impl VM {
                 &value_rr,
                 chunk.clone(),
                 i,
-                scopes,
                 global_functions,
                 0,
                 false,

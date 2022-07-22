@@ -311,7 +311,6 @@ impl VM {
     /// output onto the stack.
     pub fn core_pipe(
         &mut self,
-        scopes: &mut Vec<Rc<RefCell<HashMap<String, Value>>>>,
         global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -372,7 +371,6 @@ impl VM {
                                         return 0;
                                     }
                                     let shift_res = self.opcode_shift(
-                                        scopes,
                                         global_functions,
                                         chunk.clone(),
                                         i,

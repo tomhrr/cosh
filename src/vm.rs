@@ -56,6 +56,8 @@ pub struct VM {
     scopes: Vec<Rc<RefCell<HashMap<String, Value>>>>,
     // The global functions.
     global_functions: HashMap<String, Rc<RefCell<Chunk>>>,
+    // The call stack chunks.
+    pub call_stack_chunks: Vec<Rc<RefCell<Chunk>>>,
     // A System object, for getting process information.
     sys: System,
 }
@@ -309,6 +311,7 @@ impl VM {
             print_stack: print_stack,
             scopes: vec![Rc::new(RefCell::new(HashMap::new()))],
             global_functions: HashMap::new(),
+            call_stack_chunks: Vec::new(),
             sys: System::new(),
         }
     }
@@ -363,7 +366,6 @@ impl VM {
 
     pub fn call_named_function<'a>(
         &mut self,
-        call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
@@ -371,7 +373,7 @@ impl VM {
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         call_chunk: Rc<RefCell<Chunk>>,
     ) -> bool {
-        call_stack_chunks.push(chunk.clone());
+        self.call_stack_chunks.push(chunk.clone());
         if call_chunk.borrow().is_generator {
             let mut gen_args = Vec::new();
             let req_arg_count = call_chunk.borrow().req_arg_count;
@@ -395,7 +397,7 @@ impl VM {
                 gen_args.push(Value::Null);
             }
             let mut gen_call_stack_chunks = Vec::new();
-            for i in call_stack_chunks.iter() {
+            for i in self.call_stack_chunks.iter() {
                 gen_call_stack_chunks.push((*i).clone());
             }
             let gen_rr = Value::Generator(Rc::new(RefCell::new(GeneratorObject::new(
@@ -422,7 +424,6 @@ impl VM {
             }
 
             let res = self.run(
-                call_stack_chunks,
                 call_chunk.clone(),
                 0,
                 line_col,
@@ -433,7 +434,7 @@ impl VM {
                 self.local_var_stack = prev_stack.unwrap();
             }
 
-            call_stack_chunks.pop();
+            self.call_stack_chunks.pop();
 
             if res == 0 {
                 return false;
@@ -444,7 +445,6 @@ impl VM {
 
     pub fn string_to_callable(
         &mut self,
-        call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         s: &str
     ) -> Option<Value> {
@@ -462,12 +462,12 @@ impl VM {
             return Some(nv);
         }
 
-        call_stack_chunks.push(chunk);
+        self.call_stack_chunks.push(chunk);
 
         let global_function;
         let mut call_chunk_opt = None;
 
-        for sf in call_stack_chunks.iter().rev() {
+        for sf in self.call_stack_chunks.iter().rev() {
             let sfb = sf.borrow();
             if sfb.functions.contains_key(s) {
                 let call_chunk = sfb.functions.get(s).unwrap();
@@ -484,20 +484,19 @@ impl VM {
                 let nv = Value::NamedFunction(
                     call_chunk.clone()
                 );
-                call_stack_chunks.pop();
+                self.call_stack_chunks.pop();
                 return Some(nv);
             }
             _ => {}
         }
 
-        call_stack_chunks.pop();
+        self.call_stack_chunks.pop();
 
         return None;
     }
 
     pub fn call_string(
         &mut self,
-        call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
@@ -507,7 +506,7 @@ impl VM {
         s: &str,
     ) -> bool {
         let sv = self.string_to_callable(
-            call_stack_chunks, chunk.clone(), s
+            chunk.clone(), s
         );
         match sv {
             Some(Value::CoreFunction(sf_fn)) => {
@@ -531,9 +530,8 @@ impl VM {
                 return true;
             }
             Some(Value::NamedFunction(named_fn)) => {
-                call_stack_chunks.push(chunk.clone());
+                self.call_stack_chunks.push(chunk.clone());
                 let res = self.call_named_function(
-                    call_stack_chunks,
                     chunk.clone(),
                     0,
                     line_col,
@@ -541,7 +539,7 @@ impl VM {
                     plvs_stack,
                     named_fn.clone(),
                 );
-                call_stack_chunks.pop();
+                self.call_stack_chunks.pop();
                 return res;
             }
             _ => {}
@@ -584,7 +582,6 @@ impl VM {
             match fn_opt {
                 Some(s) => {
                     let sv = self.string_to_callable(
-                        call_stack_chunks,
                         chunk, s
                     );
                     match sv {
@@ -677,7 +674,6 @@ impl VM {
     /// called).
     pub fn call<'a>(
         &mut self,
-        call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         call_opcode: OpCode,
@@ -727,7 +723,6 @@ impl VM {
                     }
                     if not_present {
                         let sv = self.string_to_callable(
-                            call_stack_chunks,
                             chunk.clone(), s
                         );
                         match sv {
@@ -750,7 +745,6 @@ impl VM {
                 match cv {
                     Value::Null => {
                         return self.call_string(
-                            call_stack_chunks,
                             chunk,
                             0,
                             line_col,
@@ -803,7 +797,6 @@ impl VM {
             }
             Value::NamedFunction(call_chunk_rc) => {
                 return self.call_named_function(
-                    call_stack_chunks,
                     chunk,
                     0,
                     line_col,
@@ -814,7 +807,6 @@ impl VM {
             }
             Value::AnonymousFunction(call_chunk_rc, lvs) => {
                 return self.call_named_function(
-                    call_stack_chunks,
                     chunk.clone(),
                     0,
                     line_col,
@@ -829,7 +821,6 @@ impl VM {
                     eprintln!("instantiating new chunk functions for string: {}", s);
                 }
                 return self.call_string(
-                    call_stack_chunks,
                     chunk,
                     0,
                     line_col,
@@ -862,7 +853,6 @@ impl VM {
     /// instruction index.
     pub fn run<'a>(
         &mut self,
-        call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         index: usize,
         line_col: (u32, u32),
@@ -1251,7 +1241,6 @@ impl VM {
                     match value_sd {
                         ValueSD::String(ref sp) => {
                             let res = self.call(
-                                call_stack_chunks,
                                 chunk.clone(),
                                 i,
                                 op,
@@ -1296,7 +1285,6 @@ impl VM {
                     }
 
                     let res = self.call(
-                        call_stack_chunks,
                         chunk.clone(),
                         i,
                         op,
@@ -1337,7 +1325,6 @@ impl VM {
                     }
 
                     let res = self.call(
-                        call_stack_chunks,
                         chunk.clone(),
                         i,
                         OpCode::Call,
@@ -1737,10 +1724,8 @@ impl VM {
             _ => {}
         }
         let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
-        let mut call_stack_chunks = vec![];
 
         self.run(
-            &mut call_stack_chunks,
             chunk.clone(),
             0,
             (0, 0),

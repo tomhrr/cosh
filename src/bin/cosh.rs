@@ -459,13 +459,11 @@ fn main() {
                 }
                 functions.push(Rc::new(RefCell::new(rtchunk_opt.unwrap())));
             }
-            let mut call_stack_chunks = Vec::new();
             if functions.len() > 0 {
-                call_stack_chunks.push(functions[0].clone());
+                vm.call_stack_chunks.push(functions[0].clone());
             }
             let running = Arc::new(AtomicBool::new(true));
             vm.run(
-                &mut call_stack_chunks,
                 chunk,
                 0,
                 (0, 0),

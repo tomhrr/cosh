@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::io::BufRead;
+use std::mem;
 use std::rc::Rc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -263,10 +264,13 @@ impl VM {
                         }
                     }
 
+                    /* todo: need a generator-specific run function,
+                     * to avoid the stuffing around here. */
                     let global_vars = generator_object.global_vars.clone();
                     let local_vars_stack = generator_object.local_vars_stack.clone();
                     let chunk = generator_object.chunk.clone();
                     let call_stack_chunks = &mut generator_object.call_stack_chunks;
+                    mem::swap(call_stack_chunks, &mut self.call_stack_chunks);
 
                     let current_index = index;
                     if current_index == chunk.borrow().data.len() {
@@ -277,7 +281,6 @@ impl VM {
                         let plvs_stack = self.local_var_stack.clone();
                         self.local_var_stack = local_vars_stack;
                         let res = self.run(
-                            call_stack_chunks,
                             chunk,
                             index,
                             line_col,
@@ -285,6 +288,7 @@ impl VM {
                         );
                         self.scopes.pop();
                         self.local_var_stack = plvs_stack;
+                        mem::swap(call_stack_chunks, &mut self.call_stack_chunks);
                         match res {
                             0 => {
                                 return 0;

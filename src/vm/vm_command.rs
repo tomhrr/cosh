@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::io::BufReader;
 use std::io::Write;
@@ -311,7 +310,6 @@ impl VM {
     /// output onto the stack.
     pub fn core_pipe(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
@@ -371,7 +369,6 @@ impl VM {
                                         return 0;
                                     }
                                     let shift_res = self.opcode_shift(
-                                        global_functions,
                                         chunk.clone(),
                                         i,
                                         line_col,

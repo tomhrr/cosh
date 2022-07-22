@@ -54,6 +54,8 @@ pub struct VM {
     local_var_stack: Rc<RefCell<Vec<Value>>>,
     // The scopes.
     scopes: Vec<Rc<RefCell<HashMap<String, Value>>>>,
+    // The global functions.
+    global_functions: HashMap<String, Rc<RefCell<Chunk>>>,
     // A System object, for getting process information.
     sys: System,
 }
@@ -194,7 +196,6 @@ lazy_static! {
         &'static str,
         fn(
             &mut VM,
-            &mut HashMap<String, Rc<RefCell<Chunk>>>,
             Rc<RefCell<Chunk>>,
             usize,
             (u32, u32),
@@ -207,7 +208,6 @@ lazy_static! {
             VM::opcode_shift
                 as fn(
                     &mut VM,
-                    &mut HashMap<String, Rc<RefCell<Chunk>>>,
                     Rc<RefCell<Chunk>>,
                     usize,
                     (u32, u32),
@@ -219,7 +219,6 @@ lazy_static! {
             VM::core_gnth
                 as fn(
                     &mut VM,
-                    &mut HashMap<String, Rc<RefCell<Chunk>>>,
                     Rc<RefCell<Chunk>>,
                     usize,
                     (u32, u32),
@@ -231,7 +230,6 @@ lazy_static! {
             VM::core_pipe
                 as fn(
                     &mut VM,
-                    &mut HashMap<String, Rc<RefCell<Chunk>>>,
                     Rc<RefCell<Chunk>>,
                     usize,
                     (u32, u32),
@@ -243,7 +241,6 @@ lazy_static! {
             VM::core_shift_all
                 as fn(
                     &mut VM,
-                    &mut HashMap<String, Rc<RefCell<Chunk>>>,
                     Rc<RefCell<Chunk>>,
                     usize,
                     (u32, u32),
@@ -255,7 +252,6 @@ lazy_static! {
             VM::core_join
                 as fn(
                     &mut VM,
-                    &mut HashMap<String, Rc<RefCell<Chunk>>>,
                     Rc<RefCell<Chunk>>,
                     usize,
                     (u32, u32),
@@ -312,6 +308,7 @@ impl VM {
             local_var_stack: Rc::new(RefCell::new(Vec::new())),
             print_stack: print_stack,
             scopes: vec![Rc::new(RefCell::new(HashMap::new()))],
+            global_functions: HashMap::new(),
             sys: System::new(),
         }
     }
@@ -366,7 +363,6 @@ impl VM {
 
     pub fn call_named_function<'a>(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -426,7 +422,6 @@ impl VM {
             }
 
             let res = self.run(
-                global_functions,
                 call_stack_chunks,
                 call_chunk.clone(),
                 0,
@@ -449,7 +444,6 @@ impl VM {
 
     pub fn string_to_callable(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         s: &str
@@ -481,8 +475,8 @@ impl VM {
                 break;
             }
         }
-        if call_chunk_opt.is_none() && global_functions.contains_key(s) {
-            global_function = global_functions.get(s).unwrap().clone();
+        if call_chunk_opt.is_none() && self.global_functions.contains_key(s) {
+            global_function = self.global_functions.get(s).unwrap().clone();
             call_chunk_opt = Some(global_function.clone());
         }
         match call_chunk_opt {
@@ -503,7 +497,6 @@ impl VM {
 
     pub fn call_string(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -514,7 +507,7 @@ impl VM {
         s: &str,
     ) -> bool {
         let sv = self.string_to_callable(
-            global_functions, call_stack_chunks, chunk.clone(), s
+            call_stack_chunks, chunk.clone(), s
         );
         match sv {
             Some(Value::CoreFunction(sf_fn)) => {
@@ -527,7 +520,6 @@ impl VM {
             Some(Value::ShiftFunction(shift_fn)) => {
                 let n = shift_fn(
                     self,
-                    global_functions,
                     chunk,
                     i,
                     line_col,
@@ -541,7 +533,6 @@ impl VM {
             Some(Value::NamedFunction(named_fn)) => {
                 call_stack_chunks.push(chunk.clone());
                 let res = self.call_named_function(
-                    global_functions,
                     call_stack_chunks,
                     chunk.clone(),
                     0,
@@ -559,7 +550,7 @@ impl VM {
         if s == "toggle-mode" {
             self.print_stack = !self.print_stack;
         } else if s == ".s" {
-            self.print_stack(chunk, i, global_functions, running, true);
+            self.print_stack(chunk, i, running, true);
         } else if s == "exc" {
             if self.stack.len() < 1 {
                 print_error(chunk, i, "exc requires one argument");
@@ -593,7 +584,7 @@ impl VM {
             match fn_opt {
                 Some(s) => {
                     let sv = self.string_to_callable(
-                        global_functions, call_stack_chunks,
+                        call_stack_chunks,
                         chunk, s
                     );
                     match sv {
@@ -645,7 +636,7 @@ impl VM {
                     match import_chunk_opt {
                         Some(import_chunk) => {
                             for (k, v) in import_chunk.functions.iter() {
-                                global_functions.insert(k.clone(), v.clone());
+                                self.global_functions.insert(k.clone(), v.clone());
                             }
                         }
                         None => {
@@ -686,7 +677,6 @@ impl VM {
     /// called).
     pub fn call<'a>(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -737,7 +727,7 @@ impl VM {
                     }
                     if not_present {
                         let sv = self.string_to_callable(
-                            global_functions, call_stack_chunks,
+                            call_stack_chunks,
                             chunk.clone(), s
                         );
                         match sv {
@@ -760,7 +750,6 @@ impl VM {
                 match cv {
                     Value::Null => {
                         return self.call_string(
-                            global_functions,
                             call_stack_chunks,
                             chunk,
                             0,
@@ -802,7 +791,6 @@ impl VM {
             Value::ShiftFunction(sf) => {
                 let n = sf(
                     self,
-                    global_functions,
                     chunk,
                     i,
                     line_col,
@@ -815,7 +803,6 @@ impl VM {
             }
             Value::NamedFunction(call_chunk_rc) => {
                 return self.call_named_function(
-                    global_functions,
                     call_stack_chunks,
                     chunk,
                     0,
@@ -827,7 +814,6 @@ impl VM {
             }
             Value::AnonymousFunction(call_chunk_rc, lvs) => {
                 return self.call_named_function(
-                    global_functions,
                     call_stack_chunks,
                     chunk.clone(),
                     0,
@@ -843,7 +829,6 @@ impl VM {
                     eprintln!("instantiating new chunk functions for string: {}", s);
                 }
                 return self.call_string(
-                    global_functions,
                     call_stack_chunks,
                     chunk,
                     0,
@@ -877,7 +862,6 @@ impl VM {
     /// instruction index.
     pub fn run<'a>(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         call_stack_chunks: &mut Vec<Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         index: usize,
@@ -1267,7 +1251,6 @@ impl VM {
                     match value_sd {
                         ValueSD::String(ref sp) => {
                             let res = self.call(
-                                global_functions,
                                 call_stack_chunks,
                                 chunk.clone(),
                                 i,
@@ -1313,7 +1296,6 @@ impl VM {
                     }
 
                     let res = self.call(
-                        global_functions,
                         call_stack_chunks,
                         chunk.clone(),
                         i,
@@ -1355,7 +1337,6 @@ impl VM {
                     }
 
                     let res = self.call(
-                        global_functions,
                         call_stack_chunks,
                         chunk.clone(),
                         i,
@@ -1408,7 +1389,6 @@ impl VM {
                         .borrow().index(var_index as
                         usize).clone();
                     let i2 = self.opcode_shift_inner(
-                        global_functions,
                         chunk.clone(),
                         i,
                         line_col,
@@ -1612,7 +1592,6 @@ impl VM {
                 }
                 OpCode::Shift => {
                     let i2 = self.opcode_shift(
-                        global_functions,
                         chunk.clone(),
                         i,
                         line_col,
@@ -1729,7 +1708,7 @@ impl VM {
         }
 
         if self.print_stack {
-            self.print_stack(chunk.clone(), i, global_functions, running, false);
+            self.print_stack(chunk.clone(), i, running, false);
             self.stack.clear();
         }
 
@@ -1742,11 +1721,15 @@ impl VM {
     /// returning the chunk (if compiled successfully).
     pub fn interpret(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
+        global_functions: &HashMap<String, Rc<RefCell<Chunk>>>,
         fh: &mut Box<dyn BufRead>,
         running: Arc<AtomicBool>,
         name: &str,
     ) -> Option<Rc<RefCell<Chunk>>> {
+	for (k, v) in global_functions.iter() {
+	    self.global_functions.insert(k.clone(), v.clone());
+	}
+
         let mut compiler = Compiler::new(self.debug);
         let chunk_opt = compiler.compile(fh, name);
         match chunk_opt {
@@ -1757,7 +1740,6 @@ impl VM {
         let mut call_stack_chunks = vec![];
 
         self.run(
-            global_functions,
             &mut call_stack_chunks,
             chunk.clone(),
             0,

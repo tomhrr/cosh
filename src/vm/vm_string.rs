@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::rc::Rc;
 use std::sync::atomic::AtomicBool;
@@ -322,7 +321,6 @@ impl VM {
     /// resulting joined string onto the stack.
     pub fn core_join(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
@@ -373,7 +371,6 @@ impl VM {
                             return 0;
                         }
                         let shift_res = self.opcode_shift(
-                            global_functions,
                             chunk.clone(),
                             i,
                             line_col,

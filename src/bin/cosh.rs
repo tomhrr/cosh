@@ -463,10 +463,8 @@ fn main() {
             if functions.len() > 0 {
                 call_stack_chunks.push(functions[0].clone());
             }
-            let mut global_functions = HashMap::new();
             let running = Arc::new(AtomicBool::new(true));
             vm.run(
-                &mut global_functions,
                 &mut call_stack_chunks,
                 chunk,
                 0,
@@ -543,7 +541,7 @@ fn main() {
 
                 let running = Arc::new(AtomicBool::new(true));
                 vm.interpret(
-                    &mut global_functions,
+                    &global_functions,
                     &mut bufread,
                     running.clone(),
                     "(main)",
@@ -586,7 +584,7 @@ fn main() {
                     Ok(file) => {
                         let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                         let chunk_opt = vm.interpret(
-                            &mut global_functions,
+                            &global_functions,
                             &mut bufread,
                             running.clone(),
                             ".coshrc",
@@ -669,7 +667,7 @@ fn main() {
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                     rl.add_history_entry(line.as_str());
                     let chunk_opt = vm.interpret(
-                        &mut global_functions,
+                        &global_functions,
                         &mut bufread,
                         running.clone(),
                         "(main)",

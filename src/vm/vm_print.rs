@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::convert::TryInto;
 use std::io;
 use std::io::Write;
@@ -173,7 +172,6 @@ impl VM {
         value_rr: &Value,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         indent: i32,
         no_first_indent: bool,
         window_height: i32,
@@ -346,7 +344,6 @@ impl VM {
                                 element,
                                 chunk.clone(),
                                 i,
-                                global_functions,
                                 new_indent,
                                 false,
                                 window_height,
@@ -411,7 +408,6 @@ impl VM {
                                 v,
                                 chunk.clone(),
                                 i,
-                                global_functions,
                                 new_indent,
                                 true,
                                 window_height,
@@ -455,7 +451,6 @@ impl VM {
                     return lines_to_print;
                 }
                 let shift_res = self.opcode_shift(
-                    global_functions,
                     chunk.clone(),
                     i,
                     (1, 1),
@@ -490,7 +485,6 @@ impl VM {
                         &value_rr,
                         chunk.clone(),
                         i,
-                        global_functions,
                         indent + 4,
                         false,
                         window_height,
@@ -526,7 +520,6 @@ impl VM {
         &mut self,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         running: Arc<AtomicBool>,
         no_remove: bool,
     ) {
@@ -547,7 +540,6 @@ impl VM {
                 &value_rr,
                 chunk.clone(),
                 i,
-                global_functions,
                 0,
                 false,
                 window_height,

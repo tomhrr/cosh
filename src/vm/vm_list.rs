@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::io::BufRead;
 use std::rc::Rc;
@@ -87,7 +86,6 @@ impl VM {
     /// onto the stack.
     pub fn core_gnth(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
@@ -109,7 +107,6 @@ impl VM {
                         return 0;
                     }
                     let shift_res = self.opcode_shift(
-                        global_functions,
                         chunk.clone(),
                         i,
                         line_col,
@@ -219,7 +216,6 @@ impl VM {
 
     pub fn opcode_shift_inner<'a>(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
@@ -281,7 +277,6 @@ impl VM {
                         let plvs_stack = self.local_var_stack.clone();
                         self.local_var_stack = local_vars_stack;
                         let res = self.run(
-                            global_functions,
                             call_stack_chunks,
                             chunk,
                             index,
@@ -431,7 +426,6 @@ impl VM {
     /// element from that object and puts it onto the stack.
     pub fn opcode_shift<'a>(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
@@ -444,7 +438,6 @@ impl VM {
 
         let mut shiftable_rr = self.stack.pop().unwrap();
         return self.opcode_shift_inner(
-            global_functions,
             chunk, i, line_col, running, &mut shiftable_rr
         );
     }
@@ -454,7 +447,6 @@ impl VM {
     /// the order that they are shifted.
     pub fn core_shift_all(
         &mut self,
-        global_functions: &mut HashMap<String, Rc<RefCell<Chunk>>>,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         line_col: (u32, u32),
@@ -471,7 +463,6 @@ impl VM {
                 return 0;
             }
             let shift_res = self.opcode_shift(
-                global_functions,
                 chunk.clone(),
                 i,
                 line_col,

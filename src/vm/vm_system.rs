@@ -15,15 +15,15 @@ use num_bigint::BigInt;
 use sysinfo::{ProcessExt, SystemExt};
 use utime::*;
 
-use chunk::{print_error, Chunk, StringPair, Value};
+use chunk::{StringPair, Value};
 use vm::*;
 
 impl VM {
     /// Takes a value that can be stringified as its single argument.
     /// Removes the file corresponding to that path.
-    pub fn core_rm(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_rm(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "rm requires one argument");
+            self.print_error("rm requires one argument");
             return 0;
         }
 
@@ -57,13 +57,13 @@ impl VM {
                     Ok(_) => {}
                     Err(e) => {
                         let err_str = format!("unable to remove file: {}", e.to_string());
-                        print_error(chunk, i, &err_str);
+                        self.print_error(&err_str);
                         return 0;
                     }
                 }
             }
             _ => {
-                print_error(chunk, i, "rm argument must be a string");
+                self.print_error("rm argument must be a string");
                 return 0;
             }
         }
@@ -73,9 +73,9 @@ impl VM {
     /// Takes two values that can be stringified as its arguments.
     /// Copies the file corresponding to the first path to the second
     /// path.
-    pub fn core_cp(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_cp(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "cp requires two arguments");
+            self.print_error("cp requires two arguments");
             return 0;
         }
 
@@ -132,13 +132,13 @@ impl VM {
                     Ok(_) => {}
                     Err(e) => {
                         let err_str = format!("unable to copy file: {}", e.to_string());
-                        print_error(chunk, i, &err_str);
+                        self.print_error(&err_str);
                         return 0;
                     }
                 }
             }
             _ => {
-                print_error(chunk, i, "source and destination must be strings");
+                self.print_error("source and destination must be strings");
                 return 0;
             }
         }
@@ -149,9 +149,9 @@ impl VM {
     /// Moves the file corresponding to the first path to the second
     /// path.  (Not quite the same semantics as mv(1), because it uses
     /// rename(2) underneath, so that should be fixed.)
-    pub fn core_mv(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_mv(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "mv requires two arguments");
+            self.print_error("mv requires two arguments");
             return 0;
         }
 
@@ -208,13 +208,13 @@ impl VM {
                     Ok(_) => {}
                     Err(e) => {
                         let err_str = format!("unable to move file: {}", e.to_string());
-                        print_error(chunk, i, &err_str);
+                        self.print_error(&err_str);
                         return 0;
                     }
                 }
             }
             _ => {
-                print_error(chunk, i, "source and destination must be strings");
+                self.print_error("source and destination must be strings");
                 return 0;
             }
         }
@@ -225,7 +225,7 @@ impl VM {
     /// Changes the current working directory to that directory.  If
     /// no arguments are provided, then this changes the current
     /// working directory to the user's home directory.
-    pub fn core_cd(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_cd(&mut self) -> i32 {
         if self.stack.len() == 0 {
             let home_res = std::env::var("HOME");
             match home_res {
@@ -235,14 +235,14 @@ impl VM {
                         Ok(_) => {}
                         Err(e) => {
                             let err_str = format!("unable to cd to home: {}", e.to_string());
-                            print_error(chunk, i, &err_str);
+                            self.print_error(&err_str);
                             return 0;
                         }
                     }
                 }
                 Err(e) => {
                     let err_str = format!("unable to cd to home: {}", e.to_string());
-                    print_error(chunk, i, &err_str);
+                    self.print_error(&err_str);
                     return 0;
                 }
             }
@@ -278,13 +278,13 @@ impl VM {
                         Ok(_) => {}
                         Err(e) => {
                             let err_str = format!("unable to cd: {}", e.to_string());
-                            print_error(chunk, i, &err_str);
+                            self.print_error(&err_str);
                             return 0;
                         }
                     }
                 }
                 _ => {
-                    print_error(chunk, i, "cd argument must be a string");
+                    self.print_error("cd argument must be a string");
                     return 0;
                 }
             }
@@ -294,7 +294,7 @@ impl VM {
 
     /// Puts the string representation of the current working
     /// directory onto the stack.
-    pub fn core_pwd(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_pwd(&mut self) -> i32 {
         let current_dir_res = std::env::current_dir();
         match current_dir_res {
             Ok(current_dir) => {
@@ -306,7 +306,7 @@ impl VM {
             }
             Err(e) => {
                 let err_str = format!("unable to pwd: {}", e.to_string());
-                print_error(chunk, i, &err_str);
+                self.print_error(&err_str);
                 return 0;
             }
         }
@@ -317,9 +317,9 @@ impl VM {
     /// Creates the file if it doesn't exist, and updates its
     /// modification timestamp to the current time if it does exist,
     /// similarly to touch(1).
-    pub fn core_touch(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_touch(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "touch requires one argument");
+            self.print_error("touch requires one argument");
             return 0;
         }
 
@@ -355,7 +355,7 @@ impl VM {
                         Ok(_) => {}
                         Err(e) => {
                             let err_str = format!("unable to write file: {}", e.to_string());
-                            print_error(chunk, i, &err_str);
+                            self.print_error(&err_str);
                             return 0;
                         }
                     }
@@ -373,21 +373,21 @@ impl VM {
                                 Err(e) => {
                                     let err_str =
                                         format!("unable to write file: {}", e.to_string());
-                                    print_error(chunk, i, &err_str);
+                                    self.print_error(&err_str);
                                     return 0;
                                 }
                             }
                         }
                         Err(e) => {
                             let err_str = format!("unable to write file: {}", e.to_string());
-                            print_error(chunk, i, &err_str);
+                            self.print_error(&err_str);
                             return 0;
                         }
                     }
                 }
             }
             _ => {
-                print_error(chunk, i, "touch argument must be a string");
+                self.print_error("touch argument must be a string");
                 return 0;
             }
         }
@@ -404,9 +404,9 @@ impl VM {
     /// "atime_nsec"/"ctime_nsec"/"mtime_nsec" are various file
     /// modification times, "blksize" is the block size, and "blocks"
     /// is the number of blocks allocated to the file.
-    pub fn core_stat(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_stat(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "stat requires one argument");
+            self.print_error("stat requires one argument");
             return 0;
         }
 
@@ -495,13 +495,13 @@ impl VM {
                     }
                     Err(e) => {
                         let err_str = format!("unable to stat file: {}", e.to_string());
-                        print_error(chunk, i, &err_str);
+                        self.print_error(&err_str);
                         return 0;
                     }
                 }
             }
             _ => {
-                print_error(chunk, i, "stat argument must be a string");
+                self.print_error("stat argument must be a string");
                 return 0;
             }
         }
@@ -512,7 +512,7 @@ impl VM {
     /// of a list of hashes.  Each hash has elements for "pid", "uid",
     /// and "name".
     #[allow(unused_variables)]
-    pub fn core_ps(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_ps(&mut self) -> i32 {
         let sys = &mut self.sys;
         sys.refresh_processes();
 
@@ -542,9 +542,9 @@ impl VM {
 
     /// Takes a process identifier and a signal name as its arguments.
     /// Sends the relevant signal to the process.
-    pub fn core_kill(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_kill(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "kill requires two arguments");
+            self.print_error("kill requires two arguments");
             return 0;
         }
 
@@ -587,7 +587,7 @@ impl VM {
                     "cont" => Signal::SIGCONT,
                     "stop" => Signal::SIGSTOP,
                     _ => {
-                        print_error(chunk, i, "invalid signal");
+                        self.print_error("invalid signal");
                         return 0;
                     }
                 };
@@ -596,18 +596,18 @@ impl VM {
                     Ok(_) => {}
                     Err(e) => {
                         let err_str = format!("unable to kill process: {}", e.to_string());
-                        print_error(chunk, i, &err_str);
+                        self.print_error(&err_str);
                         return 0;
                     }
                 }
                 return 1;
             }
             (_, Some(_)) => {
-                print_error(chunk, i, "first kill argument must be process");
+                self.print_error("first kill argument must be process");
                 return 0;
             }
             (_, _) => {
-                print_error(chunk, i, "second kill argument must be signal");
+                self.print_error("second kill argument must be signal");
                 return 0;
             }
         }

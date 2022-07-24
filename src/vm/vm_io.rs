@@ -7,16 +7,16 @@ use std::io::BufWriter;
 use std::io::Write;
 use std::rc::Rc;
 
-use chunk::{print_error, Chunk, StringPair, Value};
+use chunk::{StringPair, Value};
 use vm::*;
 
 impl VM {
     /// Takes a file path and a mode string (either 'r' or 'w') as its
     /// arguments, and puts a FileReader or FileWriter object on the
     /// stack as appropriate.
-    pub fn opcode_open(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_open(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "open requires two arguments");
+            self.print_error("open requires two arguments");
             return 0;
         }
 
@@ -57,13 +57,13 @@ impl VM {
                             }
                             Err(e) => {
                                 let err_str = format!("unable to open file: {}", e.to_string());
-                                print_error(chunk, i, &err_str);
+                                self.print_error(&err_str);
                                 return 0;
                             }
                         }
                     }
                     _ => {
-                        print_error(chunk, i, "path for open must be a string");
+                        self.print_error("path for open must be a string");
                         return 0;
                     }
                 },
@@ -78,23 +78,23 @@ impl VM {
                             }
                             Err(e) => {
                                 let err_str = format!("unable to open file: {}", e.to_string());
-                                print_error(chunk, i, &err_str);
+                                self.print_error(&err_str);
                                 return 0;
                             }
                         }
                     }
                     _ => {
-                        print_error(chunk, i, "path for open must be a string");
+                        self.print_error("path for open must be a string");
                         return 0;
                     }
                 },
                 _ => {
-                    print_error(chunk, i, "mode for open must be 'r' or 'w'");
+                    self.print_error("mode for open must be 'r' or 'w'");
                     return 0;
                 }
             },
             _ => {
-                print_error(chunk, i, "mode for open must be 'r' or 'w'");
+                self.print_error("mode for open must be 'r' or 'w'");
                 return 0;
             }
         }
@@ -104,9 +104,9 @@ impl VM {
     /// Takes a FileReader object as its single argument.  Reads one
     /// line from that object and places it onto the stack (including
     /// the ending newline).
-    pub fn opcode_readline(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_readline(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "readline requires one argument");
+            self.print_error("readline requires one argument");
             return 0;
         }
 
@@ -127,13 +127,13 @@ impl VM {
                             )))));
                     }
                     _ => {
-                        print_error(chunk, i, "unable to read line from file");
+                        self.print_error("unable to read line from file");
                         return 0;
                     }
                 }
             }
             _ => {
-                print_error(chunk, i, "readline argument must be a file reader");
+                self.print_error("readline argument must be a file reader");
                 return 0;
             }
         }
@@ -142,9 +142,9 @@ impl VM {
 
     /// Takes a FileWriter object and a line as its arguments.  Writes
     /// the line to the file.
-    pub fn core_writeline(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_writeline(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "writeline requires two arguments");
+            self.print_error("writeline requires two arguments");
             return 0;
         }
 
@@ -184,20 +184,20 @@ impl VM {
                                 }
                                 Err(e) => {
                                     let err_str = format!("unable to open file: {}", e.to_string());
-                                    print_error(chunk, i, &err_str);
+                                    self.print_error(&err_str);
                                     return 0;
                                 }
                             }
                         }
                         _ => {
-                            print_error(chunk, i, "writeline argument must be a file writer");
+                            self.print_error("writeline argument must be a file writer");
                             return 0;
                         }
                     }
                 }
             }
             _ => {
-                print_error(chunk, i, "writeline argument must be a string");
+                self.print_error("writeline argument must be a string");
                 return 0;
             }
         };
@@ -206,9 +206,9 @@ impl VM {
 
     /// Takes a FileReader or FileWriter object as its single
     /// argument.  Closes the object, if required.
-    pub fn core_close(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_close(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "close requires one argument");
+            self.print_error("close requires one argument");
             return 0;
         }
 
@@ -227,13 +227,13 @@ impl VM {
                     }
                     Err(e) => {
                         let err_str = format!("unable to flush data: {}", e.to_string());
-                        print_error(chunk, i, &err_str);
+                        self.print_error(&err_str);
                         return 0;
                     }
                 }
             }
             _ => {
-                print_error(chunk, i, "close argument must be a file reader or writer");
+                self.print_error("close argument must be a file reader or writer");
                 return 0;
             }
         }
@@ -242,9 +242,9 @@ impl VM {
     /// Takes a directory path as its single argument.  Opens the
     /// directory and places a DirectoryHandle object for the
     /// directory onto the stack.
-    pub fn core_opendir(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_opendir(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "opendir requires one argument");
+            self.print_error("opendir requires one argument");
             return 0;
         }
 
@@ -282,13 +282,13 @@ impl VM {
                     }
                     Err(e) => {
                         let err_str = format!("unable to open directory: {}", e.to_string());
-                        print_error(chunk, i, &err_str);
+                        self.print_error(&err_str);
                         return 0;
                     }
                 }
             }
             _ => {
-                print_error(chunk, i, "opendir argument must be a string");
+                self.print_error("opendir argument must be a string");
                 return 0;
             }
         }
@@ -297,9 +297,9 @@ impl VM {
     /// Takes a DirectoryHandle object as its single argument.  Reads
     /// the next entry from the corresponding handle and places it
     /// onto the stack.
-    pub fn core_readdir(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_readdir(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "readdir requires one argument");
+            self.print_error("readdir requires one argument");
             return 0;
         }
 
@@ -320,7 +320,7 @@ impl VM {
                 }
             }
             _ => {
-                print_error(chunk, i, "readdir argument must be a directory handle");
+                self.print_error("readdir argument must be a directory handle");
                 return 0;
             }
         };
@@ -331,9 +331,9 @@ impl VM {
 
     /// Takes a path as its single argument.  Places a boolean onto
     /// the stack indicating whether the path maps to a directory.
-    pub fn core_is_dir(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_is_dir(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "is-dir requires one argument");
+            self.print_error("is-dir requires one argument");
             return 0;
         }
 
@@ -377,7 +377,7 @@ impl VM {
                 }
             }
             _ => {
-                print_error(chunk, i, "is-dir argument must be a string");
+                self.print_error("is-dir argument must be a string");
                 return 0;
             }
         }

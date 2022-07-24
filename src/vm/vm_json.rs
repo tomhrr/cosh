@@ -6,7 +6,7 @@ use std::rc::Rc;
 use indexmap::IndexMap;
 use num_bigint::ToBigInt;
 
-use chunk::{print_error, Chunk, StringPair, Value};
+use chunk::{StringPair, Value};
 use vm::*;
 
 /// Converts a serde_json object into a value.
@@ -85,9 +85,9 @@ fn convert_to_json(v: &Value) -> String {
 impl VM {
     /// Takes a JSON string, converts it into a hash, and puts the
     /// result onto the stack.
-    pub fn core_from_json(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_from_json(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "from-json requires one argument");
+            self.print_error("from-json requires one argument");
             return 0;
         }
 
@@ -121,7 +121,7 @@ impl VM {
                 match doc_res {
                     Err(e) => {
                         let err_str = format!("unable to parse JSON: {}", e.to_string());
-                        print_error(chunk, i, &err_str);
+                        self.print_error(&err_str);
                         return 0;
                     }
                     Ok(d) => {
@@ -132,7 +132,7 @@ impl VM {
                 self.stack.push(json_rr);
             }
             _ => {
-                print_error(chunk, i, "from-json argument must be string");
+                self.print_error("from-json argument must be string");
                 return 0;
             }
         }
@@ -141,9 +141,9 @@ impl VM {
 
     /// Takes a hash, converts it into a JSON string representation,
     /// and puts the result onto the stack.
-    pub fn core_to_json(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_to_json(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "to-json requires one argument");
+            self.print_error("to-json requires one argument");
             return 0;
         }
 

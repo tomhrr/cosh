@@ -6,7 +6,7 @@ use std::str;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
-use chunk::{print_error, Chunk, Value};
+use chunk::{Chunk, Value};
 use vm::*;
 
 /// Unescapes a single string value, by replacing certain
@@ -73,9 +73,9 @@ fn psv_helper(
 impl VM {
     /// Takes a value that can be stringified as its single argument,
     /// and prints that value to standard output.
-    pub fn opcode_print(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_print(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "print requires one argument");
+            self.print_error("print requires one argument");
             return 0;
         }
 
@@ -108,7 +108,7 @@ impl VM {
                 return 1;
             }
             _ => {
-                print_error(chunk, i, "print argument must be a string");
+                self.print_error("print argument must be a string");
                 return 0;
             }
         }
@@ -116,9 +116,9 @@ impl VM {
 
     /// Takes a value that can be stringified as its single argument,
     /// and prints that value followed by newline to standard output.
-    pub fn core_println(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_println(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "println requires one argument");
+            self.print_error("println requires one argument");
             return 0;
         }
 
@@ -151,7 +151,7 @@ impl VM {
                 return 1;
             }
             _ => {
-                print_error(chunk, i, "println argument must be a string");
+                self.print_error("println argument must be a string");
                 return 0;
             }
         }
@@ -441,7 +441,7 @@ impl VM {
             let mut has_elements = false;
             self.stack.push(value_rr.clone());
             loop {
-                let dup_res = self.opcode_dup(chunk.clone(), i);
+                let dup_res = self.opcode_dup();
                 if dup_res == 0 {
                     return lines_to_print;
                 }

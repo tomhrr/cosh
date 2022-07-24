@@ -85,7 +85,7 @@ pub struct GeneratorObject {
     /// The chunk of the associated generator function.
     pub chunk: Rc<RefCell<Chunk>>,
     /// The chunks of the other functions in the call stack.
-    pub call_stack_chunks: Vec<Rc<RefCell<Chunk>>>,
+    pub call_stack_chunks: Vec<(Rc<RefCell<Chunk>>, usize)>,
     /// The values that need to be passed into the generator when
     /// it is first called.
     pub gen_args: Vec<Value>,
@@ -98,7 +98,7 @@ impl GeneratorObject {
         local_vars_stack: Rc<RefCell<Vec<Value>>>,
         index: usize,
         chunk: Rc<RefCell<Chunk>>,
-        call_stack_chunks: Vec<Rc<RefCell<Chunk>>>,
+        call_stack_chunks: Vec<(Rc<RefCell<Chunk>>, usize)>,
         gen_args: Vec<Value>
     ) -> GeneratorObject {
         GeneratorObject {
@@ -155,7 +155,7 @@ pub enum Value {
     /// stack).
     AnonymousFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<Value>>>),
     /// A core function.  See SIMPLE_FORMS in the VM.
-    CoreFunction(fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32),
+    CoreFunction(fn(&mut VM) -> i32),
     /// A shift function (i.e. a function that shifts an element from
     /// some value).  See SHIFT_FORMS in the VM.
     ShiftFunction(
@@ -1006,7 +1006,7 @@ impl Value {
     /// For a string value, generate the corresponding regex for the
     /// string value and store it in the value.  If called on a
     /// non-string value, this will abort the current process.
-    pub fn gen_regex(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> bool {
+    pub fn gen_regex(&mut self) -> bool {
         match self {
             Value::String(sp) => {
                 match sp.borrow().r {
@@ -1036,7 +1036,8 @@ impl Value {
                         let regex_errpart = Regex::new(".*error:\\s*").unwrap();
                         err_str = regex_errpart.replace(&err_str, "").to_string();
                         err_str = format!("invalid regex: {}", err_str);
-                        print_error(chunk, i, &err_str);
+                        //print_error(chunk, i, &err_str);
+                        eprintln!("{}", err_str);
                         return false;
                     }
                 }

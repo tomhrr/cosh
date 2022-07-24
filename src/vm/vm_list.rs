@@ -4,15 +4,15 @@ use std::io::BufRead;
 use std::mem;
 use std::rc::Rc;
 
-use chunk::{print_error, Chunk, StringPair, Value};
+use chunk::{Chunk, StringPair, Value};
 use vm::VM;
 
 impl VM {
     /// Takes a list and an index as its arguments.  Gets the element
     /// at the given index from the list and places it onto the stack.
-    pub fn core_nth(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_nth(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "nth requires two arguments");
+            self.print_error("nth requires two arguments");
             return 0;
         }
 
@@ -24,18 +24,18 @@ impl VM {
         match (index_int_opt, lst_rr) {
             (Some(index), Value::List(lst)) => {
                 if lst.borrow().len() <= (index as usize) {
-                    print_error(chunk, i, "nth index is out of bounds");
+                    self.print_error("nth index is out of bounds");
                     return 0;
                 }
                 let element = lst.borrow()[index as usize].clone();
                 self.stack.push(element);
             }
             (Some(_), _) => {
-                print_error(chunk, i, "first nth argument must be list");
+                self.print_error("first nth argument must be list");
                 return 0;
             }
             (_, _) => {
-                print_error(chunk, i, "second nth argument must be integer");
+                self.print_error("second nth argument must be integer");
                 return 0;
             }
         }
@@ -44,9 +44,9 @@ impl VM {
 
     /// Takes a list, an index, and a value as its arguments.  Places
     /// the value at the given index in the list.
-    pub fn core_nth_em(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_nth_em(&mut self) -> i32 {
         if self.stack.len() < 3 {
-            print_error(chunk, i, "nth! requires three arguments");
+            self.print_error("nth! requires three arguments");
             return 0;
         }
 
@@ -61,17 +61,17 @@ impl VM {
             match (index_int_opt, &mut lst_rr) {
                 (Some(index), Value::List(lst)) => {
                     if lst.borrow().len() <= (index as usize) {
-                        print_error(chunk, i, "nth! index is out of bounds");
+                        self.print_error("nth! index is out of bounds");
                         return 0;
                     }
                     lst.borrow_mut()[index as usize] = val_rr;
                 }
                 (Some(_), _) => {
-                    print_error(chunk, i, "first nth! argument must be list");
+                    self.print_error("first nth! argument must be list");
                     return 0;
                 }
                 (_, _) => {
-                    print_error(chunk, i, "second nth! argument must be integer");
+                    self.print_error("second nth! argument must be integer");
                     return 0;
                 }
             }
@@ -90,7 +90,7 @@ impl VM {
         line_col: (u32, u32),
     ) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "gnth requires two arguments");
+            self.print_error("gnth requires two arguments");
             return 0;
         }
 
@@ -100,7 +100,7 @@ impl VM {
         match index_int_opt {
             Some(mut index) => {
                 while index >= 0 {
-                    let dup_res = self.opcode_dup(chunk.clone(), i);
+                    let dup_res = self.opcode_dup();
                     if dup_res == 0 {
                         return 0;
                     }
@@ -122,7 +122,7 @@ impl VM {
                 }
             }
             _ => {
-                print_error(chunk, i, "second gnth argument must be integer");
+                self.print_error("second gnth argument must be integer");
                 return 0;
             }
         }
@@ -131,9 +131,9 @@ impl VM {
 
     /// Takes a list and a value as its arguments.  Pushes the value
     /// onto the list and places the updated list onto the stack.
-    pub fn opcode_push(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_push(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "push requires two arguments");
+            self.print_error("push requires two arguments");
             return 0;
         }
 
@@ -146,7 +146,7 @@ impl VM {
                     lst.borrow_mut().push_back(element_rr);
                 }
                 _ => {
-                    print_error(chunk, i, "first push argument must be list");
+                    self.print_error("first push argument must be list");
                     return 0;
                 }
             }
@@ -159,9 +159,9 @@ impl VM {
     /// Takes a list and a value as its arguments.  Pushes the value
     /// onto the start of the list and places the updated list onto
     /// the stack.
-    pub fn core_unshift(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_unshift(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "unshift requires two arguments");
+            self.print_error("unshift requires two arguments");
             return 0;
         }
 
@@ -174,7 +174,7 @@ impl VM {
                     lst.borrow_mut().push_front(element_rr);
                 }
                 _ => {
-                    print_error(chunk, i, "first unshift argument must be list");
+                    self.print_error("first unshift argument must be list");
                     return 0;
                 }
             }
@@ -186,9 +186,9 @@ impl VM {
 
     /// Takes a list as its single argument.  Pops a value from the
     /// end of the list and places that value onto the stack.
-    pub fn opcode_pop(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_pop(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "pop requires one argument");
+            self.print_error("pop requires one argument");
             return 0;
         }
 
@@ -202,7 +202,7 @@ impl VM {
                 }
             }
             _ => {
-                print_error(chunk, i, "pop argument must be list");
+                self.print_error("pop argument must be list");
                 return 0;
             }
         };
@@ -213,8 +213,6 @@ impl VM {
 
     pub fn opcode_shift_inner<'a>(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize,
         line_col: (u32, u32),
         shiftable_rr: &mut Value
     ) -> i32 {
@@ -275,7 +273,7 @@ impl VM {
                         self.scopes.push(global_vars);
                         let plvs_stack = self.local_var_stack.clone();
                         self.local_var_stack = local_vars_stack;
-                        let res = self.run(
+                        let res = self.run_inner(
                             chunk,
                             index,
                             line_col,
@@ -319,7 +317,7 @@ impl VM {
                         }
                     }
                     Err(_) => {
-                        print_error(chunk, i, "unable to read next line from command output");
+                        self.print_error("unable to read next line from command output");
                     }
                 }
             }
@@ -406,7 +404,7 @@ impl VM {
                 hwi.borrow_mut().i = el;
             }
             _ => {
-                print_error(chunk, i, "argument cannot be shifted");
+                self.print_error("argument cannot be shifted");
                 return 0;
             }
         }
@@ -429,13 +427,13 @@ impl VM {
         line_col: (u32, u32),
     ) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "shift requires one argument");
+            self.print_error("shift requires one argument");
             return 0;
         }
 
         let mut shiftable_rr = self.stack.pop().unwrap();
         return self.opcode_shift_inner(
-            chunk, i, line_col, &mut shiftable_rr
+            line_col, &mut shiftable_rr
         );
     }
 
@@ -449,12 +447,12 @@ impl VM {
         line_col: (u32, u32),
     ) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "shift-all requires one argument");
+            self.print_error("shift-all requires one argument");
             return 0;
         }
 
         loop {
-            let dup_res = self.opcode_dup(chunk.clone(), i);
+            let dup_res = self.opcode_dup();
             if dup_res == 0 {
                 return 0;
             }
@@ -485,7 +483,7 @@ impl VM {
                 break;
             }
 
-            let swap_res = self.opcode_swap(chunk.clone(), i);
+            let swap_res = self.opcode_swap();
             if swap_res == 0 {
                 return 0;
             }
@@ -496,9 +494,9 @@ impl VM {
     /// Takes an arbitrary value as its single argument.  Places a
     /// boolean onto the stack indicating whether the argument can be
     /// shifted.
-    pub fn opcode_isshiftable(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_isshiftable(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "is-shiftable requires one argument");
+            self.print_error("is-shiftable requires one argument");
             return 0;
         }
 

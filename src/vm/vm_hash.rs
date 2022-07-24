@@ -1,16 +1,16 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use chunk::{print_error, Chunk, HashWithIndex, Value};
+use chunk::{HashWithIndex, Value};
 use vm::*;
 
 impl VM {
     /// Takes a hash value and a key string as its arguments.  Puts
     /// the value at that hash key onto the stack, or the null value
     /// if no such hash key exists.
-    pub fn core_at(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_at(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "at requires two arguments");
+            self.print_error("at requires two arguments");
             return 0;
         }
 
@@ -53,11 +53,11 @@ impl VM {
                 }
             }
             (_, Some(_)) => {
-                print_error(chunk, i, "first at argument must be hash");
+                self.print_error("first at argument must be hash");
                 return 0;
             }
             _ => {
-                print_error(chunk, i, "second at argument must be string");
+                self.print_error("second at argument must be string");
                 return 0;
             }
         }
@@ -67,9 +67,9 @@ impl VM {
     /// Takes a hash value, a key string, and a value as its
     /// arguments.  Puts the value into the hash against the specified
     /// key, and puts the updated hash back onto the stack.
-    pub fn core_at_em(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_at_em(&mut self) -> i32 {
         if self.stack.len() < 3 {
-            print_error(chunk, i, "at! requires three arguments");
+            self.print_error("at! requires three arguments");
             return 0;
         }
 
@@ -106,11 +106,11 @@ impl VM {
                     map.borrow_mut().insert(s.to_string(), val_rr);
                 }
                 (_, Some(_)) => {
-                    print_error(chunk, i, "first at! argument must be hash");
+                    self.print_error("first at! argument must be hash");
                     return 0;
                 }
                 _ => {
-                    print_error(chunk, i, "second at! argument must be key string");
+                    self.print_error("second at! argument must be key string");
                     return 0;
                 }
             }
@@ -121,9 +121,9 @@ impl VM {
 
     /// Takes a hash value and returns a generator over the keys of
     /// the hash.
-    pub fn core_keys(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_keys(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "keys requires one argument");
+            self.print_error("keys requires one argument");
             return 0;
         }
 
@@ -135,7 +135,7 @@ impl VM {
                     is_hash = true;
                 }
                 _ => {
-                    print_error(chunk, i, "keys argument must be hash");
+                    self.print_error("keys argument must be hash");
                     return 0;
                 }
             }
@@ -150,9 +150,9 @@ impl VM {
 
     /// Takes a hash value and returns a generator over the values of
     /// the hash.
-    pub fn core_values(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_values(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "values requires one argument");
+            self.print_error("values requires one argument");
             return 0;
         }
 
@@ -164,7 +164,7 @@ impl VM {
                     is_hash = true;
                 }
                 _ => {
-                    print_error(chunk, i, "values argument must be hash");
+                    self.print_error("values argument must be hash");
                     return 0;
                 }
             }
@@ -179,9 +179,9 @@ impl VM {
 
     /// Takes a hash value and returns a generator over the key-value
     /// pairs from that hash.
-    pub fn core_each(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_each(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "each requires one argument");
+            self.print_error("each requires one argument");
             return 0;
         }
 
@@ -193,7 +193,7 @@ impl VM {
                     is_hash = true;
                 }
                 _ => {
-                    print_error(chunk, i, "each argument must be hash");
+                    self.print_error("each argument must be hash");
                     return 0;
                 }
             }

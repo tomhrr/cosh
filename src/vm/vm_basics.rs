@@ -1,13 +1,13 @@
 use rand::Rng;
 
-use chunk::{print_error, Chunk, StringPair, Value};
+use chunk::{StringPair, Value};
 use vm::*;
 
 impl VM {
     /// Remove the top element from the stack.
-    pub fn opcode_drop(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_drop(&mut self) -> i32 {
         if self.stack.len() == 0 {
-            print_error(chunk, i, "drop requires one argument");
+            self.print_error("drop requires one argument");
             return 0;
         }
         self.stack.pop();
@@ -16,16 +16,16 @@ impl VM {
 
     /// Remove all elements from the stack.
     #[allow(unused_variables)]
-    pub fn opcode_clear(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_clear(&mut self) -> i32 {
         self.stack.clear();
         return 1;
     }
 
     /// Take the top element from the stack, duplicate it, and add it
     /// onto the stack.
-    pub fn opcode_dup(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_dup(&mut self) -> i32 {
         if self.stack.len() == 0 {
-            print_error(chunk, i, "dup requires one argument");
+            self.print_error("dup requires one argument");
             return 0;
         }
         self.stack.push(self.stack.last().unwrap().clone());
@@ -34,9 +34,9 @@ impl VM {
 
     /// Take the second element from the top from the stack, duplicate
     /// it, and add it onto the stack.
-    pub fn opcode_over(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_over(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            print_error(chunk, i, "over requires two arguments");
+            self.print_error("over requires two arguments");
             return 0;
         }
         self.stack.push(self.stack[self.stack.len() - 2].clone());
@@ -44,10 +44,10 @@ impl VM {
     }
 
     /// Swap the top two elements from the stack.
-    pub fn opcode_swap(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_swap(&mut self) -> i32 {
         let len = self.stack.len();
         if len < 2 {
-            print_error(chunk, i, "swap requires two arguments");
+            self.print_error("swap requires two arguments");
             return 0;
         }
         self.stack.swap(len - 1, len - 2);
@@ -58,9 +58,9 @@ impl VM {
     /// becomes the second from top element, the second from top
     /// element becomes the third from top element, and the third from
     /// top element becomes the top element.
-    pub fn opcode_rot(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_rot(&mut self) -> i32 {
         if self.stack.len() < 3 {
-            print_error(chunk, i, "rot requires three arguments");
+            self.print_error("rot requires three arguments");
             return 0;
         }
         let first_rr = self.stack.pop().unwrap();
@@ -74,7 +74,7 @@ impl VM {
 
     /// Push the current depth of the stack onto the stack.
     #[allow(unused_variables)]
-    pub fn opcode_depth(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_depth(&mut self) -> i32 {
         self.stack.push(Value::Int(self.stack.len() as i32));
         return 1;
     }
@@ -82,9 +82,9 @@ impl VM {
     /// If the topmost element is a list, adds the length of that list
     /// onto the stack.  If the topmost element is a string, adds the
     /// length of that sting onto the stack.
-    pub fn core_len(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn core_len(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "len requires one argument");
+            self.print_error("len requires one argument");
             return 0;
         }
 
@@ -99,7 +99,7 @@ impl VM {
                 self.stack.push(Value::Int(len as i32));
             }
             _ => {
-                print_error(chunk, i, "len argument must be a list or a string");
+                self.print_error("len argument must be a list or a string");
                 return 0;
             }
         }
@@ -108,9 +108,9 @@ impl VM {
 
     /// Adds a boolean onto the stack indicating whether the topmost
     /// element is a null value.
-    pub fn opcode_isnull(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_isnull(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "is-null requires one argument");
+            self.print_error("is-null requires one argument");
             return 0;
         }
 
@@ -123,9 +123,9 @@ impl VM {
         return 1;
     }
 
-    pub fn opcode_dupisnull(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_dupisnull(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "is-null requires one argument");
+            self.print_error("is-null requires one argument");
             return 0;
         }
 
@@ -140,9 +140,9 @@ impl VM {
 
     /// Adds a boolean onto the stack indicating whether the topmost
     /// element is a list.
-    pub fn opcode_islist(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_islist(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "is-list requires one argument");
+            self.print_error("is-list requires one argument");
             return 0;
         }
 
@@ -159,9 +159,9 @@ impl VM {
     /// element can be called.  (In the case of a string, this doesn't
     /// currently check that the string name maps to a function or
     /// core form, though.)
-    pub fn opcode_iscallable(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_iscallable(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "is-callable requires one argument");
+            self.print_error("is-callable requires one argument");
             return 0;
         }
 
@@ -180,9 +180,9 @@ impl VM {
     }
 
     /// Convert a value into a string value.
-    pub fn opcode_str(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_str(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "str requires one argument");
+            self.print_error("str requires one argument");
             return 0;
         }
 
@@ -226,7 +226,7 @@ impl VM {
                             return 1;
                         }
                         _ => {
-                            print_error(chunk, i, "unable to convert argument to string");
+                            self.print_error("unable to convert argument to string");
                             return 0;
                         }
                     }
@@ -240,9 +240,9 @@ impl VM {
     }
 
     /// Convert a value into an integer/bigint value.
-    pub fn opcode_int(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_int(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "int requires one argument");
+            self.print_error("int requires one argument");
             return 0;
         }
 
@@ -271,7 +271,7 @@ impl VM {
                                     return 1;
                                 }
                                 _ => {
-                                    print_error(chunk, i, "unable to convert argument to int");
+                                    self.print_error("unable to convert argument to int");
                                     return 0;
                                 }
                             }
@@ -287,9 +287,9 @@ impl VM {
     }
 
     /// Convert a value into a floating-point value.
-    pub fn opcode_flt(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_flt(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "flt requires one argument");
+            self.print_error("flt requires one argument");
             return 0;
         }
 
@@ -308,7 +308,7 @@ impl VM {
                             return 1;
                         }
                         _ => {
-                            print_error(chunk, i, "unable to convert argument to float");
+                            self.print_error("unable to convert argument to float");
                             return 0;
                         }
                     }
@@ -322,9 +322,9 @@ impl VM {
     }
 
     /// Get a random floating-point value.
-    pub fn opcode_rand(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize) -> i32 {
+    pub fn opcode_rand(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "rand requires one argument");
+            self.print_error("rand requires one argument");
             return 0;
         }
 
@@ -337,7 +337,7 @@ impl VM {
                 self.stack.push(Value::Float(rand_value));
             }
             _ => {
-                print_error(chunk, i, "unable to convert argument to float");
+                self.print_error("unable to convert argument to float");
                 return 0;
             }
         }

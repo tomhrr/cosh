@@ -47,6 +47,10 @@ pub struct VM {
     debug: bool,
     // The stack.
     stack: Vec<Value>,
+    // The current chunk.
+    chunk: Rc<RefCell<Chunk>>,
+    // The instruction index for the current chunk.
+    i: usize,
     // Whether the stack should be printed after interpretation has
     // finished.
     print_stack: bool,
@@ -57,7 +61,7 @@ pub struct VM {
     // The global functions.
     global_functions: HashMap<String, Rc<RefCell<Chunk>>>,
     // The call stack chunks.
-    pub call_stack_chunks: Vec<Rc<RefCell<Chunk>>>,
+    pub call_stack_chunks: Vec<(Rc<RefCell<Chunk>>, usize)>,
     // A flag for interrupting execution.
     pub running: Arc<AtomicBool>,
     // A System object, for getting process information.
@@ -65,135 +69,135 @@ pub struct VM {
 }
 
 lazy_static! {
-    static ref SIMPLE_FORMS: HashMap<&'static str, fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32> = {
+    static ref SIMPLE_FORMS: HashMap<&'static str, fn(&mut VM) -> i32> = {
         let mut map = HashMap::new();
-        map.insert("+", VM::opcode_add as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("+", VM::opcode_add as fn(&mut VM) -> i32);
         map.insert(
             "-",
-            VM::opcode_subtract as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::opcode_subtract as fn(&mut VM) -> i32,
         );
         map.insert(
             "*",
-            VM::opcode_multiply as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::opcode_multiply as fn(&mut VM) -> i32,
         );
-        map.insert("/", VM::opcode_divide as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("=", VM::opcode_eq as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert(">", VM::opcode_gt as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("<", VM::opcode_lt as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("/", VM::opcode_divide as fn(&mut VM) -> i32);
+        map.insert("=", VM::opcode_eq as fn(&mut VM) -> i32);
+        map.insert(">", VM::opcode_gt as fn(&mut VM) -> i32);
+        map.insert("<", VM::opcode_lt as fn(&mut VM) -> i32);
         map.insert(
             "print",
-            VM::opcode_print as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::opcode_print as fn(&mut VM) -> i32,
         );
-        map.insert("drop", VM::opcode_drop as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("drop", VM::opcode_drop as fn(&mut VM) -> i32);
         map.insert(
             "clear",
-            VM::opcode_clear as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::opcode_clear as fn(&mut VM) -> i32,
         );
-        map.insert("dup", VM::opcode_dup as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("over", VM::opcode_over as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("swap", VM::opcode_swap as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("rot", VM::opcode_rot as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("dup", VM::opcode_dup as fn(&mut VM) -> i32);
+        map.insert("over", VM::opcode_over as fn(&mut VM) -> i32);
+        map.insert("swap", VM::opcode_swap as fn(&mut VM) -> i32);
+        map.insert("rot", VM::opcode_rot as fn(&mut VM) -> i32);
         map.insert(
             "depth",
-            VM::opcode_depth as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::opcode_depth as fn(&mut VM) -> i32,
         );
         map.insert(
             "is-null",
-            VM::opcode_isnull as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::opcode_isnull as fn(&mut VM) -> i32,
         );
         map.insert(
             "is-list",
-            VM::opcode_islist as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::opcode_islist as fn(&mut VM) -> i32,
         );
         map.insert(
             "is-callable",
-            VM::opcode_iscallable as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::opcode_iscallable as fn(&mut VM) -> i32,
         );
         map.insert(
             "is-shiftable",
-            VM::opcode_isshiftable as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::opcode_isshiftable as fn(&mut VM) -> i32,
         );
-        map.insert("open", VM::opcode_open as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("open", VM::opcode_open as fn(&mut VM) -> i32);
         map.insert(
             "readline",
-            VM::opcode_readline as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::opcode_readline as fn(&mut VM) -> i32,
         );
         map.insert(
             "println",
-            VM::core_println as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_println as fn(&mut VM) -> i32,
         );
-        map.insert("rm", VM::core_rm as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("rm", VM::core_rm as fn(&mut VM) -> i32);
         map.insert(
             "writeline",
-            VM::core_writeline as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_writeline as fn(&mut VM) -> i32,
         );
-        map.insert("close", VM::core_close as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("close", VM::core_close as fn(&mut VM) -> i32);
         map.insert(
             "opendir",
-            VM::core_opendir as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_opendir as fn(&mut VM) -> i32,
         );
         map.insert(
             "readdir",
-            VM::core_readdir as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_readdir as fn(&mut VM) -> i32,
         );
-        map.insert("cp", VM::core_cp as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("mv", VM::core_mv as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("cd", VM::core_cd as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("pwd", VM::core_pwd as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("touch", VM::core_touch as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("stat", VM::core_stat as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("ps", VM::core_ps as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("kill", VM::core_kill as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("m", VM::core_m as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("s", VM::core_s as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("c", VM::core_c as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("nth", VM::core_nth as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("nth!", VM::core_nth_em as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("cp", VM::core_cp as fn(&mut VM) -> i32);
+        map.insert("mv", VM::core_mv as fn(&mut VM) -> i32);
+        map.insert("cd", VM::core_cd as fn(&mut VM) -> i32);
+        map.insert("pwd", VM::core_pwd as fn(&mut VM) -> i32);
+        map.insert("touch", VM::core_touch as fn(&mut VM) -> i32);
+        map.insert("stat", VM::core_stat as fn(&mut VM) -> i32);
+        map.insert("ps", VM::core_ps as fn(&mut VM) -> i32);
+        map.insert("kill", VM::core_kill as fn(&mut VM) -> i32);
+        map.insert("m", VM::core_m as fn(&mut VM) -> i32);
+        map.insert("s", VM::core_s as fn(&mut VM) -> i32);
+        map.insert("c", VM::core_c as fn(&mut VM) -> i32);
+        map.insert("nth", VM::core_nth as fn(&mut VM) -> i32);
+        map.insert("nth!", VM::core_nth_em as fn(&mut VM) -> i32);
         map.insert(
             "append",
-            VM::core_append as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_append as fn(&mut VM) -> i32,
         );
-        map.insert("push", VM::opcode_push as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("push", VM::opcode_push as fn(&mut VM) -> i32);
         map.insert(
             "unshift",
-            VM::core_unshift as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_unshift as fn(&mut VM) -> i32,
         );
-        map.insert("pop", VM::opcode_pop as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("len", VM::core_len as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("pop", VM::opcode_pop as fn(&mut VM) -> i32);
+        map.insert("len", VM::core_len as fn(&mut VM) -> i32);
         map.insert(
             "is-dir",
-            VM::core_is_dir as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_is_dir as fn(&mut VM) -> i32,
         );
-        map.insert("split", VM::core_split as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("splitr", VM::core_splitr as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("at", VM::core_at as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("at!", VM::core_at_em as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("keys", VM::core_keys as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("split", VM::core_split as fn(&mut VM) -> i32);
+        map.insert("splitr", VM::core_splitr as fn(&mut VM) -> i32);
+        map.insert("at", VM::core_at as fn(&mut VM) -> i32);
+        map.insert("at!", VM::core_at_em as fn(&mut VM) -> i32);
+        map.insert("keys", VM::core_keys as fn(&mut VM) -> i32);
         map.insert(
             "values",
-            VM::core_values as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_values as fn(&mut VM) -> i32,
         );
-        map.insert("each", VM::core_each as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("each", VM::core_each as fn(&mut VM) -> i32);
         map.insert(
             "from-json",
-            VM::core_from_json as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_from_json as fn(&mut VM) -> i32,
         );
         map.insert(
             "to-json",
-            VM::core_to_json as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_to_json as fn(&mut VM) -> i32,
         );
         map.insert(
             "from-xml",
-            VM::core_from_xml as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_from_xml as fn(&mut VM) -> i32,
         );
         map.insert(
             "to-xml",
-            VM::core_to_xml as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32,
+            VM::core_to_xml as fn(&mut VM) -> i32,
         );
-        map.insert("str", VM::opcode_str as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("int", VM::opcode_int as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("flt", VM::opcode_flt as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        map.insert("rand", VM::opcode_rand as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        map.insert("str", VM::opcode_str as fn(&mut VM) -> i32);
+        map.insert("int", VM::opcode_int as fn(&mut VM) -> i32);
+        map.insert("flt", VM::opcode_flt as fn(&mut VM) -> i32);
+        map.insert("rand", VM::opcode_rand as fn(&mut VM) -> i32);
         map
     };
     static ref SHIFT_FORMS: HashMap<
@@ -258,46 +262,46 @@ lazy_static! {
         );
         map
     };
-    static ref SIMPLE_OPS: Vec<Option<fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32>> = {
+    static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {
         let mut vec = vec![None; 255];
-        vec[OpCode::Add as usize] = Some(VM::opcode_add as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        vec[OpCode::Add as usize] = Some(VM::opcode_add as fn(&mut VM) -> i32);
         vec[OpCode::Subtract as usize] =
-            Some(VM::opcode_subtract as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+            Some(VM::opcode_subtract as fn(&mut VM) -> i32);
         vec[OpCode::Multiply as usize] =
-            Some(VM::opcode_multiply as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Divide as usize] = Some(VM::opcode_divide as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Eq as usize] = Some(VM::opcode_eq as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Gt as usize] = Some(VM::opcode_gt as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Lt as usize] = Some(VM::opcode_lt as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Print as usize] = Some(VM::opcode_print as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Drop as usize] = Some(VM::opcode_drop as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Clear as usize] = Some(VM::opcode_clear as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Dup as usize] = Some(VM::opcode_dup as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Over as usize] = Some(VM::opcode_over as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Swap as usize] = Some(VM::opcode_swap as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Rot as usize] = Some(VM::opcode_rot as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Depth as usize] = Some(VM::opcode_depth as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::IsNull as usize] = Some(VM::opcode_isnull as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+            Some(VM::opcode_multiply as fn(&mut VM) -> i32);
+        vec[OpCode::Divide as usize] = Some(VM::opcode_divide as fn(&mut VM) -> i32);
+        vec[OpCode::Eq as usize] = Some(VM::opcode_eq as fn(&mut VM) -> i32);
+        vec[OpCode::Gt as usize] = Some(VM::opcode_gt as fn(&mut VM) -> i32);
+        vec[OpCode::Lt as usize] = Some(VM::opcode_lt as fn(&mut VM) -> i32);
+        vec[OpCode::Print as usize] = Some(VM::opcode_print as fn(&mut VM) -> i32);
+        vec[OpCode::Drop as usize] = Some(VM::opcode_drop as fn(&mut VM) -> i32);
+        vec[OpCode::Clear as usize] = Some(VM::opcode_clear as fn(&mut VM) -> i32);
+        vec[OpCode::Dup as usize] = Some(VM::opcode_dup as fn(&mut VM) -> i32);
+        vec[OpCode::Over as usize] = Some(VM::opcode_over as fn(&mut VM) -> i32);
+        vec[OpCode::Swap as usize] = Some(VM::opcode_swap as fn(&mut VM) -> i32);
+        vec[OpCode::Rot as usize] = Some(VM::opcode_rot as fn(&mut VM) -> i32);
+        vec[OpCode::Depth as usize] = Some(VM::opcode_depth as fn(&mut VM) -> i32);
+        vec[OpCode::IsNull as usize] = Some(VM::opcode_isnull as fn(&mut VM) -> i32);
         vec[OpCode::DupIsNull as usize] =
-            Some(VM::opcode_dupisnull as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::IsList as usize] = Some(VM::opcode_islist as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+            Some(VM::opcode_dupisnull as fn(&mut VM) -> i32);
+        vec[OpCode::IsList as usize] = Some(VM::opcode_islist as fn(&mut VM) -> i32);
         vec[OpCode::IsCallable as usize] =
-            Some(VM::opcode_iscallable as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+            Some(VM::opcode_iscallable as fn(&mut VM) -> i32);
         vec[OpCode::IsShiftable as usize] =
-            Some(VM::opcode_isshiftable as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Open as usize] = Some(VM::opcode_open as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+            Some(VM::opcode_isshiftable as fn(&mut VM) -> i32);
+        vec[OpCode::Open as usize] = Some(VM::opcode_open as fn(&mut VM) -> i32);
         vec[OpCode::Readline as usize] =
-            Some(VM::opcode_readline as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Str as usize] = Some(VM::opcode_str as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Int as usize] = Some(VM::opcode_int as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Flt as usize] = Some(VM::opcode_flt as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Rand as usize] = Some(VM::opcode_rand as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Push as usize] = Some(VM::opcode_push as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Pop as usize] = Some(VM::opcode_pop as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::ToggleMode as usize] = Some(VM::opcode_togglemode as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::PrintStack as usize] = Some(VM::opcode_printstack as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::ToFunction as usize] = Some(VM::opcode_tofunction as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
-        vec[OpCode::Import as usize] = Some(VM::opcode_import as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+            Some(VM::opcode_readline as fn(&mut VM) -> i32);
+        vec[OpCode::Str as usize] = Some(VM::opcode_str as fn(&mut VM) -> i32);
+        vec[OpCode::Int as usize] = Some(VM::opcode_int as fn(&mut VM) -> i32);
+        vec[OpCode::Flt as usize] = Some(VM::opcode_flt as fn(&mut VM) -> i32);
+        vec[OpCode::Rand as usize] = Some(VM::opcode_rand as fn(&mut VM) -> i32);
+        vec[OpCode::Push as usize] = Some(VM::opcode_push as fn(&mut VM) -> i32);
+        vec[OpCode::Pop as usize] = Some(VM::opcode_pop as fn(&mut VM) -> i32);
+        vec[OpCode::ToggleMode as usize] = Some(VM::opcode_togglemode as fn(&mut VM) -> i32);
+        vec[OpCode::PrintStack as usize] = Some(VM::opcode_printstack as fn(&mut VM) -> i32);
+        vec[OpCode::ToFunction as usize] = Some(VM::opcode_tofunction as fn(&mut VM) -> i32);
+        vec[OpCode::Import as usize] = Some(VM::opcode_import as fn(&mut VM) -> i32);
         vec
     };
 }
@@ -313,15 +317,36 @@ impl VM {
             global_functions: HashMap::new(),
             call_stack_chunks: Vec::new(),
             running: Arc::new(AtomicBool::new(true)),
+            chunk:
+                Rc::new(RefCell::new(Chunk::new_standard("unused".to_string()))),
+            i: 0,
             sys: System::new(),
         }
     }
 
-    #[allow(unused_variables)]
+    /// Takes a chunk, an instruction index, and an error message as its
+    /// arguments.  Prints the error message, including filename, line number
+    /// and column number elements (if applicable).
+    pub fn print_error(&self, error: &str) {
+	let point = self.chunk.borrow().get_point(self.i);
+	let name = &self.chunk.borrow().name;
+	let error_start = if name == "(main)" {
+	    format!("")
+	} else {
+	    format!("{}:", name)
+	};
+	match point {
+	    Some((line, col)) => {
+		eprintln!("{}{}:{}: {}", error_start, line, col, error);
+	    }
+	    _ => {
+		eprintln!("{}{}", error_start, error);
+	    }
+	}
+    }
+
     pub fn opcode_togglemode(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize
     ) -> i32 {
         self.print_stack = !self.print_stack;
         return 1;
@@ -329,20 +354,16 @@ impl VM {
 
     pub fn opcode_printstack(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize
     ) -> i32 {
-        self.print_stack(chunk, i, true);
+        self.print_stack(self.chunk.clone(), self.i, true);
         return 1;
     }
 
     pub fn opcode_tofunction(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize
     ) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "to-function requires one argument");
+            self.print_error("to-function requires one argument");
             return 0;
         }
         let fn_rr = self.stack.pop().unwrap();
@@ -373,7 +394,7 @@ impl VM {
         match fn_opt {
             Some(s) => {
                 let sv = self.string_to_callable(
-                    chunk, s
+                    s
                 );
                 match sv {
                     Some(v) => {
@@ -393,11 +414,9 @@ impl VM {
 
     pub fn opcode_import(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize
     ) -> i32 {
         if self.stack.len() < 1 {
-            print_error(chunk, i, "import requires one argument");
+            self.print_error("import requires one argument");
             return 0;
         }
 
@@ -440,7 +459,7 @@ impl VM {
                 }
             }
             _ => {
-                print_error(chunk, i, "import argument must be a string");
+                self.print_error("import argument must be a string");
                 return 0;
             }
         }
@@ -497,13 +516,10 @@ impl VM {
 
     pub fn call_named_function<'a>(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize,
         line_col: (u32, u32),
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         call_chunk: Rc<RefCell<Chunk>>,
     ) -> bool {
-        self.call_stack_chunks.push(chunk.clone());
         if call_chunk.borrow().is_generator {
             let mut gen_args = Vec::new();
             let req_arg_count = call_chunk.borrow().req_arg_count;
@@ -513,7 +529,7 @@ impl VM {
                     req_arg_count,
                     if req_arg_count > 1 { "s" } else { "" }
                 );
-                print_error(chunk.clone(), i, &err_str);
+                self.print_error(&err_str);
                 return false;
             }
             let mut arg_count = call_chunk.borrow().arg_count;
@@ -530,6 +546,7 @@ impl VM {
             for i in self.call_stack_chunks.iter() {
                 gen_call_stack_chunks.push((*i).clone());
             }
+            gen_call_stack_chunks.push((self.chunk.clone(), self.i));
             let gen_rr = Value::Generator(Rc::new(RefCell::new(GeneratorObject::new(
                 Rc::new(RefCell::new(HashMap::new())),
                 Rc::new(RefCell::new(Vec::new())),
@@ -539,7 +556,6 @@ impl VM {
                 gen_args
             ))));
             self.stack.push(gen_rr);
-            self.call_stack_chunks.pop();
         } else {
             if call_chunk.borrow().has_vars {
                 self.scopes.push(Rc::new(RefCell::new(HashMap::new())));
@@ -556,15 +572,12 @@ impl VM {
 
             let res = self.run(
                 call_chunk.clone(),
-                0,
                 line_col
             );
 
             if !has_plvs_stack && !call_chunk.borrow().nested {
                 self.local_var_stack = prev_stack.unwrap();
             }
-
-            self.call_stack_chunks.pop();
 
             if res == 0 {
                 return false;
@@ -575,7 +588,6 @@ impl VM {
 
     pub fn string_to_callable(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
         s: &str
     ) -> Option<Value> {
         let sf_fn_opt = SIMPLE_FORMS.get(s);
@@ -592,17 +604,22 @@ impl VM {
             return Some(nv);
         }
 
-        self.call_stack_chunks.push(chunk);
-
         let global_function;
         let mut call_chunk_opt = None;
 
-        for sf in self.call_stack_chunks.iter().rev() {
-            let sfb = sf.borrow();
-            if sfb.functions.contains_key(s) {
-                let call_chunk = sfb.functions.get(s).unwrap();
-                call_chunk_opt = Some(call_chunk.clone());
-                break;
+        let scb = self.chunk.borrow();
+        if scb.functions.contains_key(s) {
+            let call_chunk = scb.functions.get(s).unwrap();
+            call_chunk_opt = Some(call_chunk.clone());
+        }
+        if call_chunk_opt.is_none() {
+            for (sf, _) in self.call_stack_chunks.iter().rev() {
+                let sfb = sf.borrow();
+                if sfb.functions.contains_key(s) {
+                    let call_chunk = sfb.functions.get(s).unwrap();
+                    call_chunk_opt = Some(call_chunk.clone());
+                    break;
+                }
             }
         }
         if call_chunk_opt.is_none() && self.global_functions.contains_key(s) {
@@ -614,13 +631,10 @@ impl VM {
                 let nv = Value::NamedFunction(
                     call_chunk.clone()
                 );
-                self.call_stack_chunks.pop();
                 return Some(nv);
             }
             _ => {}
         }
-
-        self.call_stack_chunks.pop();
 
         return None;
     }
@@ -635,11 +649,11 @@ impl VM {
         s: &str,
     ) -> bool {
         let sv = self.string_to_callable(
-            chunk.clone(), s
+            s
         );
         match sv {
             Some(Value::CoreFunction(sf_fn)) => {
-                let n = sf_fn(self, chunk, i);
+                let n = sf_fn(self);
                 if n == 0 {
                     return false;
                 }
@@ -658,15 +672,11 @@ impl VM {
                 return true;
             }
             Some(Value::NamedFunction(named_fn)) => {
-                self.call_stack_chunks.push(chunk.clone());
                 let res = self.call_named_function(
-                    chunk.clone(),
-                    0,
                     line_col,
                     plvs_stack,
                     named_fn.clone(),
                 );
-                self.call_stack_chunks.pop();
                 return res;
             }
             _ => {}
@@ -679,7 +689,7 @@ impl VM {
             ))));
             self.stack.push(value_rr);
         } else {
-            print_error(chunk, i, "function not found");
+            self.print_error("function not found");
             return false;
         }
 
@@ -746,7 +756,7 @@ impl VM {
                     }
                     if not_present {
                         let sv = self.string_to_callable(
-                            chunk.clone(), s
+                            s
                         );
                         match sv {
                             Some(v) => {
@@ -786,19 +796,19 @@ impl VM {
 
         match cv {
             Value::Command(s) => {
-                let i2 = self.core_command(&s.borrow(), chunk, i);
+                let i2 = self.core_command(&s.borrow());
                 if i2 == 0 {
                     return false;
                 }
             }
             Value::CommandUncaptured(s) => {
-                let i2 = self.core_command_uncaptured(&s.borrow(), chunk, i);
+                let i2 = self.core_command_uncaptured(&s.borrow());
                 if i2 == 0 {
                     return false;
                 }
             }
             Value::CoreFunction(cf) => {
-                let n = cf(self, chunk, i);
+                let n = cf(self);
                 if n == 0 {
                     return false;
                 }
@@ -818,8 +828,6 @@ impl VM {
             }
             Value::NamedFunction(call_chunk_rc) => {
                 return self.call_named_function(
-                    chunk,
-                    0,
                     line_col,
                     None,
                     call_chunk_rc,
@@ -827,8 +835,6 @@ impl VM {
             }
             Value::AnonymousFunction(call_chunk_rc, lvs) => {
                 return self.call_named_function(
-                    chunk.clone(),
-                    0,
                     line_col,
                     Some(lvs),
                     call_chunk_rc.clone(),
@@ -852,7 +858,7 @@ impl VM {
                 if is_implicit {
                     self.stack.push(cv.clone());
                 } else {
-                    print_error(chunk, i, "function not found");
+                    self.print_error("function not found");
                     return false;
                 }
             }
@@ -861,6 +867,24 @@ impl VM {
         return true;
     }
 
+    pub fn run(
+        &mut self,
+        chunk: Rc<RefCell<Chunk>>,
+        line_col: (u32, u32),
+    ) -> usize {
+        self.call_stack_chunks.push((self.chunk.clone(), self.i));
+        self.chunk = chunk;
+        self.i = 0;
+        let res = self.run_inner(self.chunk.clone(), self.i, line_col);
+        if res == 0 {
+            return 0;
+        }
+        let mp = self.call_stack_chunks.pop().unwrap();
+        let (c, i) = mp;
+        self.chunk = c;
+        self.i = i;
+        return res;
+    }
 
     /// Takes the global functions, the call stack chunks, the current
     /// chunk, the values for the current chunk, the instruction
@@ -870,7 +894,7 @@ impl VM {
     /// current line and column number as its arguments.  Runs the
     /// code from the chunk, beginning at the specified instruction
     /// index.
-    pub fn run<'a>(
+    pub fn run_inner<'a>(
         &mut self,
         chunk: Rc<RefCell<Chunk>>,
         index: usize,
@@ -883,6 +907,7 @@ impl VM {
         let mut list_types = Vec::new();
 
         while i < chunk.borrow().data.len() {
+            self.i = i;
             if !self.running.load(Ordering::SeqCst) {
                 self.running.store(true, Ordering::SeqCst);
                 self.stack.clear();
@@ -897,7 +922,7 @@ impl VM {
             let op_fn_opt = SIMPLE_OPS[op as usize];
             if !op_fn_opt.is_none() {
                 let op_fn = op_fn_opt.unwrap();
-                let res = op_fn(self, chunk.clone(), i);
+                let res = op_fn(self);
                 if res == 0 {
                     return 0;
                 } else {
@@ -929,7 +954,8 @@ impl VM {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Add as usize];
                         self.stack.push(chunk.borrow().get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
-                        let res = op_fn(self, chunk.clone(), i);
+                        self.i = i;
+                        let res = op_fn(self);
                         if res == 0 {
                             return 0;
                         } else {
@@ -961,7 +987,8 @@ impl VM {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Subtract as usize];
                         self.stack.push(chunk.borrow().get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
-                        let res = op_fn(self, chunk.clone(), i);
+                        self.i = i;
+                        let res = op_fn(self);
                         if res == 0 {
                             return 0;
                         } else {
@@ -993,7 +1020,8 @@ impl VM {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Multiply as usize];
                         self.stack.push(chunk.borrow().get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
-                        let res = op_fn(self, chunk.clone(), i);
+                        self.i = i;
+                        let res = op_fn(self);
                         if res == 0 {
                             return 0;
                         } else {
@@ -1025,7 +1053,8 @@ impl VM {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Divide as usize];
                         self.stack.push(chunk.borrow().get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
-                        let res = op_fn(self, chunk.clone(), i);
+                        self.i = i;
+                        let res = op_fn(self);
                         if res == 0 {
                             return 0;
                         } else {
@@ -1060,7 +1089,8 @@ impl VM {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Eq as usize];
                         self.stack.push(chunk.borrow().get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
-                        let res = op_fn(self, chunk.clone(), i);
+                        self.i = i;
+                        let res = op_fn(self);
                         if res == 0 {
                             return 0;
                         }
@@ -1078,7 +1108,7 @@ impl VM {
                 }
                 OpCode::EndList => {
                     if list_count == 0 {
-                        print_error(chunk, i, "no start list found");
+                        self.print_error("no start list found");
                         return 0;
                     }
                     let list_index = list_indexes.pop().unwrap();
@@ -1258,6 +1288,7 @@ impl VM {
                     let value_sd = chunk.borrow().constants[i2 as usize].clone();
                     match value_sd {
                         ValueSD::String(ref sp) => {
+                            self.i = i;
                             let res = self.call(
                                 chunk.clone(),
                                 i,
@@ -1280,7 +1311,7 @@ impl VM {
                 }
                 OpCode::Call | OpCode::CallImplicit => {
                     if self.stack.len() < 1 {
-                        print_error(chunk, i, "call requires one argument");
+                        self.print_error("call requires one argument");
                         return 0;
                     }
 
@@ -1356,7 +1387,7 @@ impl VM {
                 }
                 OpCode::SetLocalVar => {
                     if self.stack.len() < 1 {
-                        print_error(chunk, i, "! requires one argument");
+                        self.print_error("! requires one argument");
                         return 0;
                     }
 
@@ -1385,14 +1416,13 @@ impl VM {
                 }
                 OpCode::GLVShift => {
                     i = i + 1;
+                    self.i = i;
                     let var_index: u8 = chunk.borrow().data[i].try_into().unwrap();
 
                     let mut pt = self.local_var_stack
                         .borrow().index(var_index as
                         usize).clone();
                     let i2 = self.opcode_shift_inner(
-                        chunk.clone(),
-                        i,
                         line_col,
                         &mut pt
                     );
@@ -1405,7 +1435,7 @@ impl VM {
                 },
                 OpCode::Var => {
                     if self.stack.len() < 1 {
-                        print_error(chunk, i, "var requires one argument");
+                        self.print_error("var requires one argument");
                         return 0;
                     }
 
@@ -1417,7 +1447,7 @@ impl VM {
                                 var_name = sp.borrow().s.clone().to_string();
                             }
                             _ => {
-                                print_error(chunk, i, "variable name must be a string");
+                                self.print_error("variable name must be a string");
                                 return 0;
                             }
                         }
@@ -1431,7 +1461,7 @@ impl VM {
                 }
                 OpCode::SetVar => {
                     if self.stack.len() < 2 {
-                        print_error(chunk, i, "! requires two arguments");
+                        self.print_error("! requires two arguments");
                         return 0;
                     }
 
@@ -1452,19 +1482,19 @@ impl VM {
                             }
 
                             if !done {
-                                print_error(chunk, i, "could not find variable");
+                                self.print_error("could not find variable");
                                 return 0;
                             }
                         }
                         _ => {
-                            print_error(chunk, i, "variable name must be a string");
+                            self.print_error("variable name must be a string");
                             return 0;
                         }
                     }
                 }
                 OpCode::GetVar => {
                     if self.stack.len() < 1 {
-                        print_error(chunk, i, "@ requires one argument");
+                        self.print_error("@ requires one argument");
                         return 0;
                     }
 
@@ -1482,19 +1512,19 @@ impl VM {
                                 }
                             }
                             if !done {
-                                print_error(chunk, i, "could not find variable");
+                                self.print_error("could not find variable");
                                 return 0;
                             }
                         }
                         _ => {
-                            print_error(chunk, i, "variable name must be a string");
+                            self.print_error("variable name must be a string");
                             return 0;
                         }
                     }
                 }
                 OpCode::JumpNe => {
                     if self.stack.len() < 1 {
-                        print_error(chunk, i, "jumpne requires one argument");
+                        self.print_error("jumpne requires one argument");
                         return 0;
                     }
 
@@ -1525,7 +1555,7 @@ impl VM {
                 }
                 OpCode::JumpNeR => {
                     if self.stack.len() < 1 {
-                        print_error(chunk, i, "jumpner requires one argument");
+                        self.print_error("jumpner requires one argument");
                         return 0;
                     }
 
@@ -1556,7 +1586,7 @@ impl VM {
                 }
                 OpCode::JumpNeREqC => {
                     if self.stack.len() < 1 {
-                        print_error(chunk, i, "jumpnereqc requires one argument");
+                        self.print_error("jumpnereqc requires one argument");
                         return 0;
                     }
 
@@ -1626,7 +1656,7 @@ impl VM {
                 }
                 OpCode::Error => {
                     if self.stack.len() < 1 {
-                        print_error(chunk, i, "error requires one argument");
+                        self.print_error("error requires one argument");
                         return 0;
                     }
 
@@ -1738,7 +1768,6 @@ impl VM {
 
         self.run(
             chunk.clone(),
-            0,
             (0, 0),
         );
         if self.print_stack {

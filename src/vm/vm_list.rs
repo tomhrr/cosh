@@ -4,7 +4,7 @@ use std::io::BufRead;
 use std::mem;
 use std::rc::Rc;
 
-use chunk::{Chunk, StringPair, Value};
+use chunk::{StringPair, Value};
 use vm::VM;
 
 impl VM {
@@ -85,9 +85,6 @@ impl VM {
     /// onto the stack.
     pub fn core_gnth(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize,
-        line_col: (u32, u32),
     ) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("gnth requires two arguments");
@@ -104,11 +101,7 @@ impl VM {
                     if dup_res == 0 {
                         return 0;
                     }
-                    let shift_res = self.opcode_shift(
-                        chunk.clone(),
-                        i,
-                        line_col,
-                    );
+                    let shift_res = self.opcode_shift();
                     if shift_res == 0 {
                         return 0;
                     }
@@ -213,7 +206,6 @@ impl VM {
 
     pub fn opcode_shift_inner<'a>(
         &mut self,
-        line_col: (u32, u32),
         shiftable_rr: &mut Value
     ) -> i32 {
         let mut repush = false;
@@ -276,7 +268,6 @@ impl VM {
                         let res = self.run_inner(
                             chunk,
                             index,
-                            line_col,
                         );
                         self.scopes.pop();
                         self.local_var_stack = plvs_stack;
@@ -422,9 +413,6 @@ impl VM {
     /// element from that object and puts it onto the stack.
     pub fn opcode_shift<'a>(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize,
-        line_col: (u32, u32),
     ) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("shift requires one argument");
@@ -433,7 +421,7 @@ impl VM {
 
         let mut shiftable_rr = self.stack.pop().unwrap();
         return self.opcode_shift_inner(
-            line_col, &mut shiftable_rr
+            &mut shiftable_rr
         );
     }
 
@@ -442,9 +430,6 @@ impl VM {
     /// the order that they are shifted.
     pub fn core_shift_all(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize,
-        line_col: (u32, u32),
     ) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("shift-all requires one argument");
@@ -456,11 +441,7 @@ impl VM {
             if dup_res == 0 {
                 return 0;
             }
-            let shift_res = self.opcode_shift(
-                chunk.clone(),
-                i,
-                line_col,
-            );
+            let shift_res = self.opcode_shift();
             if shift_res == 0 {
                 self.stack.pop();
                 return 0;

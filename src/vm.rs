@@ -198,68 +198,11 @@ lazy_static! {
         map.insert("int", VM::opcode_int as fn(&mut VM) -> i32);
         map.insert("flt", VM::opcode_flt as fn(&mut VM) -> i32);
         map.insert("rand", VM::opcode_rand as fn(&mut VM) -> i32);
-        map
-    };
-    static ref SHIFT_FORMS: HashMap<
-        &'static str,
-        fn(
-            &mut VM,
-            Rc<RefCell<Chunk>>,
-            usize,
-            (u32, u32),
-        ) -> i32,
-    > = {
-        let mut map = HashMap::new();
-        map.insert(
-            "shift",
-            VM::opcode_shift
-                as fn(
-                    &mut VM,
-                    Rc<RefCell<Chunk>>,
-                    usize,
-                    (u32, u32),
-                ) -> i32,
-        );
-        map.insert(
-            "gnth",
-            VM::core_gnth
-                as fn(
-                    &mut VM,
-                    Rc<RefCell<Chunk>>,
-                    usize,
-                    (u32, u32),
-                ) -> i32,
-        );
-        map.insert(
-            "|",
-            VM::core_pipe
-                as fn(
-                    &mut VM,
-                    Rc<RefCell<Chunk>>,
-                    usize,
-                    (u32, u32),
-                ) -> i32,
-        );
-        map.insert(
-            "shift-all",
-            VM::core_shift_all
-                as fn(
-                    &mut VM,
-                    Rc<RefCell<Chunk>>,
-                    usize,
-                    (u32, u32),
-                ) -> i32,
-        );
-        map.insert(
-            "join",
-            VM::core_join
-                as fn(
-                    &mut VM,
-                    Rc<RefCell<Chunk>>,
-                    usize,
-                    (u32, u32),
-                ) -> i32,
-        );
+        map.insert("shift", VM::opcode_shift as fn(&mut VM) -> i32);
+        map.insert("join", VM::core_join as fn(&mut VM) -> i32);
+        map.insert("shift-all", VM::core_shift_all as fn(&mut VM) -> i32);
+        map.insert("gnth", VM::core_gnth as fn(&mut VM) -> i32);
+        map.insert("|", VM::core_pipe as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {
@@ -516,7 +459,6 @@ impl VM {
 
     pub fn call_named_function<'a>(
         &mut self,
-        line_col: (u32, u32),
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         call_chunk: Rc<RefCell<Chunk>>,
     ) -> bool {
@@ -572,7 +514,6 @@ impl VM {
 
             let res = self.run(
                 call_chunk.clone(),
-                line_col
             );
 
             if !has_plvs_stack && !call_chunk.borrow().nested {
@@ -594,13 +535,6 @@ impl VM {
         if !sf_fn_opt.is_none() {
             let sf_fn = sf_fn_opt.unwrap();
             let nv = Value::CoreFunction(*sf_fn);
-            return Some(nv);
-        }
-
-        let shift_fn_opt = SHIFT_FORMS.get(&s as &str);
-        if !shift_fn_opt.is_none() {
-            let shift_fn = shift_fn_opt.unwrap();
-            let nv = Value::ShiftFunction(*shift_fn);
             return Some(nv);
         }
 
@@ -641,9 +575,6 @@ impl VM {
 
     pub fn call_string(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize,
-        line_col: (u32, u32),
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         is_implicit: bool,
         s: &str,
@@ -659,21 +590,8 @@ impl VM {
                 }
                 return true;
             }
-            Some(Value::ShiftFunction(shift_fn)) => {
-                let n = shift_fn(
-                    self,
-                    chunk,
-                    i,
-                    line_col
-                );
-                if n == 0 {
-                    return false;
-                }
-                return true;
-            }
             Some(Value::NamedFunction(named_fn)) => {
                 let res = self.call_named_function(
-                    line_col,
                     plvs_stack,
                     named_fn.clone(),
                 );
@@ -709,12 +627,10 @@ impl VM {
     pub fn call<'a>(
         &mut self,
         chunk: Rc<RefCell<Chunk>>,
-        i: usize,
         call_opcode: OpCode,
         function_rr: Option<Value>,
         function_str: Option<&str>,
         function_str_index: i32,
-        line_col: (u32, u32),
     ) -> bool {
         // Determine whether the function has been called implicitly.
         let is_implicit;
@@ -778,9 +694,6 @@ impl VM {
                 match cv {
                     Value::Null => {
                         return self.call_string(
-                            chunk,
-                            0,
-                            line_col,
                             None,
                             is_implicit,
                             s,
@@ -814,28 +727,14 @@ impl VM {
                 }
                 return true;
             }
-            Value::ShiftFunction(sf) => {
-                let n = sf(
-                    self,
-                    chunk,
-                    i,
-                    line_col,
-                );
-                if n == 0 {
-                    return false;
-                }
-                return true;
-            }
             Value::NamedFunction(call_chunk_rc) => {
                 return self.call_named_function(
-                    line_col,
                     None,
                     call_chunk_rc,
                 );
             }
             Value::AnonymousFunction(call_chunk_rc, lvs) => {
                 return self.call_named_function(
-                    line_col,
                     Some(lvs),
                     call_chunk_rc.clone(),
                 );
@@ -846,9 +745,6 @@ impl VM {
                     eprintln!("instantiating new chunk functions for string: {}", s);
                 }
                 return self.call_string(
-                    chunk,
-                    0,
-                    line_col,
                     None,
                     is_implicit,
                     &s,
@@ -870,12 +766,11 @@ impl VM {
     pub fn run(
         &mut self,
         chunk: Rc<RefCell<Chunk>>,
-        line_col: (u32, u32),
     ) -> usize {
         self.call_stack_chunks.push((self.chunk.clone(), self.i));
         self.chunk = chunk;
         self.i = 0;
-        let res = self.run_inner(self.chunk.clone(), self.i, line_col);
+        let res = self.run_inner(self.chunk.clone(), self.i);
         if res == 0 {
             return 0;
         }
@@ -898,7 +793,6 @@ impl VM {
         &mut self,
         chunk: Rc<RefCell<Chunk>>,
         index: usize,
-        line_col: (u32, u32),
     ) -> usize {
         let mut i = index;
 
@@ -1270,33 +1164,16 @@ impl VM {
                     let i_lower = chunk.borrow().data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
 
-                    let (mut line, mut col) = line_col;
-                    if line == 0 && col == 0 {
-                        let point = chunk.borrow().get_point(i);
-                        match point {
-                            Some((point_line, point_col)) => {
-                                line = point_line;
-                                col = point_col;
-                            }
-                            _ => {
-                                line = 1;
-                                col = 1;
-                            }
-                        }
-                    }
-
                     let value_sd = chunk.borrow().constants[i2 as usize].clone();
                     match value_sd {
                         ValueSD::String(ref sp) => {
                             self.i = i;
                             let res = self.call(
                                 chunk.clone(),
-                                i,
                                 op,
                                 None,
                                 Some(sp),
                                 (i2 as u32).try_into().unwrap(),
-                                (line, col),
                             );
 
                             if !res {
@@ -1317,29 +1194,12 @@ impl VM {
 
                     let function_rr = self.stack.pop().unwrap();
 
-                    let (mut line, mut col) = line_col;
-                    if line == 0 && col == 0 {
-                        let point = chunk.borrow().get_point(i);
-                        match point {
-                            Some((point_line, point_col)) => {
-                                line = point_line;
-                                col = point_col;
-                            }
-                            _ => {
-                                line = 1;
-                                col = 1;
-                            }
-                        }
-                    }
-
                     let res = self.call(
                         chunk.clone(),
-                        i,
                         op,
                         Some(function_rr),
                         None,
                         -1,
-                        (line, col),
                     );
 
                     if !res {
@@ -1356,29 +1216,12 @@ impl VM {
                         .index(var_index as usize)
                         .clone();
 
-                    let (mut line, mut col) = line_col;
-                    if line == 0 && col == 0 {
-                        let point = chunk.borrow().get_point(i);
-                        match point {
-                            Some((point_line, point_col)) => {
-                                line = point_line;
-                                col = point_col;
-                            }
-                            _ => {
-                                line = 1;
-                                col = 1;
-                            }
-                        }
-                    }
-
                     let res = self.call(
                         chunk.clone(),
-                        i,
                         OpCode::Call,
                         Some(function_rr),
                         None,
                         -1,
-                        (line, col),
                     );
 
                     if !res {
@@ -1423,7 +1266,6 @@ impl VM {
                         .borrow().index(var_index as
                         usize).clone();
                     let i2 = self.opcode_shift_inner(
-                        line_col,
                         &mut pt
                     );
                     if i2 == 0 {
@@ -1622,11 +1464,7 @@ impl VM {
                     }
                 }
                 OpCode::Shift => {
-                    let i2 = self.opcode_shift(
-                        chunk.clone(),
-                        i,
-                        line_col,
-                    );
+                    let i2 = self.opcode_shift();
                     if i2 == 0 {
                         return 0;
                     }
@@ -1660,18 +1498,17 @@ impl VM {
                         return 0;
                     }
 
-                    let (mut line, mut col) = line_col;
-                    if line == 0 && col == 0 {
-                        let point = chunk.borrow().get_point(i);
-                        match point {
-                            Some((point_line, point_col)) => {
-                                line = point_line;
-                                col = point_col;
-                            }
-                            _ => {
-                                line = 1;
-                                col = 1;
-                            }
+                    let line;
+                    let col;
+                    let point = chunk.borrow().get_point(i);
+                    match point {
+                        Some((point_line, point_col)) => {
+                            line = point_line;
+                            col = point_col;
+                        }
+                        _ => {
+                            line = 1;
+                            col = 1;
                         }
                     }
 
@@ -1766,10 +1603,7 @@ impl VM {
         }
         let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
 
-        self.run(
-            chunk.clone(),
-            (0, 0),
-        );
+        self.run(chunk.clone());
         if self.print_stack {
             self.stack.clear();
         }

@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use regex::Regex;
 
-use chunk::{Chunk, StringPair, Value};
+use chunk::{StringPair, Value};
 use vm::*;
 
 impl VM {
@@ -319,9 +319,6 @@ impl VM {
     /// resulting joined string onto the stack.
     pub fn core_join(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize,
-        line_col: (u32, u32),
     ) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("join requires two arguments");
@@ -367,11 +364,7 @@ impl VM {
                         if dup_res == 0 {
                             return 0;
                         }
-                        let shift_res = self.opcode_shift(
-                            chunk.clone(),
-                            i,
-                            line_col,
-                        );
+                        let shift_res = self.opcode_shift();
                         if shift_res == 0 {
                             return 0;
                         }

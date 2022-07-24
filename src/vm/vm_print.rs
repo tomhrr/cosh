@@ -190,14 +190,6 @@ impl VM {
                         return lines_to_print;
                     }
                 }
-                Value::ShiftFunction(_) => {
-                    let s = format!("{{ShiftFunction}}");
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
-                    if lines_to_print == -1 {
-                        return lines_to_print;
-                    }
-                }
                 Value::NamedFunction(_) => {
                     let s = format!("{{NamedFunction}}");
                     lines_to_print =
@@ -445,11 +437,7 @@ impl VM {
                 if dup_res == 0 {
                     return lines_to_print;
                 }
-                let shift_res = self.opcode_shift(
-                    chunk.clone(),
-                    i,
-                    (1, 1),
-                );
+                let shift_res = self.opcode_shift();
                 if shift_res == 0 {
                     self.stack.pop();
                     return lines_to_print;

@@ -156,16 +156,6 @@ pub enum Value {
     AnonymousFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<Value>>>),
     /// A core function.  See SIMPLE_FORMS in the VM.
     CoreFunction(fn(&mut VM) -> i32),
-    /// A shift function (i.e. a function that shifts an element from
-    /// some value).  See SHIFT_FORMS in the VM.
-    ShiftFunction(
-        fn(
-            &mut VM,
-            Rc<RefCell<Chunk>>,
-            usize,
-            (u32, u32),
-        ) -> i32,
-    ),
     /// A named function.
     NamedFunction(Rc<RefCell<Chunk>>),
     /// A generator constructed by way of a generator function.
@@ -222,9 +212,6 @@ impl fmt::Debug for Value {
             }
             Value::CoreFunction(_) => {
                 write!(f, "((CoreFunction))")
-            }
-            Value::ShiftFunction(_) => {
-                write!(f, "((ShiftFunction))")
             }
             Value::NamedFunction(_) => {
                 write!(f, "((NamedFunction))")

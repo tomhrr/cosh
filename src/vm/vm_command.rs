@@ -10,7 +10,7 @@ use nix::unistd::{fork, ForkResult};
 use regex::Regex;
 use std::process::{Command, Stdio};
 
-use chunk::{Chunk, Value};
+use chunk::Value;
 use vm::*;
 
 lazy_static! {
@@ -304,9 +304,6 @@ impl VM {
     /// output onto the stack.
     pub fn core_pipe(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize,
-        line_col: (u32, u32),
     ) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("| requires two arguments");
@@ -360,11 +357,7 @@ impl VM {
                                     if dup_res == 0 {
                                         return 0;
                                     }
-                                    let shift_res = self.opcode_shift(
-                                        chunk.clone(),
-                                        i,
-                                        line_col,
-                                    );
+                                    let shift_res = self.opcode_shift();
                                     if shift_res == 0 {
                                         return 0;
                                     }

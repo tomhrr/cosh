@@ -461,10 +461,7 @@ fn main() {
             if functions.len() > 0 {
                 vm.call_stack_chunks.push((functions[0].clone(), 0));
             }
-            vm.run(
-                chunk,
-                (0, 0)
-            );
+            vm.run(chunk);
         } else {
             let file_res = fs::File::open(path);
             match file_res {

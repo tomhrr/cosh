@@ -265,10 +265,13 @@ impl VM {
                         self.scopes.push(global_vars);
                         let plvs_stack = self.local_var_stack.clone();
                         self.local_var_stack = local_vars_stack;
-                        let res = self.run_inner(
-                            chunk,
-                            index,
-                        );
+                        let backup_chunk = self.chunk.clone();
+                        self.chunk = chunk.clone();
+                        let i = self.i;
+                        self.i = index;
+                        let res = self.run_inner();
+                        self.i = i;
+                        self.chunk = backup_chunk;
                         self.scopes.pop();
                         self.local_var_stack = plvs_stack;
                         mem::swap(call_stack_chunks, &mut self.call_stack_chunks);

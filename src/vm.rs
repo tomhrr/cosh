@@ -626,7 +626,6 @@ impl VM {
     /// called).
     pub fn call<'a>(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
         call_opcode: OpCode,
         function_rr: Option<Value>,
         function_str: Option<&str>,
@@ -659,7 +658,7 @@ impl VM {
                      * performance. */
                     let not_present;
                     {
-                        let cfb = &chunk.borrow().constant_values;
+                        let cfb = &self.chunk.borrow().constant_values;
                         let cv = cfb.get(function_str_index as usize);
                         match cv {
                             Some(Value::Null) | None => {
@@ -676,11 +675,13 @@ impl VM {
                         );
                         match sv {
                             Some(v) => {
-                                chunk
+                                self
+                                    .chunk
                                     .borrow_mut()
                                     .constant_values
                                     .resize(function_str_index as usize, Value::Null);
-                                chunk
+                                self
+                                    .chunk
                                     .borrow_mut()
                                     .constant_values
                                     .insert(function_str_index as usize, v);
@@ -689,7 +690,7 @@ impl VM {
                         }
                     }
 
-                    cv = chunk.borrow().get_constant_value(function_str_index);
+                    cv = self.chunk.borrow().get_constant_value(function_str_index);
                 }
                 match cv {
                     Value::Null => {
@@ -770,7 +771,7 @@ impl VM {
         self.call_stack_chunks.push((self.chunk.clone(), self.i));
         self.chunk = chunk;
         self.i = 0;
-        let res = self.run_inner(self.chunk.clone(), self.i);
+        let res = self.run_inner();
         if res == 0 {
             return 0;
         }
@@ -791,10 +792,9 @@ impl VM {
     /// index.
     pub fn run_inner<'a>(
         &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        index: usize,
     ) -> usize {
-        let mut i = index;
+        let mut i = self.i;
+        let chunk = self.chunk.clone();
 
         let mut list_count = 0;
         let mut list_indexes = Vec::new();
@@ -1169,7 +1169,6 @@ impl VM {
                         ValueSD::String(ref sp) => {
                             self.i = i;
                             let res = self.call(
-                                chunk.clone(),
                                 op,
                                 None,
                                 Some(sp),
@@ -1195,7 +1194,6 @@ impl VM {
                     let function_rr = self.stack.pop().unwrap();
 
                     let res = self.call(
-                        chunk.clone(),
                         op,
                         Some(function_rr),
                         None,
@@ -1217,7 +1215,6 @@ impl VM {
                         .clone();
 
                     let res = self.call(
-                        chunk.clone(),
                         OpCode::Call,
                         Some(function_rr),
                         None,

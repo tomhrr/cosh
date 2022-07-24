@@ -294,6 +294,10 @@ lazy_static! {
         vec[OpCode::Rand as usize] = Some(VM::opcode_rand as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
         vec[OpCode::Push as usize] = Some(VM::opcode_push as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
         vec[OpCode::Pop as usize] = Some(VM::opcode_pop as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        vec[OpCode::ToggleMode as usize] = Some(VM::opcode_togglemode as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        vec[OpCode::PrintStack as usize] = Some(VM::opcode_printstack as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        vec[OpCode::ToFunction as usize] = Some(VM::opcode_tofunction as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
+        vec[OpCode::Import as usize] = Some(VM::opcode_import as fn(&mut VM, Rc<RefCell<Chunk>>, usize) -> i32);
         vec
     };
 }
@@ -311,6 +315,136 @@ impl VM {
             running: Arc::new(AtomicBool::new(true)),
             sys: System::new(),
         }
+    }
+
+    #[allow(unused_variables)]
+    pub fn opcode_togglemode(
+        &mut self,
+        chunk: Rc<RefCell<Chunk>>,
+        i: usize
+    ) -> i32 {
+        self.print_stack = !self.print_stack;
+        return 1;
+    }
+
+    pub fn opcode_printstack(
+        &mut self,
+        chunk: Rc<RefCell<Chunk>>,
+        i: usize
+    ) -> i32 {
+        self.print_stack(chunk, i, true);
+        return 1;
+    }
+
+    pub fn opcode_tofunction(
+        &mut self,
+        chunk: Rc<RefCell<Chunk>>,
+        i: usize
+    ) -> i32 {
+        if self.stack.len() < 1 {
+            print_error(chunk, i, "to-function requires one argument");
+            return 0;
+        }
+        let fn_rr = self.stack.pop().unwrap();
+        let backup_rr = fn_rr.clone();
+        let fn_s;
+        let fn_b;
+        let fn_str;
+        let fn_bk: Option<String>;
+        let fn_opt: Option<&str> = match fn_rr {
+            Value::String(sp) => {
+                fn_s = sp;
+                fn_b = fn_s.borrow();
+                Some(&fn_b.s)
+            }
+            _ => {
+                fn_bk = fn_rr.to_string();
+                match fn_bk {
+                    Some(s) => {
+                        fn_str = s;
+                        Some(&fn_str)
+                    }
+                    _ => None,
+                }
+            }
+        };
+
+        let mut pushed = false;
+        match fn_opt {
+            Some(s) => {
+                let sv = self.string_to_callable(
+                    chunk, s
+                );
+                match sv {
+                    Some(v) => {
+                        self.stack.push(v);
+                        pushed = true;
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+        if !pushed {
+            self.stack.push(backup_rr);
+        }
+        return 1;
+    }
+
+    pub fn opcode_import(
+        &mut self,
+        chunk: Rc<RefCell<Chunk>>,
+        i: usize
+    ) -> i32 {
+        if self.stack.len() < 1 {
+            print_error(chunk, i, "import requires one argument");
+            return 0;
+        }
+
+        let lib_rr = self.stack.pop().unwrap();
+        let lib_str_s;
+        let lib_str_b;
+        let lib_str_str;
+        let lib_str_bk: Option<String>;
+        let lib_str_opt: Option<&str> = match lib_rr {
+            Value::String(sp) => {
+                lib_str_s = sp;
+                lib_str_b = lib_str_s.borrow();
+                Some(&lib_str_b.s)
+            }
+            _ => {
+                lib_str_bk = lib_rr.to_string();
+                match lib_str_bk {
+                    Some(s) => {
+                        lib_str_str = s;
+                        Some(&lib_str_str)
+                    }
+                    _ => None,
+                }
+            }
+        };
+
+        match lib_str_opt {
+            Some(s) => {
+                let mut compiler = Compiler::new(false);
+                let import_chunk_opt = compiler.deserialise(s);
+                match import_chunk_opt {
+                    Some(import_chunk) => {
+                        for (k, v) in import_chunk.functions.iter() {
+                            self.global_functions.insert(k.clone(), v.clone());
+                        }
+                    }
+                    None => {
+                        return 0;
+                    }
+                }
+            }
+            _ => {
+                print_error(chunk, i, "import argument must be a string");
+                return 0;
+            }
+        }
+        return 1;
     }
 
     /// Takes a wrapped value as its single argument, and returns a
@@ -537,118 +671,15 @@ impl VM {
             _ => {}
         }
 
-        if s == "toggle-mode" {
-            self.print_stack = !self.print_stack;
-        } else if s == ".s" {
-            self.print_stack(chunk, i, true);
-        } else if s == "exc" {
-            if self.stack.len() < 1 {
-                print_error(chunk, i, "exc requires one argument");
-                return false;
-            }
-            let fn_rr = self.stack.pop().unwrap();
-            let backup_rr = fn_rr.clone();
-            let fn_s;
-            let fn_b;
-            let fn_str;
-            let fn_bk: Option<String>;
-            let fn_opt: Option<&str> = match fn_rr {
-                Value::String(sp) => {
-                    fn_s = sp;
-                    fn_b = fn_s.borrow();
-                    Some(&fn_b.s)
-                }
-                _ => {
-                    fn_bk = fn_rr.to_string();
-                    match fn_bk {
-                        Some(s) => {
-                            fn_str = s;
-                            Some(&fn_str)
-                        }
-                        _ => None,
-                    }
-                }
-            };
-
-            let mut pushed = false;
-            match fn_opt {
-                Some(s) => {
-                    let sv = self.string_to_callable(
-                        chunk, s
-                    );
-                    match sv {
-                        Some(v) => {
-                            self.stack.push(v);
-                            pushed = true;
-                        }
-                        _ => {}
-                    }
-                }
-                _ => {}
-            }
-            if !pushed {
-                self.stack.push(backup_rr);
-            }
-        } else if s == "import" {
-            if self.stack.len() < 1 {
-                print_error(chunk, i, "import requires one argument");
-                return false;
-            }
-
-            let lib_rr = self.stack.pop().unwrap();
-            let lib_str_s;
-            let lib_str_b;
-            let lib_str_str;
-            let lib_str_bk: Option<String>;
-            let lib_str_opt: Option<&str> = match lib_rr {
-                Value::String(sp) => {
-                    lib_str_s = sp;
-                    lib_str_b = lib_str_s.borrow();
-                    Some(&lib_str_b.s)
-                }
-                _ => {
-                    lib_str_bk = lib_rr.to_string();
-                    match lib_str_bk {
-                        Some(s) => {
-                            lib_str_str = s;
-                            Some(&lib_str_str)
-                        }
-                        _ => None,
-                    }
-                }
-            };
-
-            match lib_str_opt {
-                Some(s) => {
-                    let mut compiler = Compiler::new(false);
-                    let import_chunk_opt = compiler.deserialise(s);
-                    match import_chunk_opt {
-                        Some(import_chunk) => {
-                            for (k, v) in import_chunk.functions.iter() {
-                                self.global_functions.insert(k.clone(), v.clone());
-                            }
-                        }
-                        None => {
-                            return false;
-                        }
-                    }
-                }
-                _ => {
-                    print_error(chunk, i, "import argument must be a string");
-                    return false;
-                }
-            }
+        if is_implicit {
+            let value_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
+                s.to_string(),
+                None,
+            ))));
+            self.stack.push(value_rr);
         } else {
-            if is_implicit {
-                let value_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
-                    s.to_string(),
-                    None,
-                ))));
-                self.stack.push(value_rr);
-            } else {
-                print_error(chunk, i, "function not found");
-                return false;
-            }
+            print_error(chunk, i, "function not found");
+            return false;
         }
 
         return true;
@@ -828,6 +859,7 @@ impl VM {
 
         return true;
     }
+
 
     /// Takes the global functions, the call stack chunks, the current
     /// chunk, the values for the current chunk, the instruction

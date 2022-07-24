@@ -860,6 +860,18 @@ impl Chunk {
                 OpCode::DupIsNull => {
                     println!("OP_DUPISNULL")
                 }
+                OpCode::ToggleMode => {
+                    println!("OP_TOGGLEMODE")
+                }
+                OpCode::PrintStack => {
+                    println!("OP_PRINTSTACK")
+                }
+                OpCode::ToFunction => {
+                    println!("OP_TOFUNCTION")
+                }
+                OpCode::Import => {
+                    println!("OP_IMPORT")
+                }
                 OpCode::CallConstant => {
                     i = i + 1;
                     let i_upper = self.data[i];

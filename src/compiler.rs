@@ -995,6 +995,8 @@ impl Compiler {
                             chunk.add_byte(i_lower as u8);
                             chunk.add_opcode(OpCode::GetVar);
                         }
+                    } else if s == ".s" {
+                        chunk.add_opcode(OpCode::PrintStack);
                     } else if s == "error" {
                         chunk.add_opcode(OpCode::Error);
                     } else if s == "print" {
@@ -1058,6 +1060,12 @@ impl Compiler {
                         chunk.add_opcode(OpCode::IsCallable);
                     } else if s == "is-shiftable" {
                         chunk.add_opcode(OpCode::IsShiftable);
+                    } else if s == "toggle-mode" {
+                        chunk.add_opcode(OpCode::ToggleMode);
+                    } else if s == "to-function" {
+                        chunk.add_opcode(OpCode::ToFunction);
+                    } else if s == "import" {
+                        chunk.add_opcode(OpCode::Import);
                     } else if s == "open" {
                         chunk.add_opcode(OpCode::Open);
                     } else if s == "readline" {

@@ -61,6 +61,10 @@ pub enum OpCode {
     CallImplicitConstant = 58,
     GLVShift = 59,
     GLVCall = 60,
+    ToggleMode = 61,
+    PrintStack = 62,
+    ToFunction = 63,
+    Import = 64,
     Unknown = 255,
 }
 
@@ -127,6 +131,10 @@ pub fn to_opcode(value: u8) -> OpCode {
         58 => OpCode::CallImplicitConstant,
         59 => OpCode::GLVShift,
         60 => OpCode::GLVCall,
+        61 => OpCode::ToggleMode,
+        62 => OpCode::PrintStack,
+        63 => OpCode::ToFunction,
+        64 => OpCode::Import,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

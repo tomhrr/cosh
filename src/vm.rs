@@ -539,6 +539,7 @@ impl VM {
                 gen_args
             ))));
             self.stack.push(gen_rr);
+            self.call_stack_chunks.pop();
         } else {
             if call_chunk.borrow().has_vars {
                 self.scopes.push(Rc::new(RefCell::new(HashMap::new())));

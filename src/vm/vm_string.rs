@@ -60,15 +60,22 @@ impl VM {
 
         match (regex_opt, list_str_opt) {
             (Some(regex), Some(list_strs)) => {
-                let list_str =
-                    self.interner_resolve(interner, list_strs).to_string();
-                //let ss = list_str.to_string();
-                let rb = regex.borrow();
-                let elements = rb.split(&list_str);
+                let mut elements;
+                let mut e2 = VecDeque::new();
                 let mut final_elements = VecDeque::new();
-                for e in elements {
-                    let s = e.clone().to_string();
-                    let v = self.intern_string_to_value(interner, &s);
+                {
+                    let list_str =
+                        self.interner_resolve(interner,
+                            list_strs);
+                    let rb = regex.borrow();
+                    elements = rb.split(list_str);
+                    for e in elements {
+                        let s = e.to_string();
+                        e2.push_back(s);
+                    }
+                }
+                for e in e2 {
+                    let v = self.intern_string_to_value(interner, &e);
                     final_elements.push_back(v);
                 }
                 self.stack.push(Value::List(Rc::new(RefCell::new(final_elements))));

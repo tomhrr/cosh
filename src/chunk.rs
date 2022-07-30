@@ -11,12 +11,10 @@ use std::rc::Rc;
 use std::str;
 
 use indexmap::IndexMap;
-use num::FromPrimitive;
-use num::ToPrimitive;
-use num_bigint::BigInt;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::ChildStdout;
+use string_interner::{StringInterner, symbol::SymbolU32};
 
 use opcode::{to_opcode, OpCode};
 use vm::VM;
@@ -77,7 +75,7 @@ impl StringPair {
 #[derive(Debug, Clone)]
 pub struct GeneratorObject {
     /// The global variable state.
-    pub global_vars: Rc<RefCell<HashMap<String, Value>>>,
+    pub global_vars: Rc<RefCell<HashMap<SymbolU32, Value>>>,
     /// The local variable stack.
     pub local_vars_stack: Rc<RefCell<Vec<Value>>>,
     /// The current instruction index.
@@ -94,7 +92,7 @@ pub struct GeneratorObject {
 impl GeneratorObject {
     /// Construct a generator object.
     pub fn new(
-        global_vars: Rc<RefCell<HashMap<String, Value>>>,
+        global_vars: Rc<RefCell<HashMap<SymbolU32, Value>>>,
         local_vars_stack: Rc<RefCell<Vec<Value>>>,
         index: usize,
         chunk: Rc<RefCell<Chunk>>,
@@ -140,22 +138,22 @@ pub enum Value {
     /// String.  The second part here is the regex object that
     /// corresponds to the string, which is generated and cached
     /// when the string is used as a regex.
-    String(Rc<RefCell<StringPair>>),
+    String(SymbolU32),
     /// An external command (wrapped in curly brackets), where the
     /// output is captured.
-    Command(Rc<RefCell<String>>),
+    Command(SymbolU32),
     /// An external command (begins with $), where the output is not
     /// captured.
-    CommandUncaptured(Rc<RefCell<String>>),
+    CommandUncaptured(SymbolU32),
     /// A list.
     List(Rc<RefCell<VecDeque<Value>>>),
     /// A hash.
-    Hash(Rc<RefCell<IndexMap<String, Value>>>),
+    Hash(Rc<RefCell<IndexMap<SymbolU32, Value>>>),
     /// An anonymous function (includes reference to local variable
     /// stack).
     AnonymousFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<Value>>>),
     /// A core function.  See SIMPLE_FORMS in the VM.
-    CoreFunction(fn(&mut VM) -> i32),
+    CoreFunction(fn(&mut VM, interner: &mut StringInterner) -> i32),
     /// A named function.
     NamedFunction(Rc<RefCell<Chunk>>),
     /// A generator constructed by way of a generator function.
@@ -192,14 +190,13 @@ impl fmt::Debug for Value {
                 write!(f, "{}", i)
             }
             Value::String(s) => {
-                let ss = &s.borrow().s;
-                write!(f, "\"{}\"", ss)
+                write!(f, "((String))")
             }
             Value::Command(s) => {
-                write!(f, "Command \"{}\"", s.borrow())
+                write!(f, "((Command))")
             }
             Value::CommandUncaptured(s) => {
-                write!(f, "CommandUncaptured \"{}\"", s.borrow())
+                write!(f, "((CommandUncaptured))")
             }
             Value::List(ls) => {
                 write!(f, "{:?}", ls)
@@ -318,46 +315,9 @@ impl Chunk {
         }
     }
 
-    /// Add a constant to the current chunk, and return its index in
-    /// the constants list (for later calls to `get_constant`).
-    pub fn add_constant(&mut self, value_rr: Value) -> i32 {
-        let value_sd = match value_rr {
-            Value::Null => ValueSD::Null,
-            Value::Int(n) => ValueSD::Int(n),
-            Value::Float(n) => ValueSD::Float(n),
-            Value::BigInt(n) => ValueSD::BigInt(n.to_str_radix(10)),
-            Value::String(sp) => ValueSD::String(sp.borrow().s.to_string()),
-            Value::Command(s) => ValueSD::Command(s.borrow().to_string()),
-            Value::CommandUncaptured(s) => ValueSD::CommandUncaptured(s.borrow().to_string()),
-            _ => {
-                eprintln!("constant type cannot be added to chunk! {:?}", value_rr);
-                std::process::abort();
-            }
-        };
-        self.constants.push(value_sd);
-        return (self.constants.len() - 1) as i32;
-    }
-
     /// Get a constant from the current chunk.
-    pub fn get_constant(&self, i: i32) -> Value {
-        let value_sd = &self.constants[i as usize];
-        let value = match value_sd {
-            ValueSD::Null => Value::Null,
-            ValueSD::Int(n) => Value::Int(*n),
-            ValueSD::Float(n) => Value::Float(*n),
-            ValueSD::BigInt(n) => {
-                let nn = n.parse::<num_bigint::BigInt>().unwrap();
-                Value::BigInt(nn)
-            }
-            ValueSD::String(sp) => {
-                Value::String(Rc::new(RefCell::new(StringPair::new(sp.to_string(), None))))
-            }
-            ValueSD::Command(s) => Value::Command(Rc::new(RefCell::new(s.to_string()))),
-            ValueSD::CommandUncaptured(s) => {
-                Value::CommandUncaptured(Rc::new(RefCell::new(s.to_string())))
-            }
-        };
-        return value;
+    pub fn get_constant(&self, i: i32) -> ValueSD {
+        return self.constants[i as usize].clone();
     }
 
     pub fn get_constant_value(&self, i: i32) -> Value {
@@ -386,6 +346,13 @@ impl Chunk {
             ValueSD::Int(_) => true,
             _ => false,
         };
+    }
+
+    /// Add a constant to the current chunk, and return its index in
+    /// the constants list (for later calls to `get_constant`).
+    pub fn add_constant(&mut self, value_sd: ValueSD) -> i32 {
+        self.constants.push(value_sd);
+        return (self.constants.len() - 1) as i32;
     }
 
     /// Add an opcode to the current chunk's data.
@@ -534,7 +501,7 @@ impl Chunk {
     }
 
     /// Get the chunk's most recently-added constant.
-    pub fn get_last_constant(&mut self) -> Value {
+    pub fn get_last_constant(&mut self) -> ValueSD {
         return self.get_constant((self.constants.len() - 1).try_into().unwrap());
     }
 
@@ -892,145 +859,7 @@ impl Chunk {
 }
 
 impl Value {
-    /// Convert the current value into a string.  Not intended for use
-    /// with Value::String.
-    pub fn to_string(&self) -> Option<String> {
-        match self {
-            Value::String(_) => {
-                eprintln!("to_string should not be called with Value::String");
-                std::process::exit(1);
-            }
-            Value::Int(n) => {
-                let s = format!("{}", n);
-                Some(s)
-            }
-            Value::BigInt(n) => {
-                let s = format!("{}", n);
-                Some(s)
-            }
-            Value::Float(f) => {
-                let s = format!("{}", f);
-                Some(s)
-            }
-            Value::Null => Some("".to_string()),
-            _ => None,
-        }
-    }
-
-    /// Convert the current value into an i32.  If the value is not
-    /// representable as an i32, the result will be None.
-    pub fn to_int(&self) -> Option<i32> {
-        match self {
-            Value::Int(n) => Some(*n),
-            Value::BigInt(n) => n.to_i32(),
-            Value::Float(f) => Some(*f as i32),
-            Value::String(sp) => {
-                let s = &sp.borrow().s;
-                let n_r = s.parse::<i32>();
-                match n_r {
-                    Ok(n) => {
-                        return Some(n);
-                    }
-                    _ => {
-                        return None;
-                    }
-                }
-            }
-            Value::Null => Some(0),
-            _ => None,
-        }
-    }
-
-    /// Convert the current value into a bigint.  If the value is not
-    /// representable as a bigint, the result will be None.
-    pub fn to_bigint(&self) -> Option<BigInt> {
-        match self {
-            Value::Int(n) => Some(BigInt::from_i32(*n).unwrap()),
-            Value::BigInt(n) => Some(n.clone()),
-            Value::Float(f) => Some(BigInt::from_i32(*f as i32).unwrap()),
-            Value::String(sp) => {
-                let s = &sp.borrow().s;
-                let n_r = s.to_string().parse::<num_bigint::BigInt>();
-                match n_r {
-                    Ok(n) => {
-                        return Some(n);
-                    }
-                    _ => {
-                        return None;
-                    }
-                }
-            }
-            Value::Null => Some(BigInt::from_i32(0).unwrap()),
-            _ => None,
-        }
-    }
-
-    /// Convert the current value into a floating-point number (f64).
-    /// If the value is not representable in that type, the result
-    /// will be None.
-    pub fn to_float(&self) -> Option<f64> {
-        match self {
-            Value::Int(n) => Some(*n as f64),
-            Value::BigInt(n) => Some(n.to_f64().unwrap()),
-            Value::Float(f) => Some(*f),
-            Value::String(sp) => {
-                let s = &sp.borrow().s;
-                let n_r = s.parse::<f64>();
-                match n_r {
-                    Ok(n) => {
-                        return Some(n);
-                    }
-                    _ => {
-                        return None;
-                    }
-                }
-            }
-            Value::Null => Some(0.0),
-            _ => None,
-        }
-    }
-
-    /// For a string value, generate the corresponding regex for the
-    /// string value and store it in the value.  If called on a
-    /// non-string value, this will abort the current process.
-    pub fn gen_regex(&mut self) -> bool {
-        match self {
-            Value::String(sp) => {
-                match sp.borrow().r {
-                    None => {}
-                    _ => {
-                        return true;
-                    }
-                }
-            },
-            _ => {
-                eprintln!("unable to make regex from non-string!");
-                std::process::abort();
-            }
-        }
-        match self {
-            Value::String(sp) => {
-                let regex_res = Regex::new(&sp.borrow().s);
-                match regex_res {
-                    Ok(regex) => {
-                        sp.borrow_mut().r = Some(regex.clone());
-                        return true;
-                    }
-                    Err(e) => {
-                        let mut err_str = format!("{}", e);
-                        let regex_nl = Regex::new("\n").unwrap();
-                        err_str = regex_nl.replace_all(&err_str, "").to_string();
-                        let regex_errpart = Regex::new(".*error:\\s*").unwrap();
-                        err_str = regex_errpart.replace(&err_str, "").to_string();
-                        err_str = format!("invalid regex: {}", err_str);
-                        //print_error(chunk, i, &err_str);
-                        eprintln!("{}", err_str);
-                        return false;
-                    }
-                }
-            }
-            _ => {}
-        }
-        return true;
+    pub fn to_string(&mut self, value: &Value) -> Option<String> {
+	return Some("{Value}".to_string());
     }
 }

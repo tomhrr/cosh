@@ -7,90 +7,76 @@ use std::io::BufWriter;
 use std::io::Write;
 use std::rc::Rc;
 
-use chunk::{StringPair, Value};
+use chunk::Value;
 use vm::*;
 
 impl VM {
     /// Takes a file path and a mode string (either 'r' or 'w') as its
     /// arguments, and puts a FileReader or FileWriter object on the
     /// stack as appropriate.
-    pub fn opcode_open(&mut self) -> i32 {
+    pub fn opcode_open(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("open requires two arguments");
             return 0;
         }
 
         let rw_rr = self.stack.pop().unwrap();
+        let rw_opt = self.intern_string_value(interner, rw_rr.clone());
         let path_rr = self.stack.pop().unwrap();
-        let path_str_s;
-        let path_str_b;
-        let path_str_str;
-        let path_str_bk: Option<String>;
-        let path_str_opt: Option<&str> = match path_rr {
-            Value::String(sp) => {
-                path_str_s = sp;
-                path_str_b = path_str_s.borrow();
-                Some(&path_str_b.s)
-            }
-            _ => {
-                path_str_bk = path_rr.to_string();
-                match path_str_bk {
-                    Some(s) => {
-                        path_str_str = s;
-                        Some(&path_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let path_str_opt = self.intern_string_value(interner, path_rr);
 
         match rw_rr {
-            Value::String(sp) => match sp.borrow().s.as_ref() {
-                "r" => match path_str_opt {
-                    Some(s) => {
-                        let file_res = File::open(s);
-                        match file_res {
-                            Ok(file) => {
-                                self.stack.push(Value::FileReader(Rc::new(RefCell::new(
-                                    BufReader::new(file),
-                                ))));
-                            }
-                            Err(e) => {
-                                let err_str = format!("unable to open file: {}", e.to_string());
-                                self.print_error(&err_str);
-                                return 0;
-                            }
-                        }
-                    }
-                    _ => {
-                        self.print_error("path for open must be a string");
-                        return 0;
-                    }
-                },
-                "w" => match path_str_opt {
-                    Some(s) => {
-                        let file_res = File::create(s);
-                        match file_res {
-                            Ok(file) => {
-                                self.stack.push(Value::FileWriter(Rc::new(RefCell::new(
-                                    BufWriter::new(file),
-                                ))));
-                            }
-                            Err(e) => {
-                                let err_str = format!("unable to open file: {}", e.to_string());
-                                self.print_error(&err_str);
-                                return 0;
+            Value::String(sps) => {
+                let sp = self.interner_resolve(interner, sps);
+                match sp {
+                    "r" => match path_str_opt {
+                        Some(ss) => {
+                            let s = self.interner_resolve(interner, ss);
+                            let file_res = File::open(s);
+                            match file_res {
+                                Ok(file) => {
+                                    self.stack.push(Value::FileReader(Rc::new(RefCell::new(
+                                        BufReader::new(file),
+                                    ))));
+                                }
+                                Err(e) => {
+                                    let err_str = format!("unable to open file: {}", e.to_string());
+                                    self.print_error(&err_str);
+                                    return 0;
+                                }
                             }
                         }
-                    }
+                        _ => {
+                            self.print_error("path for open must be a string");
+                            return 0;
+                        }
+                    },
+                    "w" => match path_str_opt {
+                        Some(ss) => {
+                            let s = self.interner_resolve(interner, ss);
+                            let file_res = File::create(s);
+                            match file_res {
+                                Ok(file) => {
+                                    self.stack.push(Value::FileWriter(Rc::new(RefCell::new(
+                                        BufWriter::new(file),
+                                    ))));
+                                }
+                                Err(e) => {
+                                    let err_str = format!("unable to open file: {}", e.to_string());
+                                    self.print_error(&err_str);
+                                    return 0;
+                                }
+                            }
+                        }
+                        _ => {
+                            self.print_error("path for open must be a string");
+                            return 0;
+                        }
+                    },
                     _ => {
-                        self.print_error("path for open must be a string");
+                        self.print_error("mode for open must be 'r' or 'w'");
                         return 0;
                     }
-                },
-                _ => {
-                    self.print_error("mode for open must be 'r' or 'w'");
-                    return 0;
                 }
             },
             _ => {
@@ -104,7 +90,7 @@ impl VM {
     /// Takes a FileReader object as its single argument.  Reads one
     /// line from that object and places it onto the stack (including
     /// the ending newline).
-    pub fn opcode_readline(&mut self) -> i32 {
+    pub fn opcode_readline(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("readline requires one argument");
             return 0;
@@ -121,10 +107,8 @@ impl VM {
                         self.stack.push(Value::Null);
                     }
                     Ok(_) => {
-                        self.stack
-                            .push(Value::String(Rc::new(RefCell::new(StringPair::new(
-                                contents, None,
-                            )))));
+                        let c = self.intern_string_to_value(interner, &contents);
+                        self.stack.push(c);
                     }
                     _ => {
                         self.print_error("unable to read line from file");
@@ -142,37 +126,18 @@ impl VM {
 
     /// Takes a FileWriter object and a line as its arguments.  Writes
     /// the line to the file.
-    pub fn core_writeline(&mut self) -> i32 {
+    pub fn core_writeline(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("writeline requires two arguments");
             return 0;
         }
 
         let line_rr = self.stack.pop().unwrap();
-        let line_str_s;
-        let line_str_b;
-        let line_str_str;
-        let line_str_bk: Option<String>;
-        let line_str_opt: Option<&str> = match line_rr {
-            Value::String(sp) => {
-                line_str_s = sp;
-                line_str_b = line_str_s.borrow();
-                Some(&line_str_b.s)
-            }
-            _ => {
-                line_str_bk = line_rr.to_string();
-                match line_str_bk {
-                    Some(s) => {
-                        line_str_str = s;
-                        Some(&line_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
-
+        let line_str_opt = self.intern_string_value(interner, line_rr);
+        
         match line_str_opt {
-            Some(s) => {
+            Some(ss) => {
+                let s = self.interner_resolve(interner, ss).to_string();
                 if s != "" {
                     let mut file_writer = self.stack.pop().unwrap();
                     match file_writer {
@@ -206,7 +171,7 @@ impl VM {
 
     /// Takes a FileReader or FileWriter object as its single
     /// argument.  Closes the object, if required.
-    pub fn core_close(&mut self) -> i32 {
+    pub fn core_close(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("close requires one argument");
             return 0;
@@ -242,37 +207,18 @@ impl VM {
     /// Takes a directory path as its single argument.  Opens the
     /// directory and places a DirectoryHandle object for the
     /// directory onto the stack.
-    pub fn core_opendir(&mut self) -> i32 {
+    pub fn core_opendir(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("opendir requires one argument");
             return 0;
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_str_s;
-        let path_str_b;
-        let path_str_str;
-        let path_str_bk: Option<String>;
-        let path_str_opt: Option<&str> = match path_rr {
-            Value::String(sp) => {
-                path_str_s = sp;
-                path_str_b = path_str_s.borrow();
-                Some(&path_str_b.s)
-            }
-            _ => {
-                path_str_bk = path_rr.to_string();
-                match path_str_bk {
-                    Some(s) => {
-                        path_str_str = s;
-                        Some(&path_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let path_str_opt = self.intern_string_value(interner, path_rr);
 
         match path_str_opt {
-            Some(s) => {
+            Some(ss) => {
+                let s = self.interner_resolve(interner, ss);
                 let dir_handle_res = std::fs::read_dir(s);
                 match dir_handle_res {
                     Ok(dir_handle) => {
@@ -297,7 +243,7 @@ impl VM {
     /// Takes a DirectoryHandle object as its single argument.  Reads
     /// the next entry from the corresponding handle and places it
     /// onto the stack.
-    pub fn core_readdir(&mut self) -> i32 {
+    pub fn core_readdir(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("readdir requires one argument");
             return 0;
@@ -311,10 +257,7 @@ impl VM {
                 match entry_opt {
                     Some(s) => {
                         let path = s.unwrap().path();
-                        Value::String(Rc::new(RefCell::new(StringPair::new(
-                            path.to_str().unwrap().to_string(),
-                            None,
-                        ))))
+                        self.intern_string_to_value(interner, path.to_str().unwrap())
                     }
                     None => Value::Null,
                 }
@@ -331,37 +274,18 @@ impl VM {
 
     /// Takes a path as its single argument.  Places a boolean onto
     /// the stack indicating whether the path maps to a directory.
-    pub fn core_is_dir(&mut self) -> i32 {
+    pub fn core_is_dir(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("is-dir requires one argument");
             return 0;
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_str_s;
-        let path_str_b;
-        let path_str_str;
-        let path_str_bk: Option<String>;
-        let path_str_opt: Option<&str> = match path_rr {
-            Value::String(sp) => {
-                path_str_s = sp;
-                path_str_b = path_str_s.borrow();
-                Some(&path_str_b.s)
-            }
-            _ => {
-                path_str_bk = path_rr.to_string();
-                match path_str_bk {
-                    Some(s) => {
-                        path_str_str = s;
-                        Some(&path_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let path_str_opt = self.intern_string_value(interner, path_rr);
 
         match path_str_opt {
-            Some(s) => {
+            Some(ss) => {
+                let s = self.interner_resolve(interner, ss);
                 let metadata_res = metadata(s);
                 match metadata_res {
                     Ok(metadata) => {

@@ -73,37 +73,18 @@ fn psv_helper(
 impl VM {
     /// Takes a value that can be stringified as its single argument,
     /// and prints that value to standard output.
-    pub fn opcode_print(&mut self) -> i32 {
+    pub fn opcode_print(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("print requires one argument");
             return 0;
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_s;
-        let value_b;
-        let value_str;
-        let value_bk: Option<String>;
-        let value_opt: Option<&str> = match value_rr {
-            Value::String(sp) => {
-                value_s = sp;
-                value_b = value_s.borrow();
-                Some(&value_b.s)
-            }
-            _ => {
-                value_bk = value_rr.to_string();
-                match value_bk {
-                    Some(s) => {
-                        value_str = s;
-                        Some(&value_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let value_opt = self.intern_string_value(interner, value_rr);
 
         match value_opt {
-            Some(s) => {
+            Some(ss) => {
+                let s = interner.resolve(ss).unwrap();
                 print!("{}", s);
                 return 1;
             }
@@ -116,37 +97,18 @@ impl VM {
 
     /// Takes a value that can be stringified as its single argument,
     /// and prints that value followed by newline to standard output.
-    pub fn core_println(&mut self) -> i32 {
+    pub fn core_println(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("println requires one argument");
             return 0;
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_s;
-        let value_b;
-        let value_str;
-        let value_bk: Option<String>;
-        let value_opt: Option<&str> = match value_rr {
-            Value::String(sp) => {
-                value_s = sp;
-                value_b = value_s.borrow();
-                Some(&value_b.s)
-            }
-            _ => {
-                value_bk = value_rr.to_string();
-                match value_bk {
-                    Some(s) => {
-                        value_str = s;
-                        Some(&value_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let value_opt = self.intern_string_value(interner, value_rr);
 
         match value_opt {
-            Some(s) => {
+            Some(ss) => {
+                let s = interner.resolve(ss).unwrap();
                 println!("{}", s);
                 return 1;
             }
@@ -167,6 +129,7 @@ impl VM {
     /// input.
     fn print_stack_value<'a>(
         &mut self,
+        interner: &mut StringInterner,
         value_rr: &Value,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -227,8 +190,9 @@ impl VM {
                     }
                 }
                 Value::String(sp) => {
-                    let mut ss = unescape_string(&sp.borrow().s);
-                    if sp.borrow().s.contains(char::is_whitespace) {
+                    let sps = interner.resolve(*sp).unwrap();
+                    let mut ss = unescape_string(sps);
+                    if ss.contains(char::is_whitespace) {
                         ss = format!("\"{}\"", ss);
                     } else if ss.len() == 0 {
                         ss = format!("\"\"");
@@ -241,16 +205,18 @@ impl VM {
                         return lines_to_print;
                     }
                 }
-                Value::Command(s) => {
-                    let s = format!("{{{}}}", s.borrow());
+                Value::Command(ss) => {
+                    let s_ = interner.resolve(*ss).unwrap();
+                    let s = format!("{{{}}}", s_);
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
                 }
-                Value::CommandUncaptured(s) => {
-                    let s = format!("{{{}}}", s.borrow());
+                Value::CommandUncaptured(ss) => {
+                    let s_ = interner.resolve(*ss).unwrap();
+                    let s = format!("{{{}}}", s_);
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -330,6 +296,7 @@ impl VM {
                         let new_indent = indent + 4;
                         for element in list.borrow().iter() {
                             lines_to_print = self.print_stack_value(
+                                interner,
                                 element,
                                 chunk.clone(),
                                 i,
@@ -374,7 +341,9 @@ impl VM {
                         }
 
                         let mut key_maxlen = 0;
-                        for (k, _) in map.borrow().iter() {
+                        for (ks, _) in map.borrow().iter() {
+                            let k =
+                                interner.resolve(*ks).unwrap();
                             let key_len = k.len();
                             if key_len > key_maxlen {
                                 key_maxlen = key_len;
@@ -382,7 +351,9 @@ impl VM {
                         }
 
                         let new_indent = indent + 4;
-                        for (k, v) in map.borrow().iter() {
+                        for (ks, v) in map.borrow().iter() {
+                            let k =
+                                interner.resolve(*ks).unwrap();
                             for _ in 0..new_indent {
                                 print!(" ");
                             }
@@ -393,6 +364,7 @@ impl VM {
                             }
 
                             lines_to_print = self.print_stack_value(
+                                interner,
                                 v,
                                 chunk.clone(),
                                 i,
@@ -433,11 +405,11 @@ impl VM {
             let mut has_elements = false;
             self.stack.push(value_rr.clone());
             loop {
-                let dup_res = self.opcode_dup();
+                let dup_res = self.opcode_dup(interner);
                 if dup_res == 0 {
                     return lines_to_print;
                 }
-                let shift_res = self.opcode_shift();
+                let shift_res = self.opcode_shift(interner);
                 if shift_res == 0 {
                     self.stack.pop();
                     return lines_to_print;
@@ -464,6 +436,7 @@ impl VM {
                         has_elements = true;
                     }
                     lines_to_print = self.print_stack_value(
+                        interner,
                         &value_rr,
                         chunk.clone(),
                         i,
@@ -499,6 +472,7 @@ impl VM {
     /// stack to standard output.
     pub fn print_stack<'a>(
         &mut self,
+        interner: &mut StringInterner,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         no_remove: bool,
@@ -517,6 +491,7 @@ impl VM {
         while self.stack.len() > 0 {
             let value_rr = self.stack.remove(0);
             lines_to_print = self.print_stack_value(
+                interner,
                 &value_rr,
                 chunk.clone(),
                 i,

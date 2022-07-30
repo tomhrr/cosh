@@ -8,41 +8,21 @@ impl VM {
     /// Takes a hash value and a key string as its arguments.  Puts
     /// the value at that hash key onto the stack, or the null value
     /// if no such hash key exists.
-    pub fn core_at(&mut self) -> i32 {
+    pub fn core_at(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("at requires two arguments");
             return 0;
         }
 
         let key_str_rr = self.stack.pop().unwrap();
-        let key_str_s;
-        let key_str_b;
-        let key_str_str;
-        let key_str_bk: Option<String>;
-        let key_str_opt: Option<&str> = match key_str_rr {
-            Value::String(sp) => {
-                key_str_s = sp;
-                key_str_b = key_str_s.borrow();
-                Some(&key_str_b.s)
-            }
-            _ => {
-                key_str_bk = key_str_rr.to_string();
-                match key_str_bk {
-                    Some(s) => {
-                        key_str_str = s;
-                        Some(&key_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let key_str_opt = self.intern_string_value(interner, key_str_rr);
 
         let hash_rr = self.stack.pop().unwrap();
 
         match (hash_rr, key_str_opt) {
             (Value::Hash(map), Some(s)) => {
                 let mapp = map.borrow();
-                let v = mapp.get(s);
+                let v = mapp.get(&s);
                 match v {
                     None => {
                         self.stack.push(Value::Null);
@@ -67,7 +47,7 @@ impl VM {
     /// Takes a hash value, a key string, and a value as its
     /// arguments.  Puts the value into the hash against the specified
     /// key, and puts the updated hash back onto the stack.
-    pub fn core_at_em(&mut self) -> i32 {
+    pub fn core_at_em(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 3 {
             self.print_error("at! requires three arguments");
             return 0;
@@ -76,34 +56,14 @@ impl VM {
         let val_rr = self.stack.pop().unwrap();
 
         let key_str_rr = self.stack.pop().unwrap();
-        let key_str_s;
-        let key_str_b;
-        let key_str_str;
-        let key_str_bk: Option<String>;
-        let key_str_opt: Option<&str> = match key_str_rr {
-            Value::String(sp) => {
-                key_str_s = sp;
-                key_str_b = key_str_s.borrow();
-                Some(&key_str_b.s)
-            }
-            _ => {
-                key_str_bk = key_str_rr.to_string();
-                match key_str_bk {
-                    Some(s) => {
-                        key_str_str = s;
-                        Some(&key_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let key_str_opt = self.intern_string_value(interner, key_str_rr);
 
         let mut hash_rr = self.stack.pop().unwrap();
 
         {
             match (&mut hash_rr, key_str_opt) {
                 (Value::Hash(map), Some(s)) => {
-                    map.borrow_mut().insert(s.to_string(), val_rr);
+                    map.borrow_mut().insert(s, val_rr);
                 }
                 (_, Some(_)) => {
                     self.print_error("first at! argument must be hash");
@@ -121,7 +81,7 @@ impl VM {
 
     /// Takes a hash value and returns a generator over the keys of
     /// the hash.
-    pub fn core_keys(&mut self) -> i32 {
+    pub fn core_keys(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("keys requires one argument");
             return 0;
@@ -150,7 +110,7 @@ impl VM {
 
     /// Takes a hash value and returns a generator over the values of
     /// the hash.
-    pub fn core_values(&mut self) -> i32 {
+    pub fn core_values(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("values requires one argument");
             return 0;
@@ -179,7 +139,7 @@ impl VM {
 
     /// Takes a hash value and returns a generator over the key-value
     /// pairs from that hash.
-    pub fn core_each(&mut self) -> i32 {
+    pub fn core_each(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("each requires one argument");
             return 0;

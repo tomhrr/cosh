@@ -12,6 +12,7 @@ extern crate term_size;
 extern crate termion;
 extern crate utime;
 extern crate xml;
+extern crate string_interner;
 
 pub mod chunk;
 pub mod compiler;

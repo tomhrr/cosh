@@ -9,6 +9,7 @@ use lazy_static::lazy_static;
 use nix::unistd::{fork, ForkResult};
 use regex::Regex;
 use std::process::{Command, Stdio};
+use string_interner::{StringInterner, symbol::SymbolU32};
 
 use chunk::Value;
 use vm::*;
@@ -99,7 +100,7 @@ impl VM {
     /// Takes a command string, substitutes for the {num} and {}
     /// stack element placeholders as well as the ~ home directory
     /// placeholder, and returns the resulting string.
-    fn prepare_command(&mut self, s: &str) -> Option<String> {
+    fn prepare_command(&mut self, interner: &mut StringInterner, s: &str) -> Option<String> {
         let captures = CAPTURE_NUM.captures_iter(s);
         let mut final_s = s.to_string();
         for capture in captures {
@@ -116,29 +117,12 @@ impl VM {
             let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - capture_num);
             match capture_el_rr_opt {
                 Some(capture_el_rr) => {
-                    let capture_el_str_s;
-                    let capture_el_str_b;
-                    let capture_el_str_str;
-                    let capture_el_str_bk: Option<String>;
-                    let capture_el_str_opt: Option<&str> = match capture_el_rr {
-                        Value::String(sp) => {
-                            capture_el_str_s = sp;
-                            capture_el_str_b = capture_el_str_s.borrow();
-                            Some(&capture_el_str_b.s)
-                        }
-                        _ => {
-                            capture_el_str_bk = capture_el_rr.to_string();
-                            match capture_el_str_bk {
-                                Some(s) => {
-                                    capture_el_str_str = s;
-                                    Some(&capture_el_str_str)
-                                }
-                                _ => None,
-                            }
-                        }
-                    };
+                    let capture_el_str_opt =
+                        self.intern_string_value(interner, capture_el_rr.clone());
                     match capture_el_str_opt {
-                        Some(capture_el_str) => {
+                        Some(capture_el_strs) => {
+                            let capture_el_str =
+                                self.interner_resolve(interner, capture_el_strs);
                             let capture_str_with_brackets = format!("\\{{{}\\}}", capture_str);
                             let cswb_regex = Regex::new(&capture_str_with_brackets).unwrap();
                             final_s = cswb_regex.replace_all(&final_s, capture_el_str).to_string();
@@ -164,30 +148,11 @@ impl VM {
             }
 
             let value_rr = self.stack.pop().unwrap();
-            let value_s;
-            let value_b;
-            let value_str;
-            let value_bk: Option<String>;
-            let value_opt: Option<&str> = match value_rr {
-                Value::String(sp) => {
-                    value_s = sp;
-                    value_b = value_s.borrow();
-                    Some(&value_b.s)
-                }
-                _ => {
-                    value_bk = value_rr.to_string();
-                    match value_bk {
-                        Some(s) => {
-                            value_str = s;
-                            Some(&value_str)
-                        }
-                        _ => None,
-                    }
-                }
-            };
+            let value_opt = self.intern_string_value(interner, value_rr);
 
             match value_opt {
-                Some(s) => {
+                Some(ss) => {
+                    let s = self.interner_resolve(interner, ss);
                     final_s = CAPTURE_WITHOUT_NUM.replace(&final_s, s).to_string();
                 }
                 _ => {
@@ -211,9 +176,10 @@ impl VM {
 
     fn prepare_and_split_command(
         &mut self,
+        interner: &mut StringInterner,
         cmd: &str,
     ) -> Option<(String, Vec<String>)> {
-        let prepared_cmd_opt = self.prepare_command(cmd);
+        let prepared_cmd_opt = self.prepare_command(interner, cmd);
         if prepared_cmd_opt.is_none() {
             return None;
         }
@@ -240,8 +206,11 @@ impl VM {
     /// Takes a command string as its single argument.  Substitutes
     /// for placeholders, executes the command, and places a generator
     /// over the standard output of the command onto the stack.
-    pub fn core_command(&mut self, cmd: &str) -> i32 {
-        let prepared_cmd_opt = self.prepare_and_split_command(cmd);
+    pub fn core_command(&mut self, interner: &mut StringInterner, cmds: SymbolU32) -> i32 {
+        let cmd = self.interner_resolve(interner, cmds).to_string();
+        
+        let prepared_cmd_opt =
+            self.prepare_and_split_command(interner, &cmd);
         if prepared_cmd_opt.is_none() {
             return 0;
         }
@@ -269,8 +238,10 @@ impl VM {
 
     /// As per `core_command`, except that the output isn't captured
     /// and nothing is placed onto the stack.
-    pub fn core_command_uncaptured(&mut self, cmd: &str) -> i32 {
-        let prepared_cmd_opt = self.prepare_and_split_command(cmd);
+    pub fn core_command_uncaptured(&mut self, interner: &mut StringInterner, cmds: SymbolU32) -> i32 {
+        let cmd = self.interner_resolve(interner, cmds).to_string();
+        let prepared_cmd_opt =
+            self.prepare_and_split_command(interner, &cmd);
         if prepared_cmd_opt.is_none() {
             return 0;
         }
@@ -304,6 +275,7 @@ impl VM {
     /// output onto the stack.
     pub fn core_pipe(
         &mut self,
+        interner: &mut StringInterner
     ) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("| requires two arguments");
@@ -313,9 +285,10 @@ impl VM {
         let cmd_rr = self.stack.pop().unwrap();
 
         match cmd_rr {
-            Value::Command(s) => {
+            Value::Command(ss) => {
+                let s = self.interner_resolve(interner, ss).to_string();
                 let prepared_cmd_opt =
-                    self.prepare_and_split_command(&s.borrow());
+                    self.prepare_and_split_command(interner, &s);
                 if prepared_cmd_opt.is_none() {
                     return 0;
                 }
@@ -353,11 +326,11 @@ impl VM {
                             Ok(ForkResult::Child) => {
                                 loop {
                                     let dup_res =
-                                        self.opcode_dup();
+                                        self.opcode_dup(interner);
                                     if dup_res == 0 {
                                         return 0;
                                     }
-                                    let shift_res = self.opcode_shift();
+                                    let shift_res = self.opcode_shift(interner);
                                     if shift_res == 0 {
                                         return 0;
                                     }
@@ -368,30 +341,12 @@ impl VM {
                                         }
                                         _ => {}
                                     }
-                                    let element_s;
-                                    let element_b;
-                                    let element_str;
-                                    let element_bk: Option<String>;
-                                    let element_str_opt: Option<&str> = match element_rr {
-                                        Value::String(sp) => {
-                                            element_s = sp;
-                                            element_b = element_s.borrow();
-                                            Some(&element_b.s)
-                                        }
-                                        _ => {
-                                            element_bk = element_rr.to_string();
-                                            match element_bk {
-                                                Some(s) => {
-                                                    element_str = s;
-                                                    Some(&element_str)
-                                                }
-                                                _ => None,
-                                            }
-                                        }
-                                    };
+                                    let element_str_opt =
+                                        self.intern_string_value(interner, element_rr);
 
                                     match element_str_opt {
-                                        Some(s) => {
+                                        Some(ss) => {
+                                            let s = self.interner_resolve(interner, ss);
                                             let res = upstream_stdin.write(s.as_bytes());
                                             match res {
                                                 Ok(_) => {}

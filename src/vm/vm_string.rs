@@ -4,13 +4,13 @@ use std::rc::Rc;
 
 use regex::Regex;
 
-use chunk::{StringPair, Value};
+use chunk::Value;
 use vm::*;
 
 impl VM {
     /// Takes two string arguments, appends them together, and adds
     /// the resulting string back onto the stack.
-    pub fn core_append(&mut self) -> i32 {
+    pub fn core_append(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("append requires two arguments");
             return 0;
@@ -19,57 +19,17 @@ impl VM {
         let v1 = self.stack.pop().unwrap();
         let v2 = self.stack.pop().unwrap();
 
-        let v1_str_s;
-        let v1_str_b;
-        let v1_str_str;
-        let v1_str_bk: Option<String>;
-        let v1_str_opt: Option<&str> = match v1 {
-            Value::String(sp) => {
-                v1_str_s = sp;
-                v1_str_b = v1_str_s.borrow();
-                Some(&v1_str_b.s)
-            }
-            _ => {
-                v1_str_bk = v1.to_string();
-                match v1_str_bk {
-                    Some(s) => {
-                        v1_str_str = s;
-                        Some(&v1_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
-
-        let v2_str_s;
-        let v2_str_b;
-        let v2_str_str;
-        let v2_str_bk: Option<String>;
-        let v2_str_opt: Option<&str> = match v2 {
-            Value::String(sp) => {
-                v2_str_s = sp;
-                v2_str_b = v2_str_s.borrow();
-                Some(&v2_str_b.s)
-            }
-            _ => {
-                v2_str_bk = v2.to_string();
-                match v2_str_bk {
-                    Some(s) => {
-                        v2_str_str = s;
-                        Some(&v2_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let v1_str_opt = self.intern_string_value(interner, v1);
+        let v2_str_opt = self.intern_string_value(interner, v2);
 
         match (v1_str_opt, v2_str_opt) {
-            (Some(s1), Some(s2)) => {
+            (Some(s1s), Some(s2s)) => {
+                let s1 = self.interner_resolve(interner,
+                    s1s).to_string();
+                let s2 = self.interner_resolve(interner, s2s);
                 let s3 = format!("{}{}", s2, s1);
-                self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringPair::new(
-                        s3, None,
-                    )))));
+                let c = self.intern_string_to_value(interner, &s3);
+                self.stack.push(c);
             }
             (Some(_), _) => {
                 self.print_error("second append argument must be string");
@@ -86,7 +46,7 @@ impl VM {
     /// Takes a string and a separator as its arguments.  Splits the
     /// string using the separator, treated as a regex, and puts the
     /// resulting list onto the stack.
-    pub fn core_splitr(&mut self) -> i32 {
+    pub fn core_splitr(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("split requires two arguments");
             return 0;
@@ -95,77 +55,21 @@ impl VM {
         let regex_rr = self.stack.pop().unwrap();
         let list_str_rr = self.stack.pop().unwrap();
 
-        let regex_str_rr_opt = VM::to_string_value(regex_rr);
-        if regex_str_rr_opt.is_none() {
-            self.print_error("regex must be a string");
-            return 0;
-        }
-        let mut regex_str_rr = regex_str_rr_opt.unwrap();
-
-        {
-            let res = regex_str_rr.gen_regex();
-            if !res {
-                return 0;
-            }
-        }
-
-        let regex_s;
-        let regex_b;
-        let regex_rb;
-        let regex_opt: Option<&Regex> = match regex_str_rr {
-            Value::String(sp) => {
-                regex_s = sp;
-                regex_b = regex_s.borrow();
-                match regex_b.r {
-                    Some(ref rb) => {
-                        regex_rb = rb;
-                        Some(regex_rb)
-                    }
-                    None => {
-                        eprintln!("gen_regex must be called before to_regex!");
-                        std::process::abort();
-                    }
-                }
-            }
-            _ => {
-                eprintln!("gen_regex must be called before to_regex!");
-                std::process::abort();
-            }
-        };
-
-        let list_str_s;
-        let list_str_b;
-        let list_str_str;
-        let list_str_bk: Option<String>;
-        let list_str_opt: Option<&str> = match list_str_rr {
-            Value::String(sp) => {
-                list_str_s = sp;
-                list_str_b = list_str_s.borrow();
-                Some(&list_str_b.s)
-            }
-            _ => {
-                list_str_bk = list_str_rr.to_string();
-                match list_str_bk {
-                    Some(s) => {
-                        list_str_str = s;
-                        Some(&list_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let regex_opt = self.intern_regex(interner, regex_rr);
+        let list_str_opt = self.intern_string_value(interner, list_str_rr);
 
         match (regex_opt, list_str_opt) {
-            (Some(regex), Some(list_str)) => {
-                let elements = regex.split(list_str);
+            (Some(regex), Some(list_strs)) => {
+                let list_str =
+                    self.interner_resolve(interner, list_strs).to_string();
+                //let ss = list_str.to_string();
+                let rb = regex.borrow();
+                let elements = rb.split(&list_str);
                 let mut final_elements = VecDeque::new();
                 for e in elements {
-                    final_elements.push_back(
-                        Value::String(Rc::new(RefCell::new(StringPair::new(
-                            e.to_string(),
-                            None,
-                        ))))
-                    );
+                    let s = e.clone().to_string();
+                    let v = self.intern_string_to_value(interner, &s);
+                    final_elements.push_back(v);
                 }
                 self.stack.push(Value::List(Rc::new(RefCell::new(final_elements))));
             }
@@ -185,7 +89,7 @@ impl VM {
     /// string using the separator, and puts the resulting list onto
     /// the stack.  Quotation by way of the double-quote character is
     /// taken into account.
-    pub fn core_split(&mut self) -> i32 {
+    pub fn core_split(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("split requires two arguments");
             return 0;
@@ -194,53 +98,17 @@ impl VM {
         let separator_rr = self.stack.pop().unwrap();
         let list_str_rr = self.stack.pop().unwrap();
 
-        let separator_s;
-        let separator_b;
-        let separator_str;
-        let separator_bk: Option<String>;
-        let separator_opt: Option<&str> = match separator_rr {
-            Value::String(sp) => {
-                separator_s = sp;
-                separator_b = separator_s.borrow();
-                Some(&separator_b.s)
-            }
-            _ => {
-                separator_bk = separator_rr.to_string();
-                match separator_bk {
-                    Some(s) => {
-                        separator_str = s;
-                        Some(&separator_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
-
-        let list_str_s;
-        let list_str_b;
-        let list_str_str;
-        let list_str_bk: Option<String>;
-        let list_str_opt: Option<&str> = match list_str_rr {
-            Value::String(sp) => {
-                list_str_s = sp;
-                list_str_b = list_str_s.borrow();
-                Some(&list_str_b.s)
-            }
-            _ => {
-                list_str_bk = list_str_rr.to_string();
-                match list_str_bk {
-                    Some(s) => {
-                        list_str_str = s;
-                        Some(&list_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let separator_opt = self.intern_string_value(interner, separator_rr);
+        let list_str_opt = self.intern_string_value(interner, list_str_rr);
 
         match (separator_opt, list_str_opt) {
-            (Some(separator), Some(list_str)) => {
-                let elements = list_str.split(separator);
+            (Some(separators), Some(list_strs)) => {
+                let separator =
+                    self.interner_resolve(interner,
+                        separators).to_string();
+                let list_str =
+                    self.interner_resolve(interner, list_strs);
+                let elements = list_str.split(&separator);
                 // The final set of separated elements.
                 let mut final_elements = Vec::new();
                 // A list containing a partially-complete element, if
@@ -252,7 +120,7 @@ impl VM {
                         if e_str.len() > 0 {
                             if e_str.chars().last().unwrap() == '"' {
                                 buffer.push(e_str);
-                                let mut new_str = buffer.join(separator);
+                                let mut new_str = buffer.join(&separator);
                                 if new_str.len() > 0 {
                                     if new_str.chars().next().unwrap() == '"' {
                                         new_str.remove(0);
@@ -294,10 +162,9 @@ impl VM {
 
                 let mut lst = VecDeque::new();
                 for e in final_elements.iter() {
-                    lst.push_back(Value::String(Rc::new(RefCell::new(StringPair::new(
-                        e.to_string(),
-                        None,
-                    )))));
+                    lst.push_back(
+                        self.intern_string_to_value(interner, &e.to_string())
+                    );
                 }
                 self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
             }
@@ -319,6 +186,7 @@ impl VM {
     /// resulting joined string onto the stack.
     pub fn core_join(
         &mut self,
+        interner: &mut StringInterner,
     ) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("join requires two arguments");
@@ -326,45 +194,27 @@ impl VM {
         }
 
         let separator_rr = self.stack.pop().unwrap();
-        let separator_s;
-        let separator_b;
-        let separator_str;
-        let separator_bk: Option<String>;
-        let separator_opt: Option<&str> = match separator_rr {
-            Value::String(sp) => {
-                separator_s = sp;
-                separator_b = separator_s.borrow();
-                Some(&separator_b.s)
-            }
-            _ => {
-                separator_bk = separator_rr.to_string();
-                match separator_bk {
-                    Some(s) => {
-                        separator_str = s;
-                        Some(&separator_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let separator_opt = self.intern_string_value(interner, separator_rr);
 
         let esc_quotes = Regex::new(r#"""#).unwrap();
 
         match separator_opt {
-            Some(separator) => {
+            Some(separators) => {
+                let separator =
+                    self.interner_resolve(interner, separators).to_string();
                 // If the separator is an empty string, then matching
                 // it against the values to determine whether they
                 // need quoting won't work, so skip that in that case.
                 let separator_is_empty_string = separator.len() == 0;
-                let separator_regex_res = Regex::new(separator);
+                let separator_regex_res = Regex::new(&separator);
                 let mut final_elements = Vec::new();
                 match separator_regex_res {
                     Ok(separator_regex) => loop {
-                        let dup_res = self.opcode_dup();
+                        let dup_res = self.opcode_dup(interner);
                         if dup_res == 0 {
                             return 0;
                         }
-                        let shift_res = self.opcode_shift();
+                        let shift_res = self.opcode_shift(interner);
                         if shift_res == 0 {
                             return 0;
                         }
@@ -374,42 +224,24 @@ impl VM {
                                 break;
                             }
                             Value::String(sp) => {
+                                let s = self.interner_resolve(interner, sp);
                                 if !separator_is_empty_string
-                                    && (separator_regex.is_match(&sp.borrow().s)
-                                        || esc_quotes.is_match(&sp.borrow().s))
+                                    && (separator_regex.is_match(s)
+                                        || esc_quotes.is_match(s))
                                 {
-                                    let s1 = &sp.borrow();
-                                    let s2 = esc_quotes.replace_all(&s1.s, "\\\"");
+                                    let s2 = esc_quotes.replace_all(s, "\\\"");
                                     final_elements.push(format!("\"{}\"", s2));
                                 } else {
-                                    final_elements.push(sp.borrow().s.to_string());
+                                    final_elements.push(s.to_string());
                                 }
                             }
                             _ => {
-                                let element_s;
-                                let element_b;
-                                let element_str;
-                                let element_bk: Option<String>;
-                                let element_opt: Option<&str> = match element_rr {
-                                    Value::String(sp) => {
-                                        element_s = sp;
-                                        element_b = element_s.borrow();
-                                        Some(&element_b.s)
-                                    }
-                                    _ => {
-                                        element_bk = element_rr.to_string();
-                                        match element_bk {
-                                            Some(s) => {
-                                                element_str = s;
-                                                Some(&element_str)
-                                            }
-                                            _ => None,
-                                        }
-                                    }
-                                };
+                                let element_opt =
+                                    self.intern_string_value(interner, element_rr);
 
                                 match element_opt {
-                                    Some(s) => {
+                                    Some(ss) => {
+                                        let s = self.interner_resolve(interner, ss);
                                         if !separator_is_empty_string
                                             && (separator_regex.is_match(&s)
                                                 || esc_quotes.is_match(&s))
@@ -433,15 +265,13 @@ impl VM {
                         return 0;
                     }
                 }
-                let drop_res = self.opcode_drop();
+                let drop_res = self.opcode_drop(interner);
                 if drop_res == 0 {
                     return 0;
                 }
-                let final_str = final_elements.join(separator);
-                self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringPair::new(
-                        final_str, None,
-                    )))));
+                let final_str = final_elements.join(&separator);
+                let c = self.intern_string_to_value(interner, &final_str);
+                self.stack.push(c);
             }
             _ => {
                 self.print_error("second join argument must be string");

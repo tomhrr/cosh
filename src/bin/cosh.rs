@@ -7,6 +7,7 @@ extern crate regex;
 extern crate rustyline;
 extern crate rustyline_derive;
 extern crate searchpath;
+extern crate string_interner;
 extern crate tempfile;
 
 use std::borrow::Cow::{self, Borrowed};
@@ -35,6 +36,7 @@ use rustyline::validate::Validator;
 use rustyline::{CompletionType, Config, Context, EditMode, Editor, Result};
 use rustyline_derive::Helper;
 use searchpath::search_path;
+use string_interner::{StringInterner, symbol::SymbolU32};
 use tempfile::tempfile;
 
 use cosh::compiler::Compiler;
@@ -461,7 +463,8 @@ fn main() {
             if functions.len() > 0 {
                 vm.call_stack_chunks.push((functions[0].clone(), 0));
             }
-            vm.run(chunk);
+            let mut si = StringInterner::new();
+            vm.run(&mut si, chunk);
         } else {
             let file_res = fs::File::open(path);
             match file_res {
@@ -481,7 +484,8 @@ fn main() {
                 let re_post = Regex::new(r#"\..*"#).unwrap();
                 let name = re_post.replace_all(&path1, "");
 
-                let res = compiler.compile(&mut bufread, &name);
+                let mut si = StringInterner::new();
+                let res = compiler.compile(&mut si, &mut bufread, &name);
                 match res {
                     Some(chunk) => {
                         let output_path_opt = matches.opt_str("o");
@@ -530,7 +534,9 @@ fn main() {
                     }
                 }
 
+                let mut si = StringInterner::new();
                 vm.interpret(
+                    &mut si,
                     &global_functions,
                     &mut bufread,
                     "(main)",
@@ -571,7 +577,9 @@ fn main() {
                 match file_res {
                     Ok(file) => {
                         let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
+                        let mut si = StringInterner::new();
                         let chunk_opt = vm.interpret(
+                            &mut si,
                             &global_functions,
                             &mut bufread,
                             ".coshrc",
@@ -653,7 +661,9 @@ fn main() {
 
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                     rl.add_history_entry(line.as_str());
+                    let mut si = StringInterner::new();
                     let chunk_opt = vm.interpret(
+                        &mut si,
                         &global_functions,
                         &mut bufread,
                         "(main)",

@@ -4,20 +4,22 @@ use std::io::BufRead;
 use std::mem;
 use std::rc::Rc;
 
-use chunk::{StringPair, Value};
+use string_interner::{StringInterner, symbol::SymbolU32};
+
+use chunk::Value;
 use vm::VM;
 
 impl VM {
     /// Takes a list and an index as its arguments.  Gets the element
     /// at the given index from the list and places it onto the stack.
-    pub fn core_nth(&mut self) -> i32 {
+    pub fn core_nth(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("nth requires two arguments");
             return 0;
         }
 
         let index_rr = self.stack.pop().unwrap();
-        let index_int_opt = index_rr.to_int();
+        let index_int_opt = self.to_int(interner, &index_rr);
 
         let lst_rr = self.stack.pop().unwrap();
 
@@ -44,7 +46,7 @@ impl VM {
 
     /// Takes a list, an index, and a value as its arguments.  Places
     /// the value at the given index in the list.
-    pub fn core_nth_em(&mut self) -> i32 {
+    pub fn core_nth_em(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 3 {
             self.print_error("nth! requires three arguments");
             return 0;
@@ -53,7 +55,7 @@ impl VM {
         let val_rr = self.stack.pop().unwrap();
 
         let index_rr = self.stack.pop().unwrap();
-        let index_int_opt = index_rr.to_int();
+        let index_int_opt = self.to_int(interner, &index_rr);
 
         let mut lst_rr = self.stack.pop().unwrap();
 
@@ -85,6 +87,7 @@ impl VM {
     /// onto the stack.
     pub fn core_gnth(
         &mut self,
+        interner: &mut StringInterner
     ) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("gnth requires two arguments");
@@ -92,16 +95,16 @@ impl VM {
         }
 
         let index_rr = self.stack.pop().unwrap();
-        let index_int_opt = index_rr.to_int();
+        let index_int_opt = self.to_int(interner, &index_rr);
 
         match index_int_opt {
             Some(mut index) => {
                 while index >= 0 {
-                    let dup_res = self.opcode_dup();
+                    let dup_res = self.opcode_dup(interner);
                     if dup_res == 0 {
                         return 0;
                     }
-                    let shift_res = self.opcode_shift();
+                    let shift_res = self.opcode_shift(interner);
                     if shift_res == 0 {
                         return 0;
                     }
@@ -124,7 +127,7 @@ impl VM {
 
     /// Takes a list and a value as its arguments.  Pushes the value
     /// onto the list and places the updated list onto the stack.
-    pub fn opcode_push(&mut self) -> i32 {
+    pub fn opcode_push(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("push requires two arguments");
             return 0;
@@ -152,7 +155,7 @@ impl VM {
     /// Takes a list and a value as its arguments.  Pushes the value
     /// onto the start of the list and places the updated list onto
     /// the stack.
-    pub fn core_unshift(&mut self) -> i32 {
+    pub fn core_unshift(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("unshift requires two arguments");
             return 0;
@@ -179,7 +182,7 @@ impl VM {
 
     /// Takes a list as its single argument.  Pops a value from the
     /// end of the list and places that value onto the stack.
-    pub fn opcode_pop(&mut self) -> i32 {
+    pub fn opcode_pop(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("pop requires one argument");
             return 0;
@@ -206,6 +209,7 @@ impl VM {
 
     pub fn opcode_shift_inner<'a>(
         &mut self,
+        interner: &mut StringInterner,
         shiftable_rr: &mut Value
     ) -> i32 {
         let mut repush = false;
@@ -269,7 +273,7 @@ impl VM {
                         self.chunk = chunk.clone();
                         let i = self.i;
                         self.i = index;
-                        let res = self.run_inner();
+                        let res = self.run_inner(interner);
                         self.i = i;
                         self.chunk = backup_chunk;
                         self.scopes.pop();
@@ -303,9 +307,8 @@ impl VM {
                 match res {
                     Ok(bytes) => {
                         if bytes != 0 {
-                            self.stack.push(Value::String(Rc::new(RefCell::new(
-                                StringPair::new(contents, None),
-                            ))));
+                            let c = self.intern_string_to_value(interner, &contents);
+                            self.stack.push(c);
                         } else {
                             self.stack.push(Value::Null);
                         }
@@ -324,9 +327,7 @@ impl VM {
                             let kv = mapb.get_index(hwi.borrow().i);
                             match kv {
                                 Some((k, _)) => {
-                                    self.stack.push(Value::String(Rc::new(RefCell::new(
-                                        StringPair::new(k.to_string(), None),
-                                    ))));
+                                    self.stack.push(Value::String(*k));
                                 }
                                 None => {
                                     self.stack.push(Value::Null);
@@ -377,9 +378,9 @@ impl VM {
                             match kv {
                                 Some((k, v)) => {
                                     let mut lst = VecDeque::new();
-                                    lst.push_back(Value::String(Rc::new(RefCell::new(
-                                        StringPair::new(k.to_string(), None),
-                                    ))));
+                                    lst.push_back(
+                                        Value::String(*k)
+                                    );
                                     lst.push_back(v.clone());
                                     self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                                 }
@@ -416,6 +417,7 @@ impl VM {
     /// element from that object and puts it onto the stack.
     pub fn opcode_shift<'a>(
         &mut self,
+        interner: &mut StringInterner
     ) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("shift requires one argument");
@@ -424,6 +426,7 @@ impl VM {
 
         let mut shiftable_rr = self.stack.pop().unwrap();
         return self.opcode_shift_inner(
+            interner,
             &mut shiftable_rr
         );
     }
@@ -433,6 +436,7 @@ impl VM {
     /// the order that they are shifted.
     pub fn core_shift_all(
         &mut self,
+        interner: &mut StringInterner,
     ) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("shift-all requires one argument");
@@ -440,11 +444,11 @@ impl VM {
         }
 
         loop {
-            let dup_res = self.opcode_dup();
+            let dup_res = self.opcode_dup(interner);
             if dup_res == 0 {
                 return 0;
             }
-            let shift_res = self.opcode_shift();
+            let shift_res = self.opcode_shift(interner);
             if shift_res == 0 {
                 self.stack.pop();
                 return 0;
@@ -467,7 +471,7 @@ impl VM {
                 break;
             }
 
-            let swap_res = self.opcode_swap();
+            let swap_res = self.opcode_swap(interner);
             if swap_res == 0 {
                 return 0;
             }
@@ -478,7 +482,7 @@ impl VM {
     /// Takes an arbitrary value as its single argument.  Places a
     /// boolean onto the stack indicating whether the argument can be
     /// shifted.
-    pub fn opcode_isshiftable(&mut self) -> i32 {
+    pub fn opcode_isshiftable(&mut self, interner: &mut StringInterner) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("is-shiftable requires one argument");
             return 0;

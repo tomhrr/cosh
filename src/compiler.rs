@@ -10,8 +10,9 @@ use std::str;
 
 use lazy_static::lazy_static;
 use regex::Regex;
+use string_interner::{StringInterner, symbol::SymbolU32};
 
-use chunk::{Chunk, StringPair, Value};
+use chunk::{Chunk, Value, ValueSD};
 use opcode::OpCode;
 
 /// The various token types used by the compiler.
@@ -70,12 +71,12 @@ impl Token {
 /// depth, which will always be greater than one.
 #[derive(Debug)]
 pub struct Local {
-    name: String,
+    name: SymbolU32,
     depth: u32,
 }
 
 impl Local {
-    pub fn new(name: String, depth: u32) -> Local {
+    pub fn new(name: SymbolU32, depth: u32) -> Local {
         Local {
             name: name,
             depth: depth,
@@ -473,6 +474,7 @@ pub struct Compiler {
     locals: Vec<Local>,
     local_count: u8,
     scope_depth: u32,
+    pub interner: StringInterner,
 }
 
 /// Escapes a single string value, by replacing string representations
@@ -491,7 +493,69 @@ impl Compiler {
             locals: Vec::new(),
             local_count: 0,
             scope_depth: 0,
+            interner: StringInterner::default(),
         }
+    }
+
+    pub fn intern_string(&mut self, interner: &mut StringInterner, s: &str) -> SymbolU32 {
+        let sym = interner.get_or_intern(s);
+        return sym;
+    }
+
+    pub fn intern_string_to_value(&mut self, interner: &mut StringInterner, s: &str) -> Value {
+        Value::String(self.intern_string(interner, s))
+    }
+
+    /// Add a constant to the current chunk, and return its index in
+    /// the constants list (for later calls to `get_constant`).
+    pub fn add_constant(&mut self, interner: &mut StringInterner, chunk: &mut Chunk, value_rr: Value) -> i32 {
+        let value_sd = match value_rr {
+            Value::Null => ValueSD::Null,
+            Value::Int(n) => ValueSD::Int(n),
+            Value::Float(n) => ValueSD::Float(n),
+            Value::BigInt(n) => ValueSD::BigInt(n.to_str_radix(10)),
+            Value::String(sp) =>
+                ValueSD::String(interner.resolve(sp).unwrap().to_string()),
+            Value::Command(s) =>
+                ValueSD::Command(interner.resolve(s).unwrap().to_string()),
+            Value::CommandUncaptured(s) =>
+                ValueSD::CommandUncaptured(interner.resolve(s).unwrap().to_string()),
+            _ => {
+                eprintln!("constant type cannot be added to chunk! {:?}", value_rr);
+                std::process::abort();
+            }
+        };
+        chunk.constants.push(value_sd);
+        return (chunk.constants.len() - 1) as i32;
+    }
+
+    /// Get a constant from the chunk.
+    pub fn get_constant(&mut self, interner: &mut StringInterner, chunk: &Chunk, i: i32) -> Value {
+        let value_sd = chunk.get_constant(i);
+        let value = match value_sd {
+            ValueSD::Null => Value::Null,
+            ValueSD::Int(n) => Value::Int(n),
+            ValueSD::Float(n) => Value::Float(n),
+            ValueSD::BigInt(n) => {
+                let nn = n.parse::<num_bigint::BigInt>().unwrap();
+                Value::BigInt(nn)
+            }
+            ValueSD::String(sp) => {
+                Value::String(self.intern_string(interner, &sp))
+            }
+            ValueSD::Command(s) => {
+                Value::Command(self.intern_string(interner, &s))
+            }
+            ValueSD::CommandUncaptured(s) => {
+                Value::CommandUncaptured(self.intern_string(interner, &s))
+            }
+        };
+        return value;
+    }
+
+    /// Get the chunk's most recently-added constant.
+    pub fn get_last_constant(&mut self, interner: &mut StringInterner, chunk: &Chunk) -> Value {
+        return self.get_constant(interner, chunk, (chunk.constants.len() - 1).try_into().unwrap());
     }
 
     /// Increases the scope depth.  Used when a new function is
@@ -515,7 +579,7 @@ impl Compiler {
     /// way of the scanner, and compiles that token data into
     /// bytecode, which is added to the chunk.  Returns a boolean
     /// indicating whether compilation was successful.
-    fn compile_inner(&mut self, scanner: &mut Scanner, chunk: &mut Chunk) -> bool {
+    fn compile_inner(&mut self, interner: &mut StringInterner, scanner: &mut Scanner, chunk: &mut Chunk) -> bool {
         // Stores instruction indexes for various types of statement,
         // in order to be able to jump later.
         let mut if_indexes: Vec<(Option<usize>, Option<usize>)> = Vec::new();
@@ -617,7 +681,7 @@ impl Compiler {
                         Chunk::new_generator(chunk.name.to_string(), arg_count, req_arg_count);
 
                     self.increase_scope_depth();
-                    let res = self.compile_inner(scanner, &mut generator_chunk);
+                    let res = self.compile_inner(interner, scanner, &mut generator_chunk);
                     if !res {
                         return false;
                     }
@@ -652,7 +716,7 @@ impl Compiler {
                         function_chunk.nested = true;
                         function_chunk.scope_depth = self.scope_depth;
                     }
-                    let res = self.compile_inner(scanner, &mut function_chunk);
+                    let res = self.compile_inner(interner, scanner, &mut function_chunk);
                     if !res {
                         return false;
                     }
@@ -680,15 +744,13 @@ impl Compiler {
                     let name_str = format!("anon{}", anon_index);
                     anon_index = anon_index + 1;
                     self.increase_scope_depth();
-                    let res = self.compile_inner(scanner, &mut function_chunk);
+                    let res = self.compile_inner(interner, scanner, &mut function_chunk);
                     if !res {
                         return false;
                     }
-                    let name_str_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
-                        name_str.as_str().to_string(),
-                        None,
-                    ))));
-                    let i = chunk.add_constant(name_str_rr);
+                    let name_str_rr =
+                        self.intern_string_to_value(interner, name_str.as_str());
+                    let i = self.add_constant(interner, chunk, name_str_rr);
                     let fn_opcode = if function_chunk.uses_local_vars {
                         OpCode::Function
                     } else {
@@ -726,7 +788,7 @@ impl Compiler {
                 }
                 TokenType::Int(n) => {
                     let value_rr = Value::Int(n);
-                    let i = chunk.add_constant(value_rr);
+                    let i = self.add_constant(interner, chunk, value_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
                     let i_lower = i & 0xFF;
@@ -735,7 +797,7 @@ impl Compiler {
                 }
                 TokenType::BigInt(n) => {
                     let value_rr = Value::BigInt(n);
-                    let i = chunk.add_constant(value_rr);
+                    let i = self.add_constant(interner, chunk, value_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
                     let i_lower = i & 0xFF;
@@ -744,7 +806,7 @@ impl Compiler {
                 }
                 TokenType::Float(n) => {
                     let value_rr = Value::Float(n);
-                    let i = chunk.add_constant(value_rr);
+                    let i = self.add_constant(interner, chunk, value_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
                     let i_lower = i & 0xFF;
@@ -830,7 +892,7 @@ impl Compiler {
                             chunk.add_opcode(OpCode::Var);
                             has_vars = true;
                         } else {
-                            let last_constant_rr = chunk.get_last_constant();
+                            let last_constant_rr = self.get_last_constant(interner, chunk);
                             chunk.pop_byte();
                             chunk.pop_byte();
                             let last_opcode = chunk.get_last_opcode();
@@ -854,7 +916,7 @@ impl Compiler {
                             match last_constant_rr {
                                 Value::String(sp) => {
                                     let local = Local::new(
-                                        sp.borrow().s.to_string(),
+                                        sp,
                                         self.scope_depth.into(),
                                     );
                                     self.locals.push(local);
@@ -868,7 +930,7 @@ impl Compiler {
                                 }
                             }
                             let value_rr = Value::Int(0);
-                            let i = chunk.add_constant(value_rr);
+                            let i = self.add_constant(interner, chunk, value_rr);
                             chunk.add_opcode(OpCode::Constant);
                             let i_upper = (i >> 8) & 0xFF;
                             let i_lower = i & 0xFF;
@@ -878,7 +940,8 @@ impl Compiler {
                             chunk.add_byte((self.locals.len() - 1) as u8);
                         }
                     } else if s == "!" {
-                        let last_constant_rr = chunk.get_last_constant();
+                        let last_constant_rr =
+                            self.get_last_constant(interner, chunk);
                         chunk.pop_byte();
                         chunk.pop_byte();
                         let last_opcode = chunk.get_last_opcode();
@@ -902,12 +965,12 @@ impl Compiler {
                         let mut success = false;
                         {
                             match last_constant_rr {
-                                Value::String(ref sp) => {
+                                Value::String(sp) => {
                                     if self.locals.len() != 0 {
                                         let mut i = self.locals.len() - 1;
                                         loop {
                                             let local = &self.locals[i];
-                                            if local.name.eq(&sp.borrow().s) {
+                                            if local.name == sp {
                                                 uses_local_vars = true;
                                                 chunk.add_opcode(OpCode::SetLocalVar);
                                                 chunk.add_byte(i as u8);
@@ -928,7 +991,7 @@ impl Compiler {
                             }
                         }
                         if !success {
-                            let i = chunk.add_constant(last_constant_rr);
+                            let i = self.add_constant(interner, chunk, last_constant_rr);
                             chunk.add_opcode(OpCode::Constant);
                             let i_upper = (i >> 8) & 0xFF;
                             let i_lower = i & 0xFF;
@@ -937,7 +1000,8 @@ impl Compiler {
                             chunk.add_opcode(OpCode::SetVar);
                         }
                     } else if s == "@" {
-                        let last_constant_rr = chunk.get_last_constant();
+                        let last_constant_rr =
+                            self.get_last_constant(interner, chunk);
                         chunk.pop_byte();
                         chunk.pop_byte();
                         let last_opcode = chunk.get_last_opcode();
@@ -961,12 +1025,12 @@ impl Compiler {
                         let mut success = false;
                         {
                             match last_constant_rr {
-                                Value::String(ref sp) => {
+                                Value::String(sp) => {
                                     if self.locals.len() != 0 {
                                         let mut i = self.locals.len() - 1;
                                         loop {
                                             let local = &self.locals[i];
-                                            if local.name.eq(&sp.borrow().s) {
+                                            if local.name == sp {
                                                 uses_local_vars = true;
                                                 chunk.add_opcode(OpCode::GetLocalVar);
                                                 chunk.add_byte(i as u8);
@@ -987,7 +1051,7 @@ impl Compiler {
                             }
                         }
                         if !success {
-                            let i = chunk.add_constant(last_constant_rr);
+                            let i = self.add_constant(interner, chunk, last_constant_rr);
                             chunk.add_opcode(OpCode::Constant);
                             let i_upper = (i >> 8) & 0xFF;
                             let i_lower = i & 0xFF;
@@ -1223,7 +1287,7 @@ impl Compiler {
                                                 | ((i_lower & 0xFF) as u16);
                                             let v = chunk.get_constant(constant_i.into());
                                             match v {
-                                                Value::Int(0) => {
+                                                ValueSD::Int(0) => {
                                                     chunk.set_third_last_opcode(OpCode::JumpR);
                                                     let jmp_len = chunk.data.len() - n;
                                                     chunk.set_second_last_byte(
@@ -1281,8 +1345,8 @@ impl Compiler {
                     } else {
                         let s_escaped = escape_string(&s);
                         let s_rr =
-                            Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
-                        let i = chunk.add_constant(s_rr);
+                            self.intern_string_to_value(interner, &s_escaped);
+                        let i = self.add_constant(interner, chunk, s_rr);
 
                         if is_implicit {
                             chunk.add_opcode(OpCode::CallImplicitConstant);
@@ -1301,8 +1365,8 @@ impl Compiler {
                 }
                 TokenType::Command(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Value::Command(Rc::new(RefCell::new(s_escaped)));
-                    let i = chunk.add_constant(s_rr);
+                    let s_rr = Value::Command(self.intern_string(interner, &s_escaped));
+                    let i = self.add_constant(interner, chunk, s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
                     let i_lower = i & 0xFF;
@@ -1311,8 +1375,8 @@ impl Compiler {
                 }
                 TokenType::CommandUncaptured(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Value::CommandUncaptured(Rc::new(RefCell::new(s_escaped)));
-                    let i = chunk.add_constant(s_rr);
+                    let s_rr = Value::CommandUncaptured(self.intern_string(interner, &s_escaped));
+                    let i = self.add_constant(interner, chunk, s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
                     let i_lower = i & 0xFF;
@@ -1322,8 +1386,8 @@ impl Compiler {
                 }
                 TokenType::CommandExplicit(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Value::Command(Rc::new(RefCell::new(s_escaped)));
-                    let i = chunk.add_constant(s_rr);
+                    let s_rr = Value::Command(self.intern_string(interner, &s_escaped));
+                    let i = self.add_constant(interner, chunk, s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
                     let i_lower = i & 0xFF;
@@ -1333,9 +1397,8 @@ impl Compiler {
                 }
                 TokenType::String(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr =
-                        Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
-                    let i = chunk.add_constant(s_rr);
+                    let s_rr = self.intern_string_to_value(interner, &s_escaped);
+                    let i = self.add_constant(interner, chunk, s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
                     let i_lower = i & 0xFF;
@@ -1362,10 +1425,10 @@ impl Compiler {
     /// Takes a BufRead and a chunk name as its arguments.  Compiles
     /// the program code found in the BufRead, and returns a chunk
     /// containing the compiled code.
-    pub fn compile(&mut self, fh: &mut Box<dyn BufRead>, name: &str) -> Option<Chunk> {
+    pub fn compile(&mut self, interner: &mut StringInterner, fh: &mut Box<dyn BufRead>, name: &str) -> Option<Chunk> {
         let mut scanner = Scanner::new(fh);
         let mut chunk = Chunk::new_standard(name.to_string());
-        let res = self.compile_inner(&mut scanner, &mut chunk);
+        let res = self.compile_inner(interner, &mut scanner, &mut chunk);
         if !res {
             return None;
         } else {

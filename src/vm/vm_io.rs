@@ -22,27 +22,8 @@ impl VM {
 
         let rw_rr = self.stack.pop().unwrap();
         let path_rr = self.stack.pop().unwrap();
-        let path_str_s;
-        let path_str_b;
-        let path_str_str;
-        let path_str_bk: Option<String>;
-        let path_str_opt: Option<&str> = match path_rr {
-            Value::String(sp) => {
-                path_str_s = sp;
-                path_str_b = path_str_s.borrow();
-                Some(&path_str_b.s)
-            }
-            _ => {
-                path_str_bk = path_rr.to_string();
-                match path_str_bk {
-                    Some(s) => {
-                        path_str_str = s;
-                        Some(&path_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let path_str_opt: Option<&str>;
+        to_str!(path_rr, path_str_opt);
 
         match rw_rr {
             Value::String(sp) => match sp.borrow().s.as_ref() {
@@ -149,27 +130,8 @@ impl VM {
         }
 
         let line_rr = self.stack.pop().unwrap();
-        let line_str_s;
-        let line_str_b;
-        let line_str_str;
-        let line_str_bk: Option<String>;
-        let line_str_opt: Option<&str> = match line_rr {
-            Value::String(sp) => {
-                line_str_s = sp;
-                line_str_b = line_str_s.borrow();
-                Some(&line_str_b.s)
-            }
-            _ => {
-                line_str_bk = line_rr.to_string();
-                match line_str_bk {
-                    Some(s) => {
-                        line_str_str = s;
-                        Some(&line_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let line_str_opt: Option<&str>;
+	to_str!(line_rr, line_str_opt);
 
         match line_str_opt {
             Some(s) => {
@@ -249,27 +211,8 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_str_s;
-        let path_str_b;
-        let path_str_str;
-        let path_str_bk: Option<String>;
-        let path_str_opt: Option<&str> = match path_rr {
-            Value::String(sp) => {
-                path_str_s = sp;
-                path_str_b = path_str_s.borrow();
-                Some(&path_str_b.s)
-            }
-            _ => {
-                path_str_bk = path_rr.to_string();
-                match path_str_bk {
-                    Some(s) => {
-                        path_str_str = s;
-                        Some(&path_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let path_str_opt: Option<&str>;
+	to_str!(path_rr, path_str_opt);
 
         match path_str_opt {
             Some(s) => {
@@ -338,27 +281,8 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-        let path_str_s;
-        let path_str_b;
-        let path_str_str;
-        let path_str_bk: Option<String>;
-        let path_str_opt: Option<&str> = match path_rr {
-            Value::String(sp) => {
-                path_str_s = sp;
-                path_str_b = path_str_s.borrow();
-                Some(&path_str_b.s)
-            }
-            _ => {
-                path_str_bk = path_rr.to_string();
-                match path_str_bk {
-                    Some(s) => {
-                        path_str_str = s;
-                        Some(&path_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let path_str_opt: Option<&str>;
+	to_str!(path_rr, path_str_opt);
 
         match path_str_opt {
             Some(s) => {

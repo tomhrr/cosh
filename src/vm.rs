@@ -311,27 +311,8 @@ impl VM {
         }
         let fn_rr = self.stack.pop().unwrap();
         let backup_rr = fn_rr.clone();
-        let fn_s;
-        let fn_b;
-        let fn_str;
-        let fn_bk: Option<String>;
-        let fn_opt: Option<&str> = match fn_rr {
-            Value::String(sp) => {
-                fn_s = sp;
-                fn_b = fn_s.borrow();
-                Some(&fn_b.s)
-            }
-            _ => {
-                fn_bk = fn_rr.to_string();
-                match fn_bk {
-                    Some(s) => {
-                        fn_str = s;
-                        Some(&fn_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let fn_opt: Option<&str>;
+        to_str!(fn_rr, fn_opt);
 
         let mut pushed = false;
         match fn_opt {
@@ -364,27 +345,8 @@ impl VM {
         }
 
         let lib_rr = self.stack.pop().unwrap();
-        let lib_str_s;
-        let lib_str_b;
-        let lib_str_str;
-        let lib_str_bk: Option<String>;
-        let lib_str_opt: Option<&str> = match lib_rr {
-            Value::String(sp) => {
-                lib_str_s = sp;
-                lib_str_b = lib_str_s.borrow();
-                Some(&lib_str_b.s)
-            }
-            _ => {
-                lib_str_bk = lib_rr.to_string();
-                match lib_str_bk {
-                    Some(s) => {
-                        lib_str_str = s;
-                        Some(&lib_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+        let lib_str_opt: Option<&str>;
+        to_str!(lib_rr, lib_str_opt);
 
         match lib_str_opt {
             Some(s) => {
@@ -426,27 +388,9 @@ impl VM {
         if is_string {
             return Some(value_rr);
         } else {
-            let value_s;
-            let value_b;
-            let value_str;
-            let value_bk: Option<String>;
-            let value_opt: Option<&str> = match value_rr {
-                Value::String(sp) => {
-                    value_s = sp;
-                    value_b = value_s.borrow();
-                    Some(&value_b.s)
-                }
-                _ => {
-                    value_bk = value_rr.to_string();
-                    match value_bk {
-                        Some(s) => {
-                            value_str = s;
-                            Some(&value_str)
-                        }
-                        _ => None,
-                    }
-                }
-            };
+            let value_opt: Option<&str>;
+            to_str!(value_rr, value_opt);
+
             match value_opt {
                 Some(s) => Some(Value::String(Rc::new(RefCell::new(StringPair::new(
                     s.to_string(),
@@ -1022,27 +966,8 @@ impl VM {
                             while self.stack.len() > list_index {
                                 let value_rr = self.stack.pop().unwrap();
                                 let key_rr = self.stack.pop().unwrap();
-                                let key_str_s;
-                                let key_str_b;
-                                let key_str_str;
-                                let key_str_bk: Option<String>;
-                                let key_str_opt: Option<&str> = match key_rr {
-                                    Value::String(sp) => {
-                                        key_str_s = sp;
-                                        key_str_b = key_str_s.borrow();
-                                        Some(&key_str_b.s)
-                                    }
-                                    _ => {
-                                        key_str_bk = key_rr.to_string();
-                                        match key_str_bk {
-                                            Some(s) => {
-                                                key_str_str = s;
-                                                Some(&key_str_str)
-                                            }
-                                            _ => None,
-                                        }
-                                    }
-                                };
+                                let key_str_opt: Option<&str>;
+                                to_str!(key_rr, key_str_opt);
                                 map.insert(key_str_opt.unwrap().to_string(), value_rr);
                             }
                             self.stack.push(Value::Hash(Rc::new(RefCell::new(map))));
@@ -1510,28 +1435,8 @@ impl VM {
                     }
 
                     let error_rr = self.stack.pop().unwrap();
-
-                    let error_str_s;
-                    let error_str_b;
-                    let error_str_str;
-                    let error_str_bk: Option<String>;
-                    let error_str_opt: Option<&str> = match error_rr {
-                        Value::String(sp) => {
-                            error_str_s = sp;
-                            error_str_b = error_str_s.borrow();
-                            Some(&error_str_b.s)
-                        }
-                        _ => {
-                            error_str_bk = error_rr.to_string();
-                            match error_str_bk {
-                                Some(s) => {
-                                    error_str_str = s;
-                                    Some(&error_str_str)
-                                }
-                                _ => None,
-                            }
-                        }
-                    };
+                    let error_str_opt: Option<&str>;
+                    to_str!(error_rr, error_str_opt);
 
                     match error_str_opt {
                         Some(s) => {

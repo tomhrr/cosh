@@ -116,27 +116,9 @@ impl VM {
             let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - capture_num);
             match capture_el_rr_opt {
                 Some(capture_el_rr) => {
-                    let capture_el_str_s;
-                    let capture_el_str_b;
-                    let capture_el_str_str;
-                    let capture_el_str_bk: Option<String>;
-                    let capture_el_str_opt: Option<&str> = match capture_el_rr {
-                        Value::String(sp) => {
-                            capture_el_str_s = sp;
-                            capture_el_str_b = capture_el_str_s.borrow();
-                            Some(&capture_el_str_b.s)
-                        }
-                        _ => {
-                            capture_el_str_bk = capture_el_rr.to_string();
-                            match capture_el_str_bk {
-                                Some(s) => {
-                                    capture_el_str_str = s;
-                                    Some(&capture_el_str_str)
-                                }
-                                _ => None,
-                            }
-                        }
-                    };
+                    let capture_el_str_opt: Option<&str>;
+                    to_str!(capture_el_rr, capture_el_str_opt);
+
                     match capture_el_str_opt {
                         Some(capture_el_str) => {
                             let capture_str_with_brackets = format!("\\{{{}\\}}", capture_str);
@@ -164,27 +146,8 @@ impl VM {
             }
 
             let value_rr = self.stack.pop().unwrap();
-            let value_s;
-            let value_b;
-            let value_str;
-            let value_bk: Option<String>;
-            let value_opt: Option<&str> = match value_rr {
-                Value::String(sp) => {
-                    value_s = sp;
-                    value_b = value_s.borrow();
-                    Some(&value_b.s)
-                }
-                _ => {
-                    value_bk = value_rr.to_string();
-                    match value_bk {
-                        Some(s) => {
-                            value_str = s;
-                            Some(&value_str)
-                        }
-                        _ => None,
-                    }
-                }
-            };
+	    let value_opt: Option<&str>;
+	    to_str!(value_rr, value_opt);
 
             match value_opt {
                 Some(s) => {
@@ -368,27 +331,8 @@ impl VM {
                                         }
                                         _ => {}
                                     }
-                                    let element_s;
-                                    let element_b;
-                                    let element_str;
-                                    let element_bk: Option<String>;
-                                    let element_str_opt: Option<&str> = match element_rr {
-                                        Value::String(sp) => {
-                                            element_s = sp;
-                                            element_b = element_s.borrow();
-                                            Some(&element_b.s)
-                                        }
-                                        _ => {
-                                            element_bk = element_rr.to_string();
-                                            match element_bk {
-                                                Some(s) => {
-                                                    element_str = s;
-                                                    Some(&element_str)
-                                                }
-                                                _ => None,
-                                            }
-                                        }
-                                    };
+				    let element_str_opt: Option<&str>;
+				    to_str!(element_rr, element_str_opt);
 
                                     match element_str_opt {
                                         Some(s) => {

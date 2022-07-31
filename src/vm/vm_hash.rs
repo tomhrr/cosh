@@ -15,27 +15,8 @@ impl VM {
         }
 
         let key_str_rr = self.stack.pop().unwrap();
-        let key_str_s;
-        let key_str_b;
-        let key_str_str;
-        let key_str_bk: Option<String>;
-        let key_str_opt: Option<&str> = match key_str_rr {
-            Value::String(sp) => {
-                key_str_s = sp;
-                key_str_b = key_str_s.borrow();
-                Some(&key_str_b.s)
-            }
-            _ => {
-                key_str_bk = key_str_rr.to_string();
-                match key_str_bk {
-                    Some(s) => {
-                        key_str_str = s;
-                        Some(&key_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let key_str_opt: Option<&str>;
+	to_str!(key_str_rr, key_str_opt);
 
         let hash_rr = self.stack.pop().unwrap();
 
@@ -76,27 +57,8 @@ impl VM {
         let val_rr = self.stack.pop().unwrap();
 
         let key_str_rr = self.stack.pop().unwrap();
-        let key_str_s;
-        let key_str_b;
-        let key_str_str;
-        let key_str_bk: Option<String>;
-        let key_str_opt: Option<&str> = match key_str_rr {
-            Value::String(sp) => {
-                key_str_s = sp;
-                key_str_b = key_str_s.borrow();
-                Some(&key_str_b.s)
-            }
-            _ => {
-                key_str_bk = key_str_rr.to_string();
-                match key_str_bk {
-                    Some(s) => {
-                        key_str_str = s;
-                        Some(&key_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let key_str_opt: Option<&str>;
+	to_str!(key_str_rr, key_str_opt);
 
         let mut hash_rr = self.stack.pop().unwrap();
 

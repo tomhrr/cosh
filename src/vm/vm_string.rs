@@ -19,49 +19,10 @@ impl VM {
         let v1 = self.stack.pop().unwrap();
         let v2 = self.stack.pop().unwrap();
 
-        let v1_str_s;
-        let v1_str_b;
-        let v1_str_str;
-        let v1_str_bk: Option<String>;
-        let v1_str_opt: Option<&str> = match v1 {
-            Value::String(sp) => {
-                v1_str_s = sp;
-                v1_str_b = v1_str_s.borrow();
-                Some(&v1_str_b.s)
-            }
-            _ => {
-                v1_str_bk = v1.to_string();
-                match v1_str_bk {
-                    Some(s) => {
-                        v1_str_str = s;
-                        Some(&v1_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
-
-        let v2_str_s;
-        let v2_str_b;
-        let v2_str_str;
-        let v2_str_bk: Option<String>;
-        let v2_str_opt: Option<&str> = match v2 {
-            Value::String(sp) => {
-                v2_str_s = sp;
-                v2_str_b = v2_str_s.borrow();
-                Some(&v2_str_b.s)
-            }
-            _ => {
-                v2_str_bk = v2.to_string();
-                match v2_str_bk {
-                    Some(s) => {
-                        v2_str_str = s;
-                        Some(&v2_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let v1_str_opt: Option<&str>;
+	to_str!(v1, v1_str_opt);
+	let v2_str_opt: Option<&str>;
+	to_str!(v2, v2_str_opt);
 
         match (v1_str_opt, v2_str_opt) {
             (Some(s1), Some(s2)) => {
@@ -133,27 +94,8 @@ impl VM {
             }
         };
 
-        let list_str_s;
-        let list_str_b;
-        let list_str_str;
-        let list_str_bk: Option<String>;
-        let list_str_opt: Option<&str> = match list_str_rr {
-            Value::String(sp) => {
-                list_str_s = sp;
-                list_str_b = list_str_s.borrow();
-                Some(&list_str_b.s)
-            }
-            _ => {
-                list_str_bk = list_str_rr.to_string();
-                match list_str_bk {
-                    Some(s) => {
-                        list_str_str = s;
-                        Some(&list_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let list_str_opt: Option<&str>;
+	to_str!(list_str_rr, list_str_opt);
 
         match (regex_opt, list_str_opt) {
             (Some(regex), Some(list_str)) => {
@@ -194,49 +136,11 @@ impl VM {
         let separator_rr = self.stack.pop().unwrap();
         let list_str_rr = self.stack.pop().unwrap();
 
-        let separator_s;
-        let separator_b;
-        let separator_str;
-        let separator_bk: Option<String>;
-        let separator_opt: Option<&str> = match separator_rr {
-            Value::String(sp) => {
-                separator_s = sp;
-                separator_b = separator_s.borrow();
-                Some(&separator_b.s)
-            }
-            _ => {
-                separator_bk = separator_rr.to_string();
-                match separator_bk {
-                    Some(s) => {
-                        separator_str = s;
-                        Some(&separator_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let separator_opt: Option<&str>;
+	to_str!(separator_rr, separator_opt);
 
-        let list_str_s;
-        let list_str_b;
-        let list_str_str;
-        let list_str_bk: Option<String>;
-        let list_str_opt: Option<&str> = match list_str_rr {
-            Value::String(sp) => {
-                list_str_s = sp;
-                list_str_b = list_str_s.borrow();
-                Some(&list_str_b.s)
-            }
-            _ => {
-                list_str_bk = list_str_rr.to_string();
-                match list_str_bk {
-                    Some(s) => {
-                        list_str_str = s;
-                        Some(&list_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let list_str_opt: Option<&str>;
+	to_str!(list_str_rr, list_str_opt);
 
         match (separator_opt, list_str_opt) {
             (Some(separator), Some(list_str)) => {
@@ -326,27 +230,8 @@ impl VM {
         }
 
         let separator_rr = self.stack.pop().unwrap();
-        let separator_s;
-        let separator_b;
-        let separator_str;
-        let separator_bk: Option<String>;
-        let separator_opt: Option<&str> = match separator_rr {
-            Value::String(sp) => {
-                separator_s = sp;
-                separator_b = separator_s.borrow();
-                Some(&separator_b.s)
-            }
-            _ => {
-                separator_bk = separator_rr.to_string();
-                match separator_bk {
-                    Some(s) => {
-                        separator_str = s;
-                        Some(&separator_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let separator_opt: Option<&str>;
+	to_str!(separator_rr, separator_opt);
 
         let esc_quotes = Regex::new(r#"""#).unwrap();
 

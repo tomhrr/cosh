@@ -545,49 +545,11 @@ impl VM {
                     _ => {}
                 }
 
-                let i1_str_s;
-                let i1_str_b;
-                let i1_str_str;
-                let i1_str_bk: Option<String>;
-                let i1_str_opt: Option<&str> = match v1 {
-                    Value::String(sp) => {
-                        i1_str_s = sp;
-                        i1_str_b = i1_str_s.borrow();
-                        Some(&i1_str_b.s)
-                    }
-                    _ => {
-                        i1_str_bk = v1.to_string();
-                        match i1_str_bk {
-                            Some(s) => {
-                                i1_str_str = s;
-                                Some(&i1_str_str)
-                            }
-                            _ => None,
-                        }
-                    }
-                };
-
-                let i2_str_s;
-                let i2_str_b;
-                let i2_str_str;
-                let i2_str_bk: Option<String>;
-                let i2_str_opt: Option<&str> = match v2 {
-                    Value::String(sp) => {
-                        i2_str_s = sp;
-                        i2_str_b = i2_str_s.borrow();
-                        Some(&i2_str_b.s)
-                    }
-                    _ => {
-                        i2_str_bk = v2.to_string();
-                        match i2_str_bk {
-                            Some(s) => {
-                                i2_str_str = s;
-                                Some(&i2_str_str)
-                            }
-                            _ => None,
-                        }
-                    }
-                };
+                let i1_str_opt: Option<&str>;
+                to_str!(v1, i1_str_opt);
+                
+                let i2_str_opt: Option<&str>;
+                to_str!(v2, i2_str_opt);
 
                 match (i1_str_opt, i2_str_opt) {
                     (Some(n1), Some(n2)) => {
@@ -692,49 +654,11 @@ impl VM {
                     _ => {}
                 }
 
-                let i1_str_s;
-                let i1_str_b;
-                let i1_str_str;
-                let i1_str_bk: Option<String>;
-                let i1_str_opt: Option<&str> = match v1 {
-                    Value::String(sp) => {
-                        i1_str_s = sp;
-                        i1_str_b = i1_str_s.borrow();
-                        Some(&i1_str_b.s)
-                    }
-                    _ => {
-                        i1_str_bk = v1.to_string();
-                        match i1_str_bk {
-                            Some(s) => {
-                                i1_str_str = s;
-                                Some(&i1_str_str)
-                            }
-                            _ => None,
-                        }
-                    }
-                };
-
-                let i2_str_s;
-                let i2_str_b;
-                let i2_str_str;
-                let i2_str_bk: Option<String>;
-                let i2_str_opt: Option<&str> = match v2 {
-                    Value::String(sp) => {
-                        i2_str_s = sp;
-                        i2_str_b = i2_str_s.borrow();
-                        Some(&i2_str_b.s)
-                    }
-                    _ => {
-                        i2_str_bk = v2.to_string();
-                        match i2_str_bk {
-                            Some(s) => {
-                                i2_str_str = s;
-                                Some(&i2_str_str)
-                            }
-                            _ => None,
-                        }
-                    }
-                };
+                let i1_str_opt: Option<&str>;
+                to_str!(v1, i1_str_opt);
+                
+                let i2_str_opt: Option<&str>;
+                to_str!(v2, i2_str_opt);
 
                 match (i1_str_opt, i2_str_opt) {
                     (Some(n1), Some(n2)) => {
@@ -838,49 +762,12 @@ impl VM {
                     }
                     _ => {}
                 }
-                let i1_str_s;
-                let i1_str_b;
-                let i1_str_str;
-                let i1_str_bk: Option<String>;
-                let i1_str_opt: Option<&str> = match v1 {
-                    Value::String(sp) => {
-                        i1_str_s = sp;
-                        i1_str_b = i1_str_s.borrow();
-                        Some(&i1_str_b.s)
-                    }
-                    _ => {
-                        i1_str_bk = v1.to_string();
-                        match i1_str_bk {
-                            Some(s) => {
-                                i1_str_str = s;
-                                Some(&i1_str_str)
-                            }
-                            _ => None,
-                        }
-                    }
-                };
 
-                let i2_str_s;
-                let i2_str_b;
-                let i2_str_str;
-                let i2_str_bk: Option<String>;
-                let i2_str_opt: Option<&str> = match v2 {
-                    Value::String(sp) => {
-                        i2_str_s = sp;
-                        i2_str_b = i2_str_s.borrow();
-                        Some(&i2_str_b.s)
-                    }
-                    _ => {
-                        i2_str_bk = v2.to_string();
-                        match i2_str_bk {
-                            Some(s) => {
-                                i2_str_str = s;
-                                Some(&i2_str_str)
-                            }
-                            _ => None,
-                        }
-                    }
-                };
+                let i1_str_opt: Option<&str>;
+                to_str!(v1, i1_str_opt);
+                
+                let i2_str_opt: Option<&str>;
+                to_str!(v2, i2_str_opt);
 
                 match (i1_str_opt, i2_str_opt) {
                     (Some(n1), Some(n2)) => {

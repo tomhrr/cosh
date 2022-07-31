@@ -891,6 +891,32 @@ impl Chunk {
     }
 }
 
+macro_rules! to_str {
+    ($val:expr, $var:expr) => {
+        let lib_str_s;
+        let lib_str_b;
+        let lib_str_str;
+        let lib_str_bk: Option<String>;
+        $var = match $val {
+            Value::String(sp) => {
+                lib_str_s = sp;
+                lib_str_b = lib_str_s.borrow();
+                Some(&lib_str_b.s)
+            }
+            _ => {
+                lib_str_bk = $val.to_string();
+                match lib_str_bk {
+                    Some(s) => {
+                        lib_str_str = s;
+                        Some(&lib_str_str)
+                    }
+                    _ => None,
+                }
+            }
+        }
+    }
+}
+
 impl Value {
     /// Convert the current value into a string.  Not intended for use
     /// with Value::String.

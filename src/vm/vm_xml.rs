@@ -95,27 +95,8 @@ fn convert_to_xml(v: &Value) -> Option<String> {
                             .borrow()
                             .iter()
                             .map(|(key, value_rr)| {
-                                let value_str_s;
-                                let value_str_b;
-                                let value_str_str;
-                                let value_str_bk: Option<String>;
-                                let value_str_opt: Option<&str> = match value_rr {
-                                    Value::String(sp) => {
-                                        value_str_s = sp;
-                                        value_str_b = value_str_s.borrow();
-                                        Some(&value_str_b.s)
-                                    }
-                                    _ => {
-                                        value_str_bk = value_rr.to_string();
-                                        match value_str_bk {
-                                            Some(s) => {
-                                                value_str_str = s;
-                                                Some(&value_str_str)
-                                            }
-                                            _ => None,
-                                        }
-                                    }
-                                };
+				let value_str_opt: Option<&str>;
+				to_str!(value_rr, value_str_opt);
 
                                 match value_str_opt {
                                     Some(s) => {
@@ -199,27 +180,8 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let value_s;
-        let value_b;
-        let value_str;
-        let value_bk: Option<String>;
-        let value_opt: Option<&str> = match value_rr {
-            Value::String(sp) => {
-                value_s = sp;
-                value_b = value_s.borrow();
-                Some(&value_b.s)
-            }
-            _ => {
-                value_bk = value_rr.to_string();
-                match value_bk {
-                    Some(s) => {
-                        value_str = s;
-                        Some(&value_str)
-                    }
-                    _ => None,
-                }
-            }
-        };
+	let value_opt: Option<&str>;
+	to_str!(value_rr, value_opt);
 
         match value_opt {
             Some(s) => {

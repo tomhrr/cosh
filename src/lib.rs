@@ -13,6 +13,7 @@ extern crate termion;
 extern crate utime;
 extern crate xml;
 
+#[macro_use]
 pub mod chunk;
 pub mod compiler;
 mod opcode;

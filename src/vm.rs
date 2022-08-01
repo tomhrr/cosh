@@ -473,6 +473,7 @@ impl VM {
                 }
             }
             _ => {
+                self.print_error("regex must be a string");
                 return None;
             }
         }

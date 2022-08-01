@@ -401,74 +401,90 @@ impl VM {
         }
     }
 
-    pub fn call_named_function<'a>(
+    pub fn call_generator(
+        &mut self,
+        call_chunk: Rc<RefCell<Chunk>>
+    ) -> bool {
+        let mut gen_args = Vec::new();
+        let req_arg_count = call_chunk.borrow().req_arg_count;
+        if self.stack.len() < req_arg_count.try_into().unwrap() {
+            let err_str = format!(
+                "generator requires {} argument{}",
+                req_arg_count,
+                if req_arg_count > 1 { "s" } else { "" }
+            );
+            self.print_error(&err_str);
+            return false;
+        }
+        let mut arg_count = call_chunk.borrow().arg_count;
+        if arg_count != 0 {
+            while arg_count > 0 && self.stack.len() > 0 {
+                gen_args.push(self.stack.pop().unwrap());
+                arg_count = arg_count - 1;
+            }
+        }
+        if gen_args.len() == 0 {
+            gen_args.push(Value::Null);
+        }
+        let mut gen_call_stack_chunks = Vec::new();
+        for i in self.call_stack_chunks.iter() {
+            gen_call_stack_chunks.push((*i).clone());
+        }
+        gen_call_stack_chunks.push((self.chunk.clone(), self.i));
+        let gen_rr = Value::Generator(Rc::new(RefCell::new(GeneratorObject::new(
+            Rc::new(RefCell::new(HashMap::new())),
+            Rc::new(RefCell::new(Vec::new())),
+            0,
+            call_chunk,
+            gen_call_stack_chunks,
+            gen_args
+        ))));
+        self.stack.push(gen_rr);
+        return true;
+    }
+
+    pub fn call_non_generator(
+        &mut self,
+        plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
+        call_chunk: Rc<RefCell<Chunk>>
+    ) -> bool {
+        if call_chunk.borrow().has_vars {
+            self.scopes.push(Rc::new(RefCell::new(HashMap::new())));
+        }
+
+        let mut prev_stack = None;
+        let has_plvs_stack = !plvs_stack.is_none();
+        if has_plvs_stack {
+            self.local_var_stack = plvs_stack.unwrap();
+        } else if !call_chunk.borrow().nested {
+            prev_stack = Some(self.local_var_stack.clone());
+            self.local_var_stack = Rc::new(RefCell::new(vec![]));
+        }
+
+        let res = self.run(
+            call_chunk.clone(),
+        );
+
+        if !has_plvs_stack && !call_chunk.borrow().nested {
+            self.local_var_stack = prev_stack.unwrap();
+        }
+
+        if res == 0 {
+            return false;
+        }
+        return true;
+    }
+
+    pub fn call_named_function(
         &mut self,
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         call_chunk: Rc<RefCell<Chunk>>,
     ) -> bool {
         if call_chunk.borrow().is_generator {
-            let mut gen_args = Vec::new();
-            let req_arg_count = call_chunk.borrow().req_arg_count;
-            if self.stack.len() < req_arg_count.try_into().unwrap() {
-                let err_str = format!(
-                    "generator requires {} argument{}",
-                    req_arg_count,
-                    if req_arg_count > 1 { "s" } else { "" }
-                );
-                self.print_error(&err_str);
-                return false;
-            }
-            let mut arg_count = call_chunk.borrow().arg_count;
-            if arg_count != 0 {
-                while arg_count > 0 && self.stack.len() > 0 {
-                    gen_args.push(self.stack.pop().unwrap());
-                    arg_count = arg_count - 1;
-                }
-            }
-            if gen_args.len() == 0 {
-                gen_args.push(Value::Null);
-            }
-            let mut gen_call_stack_chunks = Vec::new();
-            for i in self.call_stack_chunks.iter() {
-                gen_call_stack_chunks.push((*i).clone());
-            }
-            gen_call_stack_chunks.push((self.chunk.clone(), self.i));
-            let gen_rr = Value::Generator(Rc::new(RefCell::new(GeneratorObject::new(
-                Rc::new(RefCell::new(HashMap::new())),
-                Rc::new(RefCell::new(Vec::new())),
-                0,
-                call_chunk,
-                gen_call_stack_chunks,
-                gen_args
-            ))));
-            self.stack.push(gen_rr);
+            return self.call_generator(call_chunk);
         } else {
-            if call_chunk.borrow().has_vars {
-                self.scopes.push(Rc::new(RefCell::new(HashMap::new())));
-            }
-
-            let mut prev_stack = None;
-            let has_plvs_stack = !plvs_stack.is_none();
-            if has_plvs_stack {
-                self.local_var_stack = plvs_stack.unwrap();
-            } else if !call_chunk.borrow().nested {
-                prev_stack = Some(self.local_var_stack.clone());
-                self.local_var_stack = Rc::new(RefCell::new(vec![]));
-            }
-
-            let res = self.run(
-                call_chunk.clone(),
-            );
-
-            if !has_plvs_stack && !call_chunk.borrow().nested {
-                self.local_var_stack = prev_stack.unwrap();
-            }
-
-            if res == 0 {
-                return false;
-            }
+            return self.call_non_generator(plvs_stack, call_chunk);
         }
-        return true;
     }
 
     pub fn string_to_callable(
@@ -558,6 +574,46 @@ impl VM {
         return true;
     }
 
+    pub fn populate_constant_value(
+        &mut self,
+        function_str: &str,
+        function_str_index: i32
+    ) {
+        let not_present;
+        {
+            let cfb = &self.chunk.borrow().constant_values;
+            let cv = cfb.get(function_str_index as usize);
+            match cv {
+                Some(Value::Null) | None => {
+                    not_present = true;
+                }
+                _ => {
+                    not_present = false;
+                }
+            }
+        }
+        if not_present {
+            let sv = self.string_to_callable(
+                function_str
+            );
+            match sv {
+                Some(v) => {
+                    self
+                        .chunk
+                        .borrow_mut()
+                        .constant_values
+                        .resize(function_str_index as usize, Value::Null);
+                    self
+                        .chunk
+                        .borrow_mut()
+                        .constant_values
+                        .insert(function_str_index as usize, v);
+                }
+                _ => {}
+            }
+        }
+    }
+
     /// Takes the set of scopes, the global functions, the call stack
     /// chunks, the current chunk, the values for the current chunk,
     /// the instruction index, the opcode for the call that is being
@@ -568,12 +624,10 @@ impl VM {
     /// number, and the running flag as its arguments.  Calls the
     /// function (per the value for the function that is being
     /// called).
-    pub fn call<'a>(
+    pub fn call(
         &mut self,
         call_opcode: OpCode,
-        function_rr: Option<Value>,
-        function_str: Option<&str>,
-        function_str_index: i32,
+        function_rr: Value,
     ) -> bool {
         // Determine whether the function has been called implicitly.
         let is_implicit;
@@ -590,69 +644,7 @@ impl VM {
             }
         }
 
-        let mut cv = Value::Null;
-        match function_str {
-            Some(s) => {
-                if function_str_index > -1 {
-                    if self.debug {
-                        eprintln!("function str is {:?}", s);
-                        eprintln!("function str index is {:?}", function_str_index);
-                    }
-                    /* todo: the two lookups here may be affecting
-                     * performance. */
-                    let not_present;
-                    {
-                        let cfb = &self.chunk.borrow().constant_values;
-                        let cv = cfb.get(function_str_index as usize);
-                        match cv {
-                            Some(Value::Null) | None => {
-                                not_present = true;
-                            }
-                            _ => {
-                                not_present = false;
-                            }
-                        }
-                    }
-                    if not_present {
-                        let sv = self.string_to_callable(
-                            s
-                        );
-                        match sv {
-                            Some(v) => {
-                                self
-                                    .chunk
-                                    .borrow_mut()
-                                    .constant_values
-                                    .resize(function_str_index as usize, Value::Null);
-                                self
-                                    .chunk
-                                    .borrow_mut()
-                                    .constant_values
-                                    .insert(function_str_index as usize, v);
-                            }
-                            _ => {}
-                        }
-                    }
-
-                    cv = self.chunk.borrow().get_constant_value(function_str_index);
-                }
-                match cv {
-                    Value::Null => {
-                        return self.call_string(
-                            None,
-                            is_implicit,
-                            s,
-                        );
-                    }
-                    _ => {}
-                }
-            }
-            _ => {
-                cv = function_rr.unwrap();
-            }
-        }
-
-        match cv {
+        match function_rr {
             Value::Command(s) => {
                 let i2 = self.core_command(&s.borrow());
                 if i2 == 0 {
@@ -686,9 +678,6 @@ impl VM {
             }
             Value::String(sp) => {
                 let s = &sp.borrow().s;
-                if self.debug {
-                    eprintln!("instantiating new chunk functions for string: {}", s);
-                }
                 return self.call_string(
                     None,
                     is_implicit,
@@ -697,7 +686,7 @@ impl VM {
             }
             _ => {
                 if is_implicit {
-                    self.stack.push(cv.clone());
+                    self.stack.push(function_rr.clone());
                 } else {
                     self.print_error("function not found");
                     return false;
@@ -734,7 +723,7 @@ impl VM {
     /// current line and column number as its arguments.  Runs the
     /// code from the chunk, beginning at the specified instruction
     /// index.
-    pub fn run_inner<'a>(
+    pub fn run_inner(
         &mut self,
     ) -> usize {
         let mut i = self.i;
@@ -1091,15 +1080,35 @@ impl VM {
 
                     let value_sd = chunk.borrow().constants[i2 as usize].clone();
                     match value_sd {
-                        ValueSD::String(ref sp) => {
+                        ValueSD::String(sp) => {
                             self.i = i;
-                            let res = self.call(
-                                op,
-                                None,
-                                Some(sp),
-                                (i2 as u32).try_into().unwrap(),
-                            );
 
+			    /* todo: the two lookups here may be affecting
+			     * performance. */
+                            let fsi = (i2 as u32).try_into().unwrap();
+			    self.populate_constant_value(&sp, fsi);
+			    let cv = self.chunk.borrow().get_constant_value(fsi);
+			    match cv {
+				Value::Null => {
+				    match op {
+                                        OpCode::CallImplicitConstant => {
+                                            let value_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
+                                                sp.to_string(),
+                                                None,
+                                            ))));
+                                            self.stack.push(value_rr);
+                                            continue;
+                                        }
+                                        _ => {
+                                            self.print_error("function not found");
+                                            return 0;
+                                        }
+                                    }
+				}
+				_ => {}
+			    }
+
+                            let res = self.call(op, cv);
                             if !res {
                                 return 0;
                             }
@@ -1118,13 +1127,7 @@ impl VM {
 
                     let function_rr = self.stack.pop().unwrap();
 
-                    let res = self.call(
-                        op,
-                        Some(function_rr),
-                        None,
-                        -1,
-                    );
-
+                    let res = self.call(op, function_rr);
                     if !res {
                         return 0;
                     }
@@ -1139,13 +1142,7 @@ impl VM {
                         .index(var_index as usize)
                         .clone();
 
-                    let res = self.call(
-                        OpCode::Call,
-                        Some(function_rr),
-                        None,
-                        -1,
-                    );
-
+                    let res = self.call(OpCode::Call, function_rr);
                     if !res {
                         return 0;
                     }

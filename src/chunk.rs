@@ -63,11 +63,11 @@ pub struct Chunk {
 #[derive(Debug, Clone)]
 pub struct StringPair {
     pub s: String,
-    pub r: Option<Regex>,
+    pub r: Option<Rc<Regex>>,
 }
 
 impl StringPair {
-    pub fn new(s: String, r: Option<Regex>) -> StringPair {
+    pub fn new(s: String, r: Option<Rc<Regex>>) -> StringPair {
         StringPair { s: s, r: r }
     }
 }
@@ -1014,49 +1014,5 @@ impl Value {
             Value::Null => Some(0.0),
             _ => None,
         }
-    }
-
-    /// For a string value, generate the corresponding regex for the
-    /// string value and store it in the value.  If called on a
-    /// non-string value, this will abort the current process.
-    pub fn gen_regex(&mut self) -> bool {
-        match self {
-            Value::String(sp) => {
-                match sp.borrow().r {
-                    None => {}
-                    _ => {
-                        return true;
-                    }
-                }
-            },
-            _ => {
-                eprintln!("unable to make regex from non-string!");
-                std::process::abort();
-            }
-        }
-        match self {
-            Value::String(sp) => {
-                let regex_res = Regex::new(&sp.borrow().s);
-                match regex_res {
-                    Ok(regex) => {
-                        sp.borrow_mut().r = Some(regex.clone());
-                        return true;
-                    }
-                    Err(e) => {
-                        let mut err_str = format!("{}", e);
-                        let regex_nl = Regex::new("\n").unwrap();
-                        err_str = regex_nl.replace_all(&err_str, "").to_string();
-                        let regex_errpart = Regex::new(".*error:\\s*").unwrap();
-                        err_str = regex_errpart.replace(&err_str, "").to_string();
-                        err_str = format!("invalid regex: {}", err_str);
-                        //print_error(chunk, i, &err_str);
-                        eprintln!("{}", err_str);
-                        return false;
-                    }
-                }
-            }
-            _ => {}
-        }
-        return true;
     }
 }

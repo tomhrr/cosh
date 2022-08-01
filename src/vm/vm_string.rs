@@ -54,45 +54,11 @@ impl VM {
         }
 
         let regex_rr = self.stack.pop().unwrap();
-        let list_str_rr = self.stack.pop().unwrap();
-
-        let regex_str_rr_opt = VM::to_string_value(regex_rr);
-        if regex_str_rr_opt.is_none() {
-            self.print_error("regex must be a string");
+        let regex_opt = self.gen_regex(regex_rr);
+        if regex_opt.is_none() {
             return 0;
         }
-        let mut regex_str_rr = regex_str_rr_opt.unwrap();
-
-        {
-            let res = regex_str_rr.gen_regex();
-            if !res {
-                return 0;
-            }
-        }
-
-        let regex_s;
-        let regex_b;
-        let regex_rb;
-        let regex_opt: Option<&Regex> = match regex_str_rr {
-            Value::String(sp) => {
-                regex_s = sp;
-                regex_b = regex_s.borrow();
-                match regex_b.r {
-                    Some(ref rb) => {
-                        regex_rb = rb;
-                        Some(regex_rb)
-                    }
-                    None => {
-                        eprintln!("gen_regex must be called before to_regex!");
-                        std::process::abort();
-                    }
-                }
-            }
-            _ => {
-                eprintln!("gen_regex must be called before to_regex!");
-                std::process::abort();
-            }
-        };
+        let list_str_rr = self.stack.pop().unwrap();
 
 	let list_str_opt: Option<&str>;
 	to_str!(list_str_rr, list_str_opt);

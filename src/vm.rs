@@ -12,6 +12,7 @@ use std::sync::Arc;
 
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
+use regex::Regex;
 use sysinfo::{System, SystemExt};
 
 use chunk::{
@@ -64,6 +65,7 @@ pub struct VM {
     pub call_stack_chunks: Vec<(Rc<RefCell<Chunk>>, usize)>,
     // A flag for interrupting execution.
     pub running: Arc<AtomicBool>,
+    pub regexes: HashMap<String, Rc<Regex>>,
     // A System object, for getting process information.
     sys: System,
 }
@@ -264,6 +266,7 @@ impl VM {
                 Rc::new(RefCell::new(Chunk::new_standard("unused".to_string()))),
             i: 0,
             sys: System::new(),
+            regexes: HashMap::new(),
         }
     }
 
@@ -397,6 +400,80 @@ impl VM {
                     None,
                 ))))),
                 _ => None,
+            }
+        }
+    }
+
+    pub fn str_to_regex(&self, s: &str) -> Option<Regex> {
+        let regex_res = Regex::new(s);
+        match regex_res {
+            Ok(regex) => {
+                return Some(regex);
+            }
+            Err(e) => {
+                let mut err_str = format!("{}", e);
+                let regex_nl = Regex::new("\n").unwrap();
+                err_str = regex_nl.replace_all(&err_str, "").to_string();
+                let regex_errpart = Regex::new(".*error:\\s*").unwrap();
+                err_str = regex_errpart.replace(&err_str, "").to_string();
+                err_str = format!("invalid regex: {}", err_str);
+                self.print_error(&err_str);
+                return None;
+            }
+        }
+    }
+
+    pub fn gen_regex(&mut self, value_rr: Value) -> Option<Rc<Regex>> {
+        match value_rr {
+            Value::String(sp) => {
+                match &sp.borrow().r {
+                    Some(r) => {
+                        return Some(r.clone());
+                    }
+                    _ => {}
+                }
+                let regex_res = self.str_to_regex(&sp.borrow().s);
+                match regex_res {
+                    Some(regex) => {
+                        let rc = Rc::new(regex);
+                        sp.borrow_mut().r = Some(rc.clone());
+                        return Some(rc.clone());
+                    }
+                    _ => {
+                        return None;
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+
+        match value_opt {
+            Some(s) => {
+                let rr = self.regexes.get(s);
+                match rr {
+                    Some(r) => {
+                        return Some(r.clone());
+                    }
+                    _ => {
+                        let regex_res = self.str_to_regex(s);
+			match regex_res {
+			    Some(regex) => {
+                                let rc = Rc::new(regex);
+                                self.regexes.insert(s.to_string(), rc.clone());
+                                return Some(rc);
+			    }
+			    _ => {
+                                return None;
+			    }
+			}
+                    }
+                }
+            }
+            _ => {
+                return None;
             }
         }
     }
@@ -535,7 +612,6 @@ impl VM {
 
     pub fn call_string(
         &mut self,
-        plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
         is_implicit: bool,
         s: &str,
     ) -> bool {
@@ -552,7 +628,7 @@ impl VM {
             }
             Some(Value::NamedFunction(named_fn)) => {
                 let res = self.call_named_function(
-                    plvs_stack,
+                    None,
                     named_fn.clone(),
                 );
                 return res;
@@ -679,7 +755,6 @@ impl VM {
             Value::String(sp) => {
                 let s = &sp.borrow().s;
                 return self.call_string(
-                    None,
                     is_implicit,
                     &s,
                 );

@@ -729,7 +729,9 @@ fn generator_closure_test() {
         z var;
         20 z !;
         : q x @; z @; +; 5 +; ::
-        :~ gen 0 0 drop; begin; q; yield; 0 until; ::
+        :~ gen 0 0 drop;
+            y var; 30 y !;
+            begin; y @; q; +; y !; y @; yield; 0 until; ::
         gen;
     ::
     e; ::
@@ -739,5 +741,18 @@ dup; shift; println;
 dup; shift; println;
 dup; shift; println;
 drop;
-    ", "35\n35\n35");
+    ", "65\n100\n135");
+}
+
+#[test]
+fn anon_fn_test() {
+    basic_error_test("
+: f
+    x var;
+    10 x !;
+    [x @; 20 +;] ::
+
+f;
+funcall;
+    ", "5:6: anonymous function environment has gone out of scope");
 }

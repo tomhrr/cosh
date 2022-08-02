@@ -294,6 +294,10 @@ Anonymous functions can be used inline in these calls:
 	5
     )
 
+Anonymous functions do not close over their environment.  If an
+anonymous function is returned by a function call, then attempting to
+call that anonymous function will cause an error to occur.
+
 #### Miscellaneous list functions
 
 `any` takes a list and a function, and returns a boolean indicating

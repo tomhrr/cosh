@@ -1249,6 +1249,14 @@ impl VM {
                     i = i + 1;
                     let var_index: u8 = chunk.borrow().data[i].try_into().unwrap();
 
+                    if usize::from(var_index + 1) > self.local_var_stack.borrow().len() {
+                        /* It's not impossible this is due to some
+                         * other bug or error, but in general it
+                         * should be due to this problem. */
+                        self.print_error("anonymous function environment has gone out of scope");
+                        return 0;
+                    }
+
                     let value_rr = self
                         .local_var_stack
                         .borrow()

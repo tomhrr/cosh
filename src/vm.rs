@@ -510,7 +510,6 @@ impl VM {
         }
         gen_call_stack_chunks.push((self.chunk.clone(), self.i));
         let gen_rr = Value::Generator(Rc::new(RefCell::new(GeneratorObject::new(
-            Rc::new(RefCell::new(HashMap::new())),
             Rc::new(RefCell::new(Vec::new())),
             0,
             call_chunk,

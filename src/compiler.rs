@@ -900,6 +900,9 @@ impl Compiler {
                                                 success = true;
                                                 break;
                                             }
+                                            if i == 0 {
+                                                break;
+                                            }
                                             i = i - 1;
                                         }
                                     }
@@ -956,6 +959,9 @@ impl Compiler {
                                                 chunk.add_opcode(OpCode::GetLocalVar);
                                                 chunk.add_byte(i as u8);
                                                 success = true;
+                                                break;
+                                            }
+                                            if i == 0 {
                                                 break;
                                             }
                                             i = i - 1;

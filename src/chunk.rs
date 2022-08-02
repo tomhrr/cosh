@@ -74,8 +74,6 @@ impl StringPair {
 /// its associated state.
 #[derive(Debug, Clone)]
 pub struct GeneratorObject {
-    /// The global variable state.
-    pub global_vars: Rc<RefCell<HashMap<String, Value>>>,
     /// The local variable stack.
     pub local_vars_stack: Rc<RefCell<Vec<Value>>>,
     /// The current instruction index.
@@ -92,7 +90,6 @@ pub struct GeneratorObject {
 impl GeneratorObject {
     /// Construct a generator object.
     pub fn new(
-        global_vars: Rc<RefCell<HashMap<String, Value>>>,
         local_vars_stack: Rc<RefCell<Vec<Value>>>,
         index: usize,
         chunk: Rc<RefCell<Chunk>>,
@@ -100,7 +97,6 @@ impl GeneratorObject {
         gen_args: Vec<Value>
     ) -> GeneratorObject {
         GeneratorObject {
-            global_vars: global_vars,
             local_vars_stack: local_vars_stack,
             index: index,
             chunk: chunk,

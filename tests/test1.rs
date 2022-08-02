@@ -718,3 +718,26 @@ fn anon_fn_var_test() {
     basic_test("3 range; [drop; x var; 3 x !; x @] map;",
                "(\n    3\n    3\n    3\n)");
 }
+
+#[test]
+fn generator_closure_test() {
+    basic_test("
+: f
+    x var;
+    10 x !;
+    : e
+        z var;
+        20 z !;
+        : q x @; z @; +; 5 +; ::
+        :~ gen 0 0 drop; begin; q; yield; 0 until; ::
+        gen;
+    ::
+    e; ::
+
+f;
+dup; shift; println;
+dup; shift; println;
+dup; shift; println;
+drop;
+    ", "35\n35\n35");
+}

@@ -510,7 +510,11 @@ impl VM {
         }
         gen_call_stack_chunks.push((self.chunk.clone(), self.i));
         let gen_rr = Value::Generator(Rc::new(RefCell::new(GeneratorObject::new(
-            Rc::new(RefCell::new(Vec::new())),
+            // Get a deep copy of the current local variable stack,
+            // because a shallow copy will have all the variables
+            // popped off before the generator can be called, in some
+            // cases.
+            Rc::new(RefCell::new(self.local_var_stack.borrow().clone())),
             0,
             call_chunk,
             gen_call_stack_chunks,

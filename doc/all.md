@@ -209,6 +209,11 @@ instantiated (where `gen;` appears in the above).  When the generator
 is first iterated, the number of arguments that have been passed in is
 provided as the top value on the stack.
 
+Generators close over their environment, so it is possible e.g. to
+have a function which defines various local functions/variables,
+followed by a generator making use of those, with the function
+returning an instance of that generator when called.
+
 `take` can be used to return a certain number of elements from a
 generator object:
 

@@ -404,6 +404,9 @@ impl VM {
                     self.stack.pop();
                     return lines_to_print;
                 }
+                if self.stack.len() == 0 {
+                    break;
+                }
                 let is_null;
                 let value_rr = self.stack.pop().unwrap();
                 {

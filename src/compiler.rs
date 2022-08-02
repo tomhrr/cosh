@@ -530,8 +530,6 @@ impl Compiler {
 
         // Whether this chunk has global variables.
         let mut has_vars = false;
-        // Whether this chunk uses local variables.
-        let mut uses_local_vars = false;
 
         loop {
             let token = scanner.scan();
@@ -666,9 +664,6 @@ impl Compiler {
                     if !has_vars {
                         chunk.has_vars = false;
                     }
-                    if uses_local_vars {
-                        chunk.uses_local_vars = true;
-                    }
                     return true;
                 }
                 TokenType::LeftBracket => {
@@ -689,12 +684,7 @@ impl Compiler {
                         None,
                     ))));
                     let i = chunk.add_constant(name_str_rr);
-                    let fn_opcode = if function_chunk.uses_local_vars {
-                        OpCode::Function
-                    } else {
-                        OpCode::Constant
-                    };
-                    chunk.add_opcode(fn_opcode);
+                    chunk.add_opcode(OpCode::Function);
                     let i_upper = (i >> 8) & 0xFF;
                     let i_lower = i & 0xFF;
                     chunk.add_byte(i_upper as u8);
@@ -718,9 +708,6 @@ impl Compiler {
                     chunk.add_opcode(OpCode::EndFn);
                     if !has_vars {
                         chunk.has_vars = false;
-                    }
-                    if uses_local_vars {
-                        chunk.uses_local_vars = true;
                     }
                     return true;
                 }
@@ -908,7 +895,6 @@ impl Compiler {
                                         loop {
                                             let local = &self.locals[i];
                                             if local.name.eq(&sp.borrow().s) {
-                                                uses_local_vars = true;
                                                 chunk.add_opcode(OpCode::SetLocalVar);
                                                 chunk.add_byte(i as u8);
                                                 success = true;
@@ -967,7 +953,6 @@ impl Compiler {
                                         loop {
                                             let local = &self.locals[i];
                                             if local.name.eq(&sp.borrow().s) {
-                                                uses_local_vars = true;
                                                 chunk.add_opcode(OpCode::GetLocalVar);
                                                 chunk.add_byte(i as u8);
                                                 success = true;

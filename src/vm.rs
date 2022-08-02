@@ -533,6 +533,7 @@ impl VM {
         let mut prev_stack = None;
         let has_plvs_stack = !plvs_stack.is_none();
         if has_plvs_stack {
+            prev_stack = Some(self.local_var_stack.clone());
             self.local_var_stack = plvs_stack.unwrap();
         } else if !call_chunk.borrow().nested {
             prev_stack = Some(self.local_var_stack.clone());
@@ -543,7 +544,7 @@ impl VM {
             call_chunk.clone(),
         );
 
-        if !has_plvs_stack && !call_chunk.borrow().nested {
+        if has_plvs_stack || !call_chunk.borrow().nested {
             self.local_var_stack = prev_stack.unwrap();
         }
 

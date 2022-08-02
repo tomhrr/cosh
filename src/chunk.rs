@@ -44,8 +44,6 @@ pub struct Chunk {
     pub is_generator: bool,
     /// Whether the chunk deals with global variables.
     pub has_vars: bool,
-    /// Whether the chunk deals with local variables.
-    pub uses_local_vars: bool,
     /// The maximum argument count for a generator function
     /// (only set if is_generator is true).
     pub arg_count: i32,
@@ -290,7 +288,6 @@ impl Chunk {
             functions: HashMap::new(),
             is_generator: false,
             has_vars: true,
-            uses_local_vars: false,
             arg_count: 0,
             req_arg_count: 0,
             nested: false,
@@ -309,7 +306,6 @@ impl Chunk {
             functions: HashMap::new(),
             is_generator: true,
             has_vars: true,
-            uses_local_vars: false,
             arg_count: arg_count,
             req_arg_count: req_arg_count,
             nested: false,

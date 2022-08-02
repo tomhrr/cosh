@@ -2,7 +2,7 @@
     bm-file.txt r open;
     : dd drop; ::
     fn var;
-    dd exc; fn !;
+    dd to-function; fn !;
     fh var;
     fh !;
     begin;

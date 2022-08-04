@@ -601,6 +601,9 @@ itself).
 
 ### Miscellaneous
 
+Comments can be added by prefixing the comment with `//`.  Any content
+from that point on will be ignored.
+
 On starting the shell for interactive use, the `.coshrc` file in the
 current user's home directory will be run.
 

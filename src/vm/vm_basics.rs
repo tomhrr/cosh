@@ -116,10 +116,10 @@ impl VM {
 
         let i1_rr = self.stack.pop().unwrap();
         let is_null = match i1_rr {
-            Value::Null => 1,
-            _ => 0,
+            Value::Null => true,
+            _ => false,
         };
-        self.stack.push(Value::Int(is_null));
+        self.stack.push(Value::Bool(is_null));
         return 1;
     }
 
@@ -131,10 +131,10 @@ impl VM {
 
         let i1_rr = self.stack.last().unwrap();
         let is_null = match i1_rr {
-            &Value::Null => 1,
-            _ => 0,
+            &Value::Null => true,
+            _ => false,
         };
-        self.stack.push(Value::Int(is_null));
+        self.stack.push(Value::Bool(is_null));
         return 1;
     }
 
@@ -148,10 +148,10 @@ impl VM {
 
         let i1_rr = self.stack.pop().unwrap();
         let is_list = match i1_rr {
-            Value::List(_) => 1,
-            _ => 0,
+            Value::List(_) => true,
+            _ => false,
         };
-        self.stack.push(Value::Int(is_list));
+        self.stack.push(Value::Bool(is_list));
         return 1;
     }
 
@@ -167,14 +167,14 @@ impl VM {
 
         let i1_rr = self.stack.pop().unwrap();
         let is_callable = match i1_rr {
-            Value::AnonymousFunction(_, _) => 1,
-            Value::CoreFunction(_) => 1,
-            Value::NamedFunction(_) => 1,
+            Value::AnonymousFunction(_, _) => true,
+            Value::CoreFunction(_) => true,
+            Value::NamedFunction(_) => true,
             /* This could be better. */
-            Value::String(_) => 1,
-            _ => 0,
+            Value::String(_) => true,
+            _ => false,
         };
-        self.stack.push(Value::Int(is_callable));
+        self.stack.push(Value::Bool(is_callable));
         return 1;
     }
 
@@ -298,6 +298,19 @@ impl VM {
         if is_float {
             self.stack.push(value_rr);
         }
+        return 1;
+    }
+
+    /// Convert a value into a boolean value..
+    pub fn opcode_bool(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("bool requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let new_value = Value::Bool(value_rr.to_bool());
+        self.stack.push(new_value);
         return 1;
     }
 

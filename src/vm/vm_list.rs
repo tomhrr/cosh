@@ -483,15 +483,15 @@ impl VM {
 
         let value_rr = self.stack.pop().unwrap();
         let res = match value_rr {
-            Value::List(_) => 1,
-            Value::Generator(_) => 1,
-            Value::CommandGenerator(_) => 1,
-            Value::KeysGenerator(_) => 1,
-            Value::ValuesGenerator(_) => 1,
-            Value::EachGenerator(_) => 1,
-            _ => 0,
+            Value::List(_) => true,
+            Value::Generator(_) => true,
+            Value::CommandGenerator(_) => true,
+            Value::KeysGenerator(_) => true,
+            Value::ValuesGenerator(_) => true,
+            Value::EachGenerator(_) => true,
+            _ => false,
         };
-        self.stack.push(Value::Int(res));
+        self.stack.push(Value::Bool(res));
         return 1;
     }
 }

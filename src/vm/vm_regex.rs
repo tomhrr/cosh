@@ -33,8 +33,8 @@ impl VM {
 
         match (regex_opt, str_opt) {
             (Some(regex), Some(s)) => {
-                let res = if regex.is_match(s) { 1 } else { 0 };
-                self.stack.push(Value::Int(res));
+                let res = regex.is_match(s);
+                self.stack.push(Value::Bool(res));
             }
             (_, Some(_)) => {
                 self.print_error("first m argument must be string");

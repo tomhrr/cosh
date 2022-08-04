@@ -17,6 +17,8 @@ use opcode::OpCode;
 /// The various token types used by the compiler.
 #[derive(Debug)]
 pub enum TokenType {
+    True,
+    False,
     LeftBracket,
     RightBracket,
     LeftBrace,
@@ -428,6 +430,8 @@ impl<'a> Scanner<'a> {
             ":" => TokenType::StartFunction,
             ":~" => TokenType::StartGenerator,
             "::" => TokenType::EndFunction,
+            "#t" => TokenType::True,
+            "#f" => TokenType::False,
             _ => {
                 if ever_in_string {
                     if string_delimiter == '{' {
@@ -710,6 +714,24 @@ impl Compiler {
                         chunk.has_vars = false;
                     }
                     return true;
+                }
+                TokenType::True => {
+                    let value_rr = Value::Bool(true);
+                    let i = chunk.add_constant(value_rr);
+                    chunk.add_opcode(OpCode::Constant);
+                    let i_upper = (i >> 8) & 0xFF;
+                    let i_lower = i & 0xFF;
+                    chunk.add_byte(i_upper as u8);
+                    chunk.add_byte(i_lower as u8);
+                }
+                TokenType::False => {
+                    let value_rr = Value::Bool(false);
+                    let i = chunk.add_constant(value_rr);
+                    chunk.add_opcode(OpCode::Constant);
+                    let i_upper = (i >> 8) & 0xFF;
+                    let i_lower = i & 0xFF;
+                    chunk.add_byte(i_upper as u8);
+                    chunk.add_byte(i_lower as u8);
                 }
                 TokenType::Int(n) => {
                     let value_rr = Value::Int(n);
@@ -1267,6 +1289,8 @@ impl Compiler {
                         chunk.add_opcode(OpCode::Int);
                     } else if s == "flt" {
                         chunk.add_opcode(OpCode::Flt);
+                    } else if s == "bool" {
+                        chunk.add_opcode(OpCode::Bool);
                     } else if s == "rand" {
                         chunk.add_opcode(OpCode::Rand);
                     } else {

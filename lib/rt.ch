@@ -1,6 +1,6 @@
-: and if; if; 1 else; 0 then; else; drop; 0 then; ::
-: or if; drop; 1 else; if; 1 else; 0 then; then; ::
-: not if; 0 else; 1 then; ::
+: and if; if; #t else; #f then; else; drop; #f then; ::
+: or if; drop; #t else; if; #t else; #f then; then; ::
+: not if; #f else; #t then; ::
 
 : nip   swap; drop; ::
 : 2over over; over; ::
@@ -27,7 +27,7 @@
 	    leave;
 	then;
 	yield;
-	0 until;
+	#f until;
     drop; ::
 
 : ls
@@ -88,7 +88,7 @@
             leave;
         then;
         yield;
-        0 until; ::
+        #f until; ::
 
 : for
     depth; 2 <; if;
@@ -112,7 +112,7 @@
             leave;
         then;
         fn @; funcall;
-        0 until; ::
+        #f until; ::
 
 : f>
     depth; 2 <; if;
@@ -127,7 +127,7 @@
             leave;
         then;
         fh @; swap; writeline;
-        0 until;
+        #f until;
     fh @; close; ::
 
 : take
@@ -171,7 +171,7 @@
             leave;
         then;
         lst @; swap; push; drop;
-        0 until;
+        #f until;
     lst @; ::
 
 :~ grep-generator 2 2
@@ -195,7 +195,7 @@
         else;
             drop;
         then;
-        0 until; ::
+        #f until; ::
 
 : grep-list
     dup; is-callable; not; if;
@@ -219,7 +219,7 @@
         else;
             drop;
         then;
-        0 until;
+        #f until;
     reslst @; ::
 
 : grep
@@ -251,7 +251,7 @@
             leave;
         then;
         fn @; funcall; yield;
-        0 until; ::
+        #f until; ::
 
 : map-list
     dup; is-callable; not; if;
@@ -272,7 +272,7 @@
         then;
         fn @; funcall;
         reslst @; swap; push; drop;
-        0 until;
+        #f until;
     reslst @; ::
 
 : map
@@ -316,7 +316,7 @@
             leave;
         then;
         fn @; funcall;
-        0 until; ::
+        #f until; ::
 
 : partition
     high var; high !;
@@ -454,12 +454,12 @@
         shift;
         dup; is-null; if;
             drop;
-            0 leave;
+            #f leave;
         then;
         fn @; funcall; if;
-            1 leave;
+            #t leave;
         then;
-        0 until; ::
+        #f until; ::
 
 : all
     depth; 2 <; if;
@@ -478,12 +478,12 @@
         shift;
         dup; is-null; if;
             drop;
-            1 leave;
+            #t leave;
         then;
         fn @; funcall; not; if;
-            0 leave;
+            #f leave;
         then;
-        0 until; ::
+        #f until; ::
 
 : none
     depth; 2 <; if;
@@ -502,12 +502,12 @@
         shift;
         dup; is-null; if;
             drop;
-            1 leave;
+            #t leave;
         then;
         fn @; funcall; if;
-            0 leave;
+            #f leave;
         then;
-        0 until; ::
+        #f until; ::
 
 : notall none; ::
 
@@ -533,7 +533,7 @@
             leave;
         then;
         drop;
-        0 until; ::
+        #f until; ::
 
 : min
     depth; 1 <; if;
@@ -557,7 +557,7 @@
         else;
             drop;
         then;
-        0 until; ::
+        #f until; ::
 
 : max
     depth; 1 <; if;
@@ -581,7 +581,7 @@
         else;
             drop;
         then;
-        0 until; ::
+        #f until; ::
 
 : product
     depth; 1 <; if;
@@ -610,7 +610,7 @@
         rand-index @; temp @; nth!;
         drop;
         i @; 1 +; i !;
-        0 until; ::
+        #f until; ::
 
 :~ uniq 1 1
     drop;
@@ -630,4 +630,4 @@
         else;
             drop;
         then;
-        0 until; ::
+        #f until; ::

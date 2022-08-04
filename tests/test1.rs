@@ -323,29 +323,29 @@ fn depth_test() {
 
 #[test]
 fn le_test() {
-    basic_test("1 5 <=;", "1");
-    basic_test("1 1 <=;", "1");
-    basic_test("1 0 <=;", "0");
+    basic_test("1 5 <=;", "#t");
+    basic_test("1 1 <=;", "#t");
+    basic_test("1 0 <=;", "#f");
 }
 
 #[test]
 fn ge_test() {
-    basic_test("1 5 >=;", "0");
-    basic_test("1 1 >=;", "1");
-    basic_test("1 0 >=;", "1");
+    basic_test("1 5 >=;", "#f");
+    basic_test("1 1 >=;", "#t");
+    basic_test("1 0 >=;", "#t");
 }
 
 #[test]
 fn is_null_test() {
     basic_test(
         ":~ nullgen 0 0 drop; :: nullgen; dup; shift; is-null; nip;",
-        "1",
+        "#t",
     );
 }
 
 #[test]
 fn is_list_test() {
-    basic_test("(1 2 3) is-list;", "1");
+    basic_test("(1 2 3) is-list;", "#t");
 }
 
 #[test]
@@ -439,7 +439,7 @@ fn single_quote_test() {
 
 #[test]
 fn regex_tests() {
-    basic_test("'asdf asdf' asdf m;", "1");
+    basic_test("'asdf asdf' asdf m;", "#t");
     basic_test("'asdf asdf' asdf qwer s;", "\"qwer qwer\"");
     basic_test("'12341234' \\d\\d\\d\\d c;", "(\n    1234\n    1234\n)");
 }
@@ -649,14 +649,14 @@ fn negative_numbers() {
 
 #[test]
 fn misc_lst_fns() {
-    basic_test("(1 2 3) [3 =] any", "1");
-    basic_test("(1 2 3) [4 =] any", "0");
-    basic_test("(1 2 3) [0 >] all", "1");
-    basic_test("(1 2 3) [100 >] all", "0");
-    basic_test("(1 2 3) [0 >] none", "0");
-    basic_test("(1 2 3) [100 >] none", "1");
-    basic_test("(1 2 3) [0 >] notall", "0");
-    basic_test("(1 2 3) [100 >] notall", "1");
+    basic_test("(1 2 3) [3 =] any", "#t");
+    basic_test("(1 2 3) [4 =] any", "#f");
+    basic_test("(1 2 3) [0 >] all", "#t");
+    basic_test("(1 2 3) [100 >] all", "#f");
+    basic_test("(1 2 3) [0 >] none", "#f");
+    basic_test("(1 2 3) [100 >] none", "#t");
+    basic_test("(1 2 3) [0 >] notall", "#f");
+    basic_test("(1 2 3) [100 >] notall", "#t");
     basic_test("(1 2 3) [2 >] first", "3");
     basic_test("(1 2 3) [100 >] first", "{{Null}}");
     basic_test("4 range; dup; shift; drop; product", "6");
@@ -698,7 +698,7 @@ fn search_replace_test() {
 
 #[test]
 fn eq_test() {
-    basic_test("asdf asdf =", "1");
+    basic_test("asdf asdf =", "#t");
 }
 
 #[test]
@@ -755,4 +755,10 @@ fn anon_fn_test() {
 f;
 funcall;
     ", "5:6: anonymous function environment has gone out of scope");
+}
+
+#[test]
+fn bool_test() {
+    basic_test("#t if; 1 else; 2 then;", "1");
+    basic_test("#f if; 1 else; 2 then;", "2");
 }

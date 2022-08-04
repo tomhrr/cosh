@@ -278,7 +278,7 @@ impl VM {
         match cmd_rr {
             Value::Command(s) => {
                 let prepared_cmd_opt =
-                    self.prepare_and_split_command(&s.borrow());
+                    self.prepare_and_split_command(&s);
                 if prepared_cmd_opt.is_none() {
                     return 0;
                 }

@@ -217,7 +217,7 @@ impl VM {
                     }
                 }
                 Value::Command(s) => {
-                    let s = format!("{{{}}}", s.borrow());
+                    let s = format!("{{{}}}", s);
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -225,7 +225,7 @@ impl VM {
                     }
                 }
                 Value::CommandUncaptured(s) => {
-                    let s = format!("{{{}}}", s.borrow());
+                    let s = format!("{{{}}}", s);
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {

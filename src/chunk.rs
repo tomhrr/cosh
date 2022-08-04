@@ -140,10 +140,10 @@ pub enum Value {
     String(Rc<RefCell<StringPair>>),
     /// An external command (wrapped in curly brackets), where the
     /// output is captured.
-    Command(Rc<RefCell<String>>),
+    Command(Rc<String>),
     /// An external command (begins with $), where the output is not
     /// captured.
-    CommandUncaptured(Rc<RefCell<String>>),
+    CommandUncaptured(Rc<String>),
     /// A list.
     List(Rc<RefCell<VecDeque<Value>>>),
     /// A hash.
@@ -196,10 +196,10 @@ impl fmt::Debug for Value {
                 write!(f, "\"{}\"", ss)
             }
             Value::Command(s) => {
-                write!(f, "Command \"{}\"", s.borrow())
+                write!(f, "Command \"{}\"", s)
             }
             Value::CommandUncaptured(s) => {
-                write!(f, "CommandUncaptured \"{}\"", s.borrow())
+                write!(f, "CommandUncaptured \"{}\"", s)
             }
             Value::List(ls) => {
                 write!(f, "{:?}", ls)
@@ -326,8 +326,8 @@ impl Chunk {
             Value::Float(n) => ValueSD::Float(n),
             Value::BigInt(n) => ValueSD::BigInt(n.to_str_radix(10)),
             Value::String(sp) => ValueSD::String(sp.borrow().s.to_string()),
-            Value::Command(s) => ValueSD::Command(s.borrow().to_string()),
-            Value::CommandUncaptured(s) => ValueSD::CommandUncaptured(s.borrow().to_string()),
+            Value::Command(s) => ValueSD::Command(s.to_string()),
+            Value::CommandUncaptured(s) => ValueSD::CommandUncaptured(s.to_string()),
             Value::Bool(b) => ValueSD::Bool(b),
             _ => {
                 eprintln!("constant type cannot be added to chunk! {:?}", value_rr);
@@ -353,9 +353,9 @@ impl Chunk {
             ValueSD::String(sp) => {
                 Value::String(Rc::new(RefCell::new(StringPair::new(sp.to_string(), None))))
             }
-            ValueSD::Command(s) => Value::Command(Rc::new(RefCell::new(s.to_string()))),
+            ValueSD::Command(s) => Value::Command(Rc::new(s.to_string())),
             ValueSD::CommandUncaptured(s) => {
-                Value::CommandUncaptured(Rc::new(RefCell::new(s.to_string())))
+                Value::CommandUncaptured(Rc::new(s.to_string()))
             }
         };
         return value;

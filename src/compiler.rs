@@ -1316,7 +1316,7 @@ impl Compiler {
                 }
                 TokenType::Command(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Value::Command(Rc::new(RefCell::new(s_escaped)));
+                    let s_rr = Value::Command(Rc::new(s_escaped));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -1326,7 +1326,7 @@ impl Compiler {
                 }
                 TokenType::CommandUncaptured(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Value::CommandUncaptured(Rc::new(RefCell::new(s_escaped)));
+                    let s_rr = Value::CommandUncaptured(Rc::new(s_escaped));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -1337,7 +1337,7 @@ impl Compiler {
                 }
                 TokenType::CommandExplicit(s) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Value::Command(Rc::new(RefCell::new(s_escaped)));
+                    let s_rr = Value::Command(Rc::new(s_escaped));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;

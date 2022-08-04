@@ -729,13 +729,13 @@ impl VM {
 
         match function_rr {
             Value::Command(s) => {
-                let i2 = self.core_command(&s.borrow());
+                let i2 = self.core_command(&s);
                 if i2 == 0 {
                     return false;
                 }
             }
             Value::CommandUncaptured(s) => {
-                let i2 = self.core_command_uncaptured(&s.borrow());
+                let i2 = self.core_command_uncaptured(&s);
                 if i2 == 0 {
                     return false;
                 }

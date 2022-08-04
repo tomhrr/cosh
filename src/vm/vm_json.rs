@@ -13,8 +13,8 @@ use vm::*;
 fn convert_from_json(v: &serde_json::value::Value) -> Value {
     match &*v {
         serde_json::value::Value::Null => Value::Null,
-        serde_json::value::Value::Bool(true) => Value::Int(1),
-        serde_json::value::Value::Bool(false) => Value::Int(0),
+        serde_json::value::Value::Bool(true) => Value::Bool(true),
+        serde_json::value::Value::Bool(false) => Value::Bool(false),
         serde_json::value::Value::Number(n) => {
             if n.is_i64() {
                 let n_uw = n.as_i64().unwrap();
@@ -55,6 +55,8 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
 fn convert_to_json(v: &Value) -> String {
     match &*v {
         Value::Null => "null".to_string(),
+        Value::Bool(true) => "true".to_string(),
+        Value::Bool(false) => "false".to_string(),
         Value::Int(n) => n.to_string(),
         Value::Float(f) => f.to_string(),
         Value::String(sp) => {

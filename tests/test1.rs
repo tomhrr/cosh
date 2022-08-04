@@ -762,3 +762,9 @@ fn bool_test() {
     basic_test("#t if; 1 else; 2 then;", "1");
     basic_test("#f if; 1 else; 2 then;", "2");
 }
+
+#[test]
+fn json_bool_test() {
+    basic_test("\"[true, false]\" from-json; to-json",
+               "[true,false]");
+}

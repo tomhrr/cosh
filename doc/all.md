@@ -6,6 +6,7 @@ cosh is a concatenative command-line shell.
 
 The shell language is dynamically-typed.  The basic types are:
 
+  * `Bool`: boolean value
   * `Int`: signed integer (32-bit)
   * `BigInt`: arbitrary-precision integer
   * `Float`: double-width floating-point number
@@ -13,19 +14,20 @@ The shell language is dynamically-typed.  The basic types are:
   * `List`: a list of values
   * `Hash`: a hash map of values
 
-A number with a fractional component is interpreted as a `Float`.  A
-number without a fractional component is interpreted as an `Int`, if
-it fits within a 32-bit signed integer, and as a `BigInt` otherwise.
-A series of tokens enclosed within parentheses (`(...)`) is
-interpreted as a `List`, and a series of tokens enclosed within
-parentheses and preceded by an `h` character (`h(...)`) is interpreted
-as a `Hash`.  All other tokens are interpreted as `Strings`s.  (To
-construct a string that contains whitespace, use double-quote
-characters to delimit the string.)
+The tokens `#t` and `#f` are interpreted as true and false boolean
+values respectively.  A number with a fractional component is
+interpreted as a `Float`.  A number without a fractional component is
+interpreted as an `Int`, if it fits within a 32-bit signed integer,
+and as a `BigInt` otherwise.  A series of tokens enclosed within
+parentheses (`(...)`) is interpreted as a `List`, and a series of
+tokens enclosed within parentheses and preceded by an `h` character
+(`h(...)`) is interpreted as a `Hash`.  All other tokens are
+interpreted as `Strings`s.  (To construct a string that contains
+whitespace, use double-quote characters to delimit the string.)
 
-The forms `str`, `int`, and `flt` can be used to convert primitive
-values of one type to another type.  `int` will convert a value to a
-`BigInt` if required.
+The forms `bool`, `str`, `int`, and `flt` can be used to convert
+primitive values of one type to another type.  `int` will convert a
+value to a `BigInt` if required.
 
 ### Basic usage
 
@@ -53,14 +55,14 @@ stack has an associated definition:
     $ 1 add-1
     2
 
-Conditional execution is handled by `if`, which will evaluate to true
-for any non-zero value:
+Conditional execution is handled by `if`.  False boolean values, zero
+numeric values and the strings "", "0", and "0.0" evaluate to false,
+while all other values evaluate to true.
 
-    $ : to-bool if; 1 else; 0 then; ::
-    $ 100 to-bool
+    $ 100 if; 1 else; 2 then;
     1
-    $ 0 to-bool
-    0
+    $ "0' if; 1 else; 2 then;
+    2
 
 Variable definition and load/store operations are like so:
 
@@ -210,9 +212,9 @@ is first iterated, the number of arguments that have been passed in is
 provided as the top value on the stack.
 
 Generators close over their environment, so it is possible e.g. to
-have a function which defines various local functions/variables,
-followed by a generator making use of those, with the function
-returning an instance of that generator when called.
+have a function which defines local functions/variables, followed by a
+generator making use of those, with the function returning an instance
+of that generator when called.
 
 `take` can be used to return a certain number of elements from a
 generator object:

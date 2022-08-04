@@ -196,6 +196,7 @@ lazy_static! {
             "to-xml",
             VM::core_to_xml as fn(&mut VM) -> i32,
         );
+        map.insert("bool", VM::opcode_bool as fn(&mut VM) -> i32);
         map.insert("str", VM::opcode_str as fn(&mut VM) -> i32);
         map.insert("int", VM::opcode_int as fn(&mut VM) -> i32);
         map.insert("flt", VM::opcode_flt as fn(&mut VM) -> i32);
@@ -237,6 +238,7 @@ lazy_static! {
         vec[OpCode::Open as usize] = Some(VM::opcode_open as fn(&mut VM) -> i32);
         vec[OpCode::Readline as usize] =
             Some(VM::opcode_readline as fn(&mut VM) -> i32);
+        vec[OpCode::Bool as usize] = Some(VM::opcode_bool as fn(&mut VM) -> i32);
         vec[OpCode::Str as usize] = Some(VM::opcode_str as fn(&mut VM) -> i32);
         vec[OpCode::Int as usize] = Some(VM::opcode_int as fn(&mut VM) -> i32);
         vec[OpCode::Flt as usize] = Some(VM::opcode_flt as fn(&mut VM) -> i32);
@@ -1385,21 +1387,9 @@ impl VM {
                     let i2: usize = chunk.borrow().data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
 
-                    match value_rr {
-                        Value::String(sp) => {
-                            if sp.borrow().s == "" {
-                                i = i + jmp_len;
-                            }
-                        }
-                        Value::Int(0) => {
-                            i = i + jmp_len;
-                        }
-                        Value::Float(nf) => {
-                            if nf == 0.0 {
-                                i = i + jmp_len;
-                            }
-                        }
-                        _ => {}
+                    let b = value_rr.to_bool();
+                    if !b {
+                        i = i + jmp_len;
                     }
                 }
                 OpCode::JumpNeR => {
@@ -1416,21 +1406,9 @@ impl VM {
                     let i2: usize = chunk.borrow().data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
 
-                    match value_rr {
-                        Value::String(sp) => {
-                            if sp.borrow().s == "" {
-                                i = i - jmp_len;
-                            }
-                        }
-                        Value::Int(0) => {
-                            i = i - jmp_len;
-                        }
-                        Value::Float(nf) => {
-                            if nf == 0.0 {
-                                i = i - jmp_len;
-                            }
-                        }
-                        _ => {}
+                    let b = value_rr.to_bool();
+                    if !b {
+                        i = i - jmp_len;
                     }
                 }
                 OpCode::JumpNeREqC => {

@@ -14,6 +14,7 @@ use indexmap::IndexMap;
 use num::FromPrimitive;
 use num::ToPrimitive;
 use num_bigint::BigInt;
+use num_traits::Zero;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::ChildStdout;
@@ -125,6 +126,8 @@ impl HashWithIndex {
 pub enum Value {
     /// Used to indicate that a generator is exhausted.
     Null,
+    /// Boolean.
+    Bool(bool),
     /// 32-bit integer.
     Int(i32),
     /// Unbounded integer.
@@ -185,6 +188,9 @@ impl fmt::Debug for Value {
             Value::Float(i) => {
                 write!(f, "{}", i)
             }
+            Value::Bool(b) => {
+                write!(f, "{}", b)
+            }
             Value::String(s) => {
                 let ss = &s.borrow().s;
                 write!(f, "\"{}\"", ss)
@@ -244,6 +250,7 @@ impl fmt::Debug for Value {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ValueSD {
     Null,
+    Bool(bool),
     Int(i32),
     Float(f64),
     BigInt(String),
@@ -321,6 +328,7 @@ impl Chunk {
             Value::String(sp) => ValueSD::String(sp.borrow().s.to_string()),
             Value::Command(s) => ValueSD::Command(s.borrow().to_string()),
             Value::CommandUncaptured(s) => ValueSD::CommandUncaptured(s.borrow().to_string()),
+            Value::Bool(b) => ValueSD::Bool(b),
             _ => {
                 eprintln!("constant type cannot be added to chunk! {:?}", value_rr);
                 std::process::abort();
@@ -335,6 +343,7 @@ impl Chunk {
         let value_sd = &self.constants[i as usize];
         let value = match value_sd {
             ValueSD::Null => Value::Null,
+            ValueSD::Bool(b) => Value::Bool(*b),
             ValueSD::Int(n) => Value::Int(*n),
             ValueSD::Float(n) => Value::Float(*n),
             ValueSD::BigInt(n) => {
@@ -869,6 +878,9 @@ impl Chunk {
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_CALLIMPLICITCONSTANT {:?}", value);
                 }
+                OpCode::Bool => {
+                    println!("OP_BOOL");
+                }
                 OpCode::Unknown => {
                     println!("(Unknown)");
                 }
@@ -1005,6 +1017,27 @@ impl Value {
             }
             Value::Null => Some(0.0),
             _ => None,
+        }
+    }
+
+    pub fn to_bool(&self) -> bool {
+        match self {
+            Value::Bool(b) => *b,
+            Value::Int(0) => false,
+            Value::Float(n) => {
+                *n != 0.0
+            },
+            Value::String(sp) => {
+                let ss = &sp.borrow().s;
+                ss != ""
+                    && ss != "0"
+                    && ss != "0.0"
+            }
+            Value::BigInt(n) => {
+                *n == Zero::zero()
+            }
+            Value::Null => false,
+            _ => true
         }
     }
 }

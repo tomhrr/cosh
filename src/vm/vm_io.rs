@@ -289,14 +289,11 @@ impl VM {
                 let metadata_res = metadata(s);
                 match metadata_res {
                     Ok(metadata) => {
-                        let is_dir = match metadata.is_dir() {
-                            true => 1,
-                            false => 0,
-                        };
-                        self.stack.push(Value::Int(is_dir));
+                        let is_dir = metadata.is_dir();
+                        self.stack.push(Value::Bool(is_dir));
                     }
                     _ => {
-                        self.stack.push(Value::Int(0));
+                        self.stack.push(Value::Bool(false));
                     }
                 }
             }

@@ -1,3 +1,6 @@
+// Open a file and iterate over its contents, storing the filehandle
+// in a variable and using a pointer to a separate wrapper function for the
+// drop.
 : mfn
     bm-file.txt r open;
     : dd drop; ::

@@ -14,16 +14,21 @@ The shell language is dynamically-typed.  The basic types are:
   * `List`: a list of values
   * `Hash`: a hash map of values
 
-The tokens `#t` and `#f` are interpreted as true and false boolean
-values respectively.  A number with a fractional component is
-interpreted as a `Float`.  A number without a fractional component is
-interpreted as an `Int`, if it fits within a 32-bit signed integer,
-and as a `BigInt` otherwise.  A series of tokens enclosed within
-parentheses (`(...)`) is interpreted as a `List`, and a series of
-tokens enclosed within parentheses and preceded by an `h` character
-(`h(...)`) is interpreted as a `Hash`.  All other tokens are
-interpreted as `Strings`s.  (To construct a string that contains
-whitespace, use double-quote characters to delimit the string.)
+Interpretation is like so:
+
+  * The tokens `#t` and `#f` are interpreted as true and false boolean
+    values respectively.
+  * A number with a fractional component is interpreted as a `Float`.
+  * A number without a fractional component is interpreted as an
+    `Int`, if it fits within a 32-bit signed integer, and as a
+    `BigInt` otherwise.
+  * A series of tokens enclosed within parentheses (`(...)`) is
+    interpreted as a `List`.
+  * A series of tokens enclosed within parentheses and preceded by an
+    `h` character (`h(...)`) is interpreted as a `Hash`.
+  * All other tokens are interpreted as `Strings`s.  (To construct a
+    string that contains whitespace, use double-quote characters to
+    delimit the string.)
 
 The forms `bool`, `str`, `int`, and `flt` can be used to convert
 primitive values of one type to another type.  `int` will convert a
@@ -598,3 +603,7 @@ itself).
 
 On starting the shell for interactive use, the `.coshrc` file in the
 current user's home directory will be run.
+
+#### Development
+
+ * [Benchmarking](./benchmarking.md)

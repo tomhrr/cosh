@@ -1179,6 +1179,7 @@ impl VM {
                                                 None,
                                             ))));
                                             self.stack.push(value_rr);
+                                            i = i + 1;
                                             continue;
                                         }
                                         _ => {

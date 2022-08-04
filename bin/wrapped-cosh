@@ -2,6 +2,6 @@
 # This wrapper script exists so that abort-type error messages can be
 # seen before the window closes, in situations where the shell is not
 # being run within some other shell.
-/usr/local/bin/_cosh;
+/usr/local/bin/cosh;
 echo "Press enter to continue";
 read UNUSED;

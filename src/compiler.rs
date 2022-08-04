@@ -45,6 +45,9 @@ pub enum TokenType {
     /// The EndList token doubles as the terminating token for a hash,
     /// which is why there is no EndHash token.
     EndList,
+    /// A dummy token that indicates that the caller should try to
+    /// fetch another token.
+    Retry,
     Error,
     Eof,
 }
@@ -267,6 +270,36 @@ impl<'a> Scanner<'a> {
                         if result[0] as char == 'h' {
                             return Token::new(
                                 TokenType::StartHash,
+                                real_line_number,
+                                real_column_number,
+                            );
+                        }
+                    }
+                }
+                '/' => {
+                    self.column_number = self.column_number + 1;
+                    if result_index == 1 {
+                        if result[0] as char == '/' {
+                            let mut ignored = String::new();
+                            self.fh.read_line(&mut ignored);
+                            self.line_number = self.line_number + 1;
+                            return Token::new(
+                                TokenType::Retry,
+                                real_line_number,
+                                real_column_number,
+                            );
+                        }
+                    }
+                }
+                '!' => {
+                    self.column_number = self.column_number + 1;
+                    if result_index == 1 && self.column_number == 3 {
+                        if result[0] as char == '#' {
+                            let mut ignored = String::new();
+                            self.fh.read_line(&mut ignored);
+                            self.line_number = self.line_number + 1;
+                            return Token::new(
+                                TokenType::Retry,
                                 real_line_number,
                                 real_column_number,
                             );
@@ -548,6 +581,9 @@ impl Compiler {
                 _ => {}
             }
             match token_type {
+                TokenType::Retry => {
+                    continue;
+                }
                 TokenType::StartList => {
                     chunk.add_opcode(OpCode::StartList);
                 }

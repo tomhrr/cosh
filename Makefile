@@ -14,8 +14,8 @@ test:
 	cargo test --release
 
 install: rt.chc
-	install -D -m 755 bin/cosh $(bindir)/cosh
-	install -D -m 755 target/release/cosh $(bindir)/_cosh
+	install -D -m 755 bin/wrapped-cosh $(bindir)/wrapped-cosh
+	install -D -m 755 target/release/cosh $(bindir)/cosh
 	install -D -m 755 rt.chc -t $(libdir)/cosh/
 
 clean:

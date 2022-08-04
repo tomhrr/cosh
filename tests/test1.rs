@@ -768,3 +768,12 @@ fn json_bool_test() {
     basic_test("\"[true, false]\" from-json; to-json",
                "[true,false]");
 }
+
+#[test]
+fn comment_test() {
+    basic_test("
+// A function.
+: f 100 ::
+f;
+", "100");
+}

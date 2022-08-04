@@ -35,7 +35,6 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
             }
         }
         serde_json::value::Value::String(s) => {
-            eprintln!("string {}", s);
             Value::String(Rc::new(RefCell::new(StringPair::new(s.to_string(), None))))
         }
         serde_json::value::Value::Array(lst) => Value::List(Rc::new(RefCell::new(

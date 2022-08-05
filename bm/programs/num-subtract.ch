@@ -1,4 +1,4 @@
-// Decrement a number until zero is reached.
+# Decrement a number until zero is reached.
 : myfn
     20000000
     begin;

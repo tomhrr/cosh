@@ -1,4 +1,4 @@
-// Add and remove elements from a list, repeatedly.
+# Add and remove elements from a list, repeatedly.
 : myfn
     1000000
     begin;

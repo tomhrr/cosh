@@ -1,5 +1,5 @@
-// Open a file and iterate over its contents, storing the filehandle
-// in a variable.
+# Open a file and iterate over its contents, storing the filehandle
+# in a variable.
 : myfn
     bm-file.txt r open;
     fh var;

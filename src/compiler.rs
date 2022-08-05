@@ -200,6 +200,16 @@ impl<'a> Scanner<'a> {
             }
             if result_index == 1 {
                 match buffer[0] as char {
+                    '#' => {
+                        let mut ignored = String::new();
+                        self.fh.read_line(&mut ignored);
+                        self.line_number = self.line_number + 1;
+                        return Token::new(
+                            TokenType::Retry,
+                            real_line_number,
+                            real_column_number,
+                        );
+                    }
                     '(' => {
                         return Token::new(
                             TokenType::StartList,
@@ -270,36 +280,6 @@ impl<'a> Scanner<'a> {
                         if result[0] as char == 'h' {
                             return Token::new(
                                 TokenType::StartHash,
-                                real_line_number,
-                                real_column_number,
-                            );
-                        }
-                    }
-                }
-                '/' => {
-                    self.column_number = self.column_number + 1;
-                    if result_index == 1 {
-                        if result[0] as char == '/' {
-                            let mut ignored = String::new();
-                            self.fh.read_line(&mut ignored);
-                            self.line_number = self.line_number + 1;
-                            return Token::new(
-                                TokenType::Retry,
-                                real_line_number,
-                                real_column_number,
-                            );
-                        }
-                    }
-                }
-                '!' => {
-                    self.column_number = self.column_number + 1;
-                    if result_index == 1 && self.column_number == 3 {
-                        if result[0] as char == '#' {
-                            let mut ignored = String::new();
-                            self.fh.read_line(&mut ignored);
-                            self.line_number = self.line_number + 1;
-                            return Token::new(
-                                TokenType::Retry,
                                 real_line_number,
                                 real_column_number,
                             );
@@ -463,8 +443,8 @@ impl<'a> Scanner<'a> {
             ":" => TokenType::StartFunction,
             ":~" => TokenType::StartGenerator,
             "::" => TokenType::EndFunction,
-            "#t" => TokenType::True,
-            "#f" => TokenType::False,
+            ".t" => TokenType::True,
+            ".f" => TokenType::False,
             _ => {
                 if ever_in_string {
                     if string_delimiter == '{' {

@@ -173,7 +173,7 @@ impl VM {
                     }
                 }
                 Value::Bool(b) => {
-                    let s = if *b { "#t" } else { "#f" };
+                    let s = if *b { ".t" } else { ".f" };
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent,
                             window_height, lines_to_print);
@@ -203,10 +203,10 @@ impl VM {
                         ss = format!("\"{}\"", ss);
                     } else if ss.len() == 0 {
                         ss = format!("\"\"");
-                    } else if ss == "#t" {
-                        ss = format!("\"#t\"");
-                    } else if ss == "#f" {
-                        ss = format!("\"#f\"");
+                    } else if ss == ".t" {
+                        ss = format!("\".t\"");
+                    } else if ss == ".f" {
+                        ss = format!("\".f\"");
                     } else {
                         ss = format!("{}", ss);
                     }

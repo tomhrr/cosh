@@ -16,7 +16,7 @@ The shell language is dynamically-typed.  The basic types are:
 
 Interpretation is like so:
 
-  * The tokens `#t` and `#f` are interpreted as true and false boolean
+  * The tokens `.t` and `.f` are interpreted as true and false boolean
     values respectively.
   * A number with a fractional component is interpreted as a `Float`.
   * A number without a fractional component is interpreted as an
@@ -601,7 +601,7 @@ itself).
 
 ### Miscellaneous
 
-Comments can be added by prefixing the comment with `//`.  Any content
+Comments can be added by prefixing the comment with `#`.  Any content
 from that point on will be ignored.
 
 On starting the shell for interactive use, the `.coshrc` file in the

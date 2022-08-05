@@ -1,4 +1,4 @@
-// Increment a number until a large number is reached.
+# Increment a number until a large number is reached.
 : myfn
     0
     begin;

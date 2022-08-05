@@ -1,5 +1,5 @@
-// Open a file and iterate over its contents, checking for a string
-// match on each line.
+# Open a file and iterate over its contents, checking for a string
+# match on each line.
 : myfn
     bm-file.txt r open;
     begin;

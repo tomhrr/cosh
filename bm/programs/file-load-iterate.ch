@@ -1,4 +1,4 @@
-// Open a file and iterate over its contents.
+# Open a file and iterate over its contents.
 : myfn
     bm-file.txt r open;
     begin;

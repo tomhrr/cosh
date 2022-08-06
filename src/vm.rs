@@ -1376,7 +1376,7 @@ impl VM {
                 }
                 OpCode::JumpNe => {
                     if self.stack.len() < 1 {
-                        self.print_error("jumpne requires one argument");
+                        self.print_error("conditional requires one argument");
                         return 0;
                     }
 
@@ -1395,7 +1395,7 @@ impl VM {
                 }
                 OpCode::JumpNeR => {
                     if self.stack.len() < 1 {
-                        self.print_error("jumpner requires one argument");
+                        self.print_error("conditional requires one argument");
                         return 0;
                     }
 
@@ -1414,7 +1414,7 @@ impl VM {
                 }
                 OpCode::JumpNeREqC => {
                     if self.stack.len() < 1 {
-                        self.print_error("jumpnereqc requires one argument");
+                        self.print_error("conditional requires one argument");
                         return 0;
                     }
 

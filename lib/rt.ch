@@ -37,7 +37,7 @@
 
 :~ lshr 1 0
     0 =; if; . then;
-    "/" append;
+    "/" ++;
     dirname var;
     dup;
     dirname !;

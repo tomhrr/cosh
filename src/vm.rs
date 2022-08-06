@@ -156,7 +156,7 @@ lazy_static! {
         map.insert("nth", VM::core_nth as fn(&mut VM) -> i32);
         map.insert("nth!", VM::core_nth_em as fn(&mut VM) -> i32);
         map.insert(
-            "append",
+            "++",
             VM::core_append as fn(&mut VM) -> i32,
         );
         map.insert("push", VM::opcode_push as fn(&mut VM) -> i32);

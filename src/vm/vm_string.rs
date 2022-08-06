@@ -8,37 +8,57 @@ use chunk::{StringPair, Value};
 use vm::*;
 
 impl VM {
-    /// Takes two string arguments, appends them together, and adds
-    /// the resulting string back onto the stack.
+    /// Takes two string/list arguments, appends them together, and
+    /// adds the resulting string/list back onto the stack.
     pub fn core_append(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            self.print_error("append requires two arguments");
+            self.print_error("++ requires two arguments");
             return 0;
         }
 
         let v1 = self.stack.pop().unwrap();
         let v2 = self.stack.pop().unwrap();
 
-	let v1_str_opt: Option<&str>;
-	to_str!(v1, v1_str_opt);
-	let v2_str_opt: Option<&str>;
-	to_str!(v2, v2_str_opt);
-
-        match (v1_str_opt, v2_str_opt) {
-            (Some(s1), Some(s2)) => {
-                let s3 = format!("{}{}", s2, s1);
-                self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringPair::new(
-                        s3, None,
-                    )))));
+        match (v1.clone(), v2.clone()) {
+            (Value::List(lst1_ref), Value::List(lst2_ref)) => {
+                let mut lst = lst1_ref.borrow().clone();
+                for k in lst2_ref.borrow().iter() {
+                    lst.push_back(k.clone());
+                }
+                let res = Value::List(Rc::new(RefCell::new(lst)));
+                self.stack.push(res);
             }
-            (Some(_), _) => {
-                self.print_error("second append argument must be string");
-                return 0;
+            (Value::Hash(hs1_ref), Value::Hash(hs2_ref)) => {
+                let mut hsh = hs1_ref.borrow().clone();
+                for (k, v) in hs2_ref.borrow().iter() {
+                    hsh.insert(k.clone(), v.clone());
+                }
+                let res = Value::Hash(Rc::new(RefCell::new(hsh)));
+                self.stack.push(res);
             }
             (_, _) => {
-                self.print_error("first append argument must be string");
-                return 0;
+                let v1_str_opt: Option<&str>;
+                to_str!(v1, v1_str_opt);
+                let v2_str_opt: Option<&str>;
+                to_str!(v2, v2_str_opt);
+
+                match (v1_str_opt, v2_str_opt) {
+                    (Some(s1), Some(s2)) => {
+                        let s3 = format!("{}{}", s2, s1);
+                        self.stack
+                            .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+                                s3, None,
+                            )))));
+                    }
+                    (Some(_), _) => {
+                        self.print_error("second append argument must be string");
+                        return 0;
+                    }
+                    (_, _) => {
+                        self.print_error("first append argument must be string");
+                        return 0;
+                    }
+                }
             }
         }
         return 1;

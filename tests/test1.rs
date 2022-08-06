@@ -497,7 +497,10 @@ fn join_test() {
 
 #[test]
 fn append_test() {
-    basic_test("a b append", "ab");
+    basic_test("a b ++", "ab");
+    basic_test("3 range; take-all; 3 range; take-all; ++",
+        "(\n    0\n    1\n    2\n    0\n    1\n    2\n)");
+    basic_test("h(1 2) h(3 4) ++; keys; sort; '-' join", "1-3");
 }
 
 #[test]
@@ -510,7 +513,7 @@ fn coerce_to_int_test() {
 
 #[test]
 fn coerce_to_string_test() {
-    basic_test("(1 2 3 4 5 6) '' [append] foldl;", "123456");
+    basic_test("(1 2 3 4 5 6) '' [++] foldl;", "123456");
 }
 
 #[test]

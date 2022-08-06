@@ -484,10 +484,12 @@ handle quoting of values, though.
 
 ### String-handling functions
 
-`append` appends one string to another:
+`++` appends one string to another:
 
     $ asdf qwer append
     "asdfqwer"
+
+`++` also works for lists and hashes.
 
 `chomp` removes the final newline from the end of a string, if the
 string ends in a newline:

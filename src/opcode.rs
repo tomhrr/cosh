@@ -66,6 +66,7 @@ pub enum OpCode {
     ToFunction = 63,
     Import = 64,
     Bool = 65,
+    Clone = 66,
     Unknown = 255,
 }
 
@@ -137,6 +138,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         63 => OpCode::ToFunction,
         64 => OpCode::Import,
         65 => OpCode::Bool,
+        66 => OpCode::Clone,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

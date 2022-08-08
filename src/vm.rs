@@ -206,6 +206,7 @@ lazy_static! {
         map.insert("shift-all", VM::core_shift_all as fn(&mut VM) -> i32);
         map.insert("gnth", VM::core_gnth as fn(&mut VM) -> i32);
         map.insert("|", VM::core_pipe as fn(&mut VM) -> i32);
+        map.insert("clone", VM::opcode_clone as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {
@@ -249,6 +250,7 @@ lazy_static! {
         vec[OpCode::PrintStack as usize] = Some(VM::opcode_printstack as fn(&mut VM) -> i32);
         vec[OpCode::ToFunction as usize] = Some(VM::opcode_tofunction as fn(&mut VM) -> i32);
         vec[OpCode::Import as usize] = Some(VM::opcode_import as fn(&mut VM) -> i32);
+        vec[OpCode::Clone as usize] = Some(VM::opcode_clone as fn(&mut VM) -> i32);
         vec
     };
 }

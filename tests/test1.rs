@@ -780,3 +780,15 @@ fn comment_test() {
 f;
 ", "100");
 }
+
+#[test]
+fn clone_test() {
+    basic_test("3 range; take-all; dup; clone; shift;",
+               "(\n    0\n    1\n    2\n)\n0");
+    basic_test("3 range; dup; clone; take-all; swap; take-all; ++; '-' join;",
+               "0-1-2-0-1-2");
+    basic_test("h(1 2) keys; dup; clone; 0 gnth; swap; 0 gnth; ++",
+               "11");
+    basic_test("h(1 2) values; dup; clone; 0 gnth; swap; 0 gnth; ++",
+               "22");
+}

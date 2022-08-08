@@ -109,7 +109,7 @@ impl GeneratorObject {
 
 /// A hash object paired with its current index, for use within
 /// the various hash generators.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HashWithIndex {
     pub i: usize,
     pub h: Value,
@@ -597,6 +597,9 @@ impl Chunk {
             let opcode = to_opcode(self.data[i]);
             print!("{:^4} ", i);
             match opcode {
+                OpCode::Clone => {
+                    println!("OP_CLONE");
+                }
                 OpCode::Constant => {
                     i = i + 1;
                     let i_upper = self.data[i];
@@ -1038,6 +1041,69 @@ impl Value {
             }
             Value::Null => false,
             _ => true
+        }
+    }
+
+    pub fn value_clone(&self) -> Value {
+        match self {
+            Value::Null => self.clone(),
+            Value::Bool(_) => self.clone(),
+            Value::Int(_) => self.clone(),
+            Value::BigInt(_) => self.clone(),
+            Value::Float(_) => self.clone(),
+            Value::String(_) => self.clone(),
+            Value::Command(_) => self.clone(),
+            Value::CommandUncaptured(_) => self.clone(),
+            Value::List(lst) => {
+                let cloned_lst =
+                    lst.borrow().iter().map(|v| v.value_clone()).collect();
+                Value::List(Rc::new(RefCell::new(cloned_lst)))
+            },
+            Value::Hash(hsh) => {
+                let mut cloned_hsh = IndexMap::new();
+                for (k, v) in hsh.borrow().iter() {
+                    cloned_hsh.insert(k.clone(), v.value_clone());
+                }
+                Value::Hash(Rc::new(RefCell::new(cloned_hsh)))
+            },
+            Value::AnonymousFunction(_, _) => self.clone(),
+            Value::CoreFunction(_) => self.clone(),
+            Value::NamedFunction(_) => self.clone(),
+            Value::Generator(gen_ref) => {
+                let gen = gen_ref.borrow();
+                let local_vars_stack = gen.local_vars_stack.clone();
+                let index = gen.index;
+                let chunk = gen.chunk.clone();
+                let call_stack_chunks = gen.call_stack_chunks.clone();
+                let gen_args = gen.gen_args.clone();
+                let new_gen = GeneratorObject::new(
+                    Rc::new(RefCell::new(local_vars_stack.borrow().clone())),
+                    index,
+                    chunk,
+                    call_stack_chunks,
+                    gen_args,
+                );
+                Value::Generator(Rc::new(RefCell::new(new_gen)))
+            },
+            Value::CommandGenerator(_) => self.clone(),
+            Value::KeysGenerator(keys_gen_ref) => {
+                Value::KeysGenerator(
+                    Rc::new(RefCell::new(keys_gen_ref.borrow().clone()))
+                )
+            },
+            Value::ValuesGenerator(values_gen_ref) => {
+                Value::ValuesGenerator(
+                    Rc::new(RefCell::new(values_gen_ref.borrow().clone()))
+                )
+            },
+            Value::EachGenerator(each_gen_ref) => {
+                Value::EachGenerator(
+                    Rc::new(RefCell::new(each_gen_ref.borrow().clone()))
+                )
+            },
+            Value::FileReader(_) => self.clone(),
+            Value::FileWriter(_) => self.clone(),
+            Value::DirectoryHandle(_) => self.clone(),
         }
     }
 }

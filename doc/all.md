@@ -609,6 +609,14 @@ from that point on will be ignored.
 On starting the shell for interactive use, the `.coshrc` file in the
 current user's home directory will be run.
 
+The `clone` form can be used to get a deep copy of certain types of
+values: lists, hashes, user-defined generator objects, and the
+generators returned by the `keys`, `values`, and `each` calls.  For
+all other value types, `clone` has the same effect as `dup`: this is
+fine in most cases, but it's important to be aware that `dup` for
+file/directory read/write generators is a shallow copy, and
+reads/writes against one value will affect cloned values as well.
+
 #### Development
 
  * [Benchmarking](./benchmarking.md)

@@ -337,4 +337,15 @@ impl VM {
 
         return 1;
     }
+
+    pub fn opcode_clone(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("clone requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        let cloned_value_rr = value_rr.value_clone();
+        self.stack.push(cloned_value_rr);
+        return 1;
+    }
 }

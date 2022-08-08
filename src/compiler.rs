@@ -1095,6 +1095,8 @@ impl Compiler {
                         chunk.add_opcode(OpCode::ToFunction);
                     } else if s == "import" {
                         chunk.add_opcode(OpCode::Import);
+                    } else if s == "clone" {
+                        chunk.add_opcode(OpCode::Clone);
                     } else if s == "open" {
                         chunk.add_opcode(OpCode::Open);
                     } else if s == "readline" {

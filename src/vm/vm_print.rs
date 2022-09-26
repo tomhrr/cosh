@@ -140,6 +140,14 @@ impl VM {
         let mut is_generator = false;
         {
             match value_rr {
+                Value::DateTime(_) => {
+                    let s = format!("{{DateTime}}");
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
+                    if lines_to_print == -1 {
+                        return lines_to_print;
+                    }
+                }
                 // The way this works is less than ideal, what with it
                 // being different from standard stringification, but
                 // it may be that having separate representations is

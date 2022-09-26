@@ -10,6 +10,7 @@ use std::io::BufWriter;
 use std::rc::Rc;
 use std::str;
 
+use chrono::prelude::*;
 use indexmap::IndexMap;
 use num::FromPrimitive;
 use num::ToPrimitive;
@@ -171,6 +172,8 @@ pub enum Value {
     FileWriter(Rc<RefCell<BufWriter<File>>>),
     /// A directory handle.
     DirectoryHandle(Rc<RefCell<ReadDir>>),
+    /// A datetime object.
+    DateTime(DateTime<chrono_tz::Tz>),
 }
 
 impl fmt::Debug for Value {
@@ -239,6 +242,9 @@ impl fmt::Debug for Value {
             }
             Value::DirectoryHandle(_) => {
                 write!(f, "((DirectoryHandle))")
+            }
+            Value::DateTime(_) => {
+                write!(f, "((DateTime))")
             }
         }
     }
@@ -1104,6 +1110,7 @@ impl Value {
             Value::FileReader(_) => self.clone(),
             Value::FileWriter(_) => self.clone(),
             Value::DirectoryHandle(_) => self.clone(),
+            Value::DateTime(_) => self.clone(),
         }
     }
 }

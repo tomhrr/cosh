@@ -7,6 +7,7 @@ use std::ops::Index;
 use std::ops::IndexMut;
 use std::rc::Rc;
 use std::str;
+use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -24,6 +25,7 @@ use opcode::{to_opcode, OpCode};
 mod vm_arithmetic;
 mod vm_basics;
 mod vm_command;
+mod vm_datetime;
 mod vm_hash;
 mod vm_io;
 mod vm_json;
@@ -65,9 +67,14 @@ pub struct VM {
     pub call_stack_chunks: Vec<(Rc<RefCell<Chunk>>, usize)>,
     // A flag for interrupting execution.
     pub running: Arc<AtomicBool>,
+    // A lookup for regexes, to save regenerating them.
     pub regexes: HashMap<String, Rc<Regex>>,
     // A System object, for getting process information.
     sys: System,
+    // The local time zone.
+    local_tz: chrono_tz::Tz,
+    // The UTC timezone.
+    utc_tz: chrono_tz::Tz,
 }
 
 lazy_static! {
@@ -207,6 +214,15 @@ lazy_static! {
         map.insert("gnth", VM::core_gnth as fn(&mut VM) -> i32);
         map.insert("|", VM::core_pipe as fn(&mut VM) -> i32);
         map.insert("clone", VM::opcode_clone as fn(&mut VM) -> i32);
+        map.insert("now", VM::core_now as fn(&mut VM) -> i32);
+        map.insert("lcnow", VM::core_lcnow as fn(&mut VM) -> i32);
+        map.insert("strftime", VM::core_strftime as fn(&mut VM) -> i32);
+        map.insert("to-epoch", VM::core_to_epoch as fn(&mut VM) -> i32);
+        map.insert("from-epoch", VM::core_from_epoch as fn(&mut VM) -> i32);
+        map.insert("set-tz", VM::core_set_tz as fn(&mut VM) -> i32);
+        map.insert("+time", VM::core_addtime as fn(&mut VM) -> i32);
+        map.insert("-time", VM::core_subtime as fn(&mut VM) -> i32);
+        map.insert("strptime", VM::core_strptime as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {
@@ -257,6 +273,7 @@ lazy_static! {
 
 impl VM {
     pub fn new(print_stack: bool, debug: bool) -> VM {
+        let ltz = iana_time_zone::get_timezone().unwrap();
         VM {
             debug: debug,
             stack: Vec::new(),
@@ -271,6 +288,8 @@ impl VM {
             i: 0,
             sys: System::new(),
             regexes: HashMap::new(),
+            local_tz: chrono_tz::Tz::from_str(&ltz).unwrap(),
+            utc_tz: chrono_tz::Tz::from_str("UTC").unwrap(),
         }
     }
 

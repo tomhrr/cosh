@@ -1,27 +1,23 @@
 use std::cell::RefCell;
-use std::collections::VecDeque;
 use std::convert::TryFrom;
 use std::rc::Rc;
-use chrono::{NaiveDateTime, DateTime, Utc, Duration};
+use chrono::{NaiveDateTime, DateTime, Utc, Duration, TimeZone};
 use chronoutil::RelativeDuration;
 use vm::*;
 use std::str::FromStr;
-
-use indexmap::IndexMap;
-use num_bigint::ToBigInt;
 
 impl VM {
     pub fn core_now(&mut self) -> i32 {
         let date = chrono::offset::Utc::now();
         let newdate = date.with_timezone(&self.utc_tz);
-        self.stack.push(Value::DateTime(newdate));
+        self.stack.push(Value::DateTimeNT(newdate));
         return 1;
     }
 
     pub fn core_lcnow(&mut self) -> i32 {
         let date = chrono::offset::Utc::now();
         let newdate = date.with_timezone(&self.local_tz);
-        self.stack.push(Value::DateTime(newdate));
+        self.stack.push(Value::DateTimeNT(newdate));
         return 1;
     }
 
@@ -33,7 +29,13 @@ impl VM {
 
         let dt_rr = self.stack.pop().unwrap();
         match dt_rr {
-            Value::DateTime(dt) => {
+            Value::DateTimeNT(dt) => {
+                let epoch = dt.timestamp();
+                let epoch32 = i32::try_from(epoch).unwrap();
+                self.stack.push(Value::Int(epoch32));
+                return 1;
+            },
+            Value::DateTimeOT(dt) => {
                 let epoch = dt.timestamp();
                 let epoch32 = i32::try_from(epoch).unwrap();
                 self.stack.push(Value::Int(epoch32));
@@ -60,7 +62,7 @@ impl VM {
                 let naive = NaiveDateTime::from_timestamp(epoch64, 0);
                 let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
                 let newdate = datetime.with_timezone(&self.utc_tz);
-                self.stack.push(Value::DateTime(newdate));
+                self.stack.push(Value::DateTimeNT(newdate));
                 return 1;
             }
             _ => {
@@ -83,12 +85,26 @@ impl VM {
         let dt_rr = self.stack.pop().unwrap();
 
         match (dt_rr, tz_opt) {
-            (Value::DateTime(dt), Some(s)) => {
+            (Value::DateTimeNT(dt), Some(s)) => {
 		let tzr = chrono_tz::Tz::from_str(&s);
                 match tzr {
                     Ok(tz) => {
 			let newdate = dt.with_timezone(&tz);
-                        self.stack.push(Value::DateTime(newdate));
+                        self.stack.push(Value::DateTimeNT(newdate));
+                        return 1;
+                    },
+                    _ => {
+                        self.print_error("unknown timezone");
+                        return 0;
+                    }
+                }
+            },
+            (Value::DateTimeOT(dt), Some(s)) => {
+		let tzr = chrono_tz::Tz::from_str(&s);
+                match tzr {
+                    Ok(tz) => {
+			let newdate = dt.with_timezone(&tz);
+                        self.stack.push(Value::DateTimeNT(newdate));
                         return 1;
                     },
                     _ => {
@@ -147,14 +163,24 @@ impl VM {
         }
 
         match (dt_rr, dur, rdur) {
-            (Value::DateTime(dt), Some(d), _) => {
+            (Value::DateTimeNT(dt), Some(d), _) => {
                 let ndt = dt + d;
-                self.stack.push(Value::DateTime(ndt));
+                self.stack.push(Value::DateTimeNT(ndt));
                 return 1;
             },
-            (Value::DateTime(dt), _, Some(d)) => {
+            (Value::DateTimeNT(dt), _, Some(d)) => {
                 let ndt = dt + d;
-                self.stack.push(Value::DateTime(ndt));
+                self.stack.push(Value::DateTimeNT(ndt));
+                return 1;
+            },
+            (Value::DateTimeOT(dt), Some(d), _) => {
+                let ndt = dt + d;
+                self.stack.push(Value::DateTimeOT(ndt));
+                return 1;
+            },
+            (Value::DateTimeOT(dt), _, Some(d)) => {
+                let ndt = dt + d;
+                self.stack.push(Value::DateTimeOT(ndt));
                 return 1;
             },
             _ => {
@@ -199,7 +225,12 @@ impl VM {
         let dt_rr = self.stack.pop().unwrap();
 
         match (dt_rr, pat_opt) {
-            (Value::DateTime(dt), Some(s)) => {
+            (Value::DateTimeNT(dt), Some(s)) => {
+                let ss = dt.format(s);
+                self.stack.push(Value::String(Rc::new(RefCell::new(StringPair::new(ss.to_string(), None)))));
+                return 1;
+            },
+            (Value::DateTimeOT(dt), Some(s)) => {
                 let ss = dt.format(s);
                 self.stack.push(Value::String(Rc::new(RefCell::new(StringPair::new(ss.to_string(), None)))));
                 return 1;
@@ -227,22 +258,88 @@ impl VM {
 
         match (str_opt, pat_opt) {
             (Some(st), Some(pat)) => {
-                let dt_res = NaiveDateTime::parse_from_str(&st, &pat);
-                match dt_res {
-                    Ok(naive) => {
-                        let dt: DateTime<Utc> = DateTime::from_utc(naive, Utc);
-                        self.stack.push(
-                            Value::DateTime(dt.with_timezone(&self.utc_tz))
-                        );
-                        return 1;
-                    },
-                    _ => {
-                        self.print_error("unable to parse datetime");
-                        return 0;
+                if pat.contains("%z") || pat.contains("%Z") {
+                    let dt_res = DateTime::parse_from_str(&st, &pat);
+                    match dt_res {
+                        Ok(dt) => {
+                            self.stack.push(
+                                Value::DateTimeOT(dt)
+                            );
+                            return 1;
+                        },
+                        _ => {
+                            self.print_error("unable to parse datetime");
+                            return 0;
+                        }
+                    }
+                } else {
+                    let dt_res = NaiveDateTime::parse_from_str(&st, &pat);
+                    match dt_res {
+                        Ok(naive) => {
+                            let dt: DateTime<Utc> = DateTime::from_utc(naive, Utc);
+                            self.stack.push(
+                                Value::DateTimeNT(dt.with_timezone(&self.utc_tz))
+                            );
+                            return 1;
+                        },
+                        _ => {
+                            self.print_error("unable to parse datetime");
+                            return 0;
+                        }
                     }
                 }
             }
             (_, _) => {
+		self.print_error("unexpected arguments");
+                return 0;
+            }
+        }
+    }
+
+    pub fn core_strptimez(&mut self) -> i32 {
+	if self.stack.len() < 3 {
+            self.print_error("strptimez requires three arguments");
+            return 0;
+        }
+
+        let tz_rr = self.stack.pop().unwrap();
+        let tz_opt: Option<&str>;
+        to_str!(tz_rr, tz_opt);
+
+        let pat_rr = self.stack.pop().unwrap();
+        let pat_opt: Option<&str>;
+        to_str!(pat_rr, pat_opt);
+
+        let str_rr = self.stack.pop().unwrap();
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
+
+        match (str_opt, pat_opt, tz_opt) {
+            (Some(st), Some(pat), Some(tzs)) => {
+		let tzr = chrono_tz::Tz::from_str(&tzs);
+                match tzr {
+                    Ok(tz) => {
+                        let dt_res = NaiveDateTime::parse_from_str(&st, &pat);
+                        match dt_res {
+                            Ok(naive) => {
+                                self.stack.push(
+                                    Value::DateTimeNT(tz.from_local_datetime(&naive).unwrap())
+                                );
+                                return 1;
+                            },
+                            _ => {
+                                self.print_error("unable to parse datetime");
+                                return 0;
+                            }
+                        }
+                    }
+                    _ => {
+                        self.print_error("unknown timezone");
+                        return 0;
+                    }
+                }
+            }
+            (_, _, _) => {
 		self.print_error("unexpected arguments");
                 return 0;
             }

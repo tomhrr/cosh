@@ -140,8 +140,16 @@ impl VM {
         let mut is_generator = false;
         {
             match value_rr {
-                Value::DateTime(_) => {
-                    let s = format!("{{DateTime}}");
+                Value::DateTimeNT(_) => {
+                    let s = format!("{{DateTimeNT}}");
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
+                    if lines_to_print == -1 {
+                        return lines_to_print;
+                    }
+                }
+                Value::DateTimeOT(_) => {
+                    let s = format!("{{DateTimeOT}}");
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {

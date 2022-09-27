@@ -172,8 +172,10 @@ pub enum Value {
     FileWriter(Rc<RefCell<BufWriter<File>>>),
     /// A directory handle.
     DirectoryHandle(Rc<RefCell<ReadDir>>),
-    /// A datetime object.
-    DateTime(DateTime<chrono_tz::Tz>),
+    /// A datetime with a named timezone.
+    DateTimeNT(DateTime<chrono_tz::Tz>),
+    /// A datetime with an offset timezone.
+    DateTimeOT(DateTime<FixedOffset>),
 }
 
 impl fmt::Debug for Value {
@@ -243,8 +245,11 @@ impl fmt::Debug for Value {
             Value::DirectoryHandle(_) => {
                 write!(f, "((DirectoryHandle))")
             }
-            Value::DateTime(_) => {
-                write!(f, "((DateTime))")
+            Value::DateTimeNT(_) => {
+                write!(f, "((DateTimeNT))")
+            }
+            Value::DateTimeOT(_) => {
+                write!(f, "((DateTimeOT))")
             }
         }
     }
@@ -1110,7 +1115,8 @@ impl Value {
             Value::FileReader(_) => self.clone(),
             Value::FileWriter(_) => self.clone(),
             Value::DirectoryHandle(_) => self.clone(),
-            Value::DateTime(_) => self.clone(),
+            Value::DateTimeNT(_) => self.clone(),
+            Value::DateTimeOT(_) => self.clone(),
         }
     }
 }

@@ -223,6 +223,7 @@ lazy_static! {
         map.insert("+time", VM::core_addtime as fn(&mut VM) -> i32);
         map.insert("-time", VM::core_subtime as fn(&mut VM) -> i32);
         map.insert("strptime", VM::core_strptime as fn(&mut VM) -> i32);
+        map.insert("strptimez", VM::core_strptimez as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

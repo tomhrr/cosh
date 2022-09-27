@@ -1,12 +1,15 @@
 use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::rc::Rc;
-use chrono::{NaiveDateTime, DateTime, Utc, Duration, TimeZone};
-use chronoutil::RelativeDuration;
-use vm::*;
 use std::str::FromStr;
 
+use chrono::{NaiveDateTime, DateTime, Utc, Duration, TimeZone};
+use chronoutil::RelativeDuration;
+
+use vm::*;
+
 impl VM {
+    /// Returns the current time as a DateTime object, offset at UTC.
     pub fn core_now(&mut self) -> i32 {
         let date = chrono::offset::Utc::now();
         let newdate = date.with_timezone(&self.utc_tz);
@@ -14,6 +17,8 @@ impl VM {
         return 1;
     }
 
+    /// Returns the current time as a DateTime object, offset at the
+    /// local time zone.
     pub fn core_lcnow(&mut self) -> i32 {
         let date = chrono::offset::Utc::now();
         let newdate = date.with_timezone(&self.local_tz);
@@ -21,6 +26,8 @@ impl VM {
         return 1;
     }
 
+    /// Takes a DateTime object and returns the epoch time that
+    /// corresponds to that object.
     pub fn core_to_epoch(&mut self) -> i32 {
 	if self.stack.len() < 1 {
             self.print_error("to-epoch requires one argument");
@@ -48,6 +55,9 @@ impl VM {
         }
     }
 
+    /// Takes the epoch time (i.e. the number of seconds that have
+    /// elapsed since 1970-01-01 00:00:00 UTC) and returns a DateTime
+    /// object (offset at UTC) that corresponds to that time.
     pub fn core_from_epoch(&mut self) -> i32 {
 	if self.stack.len() < 1 {
             self.print_error("from-epoch requires one argument");
@@ -72,6 +82,9 @@ impl VM {
         }
     }
 
+    /// Takes a DateTime object and a named timezone (per the tz
+    /// database) and returns a new DateTime object offset at that
+    /// timezone.
     pub fn core_set_tz(&mut self) -> i32 {
 	if self.stack.len() < 2 {
             self.print_error("set-tz requires two arguments");
@@ -120,6 +133,10 @@ impl VM {
         }
     }
 
+    /// Takes a DateTime object, a period (one of years, months, days,
+    /// minutes, hours, or seconds) and a count as its arguments.
+    /// Adds the specified number of periods to the DateTime object
+    /// and returns the result as a new DateTime object.
     pub fn core_addtime(&mut self) -> i32 {
 	if self.stack.len() < 3 {
             self.print_error("+time requires three arguments");
@@ -190,6 +207,10 @@ impl VM {
         }
     }
 
+    /// Takes a DateTime object, a period (one of years, months, days,
+    /// minutes, hours, or seconds) and a count as its arguments.
+    /// Subtracts the specified number of periods to the DateTime
+    /// object and returns the result as a new DateTime object.
     pub fn core_subtime(&mut self) -> i32 {
 	if self.stack.len() < 3 {
             self.print_error("-time requires three arguments");
@@ -212,6 +233,9 @@ impl VM {
         }
     }
 
+    /// Takes a DateTime object and a strftime pattern as its
+    /// arguments.  Returns the stringification of the date per the
+    /// pattern.
     pub fn core_strftime(&mut self) -> i32 {
 	if self.stack.len() < 2 {
             self.print_error("strftime requires two arguments");
@@ -242,6 +266,9 @@ impl VM {
         }
     }
 
+    /// Takes a datetime string and a strftime pattern as its
+    /// arguments.  Returns the parsed datetime string as a DateTime
+    /// object.
     pub fn core_strptime(&mut self) -> i32 {
 	if self.stack.len() < 2 {
             self.print_error("strptime requires two arguments");
@@ -296,6 +323,9 @@ impl VM {
         }
     }
 
+    /// Takes a datetime string, a strftime pattern, and a named
+    /// timezone (per the tz database) as its arguments.  Returns the
+    /// parsed datetime string as a DateTime object.
     pub fn core_strptimez(&mut self) -> i32 {
 	if self.stack.len() < 3 {
             self.print_error("strptimez requires three arguments");

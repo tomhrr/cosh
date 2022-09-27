@@ -595,6 +595,35 @@ and `values` for getting a generator over the hash's values:
 JSON and XML can be serialised and deserialised using the
 `from-json`, `to-json`, `from-xml` and `to-xml` functions.
 
+### Datetimes
+
+ - `now`: Returns the current time as a DateTime object, offset at
+   UTC.
+ - `lcnow`: Returns the current time as a DateTime object, offset at
+   the local time zone.
+ - `from-epoch`: Takes the epoch time (i.e. the number of seconds that
+   have elapsed since 1970-01-01 00:00:00 UTC) and returns a DateTime
+   object (offset at UTC) that corresponds to that time.
+ - `to-epoch`: Takes a DateTime object and returns the epoch time that
+   corresponds to that object.
+ - `set-tz`: Takes a DateTime object and a named timezone (per the tz
+   database) and returns a new DateTime object offset at that
+   timezone.
+ - `+time`: Takes a DateTime object, a period (one of years, months,
+   days, minutes, hours, or seconds) and a count as its arguments.
+   Adds the specified number of periods to the DateTime object and
+   returns the result as a new DateTime object.
+ - `-time`: The reverse of `+time`.
+ - `strftime`: Takes a DateTime object and a strftime pattern as its
+   arguments.  Returns the stringification of the date per the
+   pattern.
+ - `strptime`: Takes a datetime string and a strftime pattern as its
+   arguments.  Returns the parsed datetime string as a DateTime
+   object.
+ - `strptimez`: Takes a datetime string, a strftime pattern, and a
+   named timezone (per the tz database) as its arguments.  Returns the
+   parsed datetime string as a DateTime object.
+
 ### Miscellaneous functions
 
 `rand` takes a floating-point value and returns a random value between

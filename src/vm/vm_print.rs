@@ -141,7 +141,7 @@ impl VM {
         {
             match value_rr {
                 Value::DateTimeNT(_) => {
-                    let s = format!("{{DateTimeNT}}");
+                    let s = format!("{{DateTime}}");
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -149,7 +149,7 @@ impl VM {
                     }
                 }
                 Value::DateTimeOT(_) => {
-                    let s = format!("{{DateTimeOT}}");
+                    let s = format!("{{DateTime}}");
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {

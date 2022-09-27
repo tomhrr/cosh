@@ -792,3 +792,24 @@ fn clone_test() {
     basic_test("h(1 2) values; dup; clone; 0 gnth; swap; 0 gnth; ++",
                "22");
 }
+
+#[test]
+fn date_test() {
+    basic_test("now;", "{DateTime}");
+    basic_test("lcnow;", "{DateTime}");
+    basic_test("now; now; =", ".f");
+    basic_test("lcnow; lcnow; =", ".f");
+    basic_test("now; now; <", ".t");
+    basic_test("now; now; >", ".f");
+    basic_test("now; to-epoch; \\d+ m;", ".t");
+    basic_test("now; dup; '%F %T' strftime; swap; to-epoch; from-epoch; '%F %T' strftime; =",
+               ".t");
+    basic_test("1664280627 from-epoch; '%F %T' strftime",
+               "\"2022-09-27 12:10:27\"");
+    basic_test("now; dup; '%F %T' strftime; swap; Australia/Brisbane set-tz; UTC set-tz; '%F %T' strftime; =",
+               ".t");
+    basic_test("'2022-09-27 12:10:27' '%F %T' strptime; to-epoch;",
+               "1664280627");
+    basic_test("'2022-09-27 22:10:27' '%F %T' Australia/Brisbane strptimez; to-epoch;",
+               "1664280627");
+}

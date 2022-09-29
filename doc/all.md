@@ -624,6 +624,12 @@ JSON and XML can be serialised and deserialised using the
    named timezone (per the tz database) as its arguments.  Returns the
    parsed datetime string as a DateTime object.
 
+The `strptime` and `strptimez` functions do not require that any
+particular specifiers be used in the pattern.  By default, the
+DateTime object result is `1970-01-01 00:00:00 +0000`, with values
+parsed by way of the pattern being applied on top of that initial
+result.
+
 ### Miscellaneous functions
 
 `rand` takes a floating-point value and returns a random value between

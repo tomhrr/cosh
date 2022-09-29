@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use chrono::{NaiveDateTime, DateTime, Utc, Duration, TimeZone};
+use chrono::format::{StrftimeItems, Parsed, parse};
 use chronoutil::RelativeDuration;
 
 use vm::*;
@@ -266,9 +267,52 @@ impl VM {
         }
     }
 
+    fn strptime(&self, pattern: &str, value: &str) -> Option<Parsed> {
+        let mut parsed = Parsed::new();
+        let si = StrftimeItems::new(pattern);
+        let res = parse(&mut parsed, value, si);
+        match res {
+            Ok(_) => {
+                if !parsed.year.is_some() {
+                    parsed.set_year(1970).unwrap();
+                }
+                if !parsed.month.is_some() {
+                    parsed.set_month(1).unwrap();
+                }
+                if !parsed.day.is_some() {
+                    parsed.set_day(1).unwrap();
+                }
+                if !parsed.hour_div_12.is_some() {
+                    parsed.set_hour(0).unwrap();
+                }
+                if !parsed.hour_mod_12.is_some() {
+                    parsed.set_hour(0).unwrap();
+                }
+                if !parsed.minute.is_some() {
+                    parsed.set_minute(0).unwrap();
+                }
+                if !parsed.second.is_some() {
+                    parsed.set_second(0).unwrap();
+                }
+                if !parsed.offset.is_some() {
+                    parsed.set_offset(0).unwrap();
+                }
+                return Some(parsed);
+            },
+            Err(e) => {
+                let err_str = format!("unable to parse datetime: {}",
+                                      e.to_string());
+                self.print_error(&err_str);
+                return None;
+            }
+        }
+    }
+
     /// Takes a datetime string and a strftime pattern as its
     /// arguments.  Returns the parsed datetime string as a DateTime
-    /// object.
+    /// object.  The parsed datetime defaults to 1970-01-01 00:00:00,
+    /// with components got via the strftime pattern applied on top of
+    /// the default.
     pub fn core_strptime(&mut self) -> i32 {
 	if self.stack.len() < 2 {
             self.print_error("strptime requires two arguments");
@@ -285,34 +329,15 @@ impl VM {
 
         match (str_opt, pat_opt) {
             (Some(st), Some(pat)) => {
-                if pat.contains("%z") || pat.contains("%Z") {
-                    let dt_res = DateTime::parse_from_str(&st, &pat);
-                    match dt_res {
-                        Ok(dt) => {
-                            self.stack.push(
-                                Value::DateTimeOT(dt)
-                            );
-                            return 1;
-                        },
-                        _ => {
-                            self.print_error("unable to parse datetime");
-                            return 0;
-                        }
-                    }
-                } else {
-                    let dt_res = NaiveDateTime::parse_from_str(&st, &pat);
-                    match dt_res {
-                        Ok(naive) => {
-                            let dt: DateTime<Utc> = DateTime::from_utc(naive, Utc);
-                            self.stack.push(
-                                Value::DateTimeNT(dt.with_timezone(&self.utc_tz))
-                            );
-                            return 1;
-                        },
-                        _ => {
-                            self.print_error("unable to parse datetime");
-                            return 0;
-                        }
+                let parsed_opt = self.strptime(&pat, &st);
+                match parsed_opt {
+                    Some(parsed) => {
+                        let dt_res = parsed.to_datetime().unwrap();
+                        self.stack.push(Value::DateTimeOT(dt_res));
+                        return 1;
+                    },
+                    _ => {
+                        return 0;
                     }
                 }
             }
@@ -325,7 +350,9 @@ impl VM {
 
     /// Takes a datetime string, a strftime pattern, and a named
     /// timezone (per the tz database) as its arguments.  Returns the
-    /// parsed datetime string as a DateTime object.
+    /// parsed datetime string as a DateTime object.  The parsed
+    /// datetime defaults to 1970-01-01 00:00:00, with components got
+    /// via the strftime pattern applied on top of the default.
     pub fn core_strptimez(&mut self) -> i32 {
 	if self.stack.len() < 3 {
             self.print_error("strptimez requires three arguments");
@@ -349,16 +376,18 @@ impl VM {
 		let tzr = chrono_tz::Tz::from_str(&tzs);
                 match tzr {
                     Ok(tz) => {
-                        let dt_res = NaiveDateTime::parse_from_str(&st, &pat);
-                        match dt_res {
-                            Ok(naive) => {
-                                self.stack.push(
-                                    Value::DateTimeNT(tz.from_local_datetime(&naive).unwrap())
-                                );
+                        let parsed_opt = self.strptime(&pat, &st);
+                        match parsed_opt {
+                            Some(parsed) => {
+                                let dt_res =
+                                    parsed.to_naive_date().unwrap()
+                                        .and_time(parsed.to_naive_time().unwrap());
+                                self.stack.push(Value::DateTimeNT(
+                                    tz.from_local_datetime(&dt_res).unwrap()
+                                ));
                                 return 1;
                             },
                             _ => {
-                                self.print_error("unable to parse datetime");
                                 return 0;
                             }
                         }

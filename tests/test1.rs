@@ -812,4 +812,15 @@ fn date_test() {
                "1664280627");
     basic_test("'2022-09-27 22:10:27' '%F %T' Australia/Brisbane strptimez; to-epoch;",
                "1664280627");
+    basic_test("'2022' '%Y' Australia/Brisbane strptimez; '%F %T %z' strftime;",
+               "\"2022-01-01 00:00:00 +1000\"");
+
+    basic_test("'2022-09-27' '%F' strptime; '%F' strftime;",
+               "2022-09-27");
+    basic_test("'2022-09-27' '%F' strptime; '%F %T' strftime;",
+               "\"2022-09-27 00:00:00\"");
+    basic_test("'02' '%H' strptime; '%F %T' strftime;",
+               "\"1970-01-01 02:00:00\"");
+    basic_test("'02 +10:00' '%H %z' strptime; '%F %T %z' strftime;",
+               "\"1970-01-01 02:00:00 +1000\"");
 }

@@ -823,4 +823,11 @@ fn date_test() {
                "\"1970-01-01 02:00:00\"");
     basic_test("'02 +10:00' '%H %z' strptime; '%F %T %z' strftime;",
                "\"1970-01-01 02:00:00 +1000\"");
+
+    basic_test("\"2000-01-01 00:00:00\" \"%F %T\" Asia/Vladivostok strptimez; \"2000-01-01 00:00:00 +1000\" \"%F %T %z\" strptime; =",
+               ".t");
+    basic_test("\"2000-01-01 00:00:00\" \"%F %T\" Asia/Vladivostok strptimez; \"2000-01-01 00:00:00 +1000\" \"%F %T %z\" strptime; <",
+               ".f");
+    basic_test("\"2000-02-01 00:00:00\" \"%F %T\" Asia/Vladivostok strptimez; \"2000-01-01 00:00:00 +1000\" \"%F %T %z\" strptime; >",
+               ".t");
 }

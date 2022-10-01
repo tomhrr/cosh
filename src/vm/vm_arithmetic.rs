@@ -523,6 +523,16 @@ impl VM {
                 self.stack.push(Value::Bool(res));
                 return 1;
             }
+            (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
+                let res = d1 == d2;
+                self.stack.push(Value::Bool(res));
+                return 1;
+            }
+            (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
+                let res = d1 == d2;
+                self.stack.push(Value::Bool(res));
+                return 1;
+            }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
@@ -642,6 +652,16 @@ impl VM {
                 self.stack.push(Value::Bool(res));
                 return 1;
             }
+            (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
+                let res = d2 > d1;
+                self.stack.push(Value::Bool(res));
+                return 1;
+            }
+            (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
+                let res = d2 > d1;
+                self.stack.push(Value::Bool(res));
+                return 1;
+            }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
@@ -757,6 +777,16 @@ impl VM {
                 return 1;
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
+                let res = d2 < d1;
+                self.stack.push(Value::Bool(res));
+                return 1;
+            }
+            (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
+                let res = d2 < d1;
+                self.stack.push(Value::Bool(res));
+                return 1;
+            }
+            (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
                 let res = d2 < d1;
                 self.stack.push(Value::Bool(res));
                 return 1;

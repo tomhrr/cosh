@@ -630,6 +630,30 @@ DateTime object result is `1970-01-01 00:00:00 +0000`, with values
 parsed by way of the pattern being applied on top of that initial
 result.
 
+### IP addresses
+
+ - `ip`: Takes a single IP address or range as a string, and returns
+   an IP object for that address or range.
+ - `ip.from-int`: Takes an IP address as an integer and returns an IP
+   object for the address.
+ - `ip.len`: Takes an IP object and returns the prefix length of the
+   range.
+ - `ip.addr`: Takes an IP object and returns the first address from
+   the range as a string.
+ - `ip.addr-int`: Takes an IP object and returns the first address
+   from the range as an integer.
+ - `ip.last-addr`: Takes an IP object and returns the last address
+   from the range as a string.
+ - `ip.last-addr-int`: Takes an IP object and returns the last address
+   from the range as an integer.
+ - `ip.size`: Takes an IP object and returns the number of hosts it
+   covers.
+ - `ip.version`: Takes an IP object and returns the version of that
+   object (either 4 or 6).
+ - `ip.to-string`: Takes an IP object and returns its stringification.
+   The prefix length will be omitted if the object is for a single
+   address.
+
 ### Miscellaneous functions
 
 `rand` takes a floating-point value and returns a random value between

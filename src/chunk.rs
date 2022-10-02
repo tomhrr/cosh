@@ -12,6 +12,7 @@ use std::str;
 
 use chrono::prelude::*;
 use indexmap::IndexMap;
+use ipnet::{Ipv4Net, Ipv6Net};
 use num::FromPrimitive;
 use num::ToPrimitive;
 use num_bigint::BigInt;
@@ -176,6 +177,10 @@ pub enum Value {
     DateTimeNT(DateTime<chrono_tz::Tz>),
     /// A datetime with an offset timezone.
     DateTimeOT(DateTime<FixedOffset>),
+    /// An IPv4 address range object.
+    Ipv4(Ipv4Net),
+    /// An IPv6 address range object.
+    Ipv6(Ipv6Net),
 }
 
 impl fmt::Debug for Value {
@@ -250,6 +255,12 @@ impl fmt::Debug for Value {
             }
             Value::DateTimeOT(_) => {
                 write!(f, "((DateTimeOT))")
+            }
+            Value::Ipv4(_) => {
+                write!(f, "((IPv4))")
+            }
+            Value::Ipv6(_) => {
+                write!(f, "((IPv6))")
             }
         }
     }
@@ -1117,6 +1128,8 @@ impl Value {
             Value::DirectoryHandle(_) => self.clone(),
             Value::DateTimeNT(_) => self.clone(),
             Value::DateTimeOT(_) => self.clone(),
+            Value::Ipv4(_) => self.clone(),
+            Value::Ipv6(_) => self.clone(),
         }
     }
 }

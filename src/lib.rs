@@ -3,6 +3,8 @@ extern crate chrono_tz;
 extern crate chronoutil;
 extern crate iana_time_zone;
 extern crate indexmap;
+extern crate ipnet;
+extern crate iprange;
 extern crate lazy_static;
 extern crate nix;
 extern crate num;

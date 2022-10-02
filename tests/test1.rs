@@ -831,3 +831,30 @@ fn date_test() {
     basic_test("\"2000-02-01 00:00:00\" \"%F %T\" Asia/Vladivostok strptimez; \"2000-01-01 00:00:00 +1000\" \"%F %T %z\" strptime; >",
                ".t");
 }
+
+#[test]
+fn ip_test() {
+    basic_test("1.0.0.0/24 ip", "{IP}");
+    basic_test("4 16777216 ip.from-int; ip.to-string", "1.0.0.0");
+    basic_test("1.0.0.0/24 ip; ip.addr", "1.0.0.0");
+    basic_test("3.1.0.0/16 ip; ip.len", "16");
+    basic_test("0.0.0.0/0 ip; ip.addr-int", "0");
+    basic_test("16.0.0.0/7 ip; ip.last-addr", "17.255.255.255");
+    basic_test("16.0.0.0/7 ip; ip.last-addr-int", "301989887");
+    basic_test("1.0.0.0/24 ip; ip.size", "256");
+    basic_test("1.0.0.0/24 ip; ip.version", "4");
+    basic_test("1.0.0.0/24 ip; ip.to-string", "1.0.0.0/24");
+
+    basic_test("::/128 ip", "{IP}");
+    basic_test("6 10000000000 ip.from-int; ip.to-string", "::2:540b:e400");
+    /*
+    basic_test("31CC::/64 ip; ip.addr", "31CC::");
+    basic_test("305F:305F::/32 ip; ip.len", "32");
+    basic_test("::2:540b:e400 ip; ip.addr-int", "10000000000");
+    basic_test("3000::/16 ip; ip.last-addr", "3000:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF");
+    basic_test("3000::/16 ip; ip.last-addr-int", "301989887");
+    basic_test("::/112 ip; ip.size", "65536");
+    basic_test(":: ip; ip.version", "6");
+    basic_test("ABCD::/32 ip; ip.to-string", "ABCD::/32");
+    */
+}

@@ -28,6 +28,7 @@ mod vm_command;
 mod vm_datetime;
 mod vm_hash;
 mod vm_io;
+mod vm_ip;
 mod vm_json;
 mod vm_list;
 mod vm_print;
@@ -224,6 +225,16 @@ lazy_static! {
         map.insert("-time", VM::core_subtime as fn(&mut VM) -> i32);
         map.insert("strptime", VM::core_strptime as fn(&mut VM) -> i32);
         map.insert("strptimez", VM::core_strptimez as fn(&mut VM) -> i32);
+        map.insert("ip", VM::core_ip as fn(&mut VM) -> i32);
+        map.insert("ip.from-int", VM::core_ip_from_int as fn(&mut VM) -> i32);
+        map.insert("ip.addr", VM::core_ip_addr as fn(&mut VM) -> i32);
+        map.insert("ip.len", VM::core_ip_len as fn(&mut VM) -> i32);
+        map.insert("ip.addr-int", VM::core_ip_addr_int as fn(&mut VM) -> i32);
+        map.insert("ip.last-addr", VM::core_ip_last_addr as fn(&mut VM) -> i32);
+        map.insert("ip.last-addr-int", VM::core_ip_last_addr_int as fn(&mut VM) -> i32);
+        map.insert("ip.size", VM::core_ip_size as fn(&mut VM) -> i32);
+        map.insert("ip.version", VM::core_ip_version as fn(&mut VM) -> i32);
+        map.insert("ip.to-string", VM::core_ip_to_string as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

@@ -37,7 +37,7 @@ $ 10 3 -
 $ 1 2 swap
 2
 1
-$ : add-1 1 +; ::
+$ : add-1 1 +; ,,
 $ 10 add-1
 11
 $ "1,2,3,4" , split
@@ -83,7 +83,7 @@ $ test-data/csv f<; chomp map; [, split] map
         12
     )
 )
-$ : sum 0 + foldl; ::
+$ : sum 0 + foldl; ,,
 $ test-data/csv f<; chomp map; [, split] map; sum map
 (
     10

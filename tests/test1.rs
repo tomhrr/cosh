@@ -66,7 +66,7 @@ fn combination() {
 
 #[test]
 fn fn_call() {
-    basic_test(": asdf 1 2 + ; :: asdf ;", "3");
+    basic_test(": asdf 1 2 + ; ,, asdf ;", "3");
 }
 
 #[test]
@@ -80,8 +80,8 @@ fn vars_scoped() {
         concat!(
             "x var; 10 x !; ",
             ": asdf x var; 15 x !; ",
-            ": qwer x @; x var; 20 x !; x @; :: ",
-            "qwer; x @; :: ",
+            ": qwer x @; x var; 20 x !; x @; ,, ",
+            "qwer; x @; ,, ",
             "asdf; x @;"
         ),
         "15\n20\n15\n10",
@@ -147,14 +147,14 @@ begin;
 #[test]
 fn top_level_functions() {
     basic_test(
-        ": asdf 1 2 3 :: : qwer asdf; 1 2 3 :: qwer;",
+        ": asdf 1 2 3 ,, : qwer asdf; 1 2 3 ,, qwer;",
         "1\n2\n3\n1\n2\n3",
     );
 }
 
 #[test]
 fn fn_name_error() {
-    basic_error_test(": 1234 ::", "1:3: expected name token");
+    basic_error_test(": 1234 ,,", "1:3: expected name token");
 }
 
 #[test]
@@ -225,7 +225,7 @@ fn var_must_be_string_2_error() {
 #[test]
 fn var_must_be_string_in_fn_error() {
     basic_error_test(
-        ": m 100 asdf dup; var; !; ::",
+        ": m 100 asdf dup; var; !; ,,",
         "1:19: variable name must precede var",
     );
 }
@@ -233,7 +233,7 @@ fn var_must_be_string_in_fn_error() {
 #[test]
 fn set_must_be_string_in_fn_error() {
     basic_error_test(
-        ": m asdf var; asdf dup; !; ::",
+        ": m asdf var; asdf dup; !; ,,",
         "1:25: variable name must precede !",
     );
 }
@@ -241,7 +241,7 @@ fn set_must_be_string_in_fn_error() {
 #[test]
 fn get_must_be_string_in_fn_error() {
     basic_error_test(
-        ": m asdf var; 100 asdf !; asdf dup; @; ::",
+        ": m asdf var; 100 asdf !; asdf dup; @; ,,",
         "1:37: variable name must precede @",
     );
 }
@@ -268,7 +268,7 @@ fn for_test() {
 
 #[test]
 fn generator_basic_test() {
-    basic_test(":~ gen 0 0 drop; 1 yield; 2 yield; 3 yield; :: gen; dup; shift; println; dup; shift; println; shift; println;", "1\n2\n3");
+    basic_test(":~ gen 0 0 drop; 1 yield; 2 yield; 3 yield; ,, gen; dup; shift; println; dup; shift; println; shift; println;", "1\n2\n3");
 }
 
 #[test]
@@ -283,7 +283,7 @@ fn generator_var_test() {
         n @; yield;
         n @; 1 +; n !;
         n @; 3 >;
-        until; ::
+        until; ,,
 n var; 100 n !;
 gen; dup; shift; println; dup; shift; println; shift; println;
 n @; println;",
@@ -338,7 +338,7 @@ fn ge_test() {
 #[test]
 fn is_null_test() {
     basic_test(
-        ":~ nullgen 0 0 drop; :: nullgen; dup; shift; is-null; nip;",
+        ":~ nullgen 0 0 drop; ,, nullgen; dup; shift; is-null; nip;",
         ".t",
     );
 }
@@ -352,7 +352,7 @@ fn is_list_test() {
 fn read_file_test() {
     basic_test(
         "
-: rl dup; readline; print; ::
+: rl dup; readline; print; ,,
 test-data/readfile r open; rl; rl; rl; rl; rl; drop;
 ",
         "1\n2\n3\n4\n5",
@@ -611,7 +611,7 @@ fn float_test_multiply() {
 
 #[test]
 fn local_var_is_zero() {
-    basic_test(": mfn x var; x @; :: mfn;", "0");
+    basic_test(": mfn x var; x @; ,, mfn;", "0");
 }
 
 #[test]
@@ -622,7 +622,7 @@ fn global_var_is_zero() {
 #[test]
 fn nested_function_vars() {
     basic_test(
-        ": ff n var; 10 n !; f var; [n @; 1 +; n !] f !; f @; funcall; f @; funcall; n @; :: ff;",
+        ": ff n var; 10 n !; f var; [n @; 1 +; n !] f !; f @; funcall; f @; funcall; n @; ,, ff;",
         "12",
     );
 }
@@ -672,7 +672,7 @@ fn misc_lst_fns() {
 
 #[test]
 fn return_test() {
-    basic_test(": f ding println; return; ding println; :: f;", "ding");
+    basic_test(": f ding println; return; ding println; ,, f;", "ding");
 }
 
 #[test]
@@ -731,13 +731,13 @@ fn generator_closure_test() {
     : e
         z var;
         20 z !;
-        : q x @; z @; +; 5 +; ::
+        : q x @; z @; +; 5 +; ,,
         :~ gen 0 0 drop;
             y var; 30 y !;
-            begin; y @; q; +; y !; y @; yield; 0 until; ::
+            begin; y @; q; +; y !; y @; yield; 0 until; ,,
         gen;
-    ::
-    e; ::
+    ,,
+    e; ,,
 
 f;
 dup; shift; println;
@@ -753,7 +753,7 @@ fn anon_fn_test() {
 : f
     x var;
     10 x !;
-    [x @; 20 +;] ::
+    [x @; 20 +;] ,,
 
 f;
 funcall;
@@ -776,7 +776,7 @@ fn json_bool_test() {
 fn comment_test() {
     basic_test("
 # A function.
-: f 100 ::
+: f 100 ,,
 f;
 ", "100");
 }
@@ -847,14 +847,12 @@ fn ip_test() {
 
     basic_test("::/128 ip", "{IP}");
     basic_test("6 10000000000 ip.from-int; ip.to-string", "::2:540b:e400");
-    /*
-    basic_test("31CC::/64 ip; ip.addr", "31CC::");
+    basic_test("31CC::/64 ip; ip.addr", "31cc::");
     basic_test("305F:305F::/32 ip; ip.len", "32");
     basic_test("::2:540b:e400 ip; ip.addr-int", "10000000000");
-    basic_test("3000::/16 ip; ip.last-addr", "3000:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF");
-    basic_test("3000::/16 ip; ip.last-addr-int", "301989887");
+    basic_test("3000::/16 ip; ip.last-addr", "3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff");
+    basic_test("3000::/16 ip; ip.last-addr-int", "63808136094534496727011269389785759743");
     basic_test("::/112 ip; ip.size", "65536");
     basic_test(":: ip; ip.version", "6");
-    basic_test("ABCD::/32 ip; ip.to-string", "ABCD::/32");
-    */
+    basic_test("ABCD::/32 ip; ip.to-string", "abcd::/32");
 }

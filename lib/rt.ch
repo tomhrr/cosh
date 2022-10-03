@@ -1,17 +1,17 @@
-: and if; if; .t else; .f then; else; drop; .f then; ::
-: or if; drop; .t else; if; .t else; .f then; then; ::
-: not if; .f else; .t then; ::
+: and if; if; .t else; .f then; else; drop; .f then; ,,
+: or if; drop; .t else; if; .t else; .f then; then; ,,
+: not if; .f else; .t then; ,,
 
-: nip   swap; drop; ::
-: 2over over; over; ::
-: 2rot  rot;  rot;  ::
+: nip   swap; drop; ,,
+: 2over over; over; ,,
+: 2rot  rot;  rot;  ,,
 
-: <= 2over; <; 2rot; =; or; ::
-: >= 2over; >; 2rot; =; or; ::
+: <= 2over; <; 2rot; =; or; ,,
+: >= 2over; >; 2rot; =; or; ,,
 
-: no-upwards dup; "." =; swap; ".." =; or; not; ::
+: no-upwards dup; "." =; swap; ".." =; or; not; ,,
 
-: is-integer ^\d+ m; ::
+: is-integer ^\d+ m; ,,
 
 :~ lsh 1 0
     0 =; if; . then;
@@ -28,12 +28,12 @@
 	then;
 	yield;
 	.f until;
-    drop; ::
+    drop; ,,
 
 : ls
     depth;
     0 =; if; . then;
-    lsh; [ "/\." m; not; ] grep; ::
+    lsh; [ "/\." m; not; ] grep; ,,
 
 :~ lshr 1 0
     0 =; if; . then;
@@ -68,12 +68,12 @@
                 drop;
             then;
         then;
-	finished @; 1 =; until; ::
+	finished @; 1 =; until; ,,
 
 : lsr
     depth;
     0 =; if; . then;
-    lshr; [ "/\." m; not; ] grep; ::
+    lshr; [ "/\." m; not; ] grep; ,,
 
 :~ f< 1 1
     drop;
@@ -88,7 +88,7 @@
             leave;
         then;
         yield;
-        .f until; ::
+        .f until; ,,
 
 : for
     depth; 2 <; if;
@@ -112,7 +112,7 @@
             leave;
         then;
         fn @; funcall;
-        .f until; ::
+        .f until; ,,
 
 : f>
     depth; 2 <; if;
@@ -128,7 +128,7 @@
         then;
         fh @; swap; writeline;
         .f until;
-    fh @; close; ::
+    fh @; close; ,,
 
 : take
     depth; 2 <; if;
@@ -156,7 +156,7 @@
         drop;
         drop;
         lst @;
-    then; ::
+    then; ,,
 
 : take-all
     depth; 1 <; if;
@@ -172,7 +172,7 @@
         then;
         lst @; swap; push; drop;
         .f until;
-    lst @; ::
+    lst @; ,,
 
 :~ grep-generator 2 2
     drop;
@@ -195,7 +195,7 @@
         else;
             drop;
         then;
-        .f until; ::
+        .f until; ,,
 
 : grep-list
     dup; is-callable; not; if;
@@ -220,7 +220,7 @@
             drop;
         then;
         .f until;
-    reslst @; ::
+    reslst @; ,,
 
 : grep
     depth; 2 <; if;
@@ -232,7 +232,7 @@
     else;
         swap;
         grep-generator;
-    then; ::
+    then; ,,
 
 :~ map-generator 2 2
     drop;
@@ -251,7 +251,7 @@
             leave;
         then;
         fn @; funcall; yield;
-        .f until; ::
+        .f until; ,,
 
 : map-list
     dup; is-callable; not; if;
@@ -273,7 +273,7 @@
         fn @; funcall;
         reslst @; swap; push; drop;
         .f until;
-    reslst @; ::
+    reslst @; ,,
 
 : map
     depth; 2 <; if;
@@ -285,7 +285,7 @@
     else;
         swap;
         map-generator;
-    then; ::
+    then; ,,
 
 :~ range 1 1
     drop;
@@ -297,7 +297,7 @@
     begin;
         i @; yield;
         i @; 1 +; i !;
-        i @; limit @; >=; until; ::
+        i @; limit @; >=; until; ,,
 
 : foldl
     rot;
@@ -316,7 +316,7 @@
             leave;
         then;
         fn @; funcall;
-        .f until; ::
+        .f until; ,,
 
 : partition
     high var; high !;
@@ -349,7 +349,7 @@
     lst @; i @; lst @; high @; nth; nth!; drop;
     lst @; high @; swap @; nth!; drop;
 
-    i @; ::
+    i @; ,,
 
 : sort-internal
     high var; high !;
@@ -367,12 +367,12 @@
     p var; p !;
 
     lst @; low @; p @; 1 -;  sort-internal;
-    lst @; p @; 1 +; high @; sort-internal; ::
+    lst @; p @; 1 +; high @; sort-internal; ,,
 
 : sort
     take-all;
     lst var; lst !;
-    lst @; dup; 0 swap; len; 1 -; sort-internal; lst @; ::
+    lst @; dup; 0 swap; len; 1 -; sort-internal; lst @; ,,
 
 : partitionp
     fn var; fn !;
@@ -406,7 +406,7 @@
     lst @; i @; lst @; high @; nth; nth!; drop;
     lst @; high @; swap @; nth!; drop;
 
-    i @; ::
+    i @; ,,
 
 : sort-internalp
     fn var; fn !;
@@ -425,17 +425,17 @@
     p var; p !;
 
     lst @; low @; p @; 1 -;  fn @; sort-internalp;
-    lst @; p @; 1 +; high @; fn @; sort-internalp; ::
+    lst @; p @; 1 +; high @; fn @; sort-internalp; ,,
 
 : sortp
     fn var; fn !;
     take-all;
     lst var; lst !;
-    lst @; dup; 0 swap; len; 1 -; fn @; sort-internalp; lst @; ::
+    lst @; dup; 0 swap; len; 1 -; fn @; sort-internalp; lst @; ,,
 
-: chomp "\n$" "" s; ::
+: chomp "\n$" "" s; ,,
 
-: sum 0 + foldl; ::
+: sum 0 + foldl; ,,
 
 : any
     depth; 2 <; if;
@@ -459,7 +459,7 @@
         fn @; funcall; if;
             .t leave;
         then;
-        .f until; ::
+        .f until; ,,
 
 : all
     depth; 2 <; if;
@@ -483,7 +483,7 @@
         fn @; funcall; not; if;
             .f leave;
         then;
-        .f until; ::
+        .f until; ,,
 
 : none
     depth; 2 <; if;
@@ -507,9 +507,9 @@
         fn @; funcall; if;
             .f leave;
         then;
-        .f until; ::
+        .f until; ,,
 
-: notall none; ::
+: notall none; ,,
 
 : first
     depth; 2 <; if;
@@ -533,7 +533,7 @@
             leave;
         then;
         drop;
-        .f until; ::
+        .f until; ,,
 
 : min
     depth; 1 <; if;
@@ -557,7 +557,7 @@
         else;
             drop;
         then;
-        .f until; ::
+        .f until; ,,
 
 : max
     depth; 1 <; if;
@@ -581,13 +581,13 @@
         else;
             drop;
         then;
-        .f until; ::
+        .f until; ,,
 
 : product
     depth; 1 <; if;
         "product requires one argument" error;
     then;
-    1 * foldl; ::
+    1 * foldl; ,,
 
 : shuffle
     depth; 1 <; if;
@@ -610,7 +610,7 @@
         rand-index @; temp @; nth!;
         drop;
         i @; 1 +; i !;
-        .f until; ::
+        .f until; ,,
 
 :~ uniq 1 1
     drop;
@@ -630,4 +630,4 @@
         else;
             drop;
         then;
-        .f until; ::
+        .f until; ,,

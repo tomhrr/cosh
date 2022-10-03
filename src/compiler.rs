@@ -442,7 +442,7 @@ impl<'a> Scanner<'a> {
             "]" => TokenType::RightBracket,
             ":" => TokenType::StartFunction,
             ":~" => TokenType::StartGenerator,
-            "::" => TokenType::EndFunction,
+            ",," => TokenType::EndFunction,
             ".t" => TokenType::True,
             ".f" => TokenType::False,
             _ => {

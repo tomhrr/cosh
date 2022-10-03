@@ -22,14 +22,22 @@ fn ipv4_addr_to_int(ipv4: Ipv4Addr) -> u32 {
 
 fn ipv6_addr_to_int(ipv6: Ipv6Addr) -> BigUint {
     let octets = ipv6.octets();
-    let mut n1 = BigUint::from(octets[0]) << 112;
-    n1 = n1 | (BigUint::from(octets[1]) << 96);
-    n1 = n1 | (BigUint::from(octets[2]) << 80);
-    n1 = n1 | (BigUint::from(octets[3]) << 64);
-    n1 = n1 | (BigUint::from(octets[4]) << 48);
-    n1 = n1 | (BigUint::from(octets[5]) << 32);
-    n1 = n1 | (BigUint::from(octets[6]) << 16);
-    n1 = n1 | BigUint::from(octets[7]);
+    let mut n1 = BigUint::from(octets[0]) << 120;
+    n1 = n1 | (BigUint::from(octets[1]) << 112);
+    n1 = n1 | (BigUint::from(octets[2]) << 104);
+    n1 = n1 | (BigUint::from(octets[3]) << 96);
+    n1 = n1 | (BigUint::from(octets[4]) << 88);
+    n1 = n1 | (BigUint::from(octets[5]) << 80);
+    n1 = n1 | (BigUint::from(octets[6]) << 72);
+    n1 = n1 | (BigUint::from(octets[7]) << 64);
+    n1 = n1 | (BigUint::from(octets[8]) << 56);
+    n1 = n1 | (BigUint::from(octets[9]) << 48);
+    n1 = n1 | (BigUint::from(octets[10]) << 40);
+    n1 = n1 | (BigUint::from(octets[11]) << 32);
+    n1 = n1 | (BigUint::from(octets[12]) << 24);
+    n1 = n1 | (BigUint::from(octets[13]) << 16);
+    n1 = n1 | (BigUint::from(octets[14]) << 8);
+    n1 = n1 | BigUint::from(octets[15]);
     return n1;
 }
 
@@ -109,18 +117,22 @@ impl VM {
                         }
                     }
                 } else {
+                    eprintln!("flag1");
                     let ipv6_res;
                     if !s.contains("/") {
                         let s2 = format!("{}/128", s);
                         ipv6_res = Ipv6Net::from_str(&s2);
+                        eprintln!("flag2");
                     } else {
                         ipv6_res = Ipv6Net::from_str(s);
                     }
                     match ipv6_res {
                         Ok(ipv6) => {
+                        eprintln!("flag3");
                             let addr = ipv6.addr();
                             let addr_int = ipv6_addr_to_int(addr);
                             let prefix_len = ipv6.prefix_len();
+                            eprintln!("{} {} {}", addr, addr_int, prefix_len);
                             if prefix_len == 0 && !addr_int.is_zero() {
                                 self.print_error("invalid prefix length");
                                 return 0;

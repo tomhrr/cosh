@@ -56,7 +56,7 @@ stack has an associated definition:
 
 `Function`s are defined like so:
 
-    $ : add-1 1 + ; ::
+    $ : add-1 1 + ; ,,
     $ 1 add-1
     2
 
@@ -178,11 +178,11 @@ global definitions:
 
     $ x var; 10 x !; x @;
     10
-    $ : mf1 x var; 20 x !; x @; .s; drop; :: mf1 ;
+    $ : mf1 x var; 20 x !; x @; .s; drop; ,, mf1 ;
     20
     $ x @;
     10
-    $ : mf2 20 x !; x @; .s; drop; :: mf2 ;
+    $ : mf2 20 x !; x @; .s; drop; ,, mf2 ;
     20
     $ x @;
     20
@@ -201,8 +201,8 @@ returns to the caller.  When the generator object is next iterated,
 execution resumes from the point after the `yield` statement.  For
 example:
 
-    $ :~ gen 0 0 drop; n var; 0 n !; begin; n @; yield; n @; 1 +; n !; n @; 3 >; until; ::
-    $ : iter dup; shift; println; ::
+    $ :~ gen 0 0 drop; n var; 0 n !; begin; n @; yield; n @; 1 +; n !; n @; 3 >; until; ,,
+    $ : iter dup; shift; println; ,,
     $ gen; iter; iter; iter; iter; drop;
     0
     1
@@ -260,7 +260,7 @@ will also be a generator.
 `map` iterates over a list, applying a function to each element and
 collecting the results into a new list:
 
-    $ : add-1 1 + ; ::
+    $ : add-1 1 + ; ,,
     $ (1 2 3 4) add-1 map
     (
         2
@@ -272,7 +272,7 @@ collecting the results into a new list:
 `grep` iterates over a list, applying a predicate to each element and
 collecting the values for which the predicate is true into a new list:
 
-    $ : <4 4 < ; ::
+    $ : <4 4 < ; ,,
     $ (1 2 3 4) add-1 map; <4 grep;
     (
         2

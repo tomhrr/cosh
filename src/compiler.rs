@@ -202,7 +202,7 @@ impl<'a> Scanner<'a> {
                 match buffer[0] as char {
                     '#' => {
                         let mut ignored = String::new();
-                        self.fh.read_line(&mut ignored);
+                        self.fh.read_line(&mut ignored).unwrap();
                         self.line_number = self.line_number + 1;
                         return Token::new(
                             TokenType::Retry,
@@ -486,9 +486,7 @@ impl<'a> Scanner<'a> {
 /// bytecode, in the form of a chunk.
 #[derive(Debug)]
 pub struct Compiler {
-    debug: bool,
     locals: Vec<Local>,
-    local_count: u8,
     scope_depth: u32,
 }
 
@@ -502,11 +500,9 @@ pub fn escape_string(s: &str) -> String {
 }
 
 impl Compiler {
-    pub fn new(debug: bool) -> Compiler {
+    pub fn new() -> Compiler {
         Compiler {
-            debug: debug,
             locals: Vec::new(),
-            local_count: 0,
             scope_depth: 0,
         }
     }

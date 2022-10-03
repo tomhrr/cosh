@@ -388,7 +388,7 @@ impl VM {
 
         match lib_str_opt {
             Some(s) => {
-                let mut compiler = Compiler::new(false);
+                let mut compiler = Compiler::new();
                 let import_chunk_opt = compiler.deserialise(s);
                 match import_chunk_opt {
                     Some(import_chunk) => {
@@ -1594,7 +1594,7 @@ impl VM {
 	    self.global_functions.insert(k.clone(), v.clone());
 	}
 
-        let mut compiler = Compiler::new(self.debug);
+        let mut compiler = Compiler::new();
         let chunk_opt = compiler.compile(fh, name);
         match chunk_opt {
             None => return None,

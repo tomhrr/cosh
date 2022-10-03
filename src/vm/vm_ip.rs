@@ -235,8 +235,6 @@ impl VM {
                 return 0;
             }
         }
-
-        return 1;
     }
 
     /// Returns the prefix length of an IP object.
@@ -263,8 +261,6 @@ impl VM {
                 return 0;
             }
         }
-
-        return 1;
     }
 
     /// Returns the first address of the IP object as an integer.
@@ -284,7 +280,6 @@ impl VM {
                 return 1;
             }
             Value::Ipv6(ipv6net) => {
-                let ipv6addr = ipv6net.network();
                 let ipv6addr_int =
                     ipv6_addr_to_int(ipv6net.network());
                 let st = Value::BigInt(BigInt::from(ipv6addr_int));
@@ -296,8 +291,6 @@ impl VM {
                 return 0;
             }
         }
-
-        return 1;
     }
 
     /// Returns the last address of the IP object.
@@ -445,11 +438,11 @@ impl VM {
 
         let ip_rr = self.stack.pop().unwrap();
         match ip_rr {
-            Value::Ipv4(ipv4net) => {
+            Value::Ipv4(_) => {
                 self.stack.push(Value::Int(4));
                 return 1;
             }
-            Value::Ipv6(ipv6net) => {
+            Value::Ipv6(_) => {
                 self.stack.push(Value::Int(6));
             }
             _ => {
@@ -506,7 +499,5 @@ impl VM {
                 return 0;
             }
         }
-
-        return 1;
     }
 }

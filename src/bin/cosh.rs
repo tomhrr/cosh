@@ -429,7 +429,7 @@ fn main() {
     if !matches.free.is_empty() {
         let path = &matches.free[0];
         if matches.opt_present("disassemble") {
-            let mut compiler = Compiler::new(debug);
+            let mut compiler = Compiler::new();
             let chunk_opt = compiler.deserialise(path);
             if chunk_opt.is_none() {
                 eprintln!("unable to deserialise file");
@@ -438,7 +438,7 @@ fn main() {
             let chunk = chunk_opt.unwrap();
             chunk.disassemble(path);
         } else if matches.opt_present("bytecode") {
-            let mut compiler = Compiler::new(debug);
+            let mut compiler = Compiler::new();
             let chunk_opt = compiler.deserialise(path);
             if chunk_opt.is_none() {
                 eprintln!("unable to deserialise file");
@@ -475,7 +475,7 @@ fn main() {
             let file = file_res.unwrap();
             let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
             if matches.opt_present("c") {
-                let mut compiler = Compiler::new(debug);
+                let mut compiler = Compiler::new();
                 let re_pre = Regex::new(r#".*/"#).unwrap();
                 let path1 = re_pre.replace_all(path, "");
                 let re_post = Regex::new(r#"\..*"#).unwrap();
@@ -512,7 +512,7 @@ fn main() {
                 }
             } else {
                 let mut vm = VM::new(true, debug);
-                let mut compiler = Compiler::new(debug);
+                let mut compiler = Compiler::new();
                 let mut global_functions = HashMap::new();
 
                 if !matches.opt_present("no-rt") {
@@ -538,7 +538,7 @@ fn main() {
             }
         }
     } else {
-        let mut compiler = Compiler::new(debug);
+        let mut compiler = Compiler::new();
         let mut global_functions = HashMap::new();
 
         if !matches.opt_present("no-rt") {

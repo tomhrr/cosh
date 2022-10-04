@@ -855,4 +855,23 @@ fn ip_test() {
     basic_test("::/112 ip; ip.size", "65536");
     basic_test(":: ip; ip.version", "6");
     basic_test("ABCD::/32 ip; ip.to-string", "abcd::/32");
+
+    basic_test("1.0.0.0-1.0.0.255 ip", "{IP}");
+    basic_test("1.0.0.0-1.0.0.255 ip; ip.addr", "1.0.0.0");
+    basic_test("3.1.0.0-3.1.255.255 ip; ip.len", "16");
+    basic_test("0.0.0.0-255.255.255.255 ip; ip.addr-int", "0");
+    basic_test("16.0.0.0-17.255.255.255 ip; ip.last-addr", "17.255.255.255");
+    basic_test("16.0.0.0-17.255.255.255 ip; ip.last-addr-int", "301989887");
+    basic_test("1.0.0.0-1.0.0.255 ip; ip.size", "256");
+    basic_test("1.0.0.0-1.0.0.255 ip; ip.version", "4");
+    basic_test("1.0.0.0-1.0.0.255 ip; ip.to-string", "1.0.0.0-1.0.0.255");
+
+    basic_test("31CC::-31CC::ffff:ffff:ffff:ffff ip; ip.addr", "31cc::");
+    basic_test("305F:305F::-305F:305F:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.len", "32");
+    basic_test("::2:540b:e400 ip; ip.addr-int", "10000000000");
+    basic_test("3000::-3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.last-addr", "3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff");
+    basic_test("3000::-3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.last-addr-int", "63808136094534496727011269389785759743");
+    basic_test("::/112 ip; ip.size", "65536");
+    basic_test(":: ip; ip.version", "6");
+    basic_test("ABCD::-ABCD:0000:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.to-string", "abcd::-abcd:0:ffff:ffff:ffff:ffff:ffff:ffff");
 }

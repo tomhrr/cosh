@@ -7,6 +7,7 @@ use std::fs::File;
 use std::fs::ReadDir;
 use std::io::BufReader;
 use std::io::BufWriter;
+use std::net::{Ipv4Addr, Ipv6Addr};
 use std::rc::Rc;
 use std::str;
 
@@ -123,6 +124,30 @@ impl HashWithIndex {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Ipv4Range {
+    pub s: Ipv4Addr,
+    pub e: Ipv4Addr
+}
+
+impl Ipv4Range {
+    pub fn new(s: Ipv4Addr, e: Ipv4Addr) -> Ipv4Range {
+        Ipv4Range { s: s, e: e }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Ipv6Range {
+    pub s: Ipv6Addr,
+    pub e: Ipv6Addr
+}
+
+impl Ipv6Range {
+    pub fn new(s: Ipv6Addr, e: Ipv6Addr) -> Ipv6Range {
+        Ipv6Range { s: s, e: e }
+    }
+}
+
 /// The core value type used by the compiler and VM.
 #[derive(Clone)]
 pub enum Value {
@@ -177,10 +202,14 @@ pub enum Value {
     DateTimeNT(DateTime<chrono_tz::Tz>),
     /// A datetime with an offset timezone.
     DateTimeOT(DateTime<FixedOffset>),
-    /// An IPv4 address range object.
+    /// An IPv4 address/prefix object.
     Ipv4(Ipv4Net),
-    /// An IPv6 address range object.
+    /// An IPv6 address/prefix object.
     Ipv6(Ipv6Net),
+    /// An IPv4 range object (arbitrary start/end addresses).
+    Ipv4Range(Ipv4Range),
+    /// An IPv6 range object (arbitrary start/end addresses).
+    Ipv6Range(Ipv6Range),
 }
 
 impl fmt::Debug for Value {
@@ -259,7 +288,13 @@ impl fmt::Debug for Value {
             Value::Ipv4(_) => {
                 write!(f, "((IPv4))")
             }
+            Value::Ipv4Range(_) => {
+                write!(f, "((IPv4Range))")
+            }
             Value::Ipv6(_) => {
+                write!(f, "((IPv6))")
+            }
+            Value::Ipv6Range(_) => {
                 write!(f, "((IPv6))")
             }
         }
@@ -1129,7 +1164,9 @@ impl Value {
             Value::DateTimeNT(_) => self.clone(),
             Value::DateTimeOT(_) => self.clone(),
             Value::Ipv4(_) => self.clone(),
+            Value::Ipv4Range(_) => self.clone(),
             Value::Ipv6(_) => self.clone(),
+            Value::Ipv6Range(_) => self.clone(),
         }
     }
 }

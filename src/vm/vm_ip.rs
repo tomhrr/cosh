@@ -670,7 +670,7 @@ impl VM {
     /// Returns the IP object as a string.
     pub fn core_ip_to_string(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            self.print_error("ip.version requires one argument");
+            self.print_error("ip.to-string requires one argument");
             return 0;
         }
 
@@ -732,5 +732,83 @@ impl VM {
                 return 0;
             }
         }
+    }
+
+    /// Returns the IP object as a list of prefix strings.
+    pub fn core_ip_to_prefixes(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("ip.to-prefixes requires one argument");
+            return 0;
+        }
+
+        let ip_rr = self.stack.pop().unwrap();
+        let mut lst = VecDeque::new();
+        match ip_rr {
+            Value::Ipv4(ipv4net) => {
+                let ip_str = format!("{}", ipv4net);
+                let sp = StringPair::new(ip_str, None);
+                let st = Value::String(Rc::new(RefCell::new(sp)));
+                lst.push_back(st);
+            }
+            Value::Ipv4Range(ipv4range) => {
+                let s = ipv4range.s;
+                let e = ipv4range.e;
+                let mut s_num = ipv4_addr_to_int(s);
+                let e_num = ipv4_addr_to_int(e);
+                if (s_num == 0) && (e_num == !0) {
+                    let sp = StringPair::new("0.0.0.0/0".to_string(), None);
+                    let st = Value::String(Rc::new(RefCell::new(sp)));
+                    lst.push_back(st);
+                } else {
+                    while s_num <= e_num {
+                        let mut host_count = s_num & !(s_num - 1);
+                        while s_num + host_count - 1 > e_num {
+                            host_count = host_count / 2;
+                        }
+                        let fst = int_to_ipv4_addr(s_num);
+                        s_num = s_num + host_count;
+                        let mut len = 32;
+                        while (host_count & 1) != 1 {
+                            host_count = host_count >> 1;
+                            len = len - 1;
+                        }
+                        let pfx = format!("{}/{}", fst, len);
+                        let sp = StringPair::new(pfx, None);
+                        let st = Value::String(Rc::new(RefCell::new(sp)));
+                        lst.push_back(st);
+                    }
+                }
+            }
+            Value::Ipv6(ipv6net) => {
+                let ip_str =
+                    format!("{}/{}",
+                            ipv6net.network(), ipv6net.prefix_len());
+                let sp = StringPair::new(ip_str, None);
+                let st = Value::String(Rc::new(RefCell::new(sp)));
+                lst.push_back(st);
+            }
+            Value::Ipv6Range(_) => {
+                self.print_error("unhandled IPv6 range argument");
+                return 0;
+            }
+            _ => {
+                self.print_error("expected IP object argument");
+                return 0;
+            }
+        }
+
+        let vlst = Value::List(Rc::new(RefCell::new(lst)));
+        self.stack.push(vlst);
+
+        return 1;
+    }
+
+    pub fn core_ips(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("ips requires one argument");
+            return 0;
+        }
+
+        return 1;
     }
 }

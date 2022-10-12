@@ -875,3 +875,11 @@ fn ip_test() {
     basic_test(":: ip; ip.version", "6");
     basic_test("ABCD::-ABCD:0000:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.to-string", "abcd::-abcd:0:ffff:ffff:ffff:ffff:ffff:ffff");
 }
+
+#[test]
+fn ipset_test() {
+    basic_test("1.0.0.0/8 ip; ip.to-prefixes;",
+               "(\n    1.0.0.0/8\n)");
+    basic_test("0.0.0.251-0.0.5.16 ip; ip.to-prefixes;",
+               "(\n    0.0.0.251/32\n    0.0.0.252/30\n    0.0.1.0/24\n    0.0.2.0/23\n    0.0.4.0/24\n    0.0.5.0/28\n    0.0.5.16/32\n)");
+}

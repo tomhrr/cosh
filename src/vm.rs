@@ -235,6 +235,7 @@ lazy_static! {
         map.insert("ip.size", VM::core_ip_size as fn(&mut VM) -> i32);
         map.insert("ip.version", VM::core_ip_version as fn(&mut VM) -> i32);
         map.insert("ip.to-string", VM::core_ip_to_string as fn(&mut VM) -> i32);
+        map.insert("ip.to-prefixes", VM::core_ip_to_prefixes as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

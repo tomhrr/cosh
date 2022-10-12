@@ -14,6 +14,7 @@ use std::str;
 use chrono::prelude::*;
 use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
+use iprange::IpRange;
 use num::FromPrimitive;
 use num::ToPrimitive;
 use num_bigint::BigInt;
@@ -148,6 +149,18 @@ impl Ipv6Range {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct IpSet {
+    pub ipv4: IpRange<Ipv4Net>,
+    pub ipv6: IpRange<Ipv6Net>,
+}
+
+impl IpSet {
+    pub fn new(ipv4: IpRange<Ipv4Net>, ipv6: IpRange<Ipv6Net>) -> IpSet {
+        IpSet { ipv4: ipv4, ipv6: ipv6 }
+    }
+}
+
 /// The core value type used by the compiler and VM.
 #[derive(Clone)]
 pub enum Value {
@@ -210,6 +223,8 @@ pub enum Value {
     Ipv4Range(Ipv4Range),
     /// An IPv6 range object (arbitrary start/end addresses).
     Ipv6Range(Ipv6Range),
+    /// An IP set (IPv4 and IPv6 together).
+    IpSet(IpSet),
 }
 
 impl fmt::Debug for Value {
@@ -296,6 +311,9 @@ impl fmt::Debug for Value {
             }
             Value::Ipv6Range(_) => {
                 write!(f, "((IPv6))")
+            }
+            Value::IpSet(_) => {
+                write!(f, "((IpSet))")
             }
         }
     }
@@ -1167,6 +1185,7 @@ impl Value {
             Value::Ipv4Range(_) => self.clone(),
             Value::Ipv6(_) => self.clone(),
             Value::Ipv6Range(_) => self.clone(),
+            Value::IpSet(_) => self.clone(),
         }
     }
 }

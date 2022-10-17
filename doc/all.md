@@ -653,6 +653,8 @@ result.
  - `ip.to-string`: Takes an IP object and returns its stringification.
    The prefix length will be omitted if the object is for a single
    address.
+ - `ip.to-prefixes`: Takes an IP object and returns the a list
+   comprising the prefixes (as strings) that make up the object.
 
 ### Miscellaneous functions
 

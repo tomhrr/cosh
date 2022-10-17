@@ -787,9 +787,35 @@ impl VM {
                 let st = Value::String(Rc::new(RefCell::new(sp)));
                 lst.push_back(st);
             }
-            Value::Ipv6Range(_) => {
-                self.print_error("unhandled IPv6 range argument");
-                return 0;
+            Value::Ipv6Range(ipv6range) => {
+                let s = ipv6range.s;
+                let e = ipv6range.e;
+                let mut s_num = ipv6_addr_to_int(s);
+                let e_num = ipv6_addr_to_int(e);
+
+                let one = BigUint::from(1u8);
+                let mut max: BigUint = BigUint::from(1u8) << 128;
+                max = max - 1u8;
+
+                while s_num <= e_num {
+                    let n = s_num.clone() - one.clone();
+                    let n_negated = n ^ max.clone();
+                    let mut host_count = s_num.clone() & n_negated;
+                    while s_num.clone() + host_count.clone() - one.clone() > e_num {
+                        host_count = host_count.clone() / 2u8;
+                    }
+                    let fst = int_to_ipv6_addr(s_num.clone());
+                    s_num = s_num.clone() + host_count.clone();
+                    let mut len = 128;
+                    while (host_count.clone() & one.clone()) != one {
+                        host_count = host_count.clone() >> 1u8;
+                        len = len - 1;
+                    }
+                    let pfx = format!("{}/{}", fst, len);
+                    let sp = StringPair::new(pfx, None);
+                    let st = Value::String(Rc::new(RefCell::new(sp)));
+                    lst.push_back(st);
+                }
             }
             _ => {
                 self.print_error("expected IP object argument");

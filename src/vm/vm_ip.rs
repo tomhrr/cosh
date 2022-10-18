@@ -1,10 +1,11 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use ipnet::{Ipv4Net, Ipv6Net};
+use iprange::IpRange;
 use num_bigint::{BigInt, BigUint};
 use num_traits::{FromPrimitive, ToPrimitive, Zero};
 
-use chunk::{Ipv4Range, Ipv6Range};
+use chunk::{Ipv4Range, Ipv6Range, IpSet};
 use vm::*;
 
 fn ipv4_addr_to_int(ipv4: Ipv4Addr) -> u32 {
@@ -48,6 +49,65 @@ fn int_to_ipv6_addr(n: BigUint) -> Ipv6Addr {
     let o8 = (n.clone()           & mask.clone()).to_u16().unwrap();
     let ipv6 = Ipv6Addr::new(o1, o2, o3, o4, o5, o6, o7, o8);
     return ipv6;
+}
+
+fn ipv4range_to_nets(ipv4range: Ipv4Range) -> VecDeque<Ipv4Net> {
+    let mut lst = VecDeque::new();
+    let s = ipv4range.s;
+    let e = ipv4range.e;
+    let mut s_num = ipv4_addr_to_int(s);
+    let e_num = ipv4_addr_to_int(e);
+    if (s_num == 0) && (e_num == !0) {
+        lst.push_back(Ipv4Net::from_str("0.0.0.0/0").unwrap());
+    } else {
+        while s_num <= e_num {
+            let mut host_count = s_num & !(s_num - 1);
+            while s_num + host_count - 1 > e_num {
+                host_count = host_count / 2;
+            }
+            let fst = int_to_ipv4_addr(s_num);
+            s_num = s_num + host_count;
+            let mut len = 32;
+            while (host_count & 1) != 1 {
+                host_count = host_count >> 1;
+                len = len - 1;
+            }
+            let pfx = format!("{}/{}", fst, len);
+            lst.push_back(Ipv4Net::from_str(&pfx).unwrap());
+        }
+    }
+    return lst;
+}
+
+fn ipv6range_to_nets(ipv6range: Ipv6Range) -> VecDeque<Ipv6Net> {
+    let mut lst = VecDeque::new();
+    let s = ipv6range.s;
+    let e = ipv6range.e;
+    let mut s_num = ipv6_addr_to_int(s);
+    let e_num = ipv6_addr_to_int(e);
+
+    let one = BigUint::from(1u8);
+    let mut max: BigUint = BigUint::from(1u8) << 128;
+    max = max - 1u8;
+
+    while s_num <= e_num {
+        let n = s_num.clone() - one.clone();
+        let n_negated = n ^ max.clone();
+        let mut host_count = s_num.clone() & n_negated;
+        while s_num.clone() + host_count.clone() - one.clone() > e_num {
+            host_count = host_count.clone() / 2u8;
+        }
+        let fst = int_to_ipv6_addr(s_num.clone());
+        s_num = s_num.clone() + host_count.clone();
+        let mut len = 128;
+        while (host_count.clone() & one.clone()) != one {
+            host_count = host_count.clone() >> 1u8;
+            len = len - 1;
+        }
+        let pfx = format!("{}/{}", fst, len);
+        lst.push_back(Ipv6Net::from_str(&pfx).unwrap());
+    }
+    return lst;
 }
 
 impl VM {
@@ -734,7 +794,7 @@ impl VM {
         }
     }
 
-    /// Returns the IP object as a list of prefix strings.
+    /// Returns the IP object as a set of IP prefixes.
     pub fn core_ip_to_prefixes(&mut self) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("ip.to-prefixes requires one argument");
@@ -742,79 +802,25 @@ impl VM {
         }
 
         let ip_rr = self.stack.pop().unwrap();
-        let mut lst = VecDeque::new();
+        let mut lst1 = VecDeque::new();
+        let mut lst3 = VecDeque::new();
         match ip_rr {
             Value::Ipv4(ipv4net) => {
-                let ip_str = format!("{}", ipv4net);
-                let sp = StringPair::new(ip_str, None);
-                let st = Value::String(Rc::new(RefCell::new(sp)));
-                lst.push_back(st);
+                lst1.push_back(ipv4net);
             }
             Value::Ipv4Range(ipv4range) => {
-                let s = ipv4range.s;
-                let e = ipv4range.e;
-                let mut s_num = ipv4_addr_to_int(s);
-                let e_num = ipv4_addr_to_int(e);
-                if (s_num == 0) && (e_num == !0) {
-                    let sp = StringPair::new("0.0.0.0/0".to_string(), None);
-                    let st = Value::String(Rc::new(RefCell::new(sp)));
-                    lst.push_back(st);
-                } else {
-                    while s_num <= e_num {
-                        let mut host_count = s_num & !(s_num - 1);
-                        while s_num + host_count - 1 > e_num {
-                            host_count = host_count / 2;
-                        }
-                        let fst = int_to_ipv4_addr(s_num);
-                        s_num = s_num + host_count;
-                        let mut len = 32;
-                        while (host_count & 1) != 1 {
-                            host_count = host_count >> 1;
-                            len = len - 1;
-                        }
-                        let pfx = format!("{}/{}", fst, len);
-                        let sp = StringPair::new(pfx, None);
-                        let st = Value::String(Rc::new(RefCell::new(sp)));
-                        lst.push_back(st);
-                    }
+                let lst2 = ipv4range_to_nets(ipv4range);
+                for el in lst2.iter() {
+                    lst1.push_back(*el);
                 }
             }
             Value::Ipv6(ipv6net) => {
-                let ip_str =
-                    format!("{}/{}",
-                            ipv6net.network(), ipv6net.prefix_len());
-                let sp = StringPair::new(ip_str, None);
-                let st = Value::String(Rc::new(RefCell::new(sp)));
-                lst.push_back(st);
+                lst3.push_back(ipv6net);
             }
             Value::Ipv6Range(ipv6range) => {
-                let s = ipv6range.s;
-                let e = ipv6range.e;
-                let mut s_num = ipv6_addr_to_int(s);
-                let e_num = ipv6_addr_to_int(e);
-
-                let one = BigUint::from(1u8);
-                let mut max: BigUint = BigUint::from(1u8) << 128;
-                max = max - 1u8;
-
-                while s_num <= e_num {
-                    let n = s_num.clone() - one.clone();
-                    let n_negated = n ^ max.clone();
-                    let mut host_count = s_num.clone() & n_negated;
-                    while s_num.clone() + host_count.clone() - one.clone() > e_num {
-                        host_count = host_count.clone() / 2u8;
-                    }
-                    let fst = int_to_ipv6_addr(s_num.clone());
-                    s_num = s_num.clone() + host_count.clone();
-                    let mut len = 128;
-                    while (host_count.clone() & one.clone()) != one {
-                        host_count = host_count.clone() >> 1u8;
-                        len = len - 1;
-                    }
-                    let pfx = format!("{}/{}", fst, len);
-                    let sp = StringPair::new(pfx, None);
-                    let st = Value::String(Rc::new(RefCell::new(sp)));
-                    lst.push_back(st);
+                let lst2 = ipv6range_to_nets(ipv6range);
+                for el in lst2.iter() {
+                    lst3.push_back(*el);
                 }
             }
             _ => {
@@ -823,18 +829,166 @@ impl VM {
             }
         }
 
-        let vlst = Value::List(Rc::new(RefCell::new(lst)));
+        let rlst =
+            if lst1.len() > 0 {
+                lst1.iter().map(|e| Value::Ipv4(*e)).collect()
+            } else {
+                lst3.iter().map(|e| Value::Ipv6(*e)).collect()
+            };
+
+        let vlst = Value::List(Rc::new(RefCell::new(rlst)));
         self.stack.push(vlst);
 
         return 1;
     }
 
+    /// Converts an arbitrary value into a list of IP net objects.
+    pub fn value_to_nets(&mut self, value_rr: Value) -> Option<(VecDeque<Ipv4Net>, VecDeque<Ipv6Net>)> {
+        let mut ipv4_nets = VecDeque::new();
+        let mut ipv6_nets = VecDeque::new();
+        match value_rr {
+            Value::List(lst) => {
+                for el in lst.borrow().iter() {
+                    let opt = self.value_to_nets(el.clone());
+                    match opt {
+                        Some((ipv4_nets2, ipv6_nets2)) => {
+                            for el2 in ipv4_nets2.iter() {
+                                ipv4_nets.push_back(*el2);
+                            }
+                            for el2 in ipv6_nets2.iter() {
+                                ipv6_nets.push_back(*el2);
+                            }
+                        }
+                        None => {
+                            return None;
+                        }
+                    }
+                }
+            }
+            Value::Ipv4(ipv4net) => {
+                ipv4_nets.push_back(ipv4net);
+            }
+            Value::Ipv6(ipv6net) => {
+                ipv6_nets.push_back(ipv6net);
+            }
+            Value::Ipv4Range(ipv4range) => {
+                let lst_ipv4 = ipv4range_to_nets(ipv4range);
+                for el in lst_ipv4.iter() {
+                    ipv4_nets.push_back(*el);
+                }
+            }
+            Value::Ipv6Range(ipv6range) => {
+                let lst_ipv6 = ipv6range_to_nets(ipv6range);
+                for el in lst_ipv6.iter() {
+                    ipv6_nets.push_back(*el);
+                }
+            }
+            _ => {
+                self.stack.push(value_rr);
+                let res = self.core_ip();
+                if res == 0 {
+                    return None;
+                }
+                let new_value_rr = self.stack.pop().unwrap();
+                let opt = self.value_to_nets(new_value_rr);
+                match opt {
+                    Some((ipv4_nets2, ipv6_nets2)) => {
+                        for el2 in ipv4_nets2.iter() {
+                            ipv4_nets.push_back(*el2);
+                        }
+                        for el2 in ipv6_nets2.iter() {
+                            ipv6_nets.push_back(*el2);
+                        }
+                    }
+                    None => {
+                        return None;
+                    }
+                }
+            }
+        }
+        return Some((ipv4_nets, ipv6_nets));
+    }
+
+    /// Parses an arbitrary argument into an IP set object.
     pub fn core_ips(&mut self) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("ips requires one argument");
             return 0;
         }
 
-        return 1;
+        let lst_rr = self.stack.pop().unwrap();
+        let res = self.value_to_nets(lst_rr);
+        match res {
+            Some((ipv4_nets, ipv6_nets)) => {
+                let mut ipv4_range = IpRange::new();
+                for el in ipv4_nets.iter() {
+                    ipv4_range.add(*el);
+                }
+                ipv4_range.simplify();
+                let mut ipv6_range = IpRange::new();
+                for el in ipv6_nets.iter() {
+                    ipv6_range.add(*el);
+                }
+                ipv6_range.simplify();
+                let nv = IpSet::new(ipv4_range, ipv6_range);
+                let nvv = Value::IpSet(nv);
+                self.stack.push(nvv);
+                return 1;
+            }
+            None => {
+                return 0;
+            }
+        }
+    }
+
+    /// Returns the IP set as a string.
+    pub fn core_ips_to_string(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("ips.to-string requires one argument");
+            return 0;
+        }
+
+        let val_rr = self.stack.pop().unwrap();
+        match val_rr {
+            Value::IpSet(ipset) => {
+                let ipv4range = ipset.ipv4;
+                let ipv6range = ipset.ipv6;
+                let mut lst = Vec::new();
+                for ipv4net in ipv4range.iter() {
+                    let prefix_len = ipv4net.prefix_len();
+                    if prefix_len == 32 {
+                        let ip_str = format!("{}", ipv4net);
+                        let ip_str_no_len =
+                            ip_str.chars().take_while(|&c| c != '/')
+                                        .collect::<String>();
+                        lst.push(ip_str_no_len);
+                    } else {
+                        let ip_str = format!("{}", ipv4net);
+                        lst.push(ip_str);
+                    }
+                }
+                for ipv6net in ipv6range.iter() {
+                    let prefix_len = ipv6net.prefix_len();
+                    if prefix_len == 128 {
+                        let ip_str = format!("{}", ipv6net.network());
+                        lst.push(ip_str);
+                    } else {
+                        let ip_str =
+                            format!("{}/{}",
+                                    ipv6net.network(), ipv6net.prefix_len());
+                        lst.push(ip_str);
+                    }
+                }
+                let final_str = lst.join(",");
+                let sp = StringPair::new(final_str, None);
+                let v = Value::String(Rc::new(RefCell::new(sp)));
+                self.stack.push(v);
+                return 1;
+            }
+            _ => {
+                self.print_error("expected IP set argument");
+                return 0;
+            }
+        }
     }
 }

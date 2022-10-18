@@ -889,4 +889,10 @@ fn ipset_test() {
 
     basic_test("(0.0.0.0/8 1.0.0.0/8) ips; ips.to-string", "0.0.0.0/7");
     basic_test("(:: ::1) ips; ips.to-string", "::/127");
+    basic_test("(::) ips; ::1 ips; ips.union; ips.to-string", "::/127");
+    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.isect; ips.to-string", "1.128.0.0/9");
+    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.diff; ips.to-string", "1.0.0.0/9");
+    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.symdiff; ips.to-string", "2.0.0.0/8,1.0.0.0/9");
+    basic_test("1.0.0.0-1.255.255.255 ips; ips.to-prefixes; ip.to-string map", "(\n    1.0.0.0/8\n)");
+    basic_test("1.0.0.0-1.255.255.255 ips; dup; ips.=;", ".t");
 }

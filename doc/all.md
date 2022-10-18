@@ -653,8 +653,27 @@ result.
  - `ip.to-string`: Takes an IP object and returns its stringification.
    The prefix length will be omitted if the object is for a single
    address.
- - `ip.to-prefixes`: Takes an IP object and returns the a list
-   comprising the prefixes (as strings) that make up the object.
+ - `ip.to-prefixes`: Takes an IP object and returns a list
+   comprising the prefixes (as IP objects) that make up the object.
+   (The main use of this is for converting a range into a set of
+   prefixes, if necessary.)
+
+There is also a separate IP set object, for storing multiple IP
+address ranges in a single type, with associated functions:
+
+ - `ips`: Takes a single IP address or range as a string or a list of
+   IP address objects or IP address/range strings as its single
+   argument, and returns an IP set object for those addresses/ranges.
+ - `ips.union`: Takes two IP sets and returns their union.
+ - `ips.isect`: Takes two IP sets and returns their intersection.
+ - `ips.diff`: Takes two IP sets and returns their difference (i.e. A
+   less B).
+ - `ips.symdiff`: Takes two IP sets and returns their symmetric
+   difference (i.e. A union B, less A intersection B).
+ - `ips.=`: Check if two IP sets are equal.
+ - `ips.to-string`: Takes an IP set and returns its stringification.
+ - `ips.to-prefixes`: Takes an IP set and returns a list comprising
+   the prefixes (as IP objects) that make up the object.
 
 ### Miscellaneous functions
 

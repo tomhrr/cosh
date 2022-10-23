@@ -61,7 +61,12 @@ fn ipv4range_to_nets(ipv4range: Ipv4Range) -> VecDeque<Ipv4Net> {
         lst.push_back(Ipv4Net::from_str("0.0.0.0/0").unwrap());
     } else {
         while s_num <= e_num {
-            let mut host_count = s_num & !(s_num - 1);
+            let mut host_count =
+                if s_num == 0 {
+                    (!0 >> 1) + 1
+                } else {
+                    s_num & !(s_num - 1)
+                };
             while s_num + host_count - 1 > e_num {
                 host_count = host_count / 2;
             }
@@ -86,14 +91,20 @@ fn ipv6range_to_nets(ipv6range: Ipv6Range) -> VecDeque<Ipv6Net> {
     let mut s_num = ipv6_addr_to_int(s);
     let e_num = ipv6_addr_to_int(e);
 
+    let zero = BigUint::from(0u8);
     let one = BigUint::from(1u8);
     let mut max: BigUint = BigUint::from(1u8) << 128;
     max = max - 1u8;
 
     while s_num <= e_num {
-        let n = s_num.clone() - one.clone();
-        let n_negated = n ^ max.clone();
-        let mut host_count = s_num.clone() & n_negated;
+        let mut host_count =
+            if s_num == zero {
+                (max.clone() >> 1) + one.clone()
+            } else {
+                let n = s_num.clone() - one.clone();
+                let n_negated = n ^ max.clone();
+                s_num.clone() & n_negated
+            };
         while s_num.clone() + host_count.clone() - one.clone() > e_num {
             host_count = host_count.clone() / 2u8;
         }

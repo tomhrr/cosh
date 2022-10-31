@@ -965,7 +965,9 @@ impl VM {
                 let ipv4range = ipset.ipv4;
                 let ipv6range = ipset.ipv6;
                 let mut lst = Vec::new();
-                for ipv4net in ipv4range.iter() {
+                let mut ipv4lst = ipv4range.iter().collect::<Vec<Ipv4Net>>();
+                ipv4lst.sort_by(|a, b| a.network().cmp(&b.network()));
+                for ipv4net in ipv4lst.iter() {
                     let prefix_len = ipv4net.prefix_len();
                     if prefix_len == 32 {
                         let ip_str = format!("{}", ipv4net);
@@ -978,7 +980,9 @@ impl VM {
                         lst.push(ip_str);
                     }
                 }
-                for ipv6net in ipv6range.iter() {
+                let mut ipv6lst = ipv6range.iter().collect::<Vec<Ipv6Net>>();
+                ipv6lst.sort_by(|a, b| a.network().cmp(&b.network()));
+                for ipv6net in ipv6lst.iter() {
                     let prefix_len = ipv6net.prefix_len();
                     if prefix_len == 128 {
                         let ip_str = format!("{}", ipv6net.network());
@@ -1164,11 +1168,15 @@ impl VM {
                 let ipset_ipv4 = ipset.ipv4;
                 let ipset_ipv6 = ipset.ipv6;
                 let mut lst = VecDeque::new();
-                for el in ipset_ipv4.iter() {
-                    lst.push_back(Value::Ipv4(el));
+                let mut ipv4lst = ipset_ipv4.iter().collect::<Vec<Ipv4Net>>();
+                ipv4lst.sort_by(|a, b| a.network().cmp(&b.network()));
+                for el in ipv4lst.iter() {
+                    lst.push_back(Value::Ipv4(*el));
                 }
-                for el in ipset_ipv6.iter() {
-                    lst.push_back(Value::Ipv6(el));
+                let mut ipv6lst = ipset_ipv6.iter().collect::<Vec<Ipv6Net>>();
+                ipv6lst.sort_by(|a, b| a.network().cmp(&b.network()));
+                for el in ipv6lst.iter() {
+                    lst.push_back(Value::Ipv6(*el));
                 }
                 let vlst = Value::List(Rc::new(RefCell::new(lst)));
                 self.stack.push(vlst);

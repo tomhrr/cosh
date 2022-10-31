@@ -739,9 +739,9 @@ impl VM {
     }
 
     /// Returns the IP object as a set of IP prefixes.
-    pub fn core_ip_to_prefixes(&mut self) -> i32 {
+    pub fn core_ip_prefixes(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            self.print_error("ip.to-prefixes requires one argument");
+            self.print_error("ip.prefixes requires one argument");
             return 0;
         }
 
@@ -1033,9 +1033,9 @@ impl VM {
     }
 
     /// Returns the IP set as a set of IP prefixes.
-    pub fn core_ips_to_prefixes(&mut self) -> i32 {
+    pub fn core_ips_prefixes(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            self.print_error("ips.to-prefixes requires one argument");
+            self.print_error("ips.prefixes requires one argument");
             return 0;
         }
 

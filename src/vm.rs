@@ -234,16 +234,14 @@ lazy_static! {
         map.insert("ip.last-addr-int", VM::core_ip_last_addr_int as fn(&mut VM) -> i32);
         map.insert("ip.size", VM::core_ip_size as fn(&mut VM) -> i32);
         map.insert("ip.version", VM::core_ip_version as fn(&mut VM) -> i32);
-        map.insert("ip.to-string", VM::core_ip_to_string as fn(&mut VM) -> i32);
-        map.insert("ip.to-prefixes", VM::core_ip_to_prefixes as fn(&mut VM) -> i32);
+        map.insert("ip.prefixes", VM::core_ip_prefixes as fn(&mut VM) -> i32);
         map.insert("ips", VM::core_ips as fn(&mut VM) -> i32);
         map.insert("ips.union", VM::core_ips_union as fn(&mut VM) -> i32);
         map.insert("ips.isect", VM::core_ips_isect as fn(&mut VM) -> i32);
         map.insert("ips.diff", VM::core_ips_diff as fn(&mut VM) -> i32);
         map.insert("ips.symdiff", VM::core_ips_symdiff as fn(&mut VM) -> i32);
         map.insert("ips.=", VM::core_ips_equals as fn(&mut VM) -> i32);
-        map.insert("ips.to-string", VM::core_ips_to_string as fn(&mut VM) -> i32);
-        map.insert("ips.to-prefixes", VM::core_ips_to_prefixes as fn(&mut VM) -> i32);
+        map.insert("ips.prefixes", VM::core_ips_prefixes as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

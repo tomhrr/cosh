@@ -878,19 +878,19 @@ fn ip_test() {
 
 #[test]
 fn ipset_test() {
-    basic_test("0.0.0.0-1.0.0.0 ip; ip.to-prefixes; str map;",
+    basic_test("0.0.0.0-1.0.0.0 ip; ip.prefixes; str map;",
                "(\n    0.0.0.0/8\n    1.0.0.0\n)");
-    basic_test("0.0.0.0-1.0.0.0 ips; ips.to-prefixes; str map;",
+    basic_test("0.0.0.0-1.0.0.0 ips; ips.prefixes; str map;",
                "(\n    0.0.0.0/8\n    1.0.0.0\n)");
-    basic_test("::-FFFF:: ip; ip.to-prefixes; str map;", "(\n    ::/1\n    8000::/2\n    c000::/3\n    e000::/4\n    f000::/5\n    f800::/6\n    fc00::/7\n    fe00::/8\n    ff00::/9\n    ff80::/10\n    ffc0::/11\n    ffe0::/12\n    fff0::/13\n    fff8::/14\n    fffc::/15\n    fffe::/16\n    ffff::\n)");
-    basic_test("::-FFFF:: ips; ips.to-prefixes; str map;", "(\n    ::/1\n    8000::/2\n    c000::/3\n    e000::/4\n    f000::/5\n    f800::/6\n    fc00::/7\n    fe00::/8\n    ff00::/9\n    ff80::/10\n    ffc0::/11\n    ffe0::/12\n    fff0::/13\n    fff8::/14\n    fffc::/15\n    fffe::/16\n    ffff::\n)");
-    basic_test("1.0.0.0/8 ip; ip.to-prefixes; str map;",
+    basic_test("::-FFFF:: ip; ip.prefixes; str map;", "(\n    ::/1\n    8000::/2\n    c000::/3\n    e000::/4\n    f000::/5\n    f800::/6\n    fc00::/7\n    fe00::/8\n    ff00::/9\n    ff80::/10\n    ffc0::/11\n    ffe0::/12\n    fff0::/13\n    fff8::/14\n    fffc::/15\n    fffe::/16\n    ffff::\n)");
+    basic_test("::-FFFF:: ips; ips.prefixes; str map;", "(\n    ::/1\n    8000::/2\n    c000::/3\n    e000::/4\n    f000::/5\n    f800::/6\n    fc00::/7\n    fe00::/8\n    ff00::/9\n    ff80::/10\n    ffc0::/11\n    ffe0::/12\n    fff0::/13\n    fff8::/14\n    fffc::/15\n    fffe::/16\n    ffff::\n)");
+    basic_test("1.0.0.0/8 ip; ip.prefixes; str map;",
                "(\n    1.0.0.0/8\n)");
-    basic_test("0.0.0.251-0.0.5.16 ip; ip.to-prefixes; str map;",
+    basic_test("0.0.0.251-0.0.5.16 ip; ip.prefixes; str map;",
                "(\n    0.0.0.251\n    0.0.0.252/30\n    0.0.1.0/24\n    0.0.2.0/23\n    0.0.4.0/24\n    0.0.5.0/28\n    0.0.5.16\n)");
-    basic_test("::/120 ip; ip.to-prefixes; str map;",
+    basic_test("::/120 ip; ip.prefixes; str map;",
                "(\n    ::/120\n)");
-    basic_test("1:0:0:0:0:0:0:1-1:0:0:0:0:0:0:8000 ip; ip.to-prefixes; str map;",
+    basic_test("1:0:0:0:0:0:0:1-1:0:0:0:0:0:0:8000 ip; ip.prefixes; str map;",
                "(\n    1::1\n    1::2/127\n    1::4/126\n    1::8/125\n    1::10/124\n    1::20/123\n    1::40/122\n    1::80/121\n    1::100/120\n    1::200/119\n    1::400/118\n    1::800/117\n    1::1000/116\n    1::2000/115\n    1::4000/114\n    1::8000\n)");
 
     basic_test("(0.0.0.0/8 1.0.0.0/8) ips; str", "0.0.0.0/7");
@@ -899,6 +899,6 @@ fn ipset_test() {
     basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.isect; str", "1.128.0.0/9");
     basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.diff; str", "1.0.0.0/9");
     basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.symdiff; str", "1.0.0.0/9,2.0.0.0/8");
-    basic_test("1.0.0.0-1.255.255.255 ips; ips.to-prefixes; str map", "(\n    1.0.0.0/8\n)");
+    basic_test("1.0.0.0-1.255.255.255 ips; ips.prefixes; str map", "(\n    1.0.0.0/8\n)");
     basic_test("1.0.0.0-1.255.255.255 ips; dup; ips.=;", ".t");
 }

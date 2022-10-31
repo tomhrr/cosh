@@ -835,7 +835,7 @@ fn date_test() {
 #[test]
 fn ip_test() {
     basic_test("1.0.0.0/24 ip", "{IP}");
-    basic_test("4 16777216 ip.from-int; ip.to-string", "1.0.0.0");
+    basic_test("4 16777216 ip.from-int; str", "1.0.0.0");
     basic_test("1.0.0.0/24 ip; ip.addr", "1.0.0.0");
     basic_test("3.1.0.0/16 ip; ip.len", "16");
     basic_test("0.0.0.0/0 ip; ip.addr-int", "0");
@@ -843,10 +843,10 @@ fn ip_test() {
     basic_test("16.0.0.0/7 ip; ip.last-addr-int", "301989887");
     basic_test("1.0.0.0/24 ip; ip.size", "256");
     basic_test("1.0.0.0/24 ip; ip.version", "4");
-    basic_test("1.0.0.0/24 ip; ip.to-string", "1.0.0.0/24");
+    basic_test("1.0.0.0/24 ip; str", "1.0.0.0/24");
 
     basic_test("::/128 ip", "{IP}");
-    basic_test("6 10000000000 ip.from-int; ip.to-string", "::2:540b:e400");
+    basic_test("6 10000000000 ip.from-int; str", "::2:540b:e400");
     basic_test("31CC::/64 ip; ip.addr", "31cc::");
     basic_test("305F:305F::/32 ip; ip.len", "32");
     basic_test("::2:540b:e400 ip; ip.addr-int", "10000000000");
@@ -854,7 +854,7 @@ fn ip_test() {
     basic_test("3000::/16 ip; ip.last-addr-int", "63808136094534496727011269389785759743");
     basic_test("::/112 ip; ip.size", "65536");
     basic_test(":: ip; ip.version", "6");
-    basic_test("ABCD::/32 ip; ip.to-string", "abcd::/32");
+    basic_test("ABCD::/32 ip; str", "abcd::/32");
 
     basic_test("1.0.0.0-1.0.0.255 ip", "{IP}");
     basic_test("1.0.0.0-1.0.0.255 ip; ip.addr", "1.0.0.0");
@@ -864,7 +864,7 @@ fn ip_test() {
     basic_test("16.0.0.0-17.255.255.255 ip; ip.last-addr-int", "301989887");
     basic_test("1.0.0.0-1.0.0.255 ip; ip.size", "256");
     basic_test("1.0.0.0-1.0.0.255 ip; ip.version", "4");
-    basic_test("1.0.0.0-1.0.0.255 ip; ip.to-string", "1.0.0.0-1.0.0.255");
+    basic_test("1.0.0.0-1.0.0.255 ip; str", "1.0.0.0-1.0.0.255");
 
     basic_test("31CC::-31CC::ffff:ffff:ffff:ffff ip; ip.addr", "31cc::");
     basic_test("305F:305F::-305F:305F:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.len", "32");
@@ -873,32 +873,32 @@ fn ip_test() {
     basic_test("3000::-3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.last-addr-int", "63808136094534496727011269389785759743");
     basic_test("::/112 ip; ip.size", "65536");
     basic_test(":: ip; ip.version", "6");
-    basic_test("ABCD::-ABCD:0000:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.to-string", "abcd::-abcd:0:ffff:ffff:ffff:ffff:ffff:ffff");
+    basic_test("ABCD::-ABCD:0000:ffff:ffff:ffff:ffff:ffff:ffff ip; str", "abcd::-abcd:0:ffff:ffff:ffff:ffff:ffff:ffff");
 }
 
 #[test]
 fn ipset_test() {
-    basic_test("0.0.0.0-1.0.0.0 ip; ip.to-prefixes; ip.to-string map;",
+    basic_test("0.0.0.0-1.0.0.0 ip; ip.to-prefixes; str map;",
                "(\n    0.0.0.0/8\n    1.0.0.0\n)");
-    basic_test("0.0.0.0-1.0.0.0 ips; ips.to-prefixes; ip.to-string map;",
+    basic_test("0.0.0.0-1.0.0.0 ips; ips.to-prefixes; str map;",
                "(\n    0.0.0.0/8\n    1.0.0.0\n)");
-    basic_test("::-FFFF:: ip; ip.to-prefixes; ip.to-string map;", "(\n    ::/1\n    8000::/2\n    c000::/3\n    e000::/4\n    f000::/5\n    f800::/6\n    fc00::/7\n    fe00::/8\n    ff00::/9\n    ff80::/10\n    ffc0::/11\n    ffe0::/12\n    fff0::/13\n    fff8::/14\n    fffc::/15\n    fffe::/16\n    ffff::\n)");
-    basic_test("::-FFFF:: ips; ips.to-prefixes; ip.to-string map;", "(\n    ::/1\n    8000::/2\n    c000::/3\n    e000::/4\n    f000::/5\n    f800::/6\n    fc00::/7\n    fe00::/8\n    ff00::/9\n    ff80::/10\n    ffc0::/11\n    ffe0::/12\n    fff0::/13\n    fff8::/14\n    fffc::/15\n    fffe::/16\n    ffff::\n)");
-    basic_test("1.0.0.0/8 ip; ip.to-prefixes; ip.to-string map;",
+    basic_test("::-FFFF:: ip; ip.to-prefixes; str map;", "(\n    ::/1\n    8000::/2\n    c000::/3\n    e000::/4\n    f000::/5\n    f800::/6\n    fc00::/7\n    fe00::/8\n    ff00::/9\n    ff80::/10\n    ffc0::/11\n    ffe0::/12\n    fff0::/13\n    fff8::/14\n    fffc::/15\n    fffe::/16\n    ffff::\n)");
+    basic_test("::-FFFF:: ips; ips.to-prefixes; str map;", "(\n    ::/1\n    8000::/2\n    c000::/3\n    e000::/4\n    f000::/5\n    f800::/6\n    fc00::/7\n    fe00::/8\n    ff00::/9\n    ff80::/10\n    ffc0::/11\n    ffe0::/12\n    fff0::/13\n    fff8::/14\n    fffc::/15\n    fffe::/16\n    ffff::\n)");
+    basic_test("1.0.0.0/8 ip; ip.to-prefixes; str map;",
                "(\n    1.0.0.0/8\n)");
-    basic_test("0.0.0.251-0.0.5.16 ip; ip.to-prefixes; ip.to-string map;",
+    basic_test("0.0.0.251-0.0.5.16 ip; ip.to-prefixes; str map;",
                "(\n    0.0.0.251\n    0.0.0.252/30\n    0.0.1.0/24\n    0.0.2.0/23\n    0.0.4.0/24\n    0.0.5.0/28\n    0.0.5.16\n)");
-    basic_test("::/120 ip; ip.to-prefixes; ip.to-string map;",
+    basic_test("::/120 ip; ip.to-prefixes; str map;",
                "(\n    ::/120\n)");
-    basic_test("1:0:0:0:0:0:0:1-1:0:0:0:0:0:0:8000 ip; ip.to-prefixes; ip.to-string map;",
+    basic_test("1:0:0:0:0:0:0:1-1:0:0:0:0:0:0:8000 ip; ip.to-prefixes; str map;",
                "(\n    1::1\n    1::2/127\n    1::4/126\n    1::8/125\n    1::10/124\n    1::20/123\n    1::40/122\n    1::80/121\n    1::100/120\n    1::200/119\n    1::400/118\n    1::800/117\n    1::1000/116\n    1::2000/115\n    1::4000/114\n    1::8000\n)");
 
-    basic_test("(0.0.0.0/8 1.0.0.0/8) ips; ips.to-string", "0.0.0.0/7");
-    basic_test("(:: ::1) ips; ips.to-string", "::/127");
-    basic_test("(::) ips; ::1 ips; ips.union; ips.to-string", "::/127");
-    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.isect; ips.to-string", "1.128.0.0/9");
-    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.diff; ips.to-string", "1.0.0.0/9");
-    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.symdiff; ips.to-string", "1.0.0.0/9,2.0.0.0/8");
-    basic_test("1.0.0.0-1.255.255.255 ips; ips.to-prefixes; ip.to-string map", "(\n    1.0.0.0/8\n)");
+    basic_test("(0.0.0.0/8 1.0.0.0/8) ips; str", "0.0.0.0/7");
+    basic_test("(:: ::1) ips; str", "::/127");
+    basic_test("(::) ips; ::1 ips; ips.union; str", "::/127");
+    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.isect; str", "1.128.0.0/9");
+    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.diff; str", "1.0.0.0/9");
+    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.symdiff; str", "1.0.0.0/9,2.0.0.0/8");
+    basic_test("1.0.0.0-1.255.255.255 ips; ips.to-prefixes; str map", "(\n    1.0.0.0/8\n)");
     basic_test("1.0.0.0-1.255.255.255 ips; dup; ips.=;", ".t");
 }

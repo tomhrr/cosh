@@ -650,9 +650,6 @@ result.
    covers.
  - `ip.version`: Takes an IP object and returns the version of that
    object (either 4 or 6).
- - `ip.to-string`: Takes an IP object and returns its stringification.
-   The prefix length will be omitted if the object is for a single
-   address.
  - `ip.to-prefixes`: Takes an IP object and returns a list
    comprising the prefixes (as IP objects) that make up the object.
    (The main use of this is for converting a range into a set of
@@ -671,9 +668,10 @@ address ranges in a single type, with associated functions:
  - `ips.symdiff`: Takes two IP sets and returns their symmetric
    difference (i.e. A union B, less A intersection B).
  - `ips.=`: Check if two IP sets are equal.
- - `ips.to-string`: Takes an IP set and returns its stringification.
  - `ips.to-prefixes`: Takes an IP set and returns a list comprising
    the prefixes (as IP objects) that make up the object.
+
+`str` is also implemented for IP objects and IP sets.
 
 ### Miscellaneous functions
 

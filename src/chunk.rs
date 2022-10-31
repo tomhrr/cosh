@@ -1020,6 +1020,78 @@ impl Value {
                 let s = format!("{}", f);
                 Some(s)
             }
+            Value::Ipv4(ipv4net) => {
+                let prefix_len = ipv4net.prefix_len();
+                if prefix_len == 32 {
+                    let ip_str = format!("{}", ipv4net);
+                    let ip_str_no_len =
+                        ip_str.chars().take_while(|&c| c != '/')
+                                      .collect::<String>();
+                    let s = ip_str_no_len.to_string();
+                    Some(s)
+                } else {
+                    let s = format!("{}", ipv4net);
+                    Some(s)
+                }
+            }
+            Value::Ipv6(ipv6net) => {
+                let prefix_len = ipv6net.prefix_len();
+                if prefix_len == 128 {
+                    let s = format!("{}", ipv6net.network());
+                    Some(s)
+                } else {
+                    let s =
+                        format!("{}/{}",
+                                ipv6net.network(), ipv6net.prefix_len());
+                    Some(s)
+                }
+            }
+            Value::Ipv4Range(ipv4range) => {
+                let s = format!("{}-{}", ipv4range.s,
+                                         ipv4range.e);
+                Some(s)
+            }
+            Value::Ipv6Range(ipv6range) => {
+                let s = format!("{}-{}", ipv6range.s,
+                                         ipv6range.e);
+                Some(s)
+            }
+            Value::IpSet(ipset) => {
+                let ipv4range = &ipset.ipv4;
+                let ipv6range = &ipset.ipv6;
+                let mut lst = Vec::new();
+                let mut ipv4lst = ipv4range.iter().collect::<Vec<Ipv4Net>>();
+                ipv4lst.sort_by(|a, b| a.network().cmp(&b.network()));
+                for ipv4net in ipv4lst.iter() {
+                    let prefix_len = ipv4net.prefix_len();
+                    if prefix_len == 32 {
+                        let ip_str = format!("{}", ipv4net);
+                        let ip_str_no_len =
+                            ip_str.chars().take_while(|&c| c != '/')
+                                        .collect::<String>();
+                        lst.push(ip_str_no_len);
+                    } else {
+                        let ip_str = format!("{}", ipv4net);
+                        lst.push(ip_str);
+                    }
+                }
+                let mut ipv6lst = ipv6range.iter().collect::<Vec<Ipv6Net>>();
+                ipv6lst.sort_by(|a, b| a.network().cmp(&b.network()));
+                for ipv6net in ipv6lst.iter() {
+                    let prefix_len = ipv6net.prefix_len();
+                    if prefix_len == 128 {
+                        let ip_str = format!("{}", ipv6net.network());
+                        lst.push(ip_str);
+                    } else {
+                        let ip_str =
+                            format!("{}/{}",
+                                    ipv6net.network(), ipv6net.prefix_len());
+                        lst.push(ip_str);
+                    }
+                }
+                let s = lst.join(",");
+                Some(s)
+            }
             Value::Null => Some("".to_string()),
             _ => None,
         }

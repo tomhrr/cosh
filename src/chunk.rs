@@ -188,6 +188,11 @@ pub enum Value {
     List(Rc<RefCell<VecDeque<Value>>>),
     /// A hash.
     Hash(Rc<RefCell<IndexMap<String, Value>>>),
+    /// A set.  The stringification of the value is used as the map
+    /// key, and the set may only contain values of a single type.
+    /// (Not terribly efficient, but can be made decent later without
+    /// affecting the language interface.)
+    Set(Rc<RefCell<IndexMap<String, Value>>>),
     /// An anonymous function (includes reference to local variable
     /// stack).
     AnonymousFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<Value>>>),
@@ -260,6 +265,9 @@ impl fmt::Debug for Value {
             }
             Value::Hash(hs) => {
                 write!(f, "{:?}", hs)
+            }
+            Value::Set(st) => {
+                write!(f, "{:?}", st)
             }
             Value::AnonymousFunction(_, _) => {
                 write!(f, "((Function))")
@@ -875,6 +883,9 @@ impl Chunk {
                 OpCode::StartHash => {
                     println!("OP_STARTHASH");
                 }
+                OpCode::StartSet => {
+                    println!("OP_STARTSET");
+                }
                 OpCode::Shift => {
                     println!("OP_SHIFT");
                 }
@@ -1213,6 +1224,13 @@ impl Value {
                 }
                 Value::Hash(Rc::new(RefCell::new(cloned_hsh)))
             },
+            Value::Set(hsh) => {
+                let mut cloned_hsh = IndexMap::new();
+                for (k, v) in hsh.borrow().iter() {
+                    cloned_hsh.insert(k.clone(), v.value_clone());
+                }
+                Value::Set(Rc::new(RefCell::new(cloned_hsh)))
+            },
             Value::AnonymousFunction(_, _) => self.clone(),
             Value::CoreFunction(_) => self.clone(),
             Value::NamedFunction(_) => self.clone(),
@@ -1258,6 +1276,41 @@ impl Value {
             Value::Ipv6(_) => self.clone(),
             Value::Ipv6Range(_) => self.clone(),
             Value::IpSet(_) => self.clone(),
+        }
+    }
+
+    pub fn variants_equal(&self, other: &Value) -> bool {
+        match (self, other) {
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(..), Value::Bool(..)) => true,
+            (Value::Int(..), Value::Int(..)) => true,
+            (Value::BigInt(..), Value::BigInt(..)) => true,
+            (Value::Float(..), Value::Float(..)) => true,
+            (Value::String(..), Value::String(..)) => true,
+            (Value::Command(..), Value::Command(..)) => true,
+            (Value::CommandUncaptured(..), Value::CommandUncaptured(..)) => true,
+            (Value::List(..), Value::List(..)) => true,
+            (Value::Hash(..), Value::Hash(..)) => true,
+            (Value::Set(..), Value::Set(..)) => true,
+            (Value::AnonymousFunction(..), Value::AnonymousFunction(..)) => true,
+            (Value::CoreFunction(..), Value::CoreFunction(..)) => true,
+            (Value::NamedFunction(..), Value::NamedFunction(..)) => true,
+            (Value::Generator(..), Value::Generator(..)) => true,
+            (Value::CommandGenerator(..), Value::CommandGenerator(..)) => true,
+            (Value::KeysGenerator(..), Value::KeysGenerator(..)) => true,
+            (Value::ValuesGenerator(..), Value::ValuesGenerator(..)) => true,
+            (Value::EachGenerator(..), Value::EachGenerator(..)) => true,
+            (Value::FileReader(..), Value::FileReader(..)) => true,
+            (Value::FileWriter(..), Value::FileWriter(..)) => true,
+            (Value::DirectoryHandle(..), Value::DirectoryHandle(..)) => true,
+            (Value::DateTimeNT(..), Value::DateTimeNT(..)) => true,
+            (Value::DateTimeOT(..), Value::DateTimeOT(..)) => true,
+            (Value::Ipv4(..), Value::Ipv4(..)) => true,
+            (Value::Ipv6(..), Value::Ipv6(..)) => true,
+            (Value::Ipv4Range(..), Value::Ipv4Range(..)) => true,
+            (Value::Ipv6Range(..), Value::Ipv6Range(..)) => true,
+            (Value::IpSet(..), Value::IpSet(..)) => true,
+            (..) => false
         }
     }
 }

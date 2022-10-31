@@ -443,6 +443,52 @@ impl VM {
                         }
                     }
                 }
+                Value::Set(map) => {
+                    if map.borrow().len() == 0 {
+                        lines_to_print = psv_helper(
+                            "s()",
+                            indent,
+                            no_first_indent,
+                            window_height,
+                            lines_to_print,
+                        );
+                        if lines_to_print == -1 {
+                            return lines_to_print;
+                        }
+                    } else {
+                        lines_to_print = psv_helper(
+                            "s(",
+                            indent,
+                            no_first_indent,
+                            window_height,
+                            lines_to_print,
+                        );
+                        if lines_to_print == -1 {
+                            return lines_to_print;
+                        }
+
+                        let new_indent = indent + 4;
+                        for (_, v) in map.borrow().iter() {
+                            lines_to_print = self.print_stack_value(
+                                v,
+                                chunk.clone(),
+                                i,
+                                new_indent,
+                                false,
+                                window_height,
+                                lines_to_print,
+                            );
+                            if lines_to_print == -1 {
+                                return lines_to_print;
+                            }
+                        }
+                        lines_to_print =
+                            psv_helper(")", indent, false, window_height, lines_to_print);
+                        if lines_to_print == -1 {
+                            return lines_to_print;
+                        }
+                    }
+                }
                 Value::Generator(_) => {
                     is_generator = true;
                 }

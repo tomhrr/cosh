@@ -42,8 +42,10 @@ pub enum TokenType {
     WordImplicit(String),
     StartList,
     StartHash,
-    /// The EndList token doubles as the terminating token for a hash,
-    /// which is why there is no EndHash token.
+    StartSet,
+    /// The EndList token also serves as the terminating token for
+    /// hashes and sets, which is why there is no EndHash or EndSet
+    /// token.
     EndList,
     /// A dummy token that indicates that the caller should try to
     /// fetch another token.
@@ -283,6 +285,12 @@ impl<'a> Scanner<'a> {
                                 real_line_number,
                                 real_column_number,
                             );
+                        } else if result[0] as char == 's' {
+                            return Token::new(
+                                TokenType::StartSet,
+                                real_line_number,
+                                real_column_number,
+                            );
                         }
                     }
                 }
@@ -434,6 +442,7 @@ impl<'a> Scanner<'a> {
 
         let token_type = match s {
             "h(" => TokenType::StartHash,
+            "s(" => TokenType::StartSet,
             "(" => TokenType::StartList,
             ")" => TokenType::EndList,
             "{" => TokenType::LeftBrace,
@@ -565,6 +574,9 @@ impl Compiler {
                 }
                 TokenType::StartHash => {
                     chunk.add_opcode(OpCode::StartHash);
+                }
+                TokenType::StartSet => {
+                    chunk.add_opcode(OpCode::StartSet);
                 }
                 TokenType::EndList => {
                     chunk.add_opcode(OpCode::EndList);

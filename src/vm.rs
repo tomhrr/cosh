@@ -42,6 +42,7 @@ mod vm_xml;
 pub enum ListType {
     List,
     Hash,
+    Set
 }
 
 /// For running compiled bytecode.
@@ -1055,6 +1056,11 @@ impl VM {
                     list_types.push(ListType::Hash);
                     list_count = list_count + 1;
                 }
+                OpCode::StartSet => {
+                    list_indexes.push(self.stack.len());
+                    list_types.push(ListType::Set);
+                    list_count = list_count + 1;
+                }
                 OpCode::EndList => {
                     if list_count == 0 {
                         self.print_error("no start list found");
@@ -1082,6 +1088,38 @@ impl VM {
                                 map.insert(key_str_opt.unwrap().to_string(), value_rr);
                             }
                             self.stack.push(Value::Hash(Rc::new(RefCell::new(map))));
+                        }
+                        ListType::Set => {
+                            let mut map = IndexMap::new();
+                            let mut value = None;
+                            while self.stack.len() > list_index {
+                                let value_rr = self.stack.pop().unwrap();
+                                if value.is_none() {
+                                    value = Some(value_rr.clone());
+                                }
+                                let value_str_opt: Option<&str>;
+                                to_str!(value_rr.clone(), value_str_opt);
+                                match value_str_opt {
+                                    None => {
+                                        self.print_error("value cannot be added to set");
+                                        return 0;
+                                    },
+                                    Some(s) => {
+                                        match value {
+                                            Some(ref vv) => {
+                                                if !value_rr.variants_equal(&vv) {
+                                                    self.print_error("set values must have the same type");
+                                                    return 0;
+                                                }
+                                            }
+                                            _ => {}
+                                        }
+                                        map.insert(s.to_string(), value_rr);
+                                    }
+                                }
+                            }
+                            map.reverse();
+                            self.stack.push(Value::Set(Rc::new(RefCell::new(map))));
                         }
                     }
                 },

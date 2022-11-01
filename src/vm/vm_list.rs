@@ -122,8 +122,9 @@ impl VM {
         return 1;
     }
 
-    /// Takes a list and a value as its arguments.  Pushes the value
-    /// onto the list and places the updated list onto the stack.
+    /// Takes a list or a set and a value as its arguments.  Pushes
+    /// the value onto the list/set and places the updated list/set
+    /// onto the stack.
     pub fn opcode_push(&mut self) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("push requires two arguments");
@@ -137,6 +138,27 @@ impl VM {
             match lst_rr {
                 Value::List(ref mut lst) => {
                     lst.borrow_mut().push_back(element_rr);
+                }
+                Value::Set(ref mut map) => {
+                    {
+                        let mb = map.borrow();
+                        let (_, val) = mb.iter().next().unwrap().clone();
+                        if !val.variants_equal(&element_rr) {
+                            self.print_error("set values must have the same type");
+                            return 0;
+                        }
+                    }
+		    let element_str_opt: Option<&str>;
+		    to_str!(element_rr.clone(), element_str_opt);
+                    match element_str_opt {
+                        None => {
+			    self.print_error("value cannot be added to set");
+			    return 0;
+			},
+                        Some(s) => {
+                            map.borrow_mut().insert(s.to_string(), element_rr);
+                        }
+                    }
                 }
                 _ => {
                     self.print_error("first push argument must be list");

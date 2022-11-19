@@ -243,6 +243,7 @@ lazy_static! {
         map.insert("ips.symdiff", VM::core_ips_symdiff as fn(&mut VM) -> i32);
         map.insert("ips.=", VM::core_ips_equals as fn(&mut VM) -> i32);
         map.insert("ips.prefixes", VM::core_ips_prefixes as fn(&mut VM) -> i32);
+        map.insert("union", VM::core_union as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

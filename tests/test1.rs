@@ -902,3 +902,9 @@ fn ipset_test() {
     basic_test("1.0.0.0-1.255.255.255 ips; ips.prefixes; str map", "(\n    1.0.0.0/8\n)");
     basic_test("1.0.0.0-1.255.255.255 ips; dup; ips.=;", ".t");
 }
+
+#[test]
+fn set_test() {
+    basic_test("s(1 2 3) 4 push;", "s(\n    1\n    2\n    3\n    4\n)");
+    basic_test("s(1 2 3) s(2 3 4) union;", "s(\n    1\n    2\n    3\n    4\n)");
+}

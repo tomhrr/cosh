@@ -4,6 +4,8 @@ use std::io::BufRead;
 use std::mem;
 use std::rc::Rc;
 
+use indexmap::IndexMap;
+
 use chunk::{StringPair, Value};
 use vm::VM;
 
@@ -514,6 +516,40 @@ impl VM {
             _ => false,
         };
         self.stack.push(Value::Bool(res));
+        return 1;
+    }
+
+    /// Takes two sets as its arguments and returns their union.
+    pub fn core_union(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("union requires two arguments");
+            return 0;
+        }
+
+        let set2_rr = self.stack.pop().unwrap();
+        let set1_rr = self.stack.pop().unwrap();
+
+        match (set1_rr, set2_rr) {
+            (Value::Set(s1), Value::Set(s2)) => {
+                let mut new_hsh = IndexMap::new();
+                for (k, v) in s1.borrow().iter() {
+                    new_hsh.insert(k.clone(), v.value_clone());
+                }
+                for (k, v) in s2.borrow().iter() {
+                    new_hsh.insert(k.clone(), v.value_clone());
+                }
+                let set = Value::Set(Rc::new(RefCell::new(new_hsh)));
+                self.stack.push(set);
+            }
+            (Value::Set(_), _) => {
+                self.print_error("second union argument must be set");
+                return 0;
+            }
+            (_, _) => {
+                self.print_error("first union argument must be set");
+                return 0;
+            }
+        }
         return 1;
     }
 }

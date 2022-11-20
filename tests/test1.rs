@@ -907,4 +907,8 @@ fn ipset_test() {
 fn set_test() {
     basic_test("s(1 2 3) 4 push;", "s(\n    1\n    2\n    3\n    4\n)");
     basic_test("s(1 2 3) s(2 3 4) union;", "s(\n    1\n    2\n    3\n    4\n)");
+    basic_test("s(1 2 3) s(2 3 4) isect;", "s(\n    2\n    3\n)");
+    basic_test("s(1 2 3) s(2 3 4) diff;", "s(\n    1\n)");
+    basic_test("s(1 2 3) s(2 3 4) symdiff;", "s(\n    1\n    4\n)");
+    basic_test("s(1 2 3) dup; shift;", "s(\n    2\n    3\n)\n1");
 }

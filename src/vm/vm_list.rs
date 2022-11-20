@@ -318,6 +318,20 @@ impl VM {
                     self.stack.push(Value::Null);
                 }
             }
+            Value::Set(ref mut hsh) => {
+                if hsh.borrow().len() > 0 {
+                    /* shift_remove_index takes O(n), which is
+                     * unpleasant, but necessary for uniformity with
+                     * how lists are processed.  There is probably a
+                     * more appropriate structure that can be used for
+                     * sets. */
+                    let (_, value_rr) =
+                        hsh.borrow_mut().shift_remove_index(0).unwrap();
+                    self.stack.push(value_rr);
+                } else {
+                    self.stack.push(Value::Null);
+                }
+            }
             Value::CommandGenerator(ref mut bufread) => {
                 let mut contents = String::new();
                 let res = bufread.borrow_mut().read_line(&mut contents);
@@ -547,6 +561,113 @@ impl VM {
             }
             (_, _) => {
                 self.print_error("first union argument must be set");
+                return 0;
+            }
+        }
+        return 1;
+    }
+
+    /// Takes two sets as its arguments and returns their
+    /// intersection.
+    pub fn core_isect(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("isect requires two arguments");
+            return 0;
+        }
+
+        let set2_rr = self.stack.pop().unwrap();
+        let set1_rr = self.stack.pop().unwrap();
+
+        match (set1_rr, set2_rr) {
+            (Value::Set(s1), Value::Set(s2)) => {
+                let mut new_hsh = IndexMap::new();
+                for (k, v) in s1.borrow().iter() {
+                    if !s2.borrow().get(k).is_none() {
+                        new_hsh.insert(k.clone(), v.value_clone());
+                    }
+                }
+                let set = Value::Set(Rc::new(RefCell::new(new_hsh)));
+                self.stack.push(set);
+            }
+            (Value::Set(_), _) => {
+                self.print_error("second isect argument must be set");
+                return 0;
+            }
+            (_, _) => {
+                self.print_error("first isect argument must be set");
+                return 0;
+            }
+        }
+        return 1;
+    }
+
+    /// Takes two sets as its arguments and returns their
+    /// difference.
+    pub fn core_diff(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("diff requires two arguments");
+            return 0;
+        }
+
+        let set2_rr = self.stack.pop().unwrap();
+        let set1_rr = self.stack.pop().unwrap();
+
+        match (set1_rr, set2_rr) {
+            (Value::Set(s1), Value::Set(s2)) => {
+                let mut new_hsh = IndexMap::new();
+                for (k, v) in s1.borrow().iter() {
+                    if s2.borrow().get(k).is_none() {
+                        new_hsh.insert(k.clone(), v.value_clone());
+                    }
+                }
+                let set = Value::Set(Rc::new(RefCell::new(new_hsh)));
+                self.stack.push(set);
+            }
+            (Value::Set(_), _) => {
+                self.print_error("second diff argument must be set");
+                return 0;
+            }
+            (_, _) => {
+                self.print_error("first diff argument must be set");
+                return 0;
+            }
+        }
+        return 1;
+    }
+
+    /// Takes two sets as its arguments and returns their
+    /// symmetric difference.
+    pub fn core_symdiff(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("symdiff requires two arguments");
+            return 0;
+        }
+
+        let set2_rr = self.stack.pop().unwrap();
+        let set1_rr = self.stack.pop().unwrap();
+
+        match (set1_rr, set2_rr) {
+            (Value::Set(s1), Value::Set(s2)) => {
+                let mut new_hsh = IndexMap::new();
+                for (k, v) in s1.borrow().iter() {
+                    if s2.borrow().get(k).is_none() {
+                        new_hsh.insert(k.clone(), v.value_clone());
+                    }
+                }
+                for (k, v) in s2.borrow().iter() {
+                    if s1.borrow().get(k).is_none() {
+                        new_hsh.insert(k.clone(), v.value_clone());
+                    }
+                }
+                let set = Value::Set(Rc::new(RefCell::new(new_hsh)));
+                self.stack.push(set);
+            }
+            (Value::Set(_), _) => {
+                self.print_error("second symdiff argument must be set");
+                return 0;
+            }
+            (_, _) => {
+                self.print_error("first symdiff argument must be set");
                 return 0;
             }
         }

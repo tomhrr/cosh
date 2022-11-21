@@ -912,3 +912,10 @@ fn set_test() {
     basic_test("s(1 2 3) s(2 3 4) symdiff;", "s(\n    1\n    4\n)");
     basic_test("s(1 2 3) dup; shift;", "s(\n    2\n    3\n)\n1");
 }
+
+#[test]
+fn predicate_test() {
+    basic_test(".t is-bool;", ".t");
+    basic_test(".f is-bool;", ".t");
+    basic_test("100 is-bool;", ".f");
+}

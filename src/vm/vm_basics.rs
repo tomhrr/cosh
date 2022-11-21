@@ -301,7 +301,7 @@ impl VM {
         return 1;
     }
 
-    /// Convert a value into a boolean value..
+    /// Convert a value into a boolean value.
     pub fn opcode_bool(&mut self) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("bool requires one argument");
@@ -311,6 +311,22 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let new_value = Value::Bool(value_rr.to_bool());
         self.stack.push(new_value);
+        return 1;
+    }
+
+    /// Check whether a value is of boolean type.
+    pub fn opcode_is_bool(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("is-bool requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let res = match value_rr {
+            Value::Bool(_) => true,
+            _              => false
+        };
+        self.stack.push(Value::Bool(res));
         return 1;
     }
 

@@ -247,6 +247,7 @@ lazy_static! {
         map.insert("isect", VM::core_isect as fn(&mut VM) -> i32);
         map.insert("diff", VM::core_diff as fn(&mut VM) -> i32);
         map.insert("symdiff", VM::core_symdiff as fn(&mut VM) -> i32);
+        map.insert("is-bool", VM::opcode_is_bool as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {
@@ -291,6 +292,7 @@ lazy_static! {
         vec[OpCode::ToFunction as usize] = Some(VM::opcode_tofunction as fn(&mut VM) -> i32);
         vec[OpCode::Import as usize] = Some(VM::opcode_import as fn(&mut VM) -> i32);
         vec[OpCode::Clone as usize] = Some(VM::opcode_clone as fn(&mut VM) -> i32);
+        vec[OpCode::IsBool as usize] = Some(VM::opcode_is_bool as fn(&mut VM) -> i32);
         vec
     };
 }

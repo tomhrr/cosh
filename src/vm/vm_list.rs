@@ -144,10 +144,12 @@ impl VM {
                 Value::Set(ref mut map) => {
                     {
                         let mb = map.borrow();
-                        let (_, val) = mb.iter().next().unwrap().clone();
-                        if !val.variants_equal(&element_rr) {
-                            self.print_error("set values must have the same type");
-                            return 0;
+                        if !mb.is_empty() {
+                            let (_, val) = mb.iter().next().unwrap().clone();
+                            if !val.variants_equal(&element_rr) {
+                                self.print_error("set values must have the same type");
+                                return 0;
+                            }
                         }
                     }
 		    let element_str_opt: Option<&str>;

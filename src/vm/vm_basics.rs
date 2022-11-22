@@ -330,6 +330,22 @@ impl VM {
         return 1;
     }
 
+    /// Check whether a value is of int type.
+    pub fn opcode_is_int(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("is-int requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let res = match value_rr {
+            Value::Int(_) => true,
+            _             => false
+        };
+        self.stack.push(Value::Bool(res));
+        return 1;
+    }
+
     /// Get a random floating-point value.
     pub fn opcode_rand(&mut self) -> i32 {
         if self.stack.len() < 1 {

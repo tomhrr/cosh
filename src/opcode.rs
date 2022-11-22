@@ -69,6 +69,7 @@ pub enum OpCode {
     Clone = 66,
     StartSet = 67,
     IsBool = 68,
+    IsInt = 69,
     Unknown = 255,
 }
 
@@ -143,6 +144,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         66 => OpCode::Clone,
         67 => OpCode::StartSet,
         68 => OpCode::IsBool,
+        69 => OpCode::IsInt,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

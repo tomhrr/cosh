@@ -973,6 +973,9 @@ impl Chunk {
                 OpCode::IsBool => {
                     println!("OP_ISBOOL");
                 }
+                OpCode::IsInt => {
+                    println!("OP_ISINT");
+                }
                 OpCode::Unknown => {
                     println!("(Unknown)");
                 }

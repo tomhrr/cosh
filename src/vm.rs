@@ -251,6 +251,7 @@ lazy_static! {
         map.insert("is-int", VM::opcode_is_int as fn(&mut VM) -> i32);
         map.insert("is-bigint", VM::opcode_is_bigint as fn(&mut VM) -> i32);
         map.insert("is-str", VM::opcode_is_str as fn(&mut VM) -> i32);
+        map.insert("is-flt", VM::opcode_is_flt as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {
@@ -299,6 +300,7 @@ lazy_static! {
         vec[OpCode::IsInt as usize] = Some(VM::opcode_is_int as fn(&mut VM) -> i32);
         vec[OpCode::IsBigInt as usize] = Some(VM::opcode_is_bigint as fn(&mut VM) -> i32);
         vec[OpCode::IsStr as usize] = Some(VM::opcode_is_str as fn(&mut VM) -> i32);
+        vec[OpCode::IsFlt as usize] = Some(VM::opcode_is_flt as fn(&mut VM) -> i32);
         vec
     };
 }

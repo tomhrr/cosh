@@ -979,6 +979,9 @@ impl Chunk {
                 OpCode::IsBigInt => {
                     println!("OP_ISBIGINT");
                 }
+                OpCode::IsStr => {
+                    println!("OP_ISSTR");
+                }
                 OpCode::Unknown => {
                     println!("(Unknown)");
                 }

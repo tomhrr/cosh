@@ -923,4 +923,7 @@ fn predicate_test() {
     basic_test("0 is-int;", ".t");
     basic_test("10.0 is-int;", ".f");
     basic_test("10000000000000000000000000000000000 is-int;", ".f");
+
+    basic_test("1000 is-bigint;", ".f");
+    basic_test("10000000000000000000000000000000000 is-bigint;", ".t");
 }

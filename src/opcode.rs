@@ -70,6 +70,7 @@ pub enum OpCode {
     StartSet = 67,
     IsBool = 68,
     IsInt = 69,
+    IsBigInt = 70,
     Unknown = 255,
 }
 
@@ -145,6 +146,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         67 => OpCode::StartSet,
         68 => OpCode::IsBool,
         69 => OpCode::IsInt,
+        70 => OpCode::IsBigInt,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

@@ -249,6 +249,7 @@ lazy_static! {
         map.insert("symdiff", VM::core_symdiff as fn(&mut VM) -> i32);
         map.insert("is-bool", VM::opcode_is_bool as fn(&mut VM) -> i32);
         map.insert("is-int", VM::opcode_is_int as fn(&mut VM) -> i32);
+        map.insert("is-bigint", VM::opcode_is_bigint as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {
@@ -295,6 +296,7 @@ lazy_static! {
         vec[OpCode::Clone as usize] = Some(VM::opcode_clone as fn(&mut VM) -> i32);
         vec[OpCode::IsBool as usize] = Some(VM::opcode_is_bool as fn(&mut VM) -> i32);
         vec[OpCode::IsInt as usize] = Some(VM::opcode_is_int as fn(&mut VM) -> i32);
+        vec[OpCode::IsBigInt as usize] = Some(VM::opcode_is_bigint as fn(&mut VM) -> i32);
         vec
     };
 }

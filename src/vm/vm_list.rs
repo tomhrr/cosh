@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use indexmap::IndexMap;
 
-use chunk::{StringPair, Value};
+use chunk::{StringPair, Value, IpSet};
 use vm::VM;
 
 impl VM {
@@ -557,6 +557,17 @@ impl VM {
                 let set = Value::Set(Rc::new(RefCell::new(new_hsh)));
                 self.stack.push(set);
             }
+            (Value::IpSet(ipset1), Value::IpSet(ipset2)) => {
+                let ipset1_ipv4 = ipset1.ipv4;
+                let ipset1_ipv6 = ipset1.ipv6;
+                let ipset2_ipv4 = ipset2.ipv4;
+                let ipset2_ipv6 = ipset2.ipv6;
+                let new_ipv4 = ipset1_ipv4.merge(&ipset2_ipv4);
+                let new_ipv6 = ipset1_ipv6.merge(&ipset2_ipv6);
+                let new_ipset = IpSet::new(new_ipv4, new_ipv6);
+                self.stack.push(Value::IpSet(new_ipset));
+                return 1;
+            }
             (Value::Set(_), _) => {
                 self.print_error("second union argument must be set");
                 return 0;
@@ -591,6 +602,17 @@ impl VM {
                 let set = Value::Set(Rc::new(RefCell::new(new_hsh)));
                 self.stack.push(set);
             }
+            (Value::IpSet(ipset1), Value::IpSet(ipset2)) => {
+                let ipset1_ipv4 = ipset1.ipv4;
+                let ipset1_ipv6 = ipset1.ipv6;
+                let ipset2_ipv4 = ipset2.ipv4;
+                let ipset2_ipv6 = ipset2.ipv6;
+                let new_ipv4 = ipset1_ipv4.intersect(&ipset2_ipv4);
+                let new_ipv6 = ipset1_ipv6.intersect(&ipset2_ipv6);
+                let new_ipset = IpSet::new(new_ipv4, new_ipv6);
+                self.stack.push(Value::IpSet(new_ipset));
+                return 1;
+            }
             (Value::Set(_), _) => {
                 self.print_error("second isect argument must be set");
                 return 0;
@@ -624,6 +646,17 @@ impl VM {
                 }
                 let set = Value::Set(Rc::new(RefCell::new(new_hsh)));
                 self.stack.push(set);
+            }
+            (Value::IpSet(ipset1), Value::IpSet(ipset2)) => {
+                let ipset1_ipv4 = ipset1.ipv4;
+                let ipset1_ipv6 = ipset1.ipv6;
+                let ipset2_ipv4 = ipset2.ipv4;
+                let ipset2_ipv6 = ipset2.ipv6;
+                let new_ipv4 = ipset1_ipv4.exclude(&ipset2_ipv4);
+                let new_ipv6 = ipset1_ipv6.exclude(&ipset2_ipv6);
+                let new_ipset = IpSet::new(new_ipv4, new_ipv6);
+                self.stack.push(Value::IpSet(new_ipset));
+                return 1;
             }
             (Value::Set(_), _) => {
                 self.print_error("second diff argument must be set");
@@ -663,6 +696,19 @@ impl VM {
                 }
                 let set = Value::Set(Rc::new(RefCell::new(new_hsh)));
                 self.stack.push(set);
+            }
+            (Value::IpSet(ipset1), Value::IpSet(ipset2)) => {
+                let ipset1_ipv4 = ipset1.ipv4;
+                let ipset1_ipv6 = ipset1.ipv6;
+                let ipset2_ipv4 = ipset2.ipv4;
+                let ipset2_ipv6 = ipset2.ipv6;
+                let ipv4_is = ipset1_ipv4.intersect(&ipset2_ipv4);
+                let ipv6_is = ipset1_ipv6.intersect(&ipset2_ipv6);
+                let new_ipv4 = ipset1_ipv4.merge(&ipset2_ipv4).exclude(&ipv4_is);
+                let new_ipv6 = ipset1_ipv6.merge(&ipset2_ipv6).exclude(&ipv6_is);
+                let new_ipset = IpSet::new(new_ipv4, new_ipv6);
+                self.stack.push(Value::IpSet(new_ipset));
+                return 1;
             }
             (Value::Set(_), _) => {
                 self.print_error("second symdiff argument must be set");

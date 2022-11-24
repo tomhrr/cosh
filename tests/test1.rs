@@ -895,10 +895,10 @@ fn ipset_test() {
 
     basic_test("(0.0.0.0/8 1.0.0.0/8) ips; str", "0.0.0.0/7");
     basic_test("(:: ::1) ips; str", "::/127");
-    basic_test("(::) ips; ::1 ips; ips.union; str", "::/127");
-    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.isect; str", "1.128.0.0/9");
-    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.diff; str", "1.0.0.0/9");
-    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; ips.symdiff; str", "1.0.0.0/9,2.0.0.0/8");
+    basic_test("(::) ips; ::1 ips; union; str", "::/127");
+    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; isect; str", "1.128.0.0/9");
+    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; diff; str", "1.0.0.0/9");
+    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; symdiff; str", "1.0.0.0/9,2.0.0.0/8");
     basic_test("1.0.0.0-1.255.255.255 ips; ips.prefixes; str map", "(\n    1.0.0.0/8\n)");
     basic_test("1.0.0.0-1.255.255.255 ips; dup; ips.=;", ".t");
 }

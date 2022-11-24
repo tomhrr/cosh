@@ -206,8 +206,8 @@ impl VM {
                             return 1;
                         }
                         _ => {
-                            self.print_error("unable to convert argument to string");
-                            return 0;
+                            self.stack.push(Value::Null);
+                            return 1;
                         }
                     }
                 }
@@ -251,8 +251,8 @@ impl VM {
                                     return 1;
                                 }
                                 _ => {
-                                    self.print_error("unable to convert argument to int");
-                                    return 0;
+                                    self.stack.push(Value::Null);
+                                    return 1;
                                 }
                             }
                         }
@@ -288,8 +288,8 @@ impl VM {
                             return 1;
                         }
                         _ => {
-                            self.print_error("unable to convert argument to float");
-                            return 0;
+                            self.stack.push(Value::Null);
+                            return 1;
                         }
                     }
                 }

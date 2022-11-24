@@ -266,6 +266,41 @@ impl VM {
         return 1;
     }
 
+    /// Convert a value into a bigint value.
+    pub fn opcode_bigint(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("bigint requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let is_bigint;
+        {
+            match value_rr {
+                Value::BigInt(_) => {
+                    is_bigint = true;
+                }
+                _ => {
+                    let value_opt = value_rr.to_bigint();
+                    match value_opt {
+                        Some(n) => {
+                            self.stack.push(Value::BigInt(n));
+                            return 1;
+                        }
+                        _ => {
+                            self.stack.push(Value::Null);
+                            return 1;
+                        }
+                    }
+                }
+            }
+        }
+        if is_bigint {
+            self.stack.push(value_rr);
+        }
+        return 1;
+    }
+
     /// Convert a value into a floating-point value.
     pub fn opcode_flt(&mut self) -> i32 {
         if self.stack.len() < 1 {

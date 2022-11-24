@@ -937,3 +937,11 @@ fn predicate_test() {
     basic_test("asdf is-flt;", ".f");
     basic_test("\"1.0\" is-flt;", ".f");
 }
+
+#[test]
+fn bigint_conversion_test() {
+    basic_test("1 bigint;", "1");
+    basic_test("1000000000000000000000000 bigint;",
+               "1000000000000000000000000");
+    basic_test("asdf bigint;", "{{Null}}");
+}

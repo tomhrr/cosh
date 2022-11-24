@@ -73,6 +73,7 @@ pub enum OpCode {
     IsBigInt = 70,
     IsStr = 71,
     IsFlt = 72,
+    BigInt = 73,
     Unknown = 255,
 }
 
@@ -151,6 +152,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         70 => OpCode::IsBigInt,
         71 => OpCode::IsStr,
         72 => OpCode::IsFlt,
+        73 => OpCode::BigInt,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

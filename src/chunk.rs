@@ -229,7 +229,7 @@ pub enum Value {
     /// An IPv6 range object (arbitrary start/end addresses).
     Ipv6Range(Ipv6Range),
     /// An IP set (IPv4 and IPv6 together).
-    IpSet(IpSet),
+    IpSet(Rc<RefCell<IpSet>>),
 }
 
 impl fmt::Debug for Value {
@@ -1086,8 +1086,8 @@ impl Value {
                 Some(s)
             }
             Value::IpSet(ipset) => {
-                let ipv4range = &ipset.ipv4;
-                let ipv6range = &ipset.ipv6;
+                let ipv4range = &ipset.borrow().ipv4;
+                let ipv6range = &ipset.borrow().ipv6;
                 let mut lst = Vec::new();
                 let mut ipv4lst = ipv4range.iter().collect::<Vec<Ipv4Net>>();
                 ipv4lst.sort_by(|a, b| a.network().cmp(&b.network()));

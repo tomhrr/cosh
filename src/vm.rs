@@ -238,7 +238,6 @@ lazy_static! {
         map.insert("ip.prefixes", VM::core_ip_prefixes as fn(&mut VM) -> i32);
         map.insert("ips", VM::core_ips as fn(&mut VM) -> i32);
         map.insert("ips.=", VM::core_ips_equals as fn(&mut VM) -> i32);
-        map.insert("ips.prefixes", VM::core_ips_prefixes as fn(&mut VM) -> i32);
         map.insert("union", VM::core_union as fn(&mut VM) -> i32);
         map.insert("isect", VM::core_isect as fn(&mut VM) -> i32);
         map.insert("diff", VM::core_diff as fn(&mut VM) -> i32);

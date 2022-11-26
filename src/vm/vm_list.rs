@@ -5,6 +5,7 @@ use std::mem;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
+use iprange::IpRange;
 
 use chunk::{StringPair, Value, IpSet};
 use vm::VM;
@@ -334,6 +335,30 @@ impl VM {
                     self.stack.push(Value::Null);
                 }
             }
+            Value::IpSet(ref mut ipset) => {
+                let next = ipset.borrow().ipv4.iter().next();
+                if !next.is_none() {
+                    let next_value = next.unwrap();
+                    let mut next_range = IpRange::new();
+                    next_range.add(next_value);
+                    let new_set = ipset.borrow().ipv4.exclude(&next_range);
+                    ipset.borrow_mut().ipv4 = new_set;
+                    self.stack.push(Value::Ipv4(next_value));
+                    return 1;
+                }
+                let next2 = ipset.borrow().ipv6.iter().next();
+                if !next2.is_none() {
+                    let next2_value = next2.unwrap();
+                    let mut next2_range = IpRange::new();
+                    next2_range.add(next2_value);
+                    let new_set = ipset.borrow().ipv6.exclude(&next2_range);
+                    ipset.borrow_mut().ipv6 = new_set;
+                    self.stack.push(Value::Ipv6(next2_value));
+                    return 1;
+                }
+                self.stack.push(Value::Null);
+                return 1;
+            }
             Value::CommandGenerator(ref mut bufread) => {
                 let mut contents = String::new();
                 let res = bufread.borrow_mut().read_line(&mut contents);
@@ -558,14 +583,14 @@ impl VM {
                 self.stack.push(set);
             }
             (Value::IpSet(ipset1), Value::IpSet(ipset2)) => {
-                let ipset1_ipv4 = ipset1.ipv4;
-                let ipset1_ipv6 = ipset1.ipv6;
-                let ipset2_ipv4 = ipset2.ipv4;
-                let ipset2_ipv6 = ipset2.ipv6;
+                let ipset1_ipv4 = &ipset1.borrow().ipv4;
+                let ipset1_ipv6 = &ipset1.borrow().ipv6;
+                let ipset2_ipv4 = &ipset2.borrow().ipv4;
+                let ipset2_ipv6 = &ipset2.borrow().ipv6;
                 let new_ipv4 = ipset1_ipv4.merge(&ipset2_ipv4);
                 let new_ipv6 = ipset1_ipv6.merge(&ipset2_ipv6);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
-                self.stack.push(Value::IpSet(new_ipset));
+                self.stack.push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
                 return 1;
             }
             (Value::Set(_), _) => {
@@ -603,14 +628,14 @@ impl VM {
                 self.stack.push(set);
             }
             (Value::IpSet(ipset1), Value::IpSet(ipset2)) => {
-                let ipset1_ipv4 = ipset1.ipv4;
-                let ipset1_ipv6 = ipset1.ipv6;
-                let ipset2_ipv4 = ipset2.ipv4;
-                let ipset2_ipv6 = ipset2.ipv6;
+                let ipset1_ipv4 = &ipset1.borrow().ipv4;
+                let ipset1_ipv6 = &ipset1.borrow().ipv6;
+                let ipset2_ipv4 = &ipset2.borrow().ipv4;
+                let ipset2_ipv6 = &ipset2.borrow().ipv6;
                 let new_ipv4 = ipset1_ipv4.intersect(&ipset2_ipv4);
                 let new_ipv6 = ipset1_ipv6.intersect(&ipset2_ipv6);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
-                self.stack.push(Value::IpSet(new_ipset));
+                self.stack.push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
                 return 1;
             }
             (Value::Set(_), _) => {
@@ -648,14 +673,14 @@ impl VM {
                 self.stack.push(set);
             }
             (Value::IpSet(ipset1), Value::IpSet(ipset2)) => {
-                let ipset1_ipv4 = ipset1.ipv4;
-                let ipset1_ipv6 = ipset1.ipv6;
-                let ipset2_ipv4 = ipset2.ipv4;
-                let ipset2_ipv6 = ipset2.ipv6;
+                let ipset1_ipv4 = &ipset1.borrow().ipv4;
+                let ipset1_ipv6 = &ipset1.borrow().ipv6;
+                let ipset2_ipv4 = &ipset2.borrow().ipv4;
+                let ipset2_ipv6 = &ipset2.borrow().ipv6;
                 let new_ipv4 = ipset1_ipv4.exclude(&ipset2_ipv4);
                 let new_ipv6 = ipset1_ipv6.exclude(&ipset2_ipv6);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
-                self.stack.push(Value::IpSet(new_ipset));
+                self.stack.push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
                 return 1;
             }
             (Value::Set(_), _) => {
@@ -698,16 +723,16 @@ impl VM {
                 self.stack.push(set);
             }
             (Value::IpSet(ipset1), Value::IpSet(ipset2)) => {
-                let ipset1_ipv4 = ipset1.ipv4;
-                let ipset1_ipv6 = ipset1.ipv6;
-                let ipset2_ipv4 = ipset2.ipv4;
-                let ipset2_ipv6 = ipset2.ipv6;
+                let ipset1_ipv4 = &ipset1.borrow().ipv4;
+                let ipset1_ipv6 = &ipset1.borrow().ipv6;
+                let ipset2_ipv4 = &ipset2.borrow().ipv4;
+                let ipset2_ipv6 = &ipset2.borrow().ipv6;
                 let ipv4_is = ipset1_ipv4.intersect(&ipset2_ipv4);
                 let ipv6_is = ipset1_ipv6.intersect(&ipset2_ipv6);
                 let new_ipv4 = ipset1_ipv4.merge(&ipset2_ipv4).exclude(&ipv4_is);
                 let new_ipv6 = ipset1_ipv6.merge(&ipset2_ipv6).exclude(&ipv6_is);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
-                self.stack.push(Value::IpSet(new_ipset));
+                self.stack.push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
                 return 1;
             }
             (Value::Set(_), _) => {

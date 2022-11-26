@@ -875,7 +875,7 @@ impl VM {
                 }
                 ipv6_range.simplify();
                 let nv = IpSet::new(ipv4_range, ipv6_range);
-                let nvv = Value::IpSet(nv);
+                let nvv = Value::IpSet(Rc::new(RefCell::new(nv)));
                 self.stack.push(nvv);
                 return 1;
             }
@@ -897,10 +897,10 @@ impl VM {
 
         match (ipset1_rr, ipset2_rr) {
             (Value::IpSet(ipset1), Value::IpSet(ipset2)) => {
-                let ipset1_ipv4 = ipset1.ipv4;
-                let ipset1_ipv6 = ipset1.ipv6;
-                let ipset2_ipv4 = ipset2.ipv4;
-                let ipset2_ipv6 = ipset2.ipv6;
+                let ipset1_ipv4 = &ipset1.borrow().ipv4;
+                let ipset1_ipv6 = &ipset1.borrow().ipv6;
+                let ipset2_ipv4 = &ipset2.borrow().ipv4;
+                let ipset2_ipv6 = &ipset2.borrow().ipv6;
                 let res = (ipset1_ipv4 == ipset2_ipv4) &&
                           (ipset1_ipv6 == ipset2_ipv6);
                 self.stack.push(Value::Bool(res));
@@ -911,41 +911,5 @@ impl VM {
                 return 0;
             }
         }
-    }
-
-    /// Returns the IP set as a set of IP prefixes.
-    pub fn core_ips_prefixes(&mut self) -> i32 {
-        if self.stack.len() < 1 {
-            self.print_error("ips.prefixes requires one argument");
-            return 0;
-        }
-
-        let ipset_rr = self.stack.pop().unwrap();
-
-        match ipset_rr {
-            Value::IpSet(ipset) => {
-                let ipset_ipv4 = ipset.ipv4;
-                let ipset_ipv6 = ipset.ipv6;
-                let mut lst = VecDeque::new();
-                let mut ipv4lst = ipset_ipv4.iter().collect::<Vec<Ipv4Net>>();
-                ipv4lst.sort_by(|a, b| a.network().cmp(&b.network()));
-                for el in ipv4lst.iter() {
-                    lst.push_back(Value::Ipv4(*el));
-                }
-                let mut ipv6lst = ipset_ipv6.iter().collect::<Vec<Ipv6Net>>();
-                ipv6lst.sort_by(|a, b| a.network().cmp(&b.network()));
-                for el in ipv6lst.iter() {
-                    lst.push_back(Value::Ipv6(*el));
-                }
-                let vlst = Value::List(Rc::new(RefCell::new(lst)));
-                self.stack.push(vlst);
-                return 1;
-            }
-            _ => {
-                self.print_error("expected IP set argument");
-                return 0;
-            }
-        }
-
     }
 }

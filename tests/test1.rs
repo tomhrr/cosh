@@ -900,7 +900,7 @@ fn ipset_test() {
     basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; diff; str", "1.0.0.0/9");
     basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; symdiff; str", "1.0.0.0/9,2.0.0.0/8");
     basic_test("1.0.0.0-1.255.255.255 ips; take-all; str map", "(\n    1.0.0.0/8\n)");
-    basic_test("1.0.0.0-1.255.255.255 ips; dup; ips.=;", ".t");
+    basic_test("1.0.0.0-1.255.255.255 ips; dup; =;", ".t");
 }
 
 #[test]

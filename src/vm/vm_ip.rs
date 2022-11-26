@@ -884,32 +884,4 @@ impl VM {
             }
         }
     }
-
-    /// Compare two sets for equality.
-    pub fn core_ips_equals(&mut self) -> i32 {
-        if self.stack.len() < 2 {
-            self.print_error("ips.= requires two arguments");
-            return 0;
-        }
-
-        let ipset1_rr = self.stack.pop().unwrap();
-        let ipset2_rr = self.stack.pop().unwrap();
-
-        match (ipset1_rr, ipset2_rr) {
-            (Value::IpSet(ipset1), Value::IpSet(ipset2)) => {
-                let ipset1_ipv4 = &ipset1.borrow().ipv4;
-                let ipset1_ipv6 = &ipset1.borrow().ipv6;
-                let ipset2_ipv4 = &ipset2.borrow().ipv4;
-                let ipset2_ipv6 = &ipset2.borrow().ipv6;
-                let res = (ipset1_ipv4 == ipset2_ipv4) &&
-                          (ipset1_ipv6 == ipset2_ipv6);
-                self.stack.push(Value::Bool(res));
-                return 1;
-            }
-            _ => {
-                self.print_error("expected two IP set arguments");
-                return 0;
-            }
-        }
-    }
 }

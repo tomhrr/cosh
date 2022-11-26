@@ -480,6 +480,11 @@ impl VM {
     /// able to be compared for equality.
     fn opcode_eq_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
+            (Value::IpSet(s1), Value::IpSet(s2)) => {
+                let res = *s1.borrow() == *s2.borrow();
+                self.stack.push(Value::Bool(res));
+                return 1;
+            }
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let res = n1 == n2;
                 self.stack.push(Value::Bool(res));

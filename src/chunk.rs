@@ -149,7 +149,7 @@ impl Ipv6Range {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct IpSet {
     pub ipv4: IpRange<Ipv4Net>,
     pub ipv6: IpRange<Ipv6Net>,

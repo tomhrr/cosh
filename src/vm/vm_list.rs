@@ -153,6 +153,22 @@ impl VM {
                             }
                         }
                     }
+
+                    /* Disallow set creation for IP
+                     * addresses or IP sets: users should
+                     * just use IP sets in those cases. */
+                    match element_rr {
+                        Value::IpSet(_)
+                                | Value::Ipv4(_)
+                                | Value::Ipv6(_)
+                                | Value::Ipv4Range(_)
+                                | Value::Ipv6Range(_) => {
+                            self.print_error("cannot create sets over IP address objects (see ips)");
+                            return 0;
+                        }
+                        _ => {}
+                    }
+
 		    let element_str_opt: Option<&str>;
 		    to_str!(element_rr.clone(), element_str_opt);
                     match element_str_opt {

@@ -12,7 +12,10 @@ The shell language is dynamically-typed.  The basic types are:
   * `Float`: double-width floating-point number
   * `String`: a string
   * `List`: a list of values
+  * `Set`: a set of values
   * `Hash`: a hash map of values
+
+There is also a `Null` type, with an associated null value.
 
 Interpretation is like so:
 
@@ -25,14 +28,17 @@ Interpretation is like so:
   * A series of tokens enclosed within parentheses (`(...)`) is
     interpreted as a `List`.
   * A series of tokens enclosed within parentheses and preceded by an
+    `s` character (`s(...)`) is interpreted as a `Set`.
+  * A series of tokens enclosed within parentheses and preceded by an
     `h` character (`h(...)`) is interpreted as a `Hash`.
   * All other tokens are interpreted as `Strings`s.  (To construct a
     string that contains whitespace, use double-quote characters to
     delimit the string.)
 
-The forms `bool`, `str`, `int`, and `flt` can be used to convert
-primitive values of one type to another type.  `int` will convert a
-value to a `BigInt` if required.
+The forms `bool`, `str`, `int`, `bigint`, and `flt` can be used to
+convert primitive values of one type to another type.  If the
+conversion is not supported, then the null value will be returned.
+`int` will convert a value to a `BigInt` if required.
 
 ### Basic usage
 
@@ -133,12 +139,18 @@ Some of the more commonly-used stack operators from Forth are defined:
 
 ### Type predicates
 
-`is-null` returns a boolean indicating whether the argument is null.
+There are type predicates for all the primitive types, as well as the
+null value:
 
-`is-list` returns a boolean indicating whether the argument is a list.
+  * `is-null`
+  * `is-bool`
+  * `is-int`
+  * `is-bigint`
+  * `is-float`
+  * `is-string`
 
-`is-callable` returns a boolean indicating whether the argument is
-callable.
+`is-callable` returns a boolean indicating whether the argument can be
+called like a function.
 
 ### Boolean operators
 

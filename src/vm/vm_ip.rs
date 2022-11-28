@@ -67,18 +67,23 @@ fn ipv4range_to_nets(ipv4range: Ipv4Range) -> VecDeque<Ipv4Net> {
                 } else {
                     s_num & !(s_num - 1)
                 };
-            while s_num + host_count - 1 > e_num {
+            while s_num + (host_count - 1) > e_num {
                 host_count = host_count / 2;
             }
             let fst = int_to_ipv4_addr(s_num);
-            s_num = s_num + host_count;
             let mut len = 32;
+            let prev_host_count = host_count;
             while (host_count & 1) != 1 {
                 host_count = host_count >> 1;
                 len = len - 1;
             }
             let pfx = format!("{}/{}", fst, len);
             lst.push_back(Ipv4Net::from_str(&pfx).unwrap());
+            if s_num.checked_add(prev_host_count).is_none() {
+                break;
+            } else {
+                s_num = s_num + prev_host_count;
+            }
         }
     }
     return lst;
@@ -869,12 +874,23 @@ impl VM {
                     ipv4_range.add(*el);
                 }
                 ipv4_range.simplify();
+                let mut v = Vec::new();
+                for r in ipv4_range.iter() {
+                    v.push(r);
+                }
+                v.sort_by(|a, b| a.network().cmp(&b.network()));
+                eprintln!("{:?}", v);
+                let mut new_ipv4_range = IpRange::new();
+                for el in v.iter() {
+                    new_ipv4_range.add(*el);
+                }
+
                 let mut ipv6_range = IpRange::new();
                 for el in ipv6_nets.iter() {
                     ipv6_range.add(*el);
                 }
                 ipv6_range.simplify();
-                let nv = IpSet::new(ipv4_range, ipv6_range);
+                let nv = IpSet::new(new_ipv4_range, ipv6_range);
                 let nvv = Value::IpSet(Rc::new(RefCell::new(nv)));
                 self.stack.push(nvv);
                 return 1;

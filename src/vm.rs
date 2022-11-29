@@ -246,6 +246,8 @@ lazy_static! {
         map.insert("is-bigint", VM::opcode_is_bigint as fn(&mut VM) -> i32);
         map.insert("is-str", VM::opcode_is_str as fn(&mut VM) -> i32);
         map.insert("is-flt", VM::opcode_is_flt as fn(&mut VM) -> i32);
+        map.insert("is-set", VM::opcode_is_set as fn(&mut VM) -> i32);
+        map.insert("is-hash", VM::opcode_is_hash as fn(&mut VM) -> i32);
         map.insert("bigint", VM::opcode_bigint as fn(&mut VM) -> i32);
         map
     };

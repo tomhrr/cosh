@@ -879,7 +879,6 @@ impl VM {
                     v.push(r);
                 }
                 v.sort_by(|a, b| a.network().cmp(&b.network()));
-                eprintln!("{:?}", v);
                 let mut new_ipv4_range = IpRange::new();
                 for el in v.iter() {
                     new_ipv4_range.add(*el);

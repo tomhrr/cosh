@@ -4,13 +4,17 @@ cosh is a concatenative command-line shell.
 
 ### Types
 
-The shell language is dynamically-typed.  The basic types are:
+The shell language is dynamically-typed.  The basic primitive types
+are:
 
   * `Bool`: boolean value
   * `Int`: signed integer (32-bit)
   * `BigInt`: arbitrary-precision integer
   * `Float`: double-width floating-point number
   * `String`: a string
+
+The basic composite types are:
+
   * `List`: a list of values
   * `Set`: a set of values
   * `Hash`: a hash map of values
@@ -139,18 +143,22 @@ Some of the more commonly-used stack operators from Forth are defined:
 
 ### Type predicates
 
-There are type predicates for all the primitive types, as well as the
+There are type predicates for each of the basic types, as well as the
 null value:
 
-  * `is-null`
   * `is-bool`
   * `is-int`
   * `is-bigint`
   * `is-float`
   * `is-string`
+  * `is-list`
+  * `is-set`
+  * `is-hash`
+  * `is-null`
 
 `is-callable` returns a boolean indicating whether the argument can be
-called like a function.
+called like a function.  `is-shiftable` returns a boolean indicating
+whether `shift` can be called on the argument.
 
 ### Boolean operators
 
@@ -262,15 +270,175 @@ of calling `take-all` on that object before the stack is printed:
     2
     3
 
-`shift`, `take`, and `take-all` also work in the same way on lists.
-In general, any built-in form that works on a list will also work on a
-generator, and if it operates as a transformation, then its result
-will also be a generator.
+`shift`, `take`, and `take-all` also work in the same way on lists and
+sets.  In general, any built-in form that works on a list will also
+work on a generator, and if it operates as a transformation, then its
+result will also be a generator.
+
+### List operators
+
+`shift` removes one element from the beginning of the list and places
+it on the stack:
+
+    $ (1 2 3) shift;
+    1
+
+`unshift` takes a list and an element and places it at the beginning
+of the list:
+
+    $ (2 3 4) 1 unshift;
+    (
+        1
+        2
+        3
+        4
+    )
+
+`pop` removes one element from the end of the list and places it on
+the stack:
+
+    $ (1 2 3) pop;
+    3
+
+`push` takes a list and an element and places it at the end of the
+list:
+
+    $ (1 2 3) 4 push;
+    (
+        1
+        2
+        3
+        4
+    )
+
+`nth` returns a specific element from a list:
+
+    $ (1 2 3) 1 nth
+    2
+
+`nth!` updates a specific element in a list:
+
+    $ (1 2 3 4) 2 10 nth!;
+    (
+	1
+	2
+	10
+	4
+    )
+
+`split` splits a string based on a delimiter string:
+
+    $ asdf,asdf , split
+    (
+        asdf
+        asdf
+    )
+
+`join` joins a list of strings together using a delimiter string:
+
+    $ asdf,asdf , split; , join
+    "asdf,asdf"
+
+Both `split` and `join` handle quoting of values that contain either
+the delimiter, or a quotation mark.
+
+`splitr` splits a string based on a delimiter regex.  It does not
+handle quoting of values, though.
+
+### Set operators
+
+`shift` removes one element from the beginning of the set and places
+it on the stack:
+
+    $ s(1 2 3) shift;
+    1
+
+`union` combines two sets:
+
+    $ s(1 2 3) s(2 3 4) union;
+    s(
+        1
+        2
+        3
+        4
+    )
+
+`isect` returns the intersection of two sets:
+
+    $ s(1 2 3) s(2 3 4) isect;
+    s(
+        2
+        3
+    )
+
+`diff` subtracts one set from another:
+
+    $ s(1 2 3) s(2 3 4) diff;
+    s(
+        1
+    )
+
+`symdiff` returns the symmetric difference of two sets:
+
+    $ s(1 2 3) s(2 3 4) symdiff;
+    s(
+        1
+        4
+    )
+
+### Hash operators
+
+`at` returns a value from a hash:
+
+    $ h(a 1 b 2) dup; a at; swap; b at;
+    1
+    2
+
+`at!` is used to update a value in a hash:
+
+    $ h(a 1 b 2) c 3 at!; c at;
+    3
+
+`keys` returns a generator over the hash's keys:
+
+    $ h(a 1 b 2) c 3 at!; keys; take-all;
+    (
+        b
+        a
+        c
+    )
+
+`values` returns a generator over the hash's values:
+
+    $ h(a 1 b 2) c 3 at!; values; take-all;
+    (
+        2
+        1
+        3
+    )
+
+`each` returns a generator over the key-value pairs from the hash:
+
+    $ h(a 1 b 2) c 3 at!; each; take-all;
+    (
+	(
+	    b
+	    2
+	)
+	(
+	    a
+	    1
+	)
+	(
+	    c
+	    3
+	)
+    )
 
 ### map, grep, for, foldl
 
-`map` iterates over a list, applying a function to each element and
-collecting the results into a new list:
+`map` iterates over a list, applying a function to each
+element and collecting the results into a new list:
 
     $ : add-1 1 + ; ,,
     $ (1 2 3 4) add-1 map
@@ -302,6 +470,11 @@ next element from the list until the list is exhausted:
 
     $ (1 2 3) 0 + foldl
     6
+
+Each of the above functions can accept a generator instead of a list,
+and if the function results in a list when called with a list, it will
+result in a generator when called with a generator.  Similarly, they
+can also accept sets as arguments.
 
 Anonymous functions can be used inline in these calls:
 
@@ -345,10 +518,13 @@ the list.
 `product` multiplies all of the elements of the list together and
 returns the result.
 
+Each of the above can also accept a set or generator in place of a
+list argument.
+
 ### sort, sortp
 
-`sort` sorts a list or generator, where the values in the list are of
-primitive types:
+`sort` sorts a list, set, or generator, where the values in the list
+are of primitive types:
 
     $ (1 3 5 4 2 1) sort
     (
@@ -455,44 +631,10 @@ are not supported.
 
 ### List operators
 
-`nth` returns a specific element from a list:
-
-    $ (1 2 3) 1 nth
-    2
-
-`nth!` updates a specific element in a list:
-
-    $ (1 2 3 4) 2 10 nth!;
-    (
-	1
-	2
-	10
-	4
-    )
-
 `gnth` is the name of the form that does the above for generators.  It
 has a different name, because it involves reading elements from the
 generator until the specified element is reached, so its semantics are
 different from `nth`, which does not alter the argument list.
-
-`split` splits a string based on a delimiter string:
-
-    $ asdf,asdf , split
-    (
-        asdf
-        asdf
-    )
-
-`join` joins a list of strings together using a delimiter string:
-
-    $ asdf,asdf , split; , join
-    "asdf,asdf"
-
-Both `split` and `join` handle quoting of values that contain either
-the delimiter, or a quotation mark.
-
-`splitr` splits a string based on a delimiter regex.  It does not
-handle quoting of values, though.
 
 ### String-handling functions
 
@@ -563,45 +705,6 @@ The output of a generator can also be piped to a command:
         ...
     )
 
-### Hashes
-
-Hashes support `at` for retrieving a value, `at!` for
-updating a value, `keys` for getting a generator over the hash's keys,
-and `values` for getting a generator over the hash's values:
-
-    $ h(a 1 b 2) dup; a at; swap; b at;
-    1
-    2
-    $ h(a 1 b 2) c 3 at!; c at;
-    3
-    $ h(a 1 b 2) c 3 at!; keys; take-all;
-    (
-        b
-        a
-        c
-    )
-    $ h(a 1 b 2) c 3 at!; values; take-all;
-    (
-        2
-        1
-        3
-    )
-    $ h(a 1 b 2) c 3 at!; each; take-all;
-    (
-	(
-	    b
-	    2
-	)
-	(
-	    a
-	    1
-	)
-	(
-	    c
-	    3
-	)
-    )
-
 ### Parsing
 
 JSON and XML can be serialised and deserialised using the
@@ -668,22 +771,14 @@ result.
    prefixes, if necessary.)
 
 There is also a separate IP set object, for storing multiple IP
-address ranges in a single type, with associated functions:
-
- - `ips`: Takes a single IP address or range as a string or a list of
-   IP address objects or IP address/range strings as its single
-   argument, and returns an IP set object for those addresses/ranges.
- - `ips.union`: Takes two IP sets and returns their union.
- - `ips.isect`: Takes two IP sets and returns their intersection.
- - `ips.diff`: Takes two IP sets and returns their difference (i.e. A
-   less B).
- - `ips.symdiff`: Takes two IP sets and returns their symmetric
-   difference (i.e. A union B, less A intersection B).
- - `ips.=`: Check if two IP sets are equal.
- - `ips.prefixes`: Takes an IP set and returns a list comprising
-   the prefixes (as IP objects) that make up the object.
-
-`str` is also implemented for IP objects and IP sets.
+address ranges in a single type.  The `ips` function takes a single IP
+address or range as a string or a list of IP address objects or IP
+address/range strings as its single argument, and returns an IP set
+object for those addresses/ranges.  This object supports all the same
+functions as a standard set, but it will additionally simplify the set
+after each call to the minimum set of prefixes required to cover the
+address space in the set.  Finally, `=` is also defined for IP sets,
+and `str` is defined for both IP objects and IP sets.
 
 ### Miscellaneous functions
 

@@ -222,11 +222,14 @@
         .f until;
     reslst @; ,,
 
+: is-list-or-set
+    dup; is-list; swap; is-set; or; ,,
+
 : grep
     depth; 2 <; if;
         "grep requires two arguments" error;
     then;
-    swap; dup; is-list; if;
+    swap; dup; is-list-or-set; if;
         swap;
         grep-list;
     else;
@@ -279,7 +282,7 @@
     depth; 2 <; if;
         "map requires two arguments" error;
     then;
-    swap; dup; is-list; if;
+    swap; dup; is-list-or-set; if;
         swap;
         map-list;
     else;

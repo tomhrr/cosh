@@ -575,6 +575,8 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let res = match value_rr {
             Value::List(_) => true,
+            Value::Set(_) => true,
+            Value::IpSet(_) => true,
             Value::Generator(_) => true,
             Value::CommandGenerator(_) => true,
             Value::KeysGenerator(_) => true,

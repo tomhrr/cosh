@@ -647,7 +647,8 @@ string ends in a newline:
     "asdf"
 
 `chr` takes an integer or a bigint and returns the character
-associated with that integer.
+associated with that integer.  `ord` takes a character and returns the
+integer or bigint associated with that character.
 
 ### External program execution
 

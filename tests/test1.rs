@@ -954,3 +954,10 @@ fn chr_test() {
     basic_error_test("-100 bigint; chr",
                      "1:14: unable to convert argument to non-negative u32 integer");
 }
+
+#[test]
+fn ord_test() {
+    basic_test("d ord;", "100");
+    basic_test("千 ord;", "21315");
+    basic_error_test("asdf ord;", "1:6: argument must be one character in length");
+}

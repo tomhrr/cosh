@@ -1,5 +1,7 @@
 use std::char;
 
+use num_bigint::BigInt;
+use num_traits::FromPrimitive;
 use num_traits::ToPrimitive;
 use rand::Rng;
 
@@ -553,5 +555,34 @@ impl VM {
                 return 1;
             }
         }
+    }
+
+    /// Converts a character into a Unicode numeral.
+    pub fn core_ord(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("ord requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+        if value_opt.is_none() {
+            self.print_error("unable to convert argument to string");
+            return 0;
+        }
+        let value_str = value_opt.unwrap();
+        if value_str.chars().count() != 1 {
+            self.print_error("argument must be one character in length");
+            return 0;
+        }
+        let c = value_str.chars().next().unwrap();
+        let n: u32 = c.try_into().unwrap();
+        let n_i32: Result<i32, _> = n.try_into();
+        if !n_i32.is_err() {
+            self.stack.push(Value::Int(n_i32.unwrap()));
+            return 1;
+        }
+        self.stack.push(Value::BigInt(BigInt::from_u32(n).unwrap()));
+        return 1;
     }
 }

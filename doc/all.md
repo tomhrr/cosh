@@ -629,13 +629,6 @@ For the supported syntax, see the Rust
 It is close to that of PCRE, except that lookahead and backreferences
 are not supported.
 
-### List operators
-
-`gnth` is the name of the form that does the above for generators.  It
-has a different name, because it involves reading elements from the
-generator until the specified element is reached, so its semantics are
-different from `nth`, which does not alter the argument list.
-
 ### String-handling functions
 
 `++` appends one string to another:
@@ -652,6 +645,9 @@ string ends in a newline:
     "asdf"
     $ "asdf" chomp
     "asdf"
+
+`chr` takes an integer or a bigint and returns the character
+associated with that integer.
 
 ### External program execution
 
@@ -785,6 +781,12 @@ and `str` is defined for both IP objects and IP sets.
 `rand` takes a floating-point value and returns a random value between
 zero and that floating-point value (excluding the floating-point value
 itself).
+
+`gnth` is a function that behaves like `nth`, except that it takes a
+generator as its argument.  It has a different name, because it
+involves reading elements from the generator until the specified
+element is reached, so its semantics are different from `nth`, which
+does not alter the argument list.
 
 ### Miscellaneous
 

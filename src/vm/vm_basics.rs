@@ -1,3 +1,6 @@
+use std::char;
+
+use num_traits::ToPrimitive;
 use rand::Rng;
 
 use chunk::{StringPair, Value};
@@ -485,6 +488,7 @@ impl VM {
         return 1;
     }
 
+    /// Return a deep clone of the argument (compare dup).
     pub fn opcode_clone(&mut self) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("clone requires one argument");
@@ -494,5 +498,60 @@ impl VM {
         let cloned_value_rr = value_rr.value_clone();
         self.stack.push(cloned_value_rr);
         return 1;
+    }
+
+    /// Converts a Unicode numeral into a character.
+    pub fn core_chr(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("chr requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt = value_rr.to_int();
+        match value_opt {
+            Some(n) => {
+                let n_u32_opt: Result<u32, _> = n.try_into();
+                if n_u32_opt.is_err() {
+                    self.print_error(
+                        "unable to convert argument to non-negative u32 integer"
+                    );
+                    return 0;
+                }
+                let c_opt = char::from_u32(n_u32_opt.unwrap());
+                if c_opt.is_none() {
+                    self.print_error("unable to convert integer to character");
+                    return 0;
+                }
+                let c = c_opt.unwrap().to_string();
+                let st = Rc::new(RefCell::new(StringPair::new(c, None)));
+                self.stack.push(Value::String(st));
+                return 1;
+            }
+            _ => {
+                let value_bi_opt = value_rr.to_bigint();
+                if value_bi_opt.is_none() {
+                    self.print_error("unable to convert argument to integer");
+                    return 0;
+                }
+                let value_bi = value_bi_opt.unwrap();
+                let value_bi_u32_opt = value_bi.to_u32();
+                if value_bi_u32_opt.is_none() {
+                    self.print_error(
+                        "unable to convert argument to non-negative u32 integer"
+                    );
+                    return 0;
+                }
+                let n_u32 = value_bi_u32_opt.unwrap();
+                let c_opt = char::from_u32(n_u32);
+                if c_opt.is_none() {
+                    self.print_error("unable to convert integer to character");
+                    return 0;
+                }
+                let c = c_opt.unwrap().to_string();
+                let st = Rc::new(RefCell::new(StringPair::new(c, None)));
+                self.stack.push(Value::String(st));
+                return 1;
+            }
+        }
     }
 }

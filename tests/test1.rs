@@ -946,3 +946,11 @@ fn bigint_conversion_test() {
                "1000000000000000000000000");
     basic_test("asdf bigint;", "{{Null}}");
 }
+
+#[test]
+fn chr_test() {
+    basic_test("100 chr;", "d");
+    basic_test("100 bigint; chr;", "d");
+    basic_error_test("-100 bigint; chr",
+                     "1:14: unable to convert argument to non-negative u32 integer");
+}

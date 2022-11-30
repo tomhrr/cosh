@@ -1,6 +1,7 @@
 use std::char;
 
 use num_bigint::BigInt;
+use num_traits::Num;
 use num_traits::FromPrimitive;
 use num_traits::ToPrimitive;
 use rand::Rng;
@@ -584,5 +585,34 @@ impl VM {
         }
         self.stack.push(Value::BigInt(BigInt::from_u32(n).unwrap()));
         return 1;
+    }
+
+    /// Converts a hex string into an integer or bigint.
+    pub fn core_hex(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("hex requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+        if value_opt.is_none() {
+            self.print_error("unable to convert argument to string");
+            return 0;
+        }
+        let value_str = value_opt.unwrap().replace("0x", "");
+        let n: Result<i32, _> = i32::from_str_radix(&value_str, 16);
+        if !n.is_err() {
+            self.stack.push(Value::Int(n.unwrap()));
+            return 1;
+        }
+        let n_bi: Result<BigInt, _> =
+            BigInt::from_str_radix(&value_str, 16);
+        if !n_bi.is_err() {
+            self.stack.push(Value::BigInt(n_bi.unwrap()));
+            return 1;
+        }
+        self.print_error("unable to convert hex string to integer");
+        return 0;
     }
 }

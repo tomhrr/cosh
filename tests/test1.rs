@@ -961,3 +961,11 @@ fn ord_test() {
     basic_test("千 ord;", "21315");
     basic_error_test("asdf ord;", "1:6: argument must be one character in length");
 }
+
+#[test]
+fn hex_test() {
+    basic_test("5353 hex;", "21331");
+    basic_test("0x5353 hex;", "21331");
+    basic_test("0x5353535353535353 hex;", "6004234345560363859");
+    basic_error_test("asdf hex;", "1:6: unable to convert hex string to integer");
+}

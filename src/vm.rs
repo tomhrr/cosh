@@ -251,6 +251,7 @@ lazy_static! {
         map.insert("bigint", VM::opcode_bigint as fn(&mut VM) -> i32);
         map.insert("chr", VM::core_chr as fn(&mut VM) -> i32);
         map.insert("ord", VM::core_ord as fn(&mut VM) -> i32);
+        map.insert("hex", VM::core_hex as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

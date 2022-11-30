@@ -650,6 +650,9 @@ string ends in a newline:
 associated with that integer.  `ord` takes a character and returns the
 integer or bigint associated with that character.
 
+`hex` takes a number as a hexadecimal string and returns the number as
+an integer or bigint.
+
 ### External program execution
 
 A command that begins with `$` will be treated as an external call:

@@ -615,4 +615,104 @@ impl VM {
         self.print_error("unable to convert hex string to integer");
         return 0;
     }
+
+    /// Converts a string to lowercase.
+    pub fn core_lc(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("lc requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+        if value_opt.is_none() {
+            self.print_error("unable to convert argument to string");
+            return 0;
+        }
+        let lc_str = value_opt.unwrap().to_lowercase();
+        let st = Rc::new(RefCell::new(StringPair::new(lc_str, None)));
+        self.stack.push(Value::String(st));
+        return 1;
+    }
+
+    /// Converts the first character of a string to lowercase.
+    pub fn core_lcfirst(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("lcfirst requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+        if value_opt.is_none() {
+            self.print_error("unable to convert argument to string");
+            return 0;
+        }
+        let vst = value_opt.unwrap();
+        if vst.len() == 0 {
+            let st =
+                Rc::new(RefCell::new(StringPair::new(vst.to_string(), None)));
+            self.stack.push(Value::String(st));
+            return 1;
+        }
+        let mut iter = vst.chars();
+        let mut new_st =
+            iter.next().unwrap().to_lowercase().to_string();
+        for c in iter {
+            new_st.push(c);
+        }
+        let st = Rc::new(RefCell::new(StringPair::new(new_st, None)));
+        self.stack.push(Value::String(st));
+        return 1;
+    }
+
+    /// Converts a string to uppercase.
+    pub fn core_uc(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("uc requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+        if value_opt.is_none() {
+            self.print_error("unable to convert argument to string");
+            return 0;
+        }
+        let uc_str = value_opt.unwrap().to_uppercase();
+        let st = Rc::new(RefCell::new(StringPair::new(uc_str, None)));
+        self.stack.push(Value::String(st));
+        return 1;
+    }
+
+    /// Converts the first character of a string to uppercase.
+    pub fn core_ucfirst(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("ucfirst requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+        if value_opt.is_none() {
+            self.print_error("unable to convert argument to string");
+            return 0;
+        }
+        let vst = value_opt.unwrap();
+        if vst.len() == 0 {
+            let st =
+                Rc::new(RefCell::new(StringPair::new(vst.to_string(), None)));
+            self.stack.push(Value::String(st));
+            return 1;
+        }
+        let mut iter = vst.chars();
+        let mut new_st =
+            iter.next().unwrap().to_uppercase().to_string();
+        for c in iter {
+            new_st.push(c);
+        }
+        let st = Rc::new(RefCell::new(StringPair::new(new_st, None)));
+        self.stack.push(Value::String(st));
+        return 1;
+    }
 }

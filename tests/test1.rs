@@ -969,3 +969,29 @@ fn hex_test() {
     basic_test("0x5353535353535353 hex;", "6004234345560363859");
     basic_error_test("asdf hex;", "1:6: unable to convert hex string to integer");
 }
+
+#[test]
+fn lc_test() {
+    basic_test("AsDf lc;", "asdf");
+    basic_error_test("[] lc;", "1:4: unable to convert argument to string");
+}
+
+#[test]
+fn lcfirst_test() {
+    basic_test("'' lcfirst;", "\"\"");
+    basic_test("AsDf lcfirst;", "asDf");
+    basic_error_test("[] lcfirst;", "1:4: unable to convert argument to string");
+}
+
+#[test]
+fn uc_test() {
+    basic_test("AsDf uc;", "ASDF");
+    basic_error_test("[] uc;", "1:4: unable to convert argument to string");
+}
+
+#[test]
+fn ucfirst_test() {
+    basic_test("'' ucfirst;", "\"\"");
+    basic_test("asDf ucfirst;", "AsDf");
+    basic_error_test("[] ucfirst;", "1:4: unable to convert argument to string");
+}

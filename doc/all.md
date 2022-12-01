@@ -653,6 +653,11 @@ integer or bigint associated with that character.
 `hex` takes a number as a hexadecimal string and returns the number as
 an integer or bigint.
 
+`lc` takes a string, converts all characters to lowercase, and returns
+the updated string.  `lcfirst` takes a string, converts the first
+character to lowercase, and returns the updated string.  `uc` and
+`ucfirst` operate similarly, except they convert to uppercase.
+
 ### External program execution
 
 A command that begins with `$` will be treated as an external call:

@@ -15,6 +15,7 @@ extern crate regex;
 extern crate roxmltree;
 extern crate serde;
 extern crate sysinfo;
+extern crate unicode_segmentation;
 extern crate term_size;
 extern crate termion;
 extern crate utime;

@@ -658,6 +658,8 @@ the updated string.  `lcfirst` takes a string, converts the first
 character to lowercase, and returns the updated string.  `uc` and
 `ucfirst` operate similarly, except they convert to uppercase.
 
+`reverse` reverses a string.  It also works on lists.
+
 ### External program execution
 
 A command that begins with `$` will be treated as an external call:

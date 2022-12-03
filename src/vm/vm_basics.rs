@@ -5,6 +5,7 @@ use num_traits::Num;
 use num_traits::FromPrimitive;
 use num_traits::ToPrimitive;
 use rand::Rng;
+use unicode_segmentation::UnicodeSegmentation;
 
 use chunk::{StringPair, Value};
 use vm::*;
@@ -714,5 +715,38 @@ impl VM {
         let st = Rc::new(RefCell::new(StringPair::new(new_st, None)));
         self.stack.push(Value::String(st));
         return 1;
+    }
+
+    /// Reverses a list or a string.
+    pub fn core_reverse(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("ucfirst requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        match value_rr {
+            Value::List(lst) => {
+                let mut rev_lst = VecDeque::new();
+                for e in lst.borrow().iter().rev() {
+                    rev_lst.push_back(e.clone());
+                }
+                let new_lst = Value::List(Rc::new(RefCell::new(rev_lst)));
+                self.stack.push(new_lst);
+                return 1;
+            }
+            _ => {
+                let value_opt: Option<&str>;
+                to_str!(value_rr, value_opt);
+                if value_opt.is_none() {
+                    self.print_error("unable to convert argument to string");
+                    return 0;
+                }
+                let vst = value_opt.unwrap();
+                let rev: String = vst.graphemes(true).rev().collect();
+                let st = Rc::new(RefCell::new(StringPair::new(rev, None)));
+                self.stack.push(Value::String(st));
+                return 1;
+            }
+        }
     }
 }

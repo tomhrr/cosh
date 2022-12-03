@@ -256,6 +256,7 @@ lazy_static! {
         map.insert("lcfirst", VM::core_lcfirst as fn(&mut VM) -> i32);
         map.insert("uc", VM::core_uc as fn(&mut VM) -> i32);
         map.insert("ucfirst", VM::core_ucfirst as fn(&mut VM) -> i32);
+        map.insert("reverse", VM::core_reverse as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

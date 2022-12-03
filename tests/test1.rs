@@ -995,3 +995,9 @@ fn ucfirst_test() {
     basic_test("asDf ucfirst;", "AsDf");
     basic_error_test("[] ucfirst;", "1:4: unable to convert argument to string");
 }
+
+#[test]
+fn reverse_test() {
+    basic_test("(1 2 3) reverse;", "(\n    3\n    2\n    1\n)");
+    basic_test("asdf reverse;", "fdsa");
+}

@@ -180,6 +180,10 @@ used to avoid this behaviour, if necessary.
 `BigInt`s, and `Float`s.  `=`, `<`, and `>` are also defined over
 `String`s.
 
+`sqrt` is defined over `Int`s, `BigInt`s, and `Float`s.  `**` is
+defined for `Int`, `BigInt`, and `Float` bases for `Int` and `Float`
+exponents.
+
 ### Anonymous functions
 
 An anonymous function is defined by way of a list that contains the

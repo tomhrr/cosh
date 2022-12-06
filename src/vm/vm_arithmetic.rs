@@ -1,6 +1,7 @@
 use num::FromPrimitive;
 use num::ToPrimitive;
 use num_bigint::BigInt;
+use num_traits::Signed;
 
 use chunk::{Value};
 use vm::*;
@@ -965,10 +966,71 @@ impl VM {
                 return 1;
             }
             _ => {
-                self.print_error("unhandled arguments");
+                self.print_error("unhandled exp arguments");
                 return 0;
             }
 
         }
+    }
+
+    /// Get the absolute value of the argument.
+    pub fn core_abs(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("sqrt requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        match value_rr {
+            Value::Int(n) => {
+                let nn = n.abs();
+                self.stack.push(Value::Int(nn));
+                return 1;
+            }
+            Value::Float(f) => {
+                let ff = f.abs();
+                self.stack.push(Value::Float(ff));
+                return 1;
+            }
+            Value::BigInt(bi) => {
+                let bb = bi.abs();
+                self.stack.push(Value::BigInt(bb));
+                return 1;
+            }
+            _ => {}
+        }
+
+        let n_opt = value_rr.to_int();
+        match n_opt {
+            Some(n) => {
+                let nn = n.abs();
+                self.stack.push(Value::Int(nn));
+                return 1;
+            }
+            _ => {}
+        }
+
+        let bi_opt = value_rr.to_bigint();
+        match bi_opt {
+            Some(bi) => {
+                let bb = bi.abs();
+                self.stack.push(Value::BigInt(bb));
+                return 1;
+            }
+            _ => {}
+        }
+
+        let f_opt = value_rr.to_float();
+        match f_opt {
+            Some(f) => {
+                let ff = f.abs();
+                self.stack.push(Value::Float(ff));
+                return 1;
+            }
+            _ => {}
+        }
+
+        self.print_error("unhandled abs argument");
+        return 0;
     }
 }

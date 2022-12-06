@@ -1021,3 +1021,10 @@ fn abs_test() {
     basic_test("-100.50 abs;", "100.5");
     basic_test("-10000000000000 abs;", "10000000000000");
 }
+
+#[test]
+fn len_test() {
+    basic_test("asdf len;", "4");
+    basic_test("(1 2 3) len;", "3");
+    basic_test("10 range; len;", "10");
+}

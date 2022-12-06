@@ -100,17 +100,38 @@ impl VM {
             Value::List(lst) => {
                 let len = lst.borrow().len();
                 self.stack.push(Value::Int(len as i32));
+                return 1;
             }
             Value::String(sp) => {
                 let len = sp.borrow().s.len();
                 self.stack.push(Value::Int(len as i32));
+                return 1;
             }
-            _ => {
-                self.print_error("len argument must be a list or a string");
+            _ => {}
+        }
+
+        self.stack.push(lst_rr);
+        let mut len = 0;
+        loop {
+            let dup_res = self.opcode_dup();
+            if dup_res == 0 {
                 return 0;
             }
+            let shift_res = self.opcode_shift();
+            if shift_res == 0 {
+                return 0;
+            }
+            let value_rr = self.stack.pop().unwrap();
+            match value_rr {
+                Value::Null => {
+                    self.stack.pop();
+                    self.stack.push(Value::Int(len));
+                    return 1;
+                }
+                _ => {}
+            }
+            len = len + 1;
         }
-        return 1;
     }
 
     /// Adds a boolean onto the stack indicating whether the topmost

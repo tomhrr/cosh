@@ -25,7 +25,7 @@ impl VM {
 
         let lst_rr = self.stack.pop().unwrap();
 
-        match (index_int_opt, lst_rr) {
+        match (index_int_opt, lst_rr.clone()) {
             (Some(index), Value::List(lst)) => {
                 if lst.borrow().len() <= (index as usize) {
                     self.print_error("nth index is out of bounds");
@@ -34,9 +34,26 @@ impl VM {
                 let element = lst.borrow()[index as usize].clone();
                 self.stack.push(element);
             }
-            (Some(_), _) => {
-                self.print_error("first nth argument must be list");
-                return 0;
+            (Some(mut index), _) => {
+                self.stack.push(lst_rr);
+                while index >= 0 {
+                    let dup_res = self.opcode_dup();
+                    if dup_res == 0 {
+                        return 0;
+                    }
+                    let shift_res = self.opcode_shift();
+                    if shift_res == 0 {
+                        return 0;
+                    }
+                    if index == 0 {
+                        self.stack.remove(self.stack.len() - 2);
+                        break;
+                    } else {
+                        self.stack.pop();
+                        index = index - 1;
+                    }
+                }
+                return 1;
             }
             (_, _) => {
                 self.print_error("second nth argument must be integer");
@@ -81,48 +98,6 @@ impl VM {
             }
         }
         self.stack.push(lst_rr);
-        return 1;
-    }
-
-    /// Takes a generator and an index as its arguments.  Gets the
-    /// element at the given index from the generator and places it
-    /// onto the stack.
-    pub fn core_gnth(
-        &mut self,
-    ) -> i32 {
-        if self.stack.len() < 2 {
-            self.print_error("gnth requires two arguments");
-            return 0;
-        }
-
-        let index_rr = self.stack.pop().unwrap();
-        let index_int_opt = index_rr.to_int();
-
-        match index_int_opt {
-            Some(mut index) => {
-                while index >= 0 {
-                    let dup_res = self.opcode_dup();
-                    if dup_res == 0 {
-                        return 0;
-                    }
-                    let shift_res = self.opcode_shift();
-                    if shift_res == 0 {
-                        return 0;
-                    }
-                    if index == 0 {
-                        self.stack.remove(self.stack.len() - 2);
-                        break;
-                    } else {
-                        self.stack.pop();
-                        index = index - 1;
-                    }
-                }
-            }
-            _ => {
-                self.print_error("second gnth argument must be integer");
-                return 0;
-            }
-        }
         return 1;
     }
 

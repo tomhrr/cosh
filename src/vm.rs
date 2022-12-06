@@ -213,7 +213,6 @@ lazy_static! {
         map.insert("shift", VM::opcode_shift as fn(&mut VM) -> i32);
         map.insert("join", VM::core_join as fn(&mut VM) -> i32);
         map.insert("shift-all", VM::core_shift_all as fn(&mut VM) -> i32);
-        map.insert("gnth", VM::core_gnth as fn(&mut VM) -> i32);
         map.insert("|", VM::core_pipe as fn(&mut VM) -> i32);
         map.insert("clone", VM::opcode_clone as fn(&mut VM) -> i32);
         map.insert("now", VM::core_now as fn(&mut VM) -> i32);

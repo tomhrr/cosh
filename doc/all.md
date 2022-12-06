@@ -182,7 +182,7 @@ used to avoid this behaviour, if necessary.
 
 `sqrt` is defined over `Int`s, `BigInt`s, and `Float`s.  `**` is
 defined for `Int`, `BigInt`, and `Float` bases for `Int` and `Float`
-exponents.
+exponents.  `abs` is defined over `Int`s, `BigInt`s, and `Float`s.
 
 ### Anonymous functions
 
@@ -796,12 +796,6 @@ and `str` is defined for both IP objects and IP sets.
 `rand` takes a floating-point value and returns a random value between
 zero and that floating-point value (excluding the floating-point value
 itself).
-
-`gnth` is a function that behaves like `nth`, except that it takes a
-generator as its argument.  It has a different name, because it
-involves reading elements from the generator until the specified
-element is reached, so its semantics are different from `nth`, which
-does not alter the argument list.
 
 ### Miscellaneous
 

@@ -25,7 +25,7 @@ impl VM {
 
         let lst_rr = self.stack.pop().unwrap();
 
-        match (index_int_opt, lst_rr.clone()) {
+        match (index_int_opt, &lst_rr) {
             (Some(index), Value::List(lst)) => {
                 if lst.borrow().len() <= (index as usize) {
                     self.print_error("nth index is out of bounds");
@@ -33,9 +33,14 @@ impl VM {
                 }
                 let element = lst.borrow()[index as usize].clone();
                 self.stack.push(element);
+                return 1;
             }
-            (Some(mut index), _) => {
-                self.stack.push(lst_rr);
+            (_, _) => {}
+        }
+
+        self.stack.push(lst_rr);
+        match index_int_opt {
+            Some(mut index) => {
                 while index >= 0 {
                     let dup_res = self.opcode_dup();
                     if dup_res == 0 {
@@ -55,12 +60,11 @@ impl VM {
                 }
                 return 1;
             }
-            (_, _) => {
+            _ => {
                 self.print_error("second nth argument must be integer");
                 return 0;
             }
         }
-        return 1;
     }
 
     /// Takes a list, an index, and a value as its arguments.  Places

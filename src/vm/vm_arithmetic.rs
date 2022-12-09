@@ -889,6 +889,161 @@ impl VM {
         }
     }
 
+    /// Helper function for exponentiation.
+    fn core_exp_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
+        match (&*v1, &*v2) {
+            (Value::Int(n), Value::Int(exp)) => {
+                if *exp < 0 {
+                    self.print_error("exponent cannot be negative");
+                    return 0;
+                }
+                let nn = (*n).checked_pow((*exp).try_into().unwrap());
+                match nn {
+                    Some(nnn) => {
+                        self.stack.push(Value::Int(nnn));
+                        return 1;
+                    }
+                    None => {
+                        let bi = BigInt::from_i32(*n).unwrap();
+                        let bb = bi.pow((*exp).try_into().unwrap());
+                        self.stack.push(Value::BigInt(bb));
+                        return 1;
+                    }
+                }
+            }
+            (Value::Float(f), Value::Int(exp)) => {
+                if *exp < 0 {
+                    self.print_error("exponent cannot be negative");
+                    return 0;
+                }
+                let ff = (*f).powf((*exp).try_into().unwrap());
+                self.stack.push(Value::Float(ff));
+                return 1;
+            }
+            (Value::BigInt(bi), Value::Int(exp)) => {
+                if *exp < 0 {
+                    self.print_error("exponent cannot be negative");
+                    return 0;
+                }
+                let bb = (*bi).pow((*exp).try_into().unwrap());
+                self.stack.push(Value::BigInt(bb));
+                return 1;
+            }
+            (Value::Int(n), Value::Float(exp)) => {
+                if *exp < 0.0 {
+                    self.print_error("exponent cannot be negative");
+                    return 0;
+                }
+                let f = *n as f64;
+                let ff = f.powf((*exp).try_into().unwrap());
+                self.stack.push(Value::Float(ff));
+                return 1;
+            }
+            (Value::Float(f), Value::Float(exp)) => {
+                if *exp < 0.0 {
+                    self.print_error("exponent cannot be negative");
+                    return 0;
+                }
+                let ff = (*f).powf((*exp).try_into().unwrap());
+                self.stack.push(Value::Float(ff));
+                return 1;
+            }
+            (Value::BigInt(bi), Value::Float(exp)) => {
+                if *exp < 0.0 {
+                    self.print_error("exponent cannot be negative");
+                    return 0;
+                }
+                let ff = (*bi).to_f64().unwrap().powf((*exp).try_into().unwrap());
+                self.stack.push(Value::Float(ff));
+                return 1;
+            }
+            (Value::Int(_), _) => {
+                let n_opt = v2.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_exp_inner(v1, &Value::Int(n));
+                    }
+                    _ => {}
+                }
+
+                let f_opt = v2.to_float();
+                match f_opt {
+                    Some(f) => {
+                        return self.core_exp_inner(v1, &Value::Float(f));
+                    }
+                    _ => {}
+                }
+
+                return 0;
+            }
+            (Value::BigInt(_), _) => {
+                let n_opt = v2.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_exp_inner(v1, &Value::Int(n));
+                    }
+                    _ => {}
+                }
+
+                let f_opt = v2.to_float();
+                match f_opt {
+                    Some(f) => {
+                        return self.core_exp_inner(v1, &Value::Float(f));
+                    }
+                    _ => {}
+                }
+
+                return 0;
+            }
+            (Value::Float(_), _) => {
+                let n_opt = v2.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_exp_inner(v1, &Value::Int(n));
+                    }
+                    _ => {}
+                }
+
+                let f_opt = v2.to_float();
+                match f_opt {
+                    Some(f) => {
+                        return self.core_exp_inner(v1, &Value::Float(f));
+                    }
+                    _ => {}
+                }
+
+                return 0;
+            }
+            (_, _) => {
+                let n_opt = v1.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_exp_inner(&Value::Int(n), v2);
+                    }
+                    _ => {}
+                }
+
+                let f_opt = v1.to_float();
+                match f_opt {
+                    Some(f) => {
+                        return self.core_exp_inner(&Value::Float(f), v2);
+                    }
+                    _ => {}
+                }
+
+                let bi_opt = v1.to_bigint();
+                match bi_opt {
+                    Some(bi) => {
+                        return self.core_exp_inner(&Value::BigInt(bi), v2);
+                    }
+                    _ => {}
+                }
+
+                return 0;
+            }
+        }
+    }
+
     /// Raise the first argument to the second argument.
     pub fn core_exp(&mut self) -> i32 {
         if self.stack.len() < 2 {
@@ -899,78 +1054,13 @@ impl VM {
         let exp_rr = self.stack.pop().unwrap();
         let base_rr = self.stack.pop().unwrap();
 
-        match (base_rr, exp_rr) {
-            (Value::Int(n), Value::Int(exp)) => {
-                if exp < 0 {
-                    self.print_error("exponent cannot be negative");
-                    return 0;
-                }
-                let nn = n.checked_pow(exp.try_into().unwrap());
-                match nn {
-                    Some(nnn) => {
-                        self.stack.push(Value::Int(nnn));
-                        return 1;
-                    }
-                    None => {
-                        let bi = BigInt::from_i32(n).unwrap();
-                        let bb = bi.pow(exp.try_into().unwrap());
-                        self.stack.push(Value::BigInt(bb));
-                        return 1;
-                    }
-                }
-            }
-            (Value::Float(f), Value::Int(exp)) => {
-                if exp < 0 {
-                    self.print_error("exponent cannot be negative");
-                    return 0;
-                }
-                let ff = f.powf(exp.try_into().unwrap());
-                self.stack.push(Value::Float(ff));
-                return 1;
-            }
-            (Value::BigInt(bi), Value::Int(exp)) => {
-                if exp < 0 {
-                    self.print_error("exponent cannot be negative");
-                    return 0;
-                }
-                let bb = bi.pow(exp.try_into().unwrap());
-                self.stack.push(Value::BigInt(bb));
-                return 1;
-            }
-            (Value::Int(n), Value::Float(exp)) => {
-                if exp < 0.0 {
-                    self.print_error("exponent cannot be negative");
-                    return 0;
-                }
-                let f = n as f64;
-                let ff = f.powf(exp.try_into().unwrap());
-                self.stack.push(Value::Float(ff));
-                return 1;
-            }
-            (Value::Float(f), Value::Float(exp)) => {
-                if exp < 0.0 {
-                    self.print_error("exponent cannot be negative");
-                    return 0;
-                }
-                let ff = f.powf(exp.try_into().unwrap());
-                self.stack.push(Value::Float(ff));
-                return 1;
-            }
-            (Value::BigInt(bi), Value::Float(exp)) => {
-                if exp < 0.0 {
-                    self.print_error("exponent cannot be negative");
-                    return 0;
-                }
-                let ff = bi.to_f64().unwrap().powf(exp.try_into().unwrap());
-                self.stack.push(Value::Float(ff));
-                return 1;
-            }
-            _ => {
-                self.print_error("unhandled exp arguments");
-                return 0;
-            }
-
+        let res = self.core_exp_inner(&base_rr, &exp_rr);
+        if res == 0 {
+            self.print_error("unhandled exp arguments");
+            return 0;
         }
+
+        return 1;
     }
 
     /// Get the absolute value of the argument.

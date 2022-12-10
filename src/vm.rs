@@ -259,6 +259,7 @@ lazy_static! {
         map.insert("sqrt", VM::core_sqrt as fn(&mut VM) -> i32);
         map.insert("**", VM::core_exp as fn(&mut VM) -> i32);
         map.insert("abs", VM::core_abs as fn(&mut VM) -> i32);
+        map.insert("delete", VM::core_delete as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

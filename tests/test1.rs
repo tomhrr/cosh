@@ -1029,3 +1029,8 @@ fn len_test() {
     basic_test("(1 2 3) len;", "3");
     basic_test("10 range; len;", "10");
 }
+
+#[test]
+fn delete_test() {
+    basic_test("h(1 2 3 4) dup; 1 delete;", "h(\n    \"3\": 4\n)");
+}

@@ -176,13 +176,12 @@ used to avoid this behaviour, if necessary.
 
 ### Arithmetic and relations
 
-`+`, `-`, `*`, `/`, `=`, `<`, and `>` are defined over `Int`s,
-`BigInt`s, and `Float`s.  `=`, `<`, and `>` are also defined over
-`String`s.
+`+`, `-`, `*`, `/`, `=`, `<`, and `>` are defined over the numeric
+types.  `=`, `<`, and `>` are also defined over `String`s.
 
-`sqrt` is defined over `Int`s, `BigInt`s, and `Float`s.  `**` is
-defined for `Int`, `BigInt`, and `Float` bases for `Int` and `Float`
-exponents.  `abs` is defined over `Int`s, `BigInt`s, and `Float`s.
+`sqrt` and `abs` are defined over the numeric types  `**`
+(exponentation) is defined over the numeric types for the base, and
+over `Int` and `Float` for the exponent.
 
 ### Anonymous functions
 
@@ -402,6 +401,13 @@ it on the stack:
 
     $ h(a 1 b 2) c 3 at!; c at;
     3
+
+`delete` removes a key-value pair from a hash:
+
+    $ h(a 1 b 2) dup; a delete;
+    h(
+        "b": 2
+    )
 
 `keys` returns a generator over the hash's keys:
 

@@ -45,6 +45,44 @@ impl VM {
         return 1;
     }
 
+    /// Takes a set or hash value and a key string or element value as
+    /// its arguments.  For a hash, removes the value recorded against
+    /// the hash key from the hash.  For a set, removes the element
+    /// from the set.
+    pub fn core_delete(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("delete requires two arguments");
+            return 0;
+        }
+
+        let key_str_rr = self.stack.pop().unwrap();
+        let key_str_opt: Option<&str>;
+        to_str!(key_str_rr, key_str_opt);
+        if key_str_opt.is_none() {
+            self.print_error("second delete argument must be string");
+            return 0;
+        }
+        let key_str = key_str_opt.unwrap();
+
+        let object_rr = self.stack.pop().unwrap();
+
+        match object_rr {
+            Value::Hash(map) => {
+                let mut mapp = map.borrow_mut();
+                mapp.remove(key_str);
+            }
+            Value::Set(map) => {
+                let mut mapp = map.borrow_mut();
+                mapp.remove(key_str);
+            }
+            _ => {
+                self.print_error("first delete argument must be set/hash");
+                return 0;
+            }
+        }
+        return 1;
+    }
+
     /// Takes a hash value, a key string, and a value as its
     /// arguments.  Puts the value into the hash against the specified
     /// key, and puts the updated hash back onto the stack.

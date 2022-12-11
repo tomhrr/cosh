@@ -971,6 +971,11 @@ fn hex_test() {
 }
 
 #[test]
+fn oct_test() {
+    basic_test("777 oct;", "511");
+}
+
+#[test]
 fn lc_test() {
     basic_test("AsDf lc;", "asdf");
     basic_error_test("[] lc;", "1:4: unable to convert argument to string");

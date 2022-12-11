@@ -666,7 +666,7 @@ associated with that integer.  `ord` takes a character and returns the
 integer or bigint associated with that character.
 
 `hex` takes a number as a hexadecimal string and returns the number as
-an integer or bigint.
+an integer or bigint.  `oct` does the same for octal strings.
 
 `lc` takes a string, converts all characters to lowercase, and returns
 the updated string.  `lcfirst` takes a string, converts the first

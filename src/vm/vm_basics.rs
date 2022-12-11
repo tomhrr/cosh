@@ -638,6 +638,35 @@ impl VM {
         return 0;
     }
 
+    /// Converts an octal string into an integer or bigint.
+    pub fn core_oct(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("oct requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+        if value_opt.is_none() {
+            self.print_error("unable to convert argument to string");
+            return 0;
+        }
+        let value_str = value_opt.unwrap();
+        let n: Result<i32, _> = i32::from_str_radix(&value_str, 8);
+        if !n.is_err() {
+            self.stack.push(Value::Int(n.unwrap()));
+            return 1;
+        }
+        let n_bi: Result<BigInt, _> =
+            BigInt::from_str_radix(&value_str, 8);
+        if !n_bi.is_err() {
+            self.stack.push(Value::BigInt(n_bi.unwrap()));
+            return 1;
+        }
+        self.print_error("unable to convert octal string to integer");
+        return 0;
+    }
+
     /// Converts a string to lowercase.
     pub fn core_lc(&mut self) -> i32 {
         if self.stack.len() < 1 {

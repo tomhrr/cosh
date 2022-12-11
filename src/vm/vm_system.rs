@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 use std::env;
 use std::fs;
 use std::os::unix::fs::MetadataExt;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::rc::Rc;
 use std::time::SystemTime;
@@ -437,6 +438,54 @@ impl VM {
             }
             (_, _) => {
                 self.print_error("second kill argument must be signal");
+                return 0;
+            }
+        }
+    }
+
+    /// Takes a path and a numeric mode as its arguments, and updates
+    /// the path's mode accordingly.
+    pub fn core_chmod(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("chmod requires two arguments");
+            return 0;
+        }
+
+	let mode_rr = self.stack.pop().unwrap();
+        let mode_opt = mode_rr.to_int();
+
+        let path_rr = self.stack.pop().unwrap();
+        let path_opt: Option<&str>;
+	to_str!(path_rr, path_opt);
+
+        match (path_opt, mode_opt) {
+            (Some(path), Some(mode)) => {
+                let f_opt = fs::metadata(&path);
+                if f_opt.is_err() {
+                    self.print_error("unable to get metadata for path");
+                    return 0;
+                }
+                let f = f_opt.unwrap();
+                let mut perms = f.permissions();
+                perms.set_mode(mode.try_into().unwrap());
+                let res = fs::set_permissions(&path, perms);
+                match res {
+                    Ok(_) => {
+                        return 1;
+                    }
+                    Err(e) => {
+                        let s = format!("unable to chmod: {}", e);
+                        self.print_error(&s);
+                        return 0;
+                    }
+                }
+            }
+            (Some(_), _) => {
+                self.print_error("second chmod argument must be mode");
+                return 0;
+            }
+            (_, _) => {
+                self.print_error("first chmod argument must be path");
                 return 0;
             }
         }

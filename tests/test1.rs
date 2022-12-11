@@ -1044,3 +1044,8 @@ fn delete_test() {
 fn exists_test() {
     basic_test("s(1 2 3 4) 2 exists;", ".t");
 }
+
+#[test]
+fn chmod_test() {
+    basic_test("asdf () f>; asdf 700 oct; chmod; {stat -c '%a' asdf}; shift; chomp; 700 m; asdf rm", ".t");
+}

@@ -616,6 +616,8 @@ Other operations:
    containing the PID, UID, and the process name; and
  - `kill`: takes a PID and a signal name (e.g. "term", "kill"), and
    sends the specified signal to the process.
+ - `chmod`: takes a path and a numeric mode, and updates the path's
+   mode accordingly.  (`oct` may be useful for mode conversions.)
 
 ### Regular expressions
 

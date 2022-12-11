@@ -262,6 +262,7 @@ lazy_static! {
         map.insert("abs", VM::core_abs as fn(&mut VM) -> i32);
         map.insert("delete", VM::core_delete as fn(&mut VM) -> i32);
         map.insert("exists", VM::core_exists as fn(&mut VM) -> i32);
+        map.insert("chmod", VM::core_chmod as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

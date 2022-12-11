@@ -409,6 +409,11 @@ it on the stack:
         "b": 2
     )
 
+`exists` checks whether a key is present in a hash:
+
+    $ h(a 1 b 2) a exists;
+    .t
+
 `keys` returns a generator over the hash's keys:
 
     $ h(a 1 b 2) c 3 at!; keys; take-all;

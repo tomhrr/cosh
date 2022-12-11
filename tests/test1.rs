@@ -1034,3 +1034,8 @@ fn len_test() {
 fn delete_test() {
     basic_test("h(1 2 3 4) dup; 1 delete;", "h(\n    \"3\": 4\n)");
 }
+
+#[test]
+fn exists_test() {
+    basic_test("s(1 2 3 4) 2 exists;", ".t");
+}

@@ -83,6 +83,45 @@ impl VM {
         return 1;
     }
 
+    /// Takes a set or hash value and a key string or element value as
+    /// its arguments.  Returns a boolean indicating whether the set
+    /// or hash value contains the specified key/element.
+    pub fn core_exists(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("exists requires two arguments");
+            return 0;
+        }
+
+        let key_str_rr = self.stack.pop().unwrap();
+        let key_str_opt: Option<&str>;
+        to_str!(key_str_rr, key_str_opt);
+        if key_str_opt.is_none() {
+            self.print_error("second exists argument must be string");
+            return 0;
+        }
+        let key_str = key_str_opt.unwrap();
+
+        let object_rr = self.stack.pop().unwrap();
+
+        match object_rr {
+            Value::Hash(map) => {
+                let mapp = map.borrow();
+                let res = mapp.contains_key(key_str);
+                self.stack.push(Value::Bool(res));
+            }
+            Value::Set(map) => {
+                let mapp = map.borrow();
+                let res = mapp.contains_key(key_str);
+                self.stack.push(Value::Bool(res));
+            }
+            _ => {
+                self.print_error("first exists argument must be set/hash");
+                return 0;
+            }
+        }
+        return 1;
+    }
+
     /// Takes a hash value, a key string, and a value as its
     /// arguments.  Puts the value into the hash against the specified
     /// key, and puts the updated hash back onto the stack.

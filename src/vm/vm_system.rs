@@ -1,5 +1,5 @@
 use nix::sys::signal::Signal;
-use nix::unistd::Pid;
+use nix::unistd::{Group, User, Pid};
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::env;
@@ -486,6 +486,81 @@ impl VM {
             }
             (_, _) => {
                 self.print_error("first chmod argument must be path");
+                return 0;
+            }
+        }
+    }
+
+    /// Takes a path, a user name, and a group name, and updates the
+    /// ownership of the path accordingly.
+    pub fn core_chown(&mut self) -> i32 {
+        if self.stack.len() < 3 {
+            self.print_error("chown requires three arguments");
+            return 0;
+        }
+
+        let group_rr = self.stack.pop().unwrap();
+        let group_opt: Option<&str>;
+	to_str!(group_rr, group_opt);
+
+        let user_rr = self.stack.pop().unwrap();
+        let user_opt: Option<&str>;
+	to_str!(user_rr, user_opt);
+
+        let path_rr = self.stack.pop().unwrap();
+        let path_opt: Option<&str>;
+	to_str!(path_rr, path_opt);
+
+        match (path_opt, user_opt, group_opt) {
+            (Some(path), Some(user), Some(group)) => {
+                let user_opt_res = User::from_name(user);
+                if user_opt_res.is_err() {
+                    self.print_error("user not found");
+                    return 0;
+                }
+                let user_opt = user_opt_res.unwrap();
+                if user_opt.is_none() {
+                    self.print_error("user not found");
+                    return 0;
+                }
+                let user_obj = user_opt.unwrap();
+
+                let group_opt_res = Group::from_name(group);
+                if group_opt_res.is_err() {
+                    self.print_error("group not found");
+                    return 0;
+                }
+                let group_opt = group_opt_res.unwrap();
+                if group_opt.is_none() {
+                    self.print_error("group not found");
+                    return 0;
+                }
+                let group_obj = group_opt.unwrap();
+
+                let chown_res =
+                    nix::unistd::chown(path, Some(user_obj.uid),
+                                             Some(group_obj.gid));
+                match chown_res {
+                    Ok(_) => {
+                        return 1;
+                    }
+                    Err(e) => {
+                        let s = format!("unable to chown path: {}", e);
+                        self.print_error(&s);
+                        return 0;
+                    }
+                }
+            }
+            (Some(_), Some(_), _) => {
+                self.print_error("third chown argument must be group");
+                return 0;
+            }
+            (Some(_), _, _) => {
+                self.print_error("second chown argument must be user");
+                return 0;
+            }
+            (_, _, _) => {
+                self.print_error("first chown argument must be path");
                 return 0;
             }
         }

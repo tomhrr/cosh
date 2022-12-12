@@ -618,6 +618,8 @@ Other operations:
    sends the specified signal to the process.
  - `chmod`: takes a path and a numeric mode, and updates the path's
    mode accordingly.  (`oct` may be useful for mode conversions.)
+ - `chown`: takes a path, a user name, and a group name, and updates
+   the path's ownership accordingly.
 
 ### Regular expressions
 

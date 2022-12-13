@@ -1049,3 +1049,8 @@ fn exists_test() {
 fn chmod_test() {
     basic_test("asdf () f>; asdf 700 oct; chmod; {stat -c '%a' asdf}; shift; chomp; 700 m; asdf rm", ".t");
 }
+
+#[test]
+fn stat_test() {
+    basic_test("{rm -f asdf}; take-all; drop; {rm -f temp}; take-all; drop; Cargo.toml temp cp; {ln -s temp asdf}; take-all; drop; asdf stat; size at; 500 >; asdf lstat; size at; 100 <; and; {rm -f asdf}; take-all; drop; {rm -f temp}; take-all; drop;", ".t");
+}

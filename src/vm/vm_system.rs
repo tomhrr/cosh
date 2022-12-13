@@ -262,17 +262,19 @@ impl VM {
         return 1;
     }
 
-    /// Takes a value that can be stringified as its single argument.
-    /// Puts a hash onto the stack containing the metadata of the
-    /// associated file, where "dev" is the device number, "ino" is
-    /// the inode, "mode" is the file mode, "nlink" is the number of
-    /// hard links to the file, "uid" is the user ID of the owner,
-    /// "gid" is the group ID of the owner, "rdev" is the device ID
-    /// (for special files), "size" is the total size in bytes,
+    /// Takes a value that can be stringified and a boolean indicating
+    /// whether to use the link itself or its target (if the value is
+    /// a link) as its arguments.  Puts a hash onto the stack
+    /// containing the metadata of the associated file, where "dev" is
+    /// the device number, "ino" is the inode, "mode" is the file
+    /// mode, "nlink" is the number of hard links to the file, "uid"
+    /// is the user ID of the owner, "gid" is the group ID of the
+    /// owner, "rdev" is the device ID (for special files), "size" is
+    /// the total size in bytes,
     /// "atime_nsec"/"ctime_nsec"/"mtime_nsec" are various file
     /// modification times, "blksize" is the block size, and "blocks"
     /// is the number of blocks allocated to the file.
-    pub fn core_stat(&mut self) -> i32 {
+    fn stat_inner(&mut self, use_symlink: bool) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("stat requires one argument");
             return 0;
@@ -284,7 +286,12 @@ impl VM {
 
         match path_opt {
             Some(s) => {
-                let meta_res = fs::metadata(&s);
+                let meta_res =
+                    if use_symlink {
+                        fs::symlink_metadata(&s)
+                    } else {
+                        fs::metadata(&s)
+                    };
                 match meta_res {
                     Ok(meta) => {
                         let mut map = IndexMap::new();
@@ -355,6 +362,16 @@ impl VM {
             }
         }
         return 1;
+    }
+
+    /// See stat_inner.
+    pub fn core_stat(&mut self) -> i32 {
+        return self.stat_inner(false);
+    }
+
+    /// See stat_inner.
+    pub fn core_lstat(&mut self) -> i32 {
+        return self.stat_inner(true);
     }
 
     /// Puts current process information onto the stack, in the form

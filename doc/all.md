@@ -611,6 +611,8 @@ Other operations:
    given name, otherwise updates the modification time of the existing
    file to be the current time;
  - `stat`: returns a hash containing metadata about the argument file;
+ - `lstat`: like stat, but if the argument is a symbolic link, returns
+   metadata about the link itself, instead of its target;
  - `ps`: returns a list containing details on the currently-running
    processes, where each current process has a separate hash
    containing the PID, UID, and the process name; and

@@ -622,6 +622,7 @@ Other operations:
    mode accordingly.  (`oct` may be useful for mode conversions.)
  - `chown`: takes a path, a user name, and a group name, and updates
    the path's ownership accordingly.
+ - `mkdir`: takes a path and creates a directory at that path.
 
 ### Regular expressions
 

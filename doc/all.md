@@ -184,6 +184,9 @@ types.  `=`, `<`, and `>` are also defined over `String`s.
 (exponentation) is defined over the numeric types for the base, and
 over `Int` and `Float` for the exponent.
 
+`<<` and `>>` are defined over the integer types for the operand and
+`Int`s for the number of bit positions.
+
 ### Anonymous functions
 
 An anonymous function is defined by way of a list that contains the

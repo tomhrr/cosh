@@ -1064,3 +1064,16 @@ fn mv_test() {
 fn dir_test() {
     basic_test("dirtest mkdir; dirtest rmdir; .t", ".t");
 }
+
+#[test]
+fn lsft_rsft_tests() {
+    basic_test("1 1 <<;", "2");
+    basic_test("1 31 <<;", "2147483648");
+    basic_test("1 32 <<;", "4294967296");
+    basic_test("1 33 <<;", "8589934592");
+    basic_test("200 2 <<;", "800");
+    basic_test("11111111111111 11 <<;", "22755555555555328");
+
+    basic_test("1 1 >>;", "0");
+    basic_test("500 3 >>;", "62");
+}

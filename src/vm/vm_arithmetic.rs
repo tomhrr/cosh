@@ -573,7 +573,7 @@ impl VM {
 
                 let i1_str_opt: Option<&str>;
                 to_str!(v1, i1_str_opt);
-                
+
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
@@ -702,7 +702,7 @@ impl VM {
 
                 let i1_str_opt: Option<&str>;
                 to_str!(v1, i1_str_opt);
-                
+
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
@@ -831,7 +831,7 @@ impl VM {
 
                 let i1_str_opt: Option<&str>;
                 to_str!(v1, i1_str_opt);
-                
+
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
@@ -1122,5 +1122,166 @@ impl VM {
 
         self.print_error("unhandled abs argument");
         return 0;
+    }
+
+    /// Helper function for left shift.
+    fn core_lsft_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
+        match (&*v1, &*v2) {
+            (Value::Int(n), Value::Int(shift)) => {
+                if *n < 0 {
+                    return 0;
+                }
+                let un: u32 = (*n).try_into().unwrap();
+                /* One fewer zero, to account for the conversion from
+                 * unsigned to signed. */
+                let zeros = un.leading_zeros() as i32 - 1;
+                if *shift > zeros {
+                    let bi = BigInt::from_u32(un).unwrap();
+                    let bb = bi << shift;
+                    self.stack.push(Value::BigInt(bb));
+                    return 1;
+                }
+                let nn = un << shift;
+                self.stack.push(Value::Int(nn.try_into().unwrap()));
+                return 1;
+            }
+            (Value::BigInt(bi), Value::Int(shift)) => {
+                let bb = bi << shift;
+                self.stack.push(Value::BigInt(bb));
+                return 1;
+            }
+            (Value::Int(_), _) => {
+                let n_opt = v2.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_lsft_inner(v1, &Value::Int(n));
+                    }
+                    _ => {}
+                }
+                return 0;
+            }
+            (Value::BigInt(_), _) => {
+                let n_opt = v2.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_lsft_inner(v1, &Value::Int(n));
+                    }
+                    _ => {}
+                }
+                return 0;
+            }
+            (_, _) => {
+                let n_opt = v1.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_lsft_inner(&Value::Int(n), v2);
+                    }
+                    _ => {}
+                }
+                let bi_opt = v1.to_bigint();
+                match bi_opt {
+                    Some(bi) => {
+                        return self.core_lsft_inner(&Value::BigInt(bi), v2);
+                    }
+                    _ => {}
+                }
+                return 0;
+            }
+        }
+    }
+
+    /// Shift the first argument left the specified number of times.
+    pub fn core_lsft(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("<< requires two arguments");
+            return 0;
+        }
+
+        let shift_rr = self.stack.pop().unwrap();
+        let value_rr = self.stack.pop().unwrap();
+
+        let res = self.core_lsft_inner(&value_rr, &shift_rr);
+        if res == 0 {
+            self.print_error("unhandled << arguments");
+            return 0;
+        }
+
+        return 1;
+    }
+
+    /// Helper function for right shift.
+    fn core_rsft_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
+        match (&*v1, &*v2) {
+            (Value::Int(n), Value::Int(shift)) => {
+                if *n < 0 {
+                    return 0;
+                }
+                let un: u32 = (*n).try_into().unwrap();
+                let nn = un >> shift;
+                self.stack.push(Value::Int(nn.try_into().unwrap()));
+                return 1;
+            }
+            (Value::BigInt(bi), Value::Int(shift)) => {
+                let bb = bi >> shift;
+                self.stack.push(Value::BigInt(bb));
+                return 1;
+            }
+            (Value::Int(_), _) => {
+                let n_opt = v2.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_rsft_inner(v1, &Value::Int(n));
+                    }
+                    _ => {}
+                }
+                return 0;
+            }
+            (Value::BigInt(_), _) => {
+                let n_opt = v2.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_rsft_inner(v1, &Value::Int(n));
+                    }
+                    _ => {}
+                }
+                return 0;
+            }
+            (_, _) => {
+                let n_opt = v1.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_rsft_inner(&Value::Int(n), v2);
+                    }
+                    _ => {}
+                }
+                let bi_opt = v1.to_bigint();
+                match bi_opt {
+                    Some(bi) => {
+                        return self.core_rsft_inner(&Value::BigInt(bi), v2);
+                    }
+                    _ => {}
+                }
+                return 0;
+            }
+        }
+    }
+
+    /// Shift the first argument right the specified number of times.
+    pub fn core_rsft(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error(">> requires two arguments");
+            return 0;
+        }
+
+        let shift_rr = self.stack.pop().unwrap();
+        let value_rr = self.stack.pop().unwrap();
+
+        let res = self.core_rsft_inner(&value_rr, &shift_rr);
+        if res == 0 {
+            self.print_error("unhandled >> arguments");
+            return 0;
+        }
+
+        return 1;
     }
 }

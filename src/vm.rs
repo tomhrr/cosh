@@ -91,6 +91,8 @@ lazy_static! {
             "*",
             VM::opcode_multiply as fn(&mut VM) -> i32,
         );
+        map.insert("<<", VM::core_lsft as fn(&mut VM) -> i32);
+        map.insert(">>", VM::core_rsft as fn(&mut VM) -> i32);
         map.insert("/", VM::opcode_divide as fn(&mut VM) -> i32);
         map.insert("=", VM::opcode_eq as fn(&mut VM) -> i32);
         map.insert(">", VM::opcode_gt as fn(&mut VM) -> i32);

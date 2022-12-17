@@ -187,6 +187,8 @@ over `Int` and `Float` for the exponent.
 `<<` and `>>` are defined over the integer types for the operand and
 `Int`s for the number of bit positions.
 
+`^` is defined over the integer types.
+
 ### Anonymous functions
 
 An anonymous function is defined by way of a list that contains the

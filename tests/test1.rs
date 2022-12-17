@@ -1077,3 +1077,9 @@ fn lsft_rsft_tests() {
     basic_test("1 1 >>;", "0");
     basic_test("500 3 >>;", "62");
 }
+
+#[test]
+fn xor_tests() {
+    basic_test("99 50 ^;", "81");
+    basic_test("10 10 ^;", "0");
+}

@@ -1284,4 +1284,108 @@ impl VM {
 
         return 1;
     }
+
+    /// Helper function for bitwise xor.
+    fn core_xor_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
+        match (&*v1, &*v2) {
+            (Value::Int(left), Value::Int(right)) => {
+                if *left < 0 {
+                    return 0;
+                }
+                if *right < 0 {
+                    return 0;
+                }
+                let u_left:  u32 = (*left).try_into().unwrap();
+                let u_right: u32 = (*right).try_into().unwrap();
+                let result = u_left ^ u_right;
+                let int_result: Result<i32, _> = result.try_into();
+                match int_result {
+                    Ok(n) => {
+                        self.stack.push(Value::Int(n));
+                    }
+                    Err(_) => {
+                        self.stack.push(
+                            Value::BigInt(
+                                BigInt::from_u32(result).unwrap()
+                            )
+                        );
+                    }
+                }
+                return 1;
+            }
+            (Value::BigInt(left), Value::Int(right)) => {
+                let result = left ^ BigInt::from_i32(*right).unwrap();
+                self.stack.push(Value::BigInt(result));
+                return 1;
+            }
+            (Value::BigInt(left), Value::BigInt(right)) => {
+                let result = left ^ right;
+                self.stack.push(Value::BigInt(result));
+                return 1;
+            }
+            (Value::Int(_), _) => {
+                let n_opt = v2.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_xor_inner(v1, &Value::Int(n));
+                    }
+                    _ => {}
+                }
+                return 0;
+            }
+            (Value::BigInt(_), _) => {
+                let n_opt = v2.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_xor_inner(v1, &Value::Int(n));
+                    }
+                    _ => {}
+                }
+                let bi_opt = v2.to_bigint();
+                match bi_opt {
+                    Some(bi) => {
+                        return self.core_xor_inner(v1, &Value::BigInt(bi));
+                    }
+                    _ => {}
+                }
+                return 0;
+            }
+            (_, _) => {
+                let n_opt = v1.to_int();
+                match n_opt {
+                    Some(n) => {
+                        return self.core_xor_inner(&Value::Int(n), v2);
+                    }
+                    _ => {}
+                }
+                let bi_opt = v1.to_bigint();
+                match bi_opt {
+                    Some(bi) => {
+                        return self.core_xor_inner(&Value::BigInt(bi), v2);
+                    }
+                    _ => {}
+                }
+                return 0;
+            }
+        }
+    }
+
+    /// Perform a bitwise xor on the arguments.
+    pub fn core_xor(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("^ requires two arguments");
+            return 0;
+        }
+
+        let left_rr = self.stack.pop().unwrap();
+        let right_rr = self.stack.pop().unwrap();
+
+        let res = self.core_xor_inner(&left_rr, &right_rr);
+        if res == 0 {
+            self.print_error("unhandled ^ arguments");
+            return 0;
+        }
+
+        return 1;
+    }
 }

@@ -188,8 +188,8 @@ over `Int` and `Float` for the exponent.
 over the integral types for the operand and `Int`s for the number of
 bit positions.
 
-`^` (bitwise xor) and `||` (bitwise or) are defined over the integral
-types.
+`&` (bitwise and), `||` (bitwise or), and `^` (bitwise xor) are
+defined over the integral types.
 
 ### Anonymous functions
 

@@ -1084,4 +1084,6 @@ fn bitwise_tests() {
     basic_test("10 10 ||;", "10");
     basic_test("99 50 ^;", "81");
     basic_test("10 10 ^;", "0");
+    basic_test("99 50 &;", "34");
+    basic_test("10 10 &;", "10");
 }

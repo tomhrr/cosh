@@ -25,6 +25,7 @@ Interpretation is like so:
 
   * The tokens `.t` and `.f` are interpreted as true and false boolean
     values respectively.
+  * The token `null` is interpreted as the null value.
   * A number with a fractional component is interpreted as a `Float`.
   * A number without a fractional component is interpreted as an
     `Int`, if it fits within a 32-bit signed integer, and as a

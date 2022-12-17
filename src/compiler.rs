@@ -19,6 +19,7 @@ use opcode::OpCode;
 pub enum TokenType {
     True,
     False,
+    Null,
     LeftBracket,
     RightBracket,
     LeftBrace,
@@ -454,6 +455,7 @@ impl<'a> Scanner<'a> {
             ",," => TokenType::EndFunction,
             ".t" => TokenType::True,
             ".f" => TokenType::False,
+            "null" => TokenType::Null,
             _ => {
                 if ever_in_string {
                     if string_delimiter == '{' {
@@ -1377,6 +1379,14 @@ impl Compiler {
                     let s_rr =
                         Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
                     let i = chunk.add_constant(s_rr);
+                    chunk.add_opcode(OpCode::Constant);
+                    let i_upper = (i >> 8) & 0xFF;
+                    let i_lower = i & 0xFF;
+                    chunk.add_byte(i_upper as u8);
+                    chunk.add_byte(i_lower as u8);
+                }
+                TokenType::Null => {
+                    let i = chunk.add_constant(Value::Null);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
                     let i_lower = i & 0xFF;

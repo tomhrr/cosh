@@ -184,10 +184,12 @@ types.  `=`, `<`, and `>` are also defined over `String`s.
 (exponentation) is defined over the numeric types for the base, and
 over `Int` and `Float` for the exponent.
 
-`<<` and `>>` are defined over the integer types for the operand and
-`Int`s for the number of bit positions.
+`<<` (logical left shift) and `>>` (logical right shift) are defined
+over the integral types for the operand and `Int`s for the number of
+bit positions.
 
-`^` is defined over the integer types.
+`^` (bitwise xor) and `||` (bitwise or) are defined over the integral
+types.
 
 ### Anonymous functions
 

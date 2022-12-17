@@ -1079,7 +1079,9 @@ fn lsft_rsft_tests() {
 }
 
 #[test]
-fn xor_tests() {
+fn bitwise_tests() {
+    basic_test("99 50 ||;", "115");
+    basic_test("10 10 ||;", "10");
     basic_test("99 50 ^;", "81");
     basic_test("10 10 ^;", "0");
 }

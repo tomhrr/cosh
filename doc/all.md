@@ -608,9 +608,9 @@ Other operations:
  - `is-dir`: returns a boolean indicating whether the argument is a
    directory;
  - `rm`: removes the argument file;
- - `touch`: if the argument file doesn't exist, creates an empty file with the
-   given name, otherwise updates the modification time of the existing
-   file to be the current time;
+ - `touch`: if the argument file doesn't exist, creates an empty file
+   with the given name, otherwise updates the modification time of the
+   existing file to be the current time;
  - `cp`: copies the file at the first path to the second path;
  - `mv`: moves the file at the first path to the second path;
  - `rename`: rename the file at the first path such that its path is
@@ -630,6 +630,8 @@ Other operations:
  - `mkdir`: takes a path and creates a directory at that path.
  - `rmdir`: takes a path and removes the directory at that path
    (directory must be empty).
+ - `link`: takes two paths, and creates a symbolic link at the second
+   path that targets the first path.
 
 ### Regular expressions
 

@@ -1,4 +1,5 @@
 use std::char;
+use std::{thread, time};
 
 use num_bigint::BigInt;
 use num_traits::Num;
@@ -799,4 +800,26 @@ impl VM {
             }
         }
     }
+
+    /// Pauses processing for the specified number of seconds.
+    pub fn core_sleep(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("sleep requires one argument");
+            return 0;
+        }
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt = value_rr.to_float();
+        match value_opt {
+            Some(f) => {
+                let dur = time::Duration::from_secs_f64(f);
+                thread::sleep(dur);
+                return 1;
+            }
+            _ => {
+                self.print_error("unable to convert argument to float");
+                return 0;
+            }
+        }
+    }
+
 }

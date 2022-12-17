@@ -824,6 +824,9 @@ and `str` is defined for both IP objects and IP sets.
 zero and that floating-point value (excluding the floating-point value
 itself).
 
+`sleep` takes a floating-point value and pauses execution for that
+number of seconds.
+
 ### Miscellaneous
 
 Comments can be added by prefixing the comment with `#`.  Any content

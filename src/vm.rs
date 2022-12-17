@@ -269,6 +269,7 @@ lazy_static! {
         map.insert("mkdir", VM::core_mkdir as fn(&mut VM) -> i32);
         map.insert("rmdir", VM::core_rmdir as fn(&mut VM) -> i32);
         map.insert("link", VM::core_link as fn(&mut VM) -> i32);
+        map.insert("sleep", VM::core_sleep as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

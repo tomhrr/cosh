@@ -627,6 +627,8 @@ Other operations:
  - `chown`: takes a path, a user name, and a group name, and updates
    the path's ownership accordingly.
  - `mkdir`: takes a path and creates a directory at that path.
+ - `rmdir`: takes a path and removes the directory at that path
+   (directory must be empty).
 
 ### Regular expressions
 

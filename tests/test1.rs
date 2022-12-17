@@ -1059,3 +1059,8 @@ fn stat_test() {
 fn mv_test() {
     basic_test("mvtest touch; mvtest mvtest2 rename; mvtest2 mvtest mv; mvtest stat; size at; 0 =; {rm -f mvtest}; take-all; {rm -f mvtest2}; take-all; drop; drop;", ".t");
 }
+
+#[test]
+fn dir_test() {
+    basic_test("dirtest mkdir; dirtest rmdir; .t", ".t");
+}

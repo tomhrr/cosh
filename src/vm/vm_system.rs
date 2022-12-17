@@ -673,4 +673,37 @@ impl VM {
             }
         }
     }
+
+    /// Takes a path as its single argument, and attempts to remove
+    /// the directory at that path.
+    pub fn core_rmdir(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("rmdir requires one argument");
+            return 0;
+        }
+
+        let dir_rr = self.stack.pop().unwrap();
+        let dir_opt: Option<&str>;
+	to_str!(dir_rr, dir_opt);
+
+        match dir_opt {
+            Some(dir) => {
+                let res = std::fs::remove_dir(dir);
+                match res {
+                    Ok(_) => {
+                        return 1;
+                    }
+                    Err(e) => {
+                        let s = format!("unable to remove directory: {}", e);
+                        self.print_error(&s);
+                        return 0;
+                    }
+                }
+            }
+            None => {
+                self.print_error("first rmdir argument must be path");
+                return 0;
+            }
+        }
+    }
 }

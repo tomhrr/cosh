@@ -51,6 +51,21 @@ fn psv_helper(
                     termion::event::Key::PageDown => {
                         lines_to_print = lines_to_print + window_height;
                     }
+                    termion::event::Key::End => {
+                        /* todo: a bit of a hack.  It would be better
+                         * if there were some way of indicating that
+                         * there's no need to wait on input if End is
+                         * pressed. */
+                        lines_to_print = i32::MAX;
+                    }
+                    /* The default behaviour for these two might be
+                     * confusing, so make them no-ops. */
+                    termion::event::Key::Home   => {
+                        continue;
+                    }
+                    termion::event::Key::PageUp => {
+                        continue;
+                    }
                     _ => {
                         lines_to_print = lines_to_print + 1;
                     }

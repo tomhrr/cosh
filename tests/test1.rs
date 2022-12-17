@@ -1054,3 +1054,8 @@ fn chmod_test() {
 fn stat_test() {
     basic_test("{rm -f asdf}; take-all; drop; {rm -f temp}; take-all; drop; Cargo.toml temp cp; {ln -s temp asdf}; take-all; drop; asdf stat; size at; 500 >; asdf lstat; size at; 100 <; and; {rm -f asdf}; take-all; drop; {rm -f temp}; take-all; drop;", ".t");
 }
+
+#[test]
+fn mv_test() {
+    basic_test("mvtest touch; mvtest mvtest2 rename; mvtest2 mvtest mv; mvtest stat; size at; 0 =; {rm -f mvtest}; take-all; {rm -f mvtest2}; take-all; drop; drop;", ".t");
+}

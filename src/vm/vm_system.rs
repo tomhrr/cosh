@@ -91,8 +91,7 @@ impl VM {
 
     /// Takes two values that can be stringified as its arguments.
     /// Moves the file corresponding to the first path to the second
-    /// path.  (Not quite the same semantics as mv(1), because it uses
-    /// rename(2) underneath, so that should be fixed.)
+    /// path.
     pub fn core_mv(&mut self) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("mv requires two arguments");
@@ -109,11 +108,29 @@ impl VM {
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
-                let res = std::fs::rename(src, dst);
+                let res = std::fs::copy(src, dst);
                 match res {
-                    Ok(_) => {}
+                    Ok(_) => {
+                        let res = std::fs::remove_file(src);
+                        match res {
+                            Ok(_) => {
+                                return 1;
+                            }
+                            Err(e) => {
+                                let err_str = format!(
+                                    "unable to remove original file: {}",
+                                    e.to_string()
+                                );
+                                self.print_error(&err_str);
+                                return 0;
+                            }
+                        }
+                    }
                     Err(e) => {
-                        let err_str = format!("unable to move file: {}", e.to_string());
+                        let err_str = format!(
+                            "unable to copy file to destination: {}",
+                            e.to_string()
+                        );
                         self.print_error(&err_str);
                         return 0;
                     }
@@ -124,7 +141,48 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+    }
+
+    /// Takes two values that can be stringified as its arguments.
+    /// Renames the file with the first path such that it has the
+    /// second path.  (The two paths have to be on the same filesystem
+    /// for this to work correctly.  If they aren't, see core_mv.)
+    pub fn core_rename(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("mv requires two arguments");
+            return 0;
+        }
+
+        let dst_rr = self.stack.pop().unwrap();
+	let dst_opt: Option<&str>;
+	to_str!(dst_rr, dst_opt);
+
+        let src_rr = self.stack.pop().unwrap();
+	let src_opt: Option<&str>;
+	to_str!(src_rr, src_opt);
+
+        match (src_opt, dst_opt) {
+            (Some(src), Some(dst)) => {
+		let res = std::fs::rename(src, dst);
+                match res {
+                    Ok(_) => {
+                        return 1;
+                    }
+                    Err(e) => {
+                        let err_str = format!(
+                            "unable to rename file: {}",
+                            e.to_string()
+                        );
+                        self.print_error(&err_str);
+                        return 0;
+                    }
+                }
+            }
+            _ => {
+                self.print_error("source and destination must be strings");
+                return 0;
+            }
+        }
     }
 
     /// Takes a value that can be stringified as its single argument.

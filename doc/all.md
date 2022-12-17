@@ -610,6 +610,10 @@ Other operations:
  - `touch`: if the argument file doesn't exist, creates an empty file with the
    given name, otherwise updates the modification time of the existing
    file to be the current time;
+ - `cp`: copies the file at the first path to the second path;
+ - `mv`: moves the file at the first path to the second path;
+ - `rename`: rename the file at the first path such that its path is
+   the second path;
  - `stat`: returns a hash containing metadata about the argument file;
  - `lstat`: like stat, but if the argument is a symbolic link, returns
    metadata about the link itself, instead of its target;

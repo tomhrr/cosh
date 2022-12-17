@@ -29,8 +29,8 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-	let value_opt: Option<&str>;
-	to_str!(value_rr, value_opt);
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
 
         match value_opt {
             Some(s) => {
@@ -62,12 +62,12 @@ impl VM {
         }
 
         let dst_rr = self.stack.pop().unwrap();
-	let dst_opt: Option<&str>;
-	to_str!(dst_rr, dst_opt);
+        let dst_opt: Option<&str>;
+        to_str!(dst_rr, dst_opt);
 
         let src_rr = self.stack.pop().unwrap();
-	let src_opt: Option<&str>;
-	to_str!(src_rr, src_opt);
+        let src_opt: Option<&str>;
+        to_str!(src_rr, src_opt);
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
@@ -99,12 +99,12 @@ impl VM {
         }
 
         let dst_rr = self.stack.pop().unwrap();
-	let dst_opt: Option<&str>;
-	to_str!(dst_rr, dst_opt);
+        let dst_opt: Option<&str>;
+        to_str!(dst_rr, dst_opt);
 
         let src_rr = self.stack.pop().unwrap();
-	let src_opt: Option<&str>;
-	to_str!(src_rr, src_opt);
+        let src_opt: Option<&str>;
+        to_str!(src_rr, src_opt);
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
@@ -154,16 +154,16 @@ impl VM {
         }
 
         let dst_rr = self.stack.pop().unwrap();
-	let dst_opt: Option<&str>;
-	to_str!(dst_rr, dst_opt);
+        let dst_opt: Option<&str>;
+        to_str!(dst_rr, dst_opt);
 
         let src_rr = self.stack.pop().unwrap();
-	let src_opt: Option<&str>;
-	to_str!(src_rr, src_opt);
+        let src_opt: Option<&str>;
+        to_str!(src_rr, src_opt);
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
-		let res = std::fs::rename(src, dst);
+                let res = std::fs::rename(src, dst);
                 match res {
                     Ok(_) => {
                         return 1;
@@ -183,6 +183,46 @@ impl VM {
                 return 0;
             }
         }
+    }
+
+    /// Takes two values that can be stringified as its arguments.
+    /// Creates a symbolic link from the second path to the first
+    /// path.
+    pub fn core_link(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("link requires two arguments");
+            return 0;
+        }
+
+        let dst_rr = self.stack.pop().unwrap();
+        let dst_opt: Option<&str>;
+        to_str!(dst_rr, dst_opt);
+
+        let src_rr = self.stack.pop().unwrap();
+        let src_opt: Option<&str>;
+        to_str!(src_rr, src_opt);
+
+        match (src_opt, dst_opt) {
+            (Some(src), Some(dst)) => {
+                let res = std::os::unix::fs::symlink(src, dst);
+                match res {
+                    Ok(_) => {}
+                    Err(e) => {
+                        let err_str = format!(
+                            "unable to create symbolic link: {}",
+                            e.to_string()
+                        );
+                        self.print_error(&err_str);
+                        return 0;
+                    }
+                }
+            }
+            _ => {
+                self.print_error("source and destination must be strings");
+                return 0;
+            }
+        }
+        return 1;
     }
 
     /// Takes a value that can be stringified as its single argument.
@@ -211,9 +251,9 @@ impl VM {
                 }
             }
         } else {
-	    let dir_rr = self.stack.pop().unwrap();
-	    let dir_opt: Option<&str>;
-	    to_str!(dir_rr, dir_opt);
+            let dir_rr = self.stack.pop().unwrap();
+            let dir_opt: Option<&str>;
+            to_str!(dir_rr, dir_opt);
 
             match dir_opt {
                 Some(dir) => {
@@ -268,9 +308,9 @@ impl VM {
             return 0;
         }
 
-	let path_rr = self.stack.pop().unwrap();
-	let path_opt: Option<&str>;
-	to_str!(path_rr, path_opt);
+        let path_rr = self.stack.pop().unwrap();
+        let path_opt: Option<&str>;
+        to_str!(path_rr, path_opt);
 
         match path_opt {
             Some(path_str) => {
@@ -338,9 +378,9 @@ impl VM {
             return 0;
         }
 
-	let path_rr = self.stack.pop().unwrap();
-	let path_opt: Option<&str>;
-	to_str!(path_rr, path_opt);
+        let path_rr = self.stack.pop().unwrap();
+        let path_opt: Option<&str>;
+        to_str!(path_rr, path_opt);
 
         match path_opt {
             Some(s) => {
@@ -472,9 +512,9 @@ impl VM {
             return 0;
         }
 
-	let sig_rr = self.stack.pop().unwrap();
-	let sig_opt: Option<&str>;
-	to_str!(sig_rr, sig_opt);
+        let sig_rr = self.stack.pop().unwrap();
+        let sig_opt: Option<&str>;
+        to_str!(sig_rr, sig_opt);
 
         let pid_rr = self.stack.pop().unwrap();
         let pid_int_opt = pid_rr.to_int();
@@ -526,12 +566,12 @@ impl VM {
             return 0;
         }
 
-	let mode_rr = self.stack.pop().unwrap();
+        let mode_rr = self.stack.pop().unwrap();
         let mode_opt = mode_rr.to_int();
 
         let path_rr = self.stack.pop().unwrap();
         let path_opt: Option<&str>;
-	to_str!(path_rr, path_opt);
+        to_str!(path_rr, path_opt);
 
         match (path_opt, mode_opt) {
             (Some(path), Some(mode)) => {
@@ -576,15 +616,15 @@ impl VM {
 
         let group_rr = self.stack.pop().unwrap();
         let group_opt: Option<&str>;
-	to_str!(group_rr, group_opt);
+        to_str!(group_rr, group_opt);
 
         let user_rr = self.stack.pop().unwrap();
         let user_opt: Option<&str>;
-	to_str!(user_rr, user_opt);
+        to_str!(user_rr, user_opt);
 
         let path_rr = self.stack.pop().unwrap();
         let path_opt: Option<&str>;
-	to_str!(path_rr, path_opt);
+        to_str!(path_rr, path_opt);
 
         match (path_opt, user_opt, group_opt) {
             (Some(path), Some(user), Some(group)) => {
@@ -651,7 +691,7 @@ impl VM {
 
         let dir_rr = self.stack.pop().unwrap();
         let dir_opt: Option<&str>;
-	to_str!(dir_rr, dir_opt);
+        to_str!(dir_rr, dir_opt);
 
         match dir_opt {
             Some(dir) => {
@@ -684,7 +724,7 @@ impl VM {
 
         let dir_rr = self.stack.pop().unwrap();
         let dir_opt: Option<&str>;
-	to_str!(dir_rr, dir_opt);
+        to_str!(dir_rr, dir_opt);
 
         match dir_opt {
             Some(dir) => {

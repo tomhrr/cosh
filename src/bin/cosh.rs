@@ -32,7 +32,8 @@ use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::validate::Validator;
-use rustyline::{CompletionType, Config, Context, EditMode, Editor, Result};
+use rustyline::{CompletionType, Config, Context, EditMode, Editor, Result, At, Cmd, KeyPress, Movement, Word};
+
 use rustyline_derive::Helper;
 use searchpath::search_path;
 use tempfile::tempfile;
@@ -604,6 +605,8 @@ fn main() {
         };
 
         let mut rl = Editor::with_config(config);
+        rl.bind_sequence(KeyPress::ControlLeft, Cmd::Move(Movement::BackwardWord(1, Word::Vi)));
+        rl.bind_sequence(KeyPress::ControlRight, Cmd::Move(Movement::ForwardWord(1, At::AfterEnd, Word::Vi)));
         rl.set_helper(Some(helper));
         if rl.load_history(".cosh_history").is_err() {}
 

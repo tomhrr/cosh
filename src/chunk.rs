@@ -167,6 +167,8 @@ pub struct CommandGenerator {
     pub stderr: NonBlockingReader<ChildStderr>,
     pub stdout_buffer: Vec<u8>,
     pub stderr_buffer: Vec<u8>,
+    get_stdout: bool,
+    get_stderr: bool,
 }
 
 impl CommandGenerator {
@@ -178,19 +180,17 @@ impl CommandGenerator {
             stderr: stderr,
             stdout_buffer: Vec::new(),
             stderr_buffer: Vec::new(),
+            get_stdout: true,
+            get_stderr: false,
         }
     }
 
-    pub fn stdout_read_line(&mut self) -> Option<String> {
+    fn stdout_read_line_nb(&mut self) -> Option<String> {
         let mut index = self.stdout_buffer.iter().position(|&r| r == '\n' as u8);
 
-        while index.is_none() {
-            if self.stdout.is_eof() {
-                break;
-            } else {
-                let _res = self.stdout.read_available(&mut self.stdout_buffer);
-                index = self.stdout_buffer.iter().position(|&r| r == '\n' as u8);
-            }
+        if index.is_none() && !self.stdout.is_eof() {
+            let _res = self.stdout.read_available(&mut self.stdout_buffer);
+            index = self.stdout_buffer.iter().position(|&r| r == '\n' as u8);
         }
         if !index.is_none() {
             /* todo: may not work if newline falls within
@@ -203,6 +203,45 @@ impl CommandGenerator {
         } else {
             return None;
         }
+    }
+
+    fn stderr_read_line_nb(&mut self) -> Option<String> {
+        let mut index = self.stderr_buffer.iter().position(|&r| r == '\n' as u8);
+
+        if index.is_none() && !self.stderr.is_eof() {
+            let _res = self.stderr.read_available(&mut self.stderr_buffer);
+            index = self.stderr_buffer.iter().position(|&r| r == '\n' as u8);
+        }
+        if !index.is_none() {
+            /* todo: may not work if newline falls within
+             * a multibyte Unicode character?  Not sure if this
+             * is possible, though. */
+            let new_buf: Vec<u8> =
+                (&mut self.stderr_buffer).drain(0..(index.unwrap() + 1)).collect();
+            let new_str = std::str::from_utf8(&new_buf).unwrap();
+            return Some(new_str.to_string());
+        } else {
+            return None;
+        }
+    }
+
+    pub fn read_line(&mut self) -> Option<String> {
+        let mut s = None;
+        while s.is_none() {
+            if self.get_stdout {
+                s = self.stdout_read_line_nb();
+                if s.is_none() && self.stdout.is_eof() {
+                    return None;
+                }
+            }
+            if self.get_stderr {
+                s = self.stderr_read_line_nb();
+                if s.is_none() && self.stderr.is_eof() {
+                    return None;
+                }
+            }
+        }
+        return s;
     }
 }
 

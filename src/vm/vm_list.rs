@@ -364,7 +364,7 @@ impl VM {
                 return 1;
             }
             Value::CommandGenerator(ref mut command_generator) => {
-                let str_opt = command_generator.borrow_mut().stdout_read_line();
+                let str_opt = command_generator.borrow_mut().read_line();
                 match str_opt {
                     None => {
                         self.stack.push(Value::Null);

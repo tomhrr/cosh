@@ -1,16 +1,16 @@
 use std::cell::RefCell;
 use std::collections::VecDeque;
-use std::io::BufReader;
 use std::io::Write;
 use std::rc::Rc;
 use std::str;
 
 use lazy_static::lazy_static;
 use nix::unistd::{fork, ForkResult};
+use nonblock::NonBlockingReader;
 use regex::Regex;
 use std::process::{Command, Stdio};
 
-use chunk::Value;
+use chunk::{Value, CommandGenerator};
 use vm::*;
 
 lazy_static! {
@@ -213,12 +213,23 @@ impl VM {
         let process_res = Command::new(executable)
             .args(args)
             .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn();
         match process_res {
-            Ok(process) => {
-                let upstream_stdout = process.stdout.unwrap();
+            Ok(mut process) => {
+                let upstream_stdout = process.stdout.take().unwrap();
+                let upstream_stderr = process.stderr.take().unwrap();
+                let noblock_stdout =
+                    NonBlockingReader::from_fd(upstream_stdout).unwrap();
+                let noblock_stderr =
+                    NonBlockingReader::from_fd(upstream_stderr).unwrap();
                 let cmd_generator =
-                    Value::CommandGenerator(Rc::new(RefCell::new(BufReader::new(upstream_stdout))));
+                    Value::CommandGenerator(
+                        Rc::new(RefCell::new(CommandGenerator::new(
+                            noblock_stdout,
+                            noblock_stderr,
+                        )))
+                    );
                 self.stack.push(cmd_generator);
             }
             Err(e) => {
@@ -287,10 +298,11 @@ impl VM {
                 let process_ = Command::new(executable)
                     .args(args)
                     .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
                     .stdin(Stdio::piped())
                     .spawn();
                 match process_ {
-                    Ok(process) => {
+                    Ok(mut process) => {
                         let upstream_stdin_opt = process.stdin;
                         if upstream_stdin_opt.is_none() {
                             let err_str = format!("unable to get stdin from parent");
@@ -301,16 +313,29 @@ impl VM {
                         match fork() {
                             Ok(ForkResult::Parent { .. }) => {
                                 self.stack.pop();
-                                let upstream_stdout_opt = process.stdout;
+                                let upstream_stdout_opt = process.stdout.take();
                                 if upstream_stdout_opt.is_none() {
                                     let err_str = format!("unable to get stdout from parent");
                                     self.print_error(&err_str);
                                     return 0;
                                 }
                                 let upstream_stdout = upstream_stdout_opt.unwrap();
-                                let cmd_generator = Value::CommandGenerator(Rc::new(RefCell::new(
-                                    BufReader::new(upstream_stdout),
-                                )));
+
+                                let upstream_stderr_opt = process.stderr.take();
+                                if upstream_stderr_opt.is_none() {
+                                    let err_str = format!("unable to get stderr from parent");
+                                    self.print_error(&err_str);
+                                    return 0;
+                                }
+                                let upstream_stderr = upstream_stderr_opt.unwrap();
+
+                                let cmd_generator =
+                                    Value::CommandGenerator(
+                                        Rc::new(RefCell::new(CommandGenerator::new(
+                                            NonBlockingReader::from_fd(upstream_stdout).unwrap(),
+                                            NonBlockingReader::from_fd(upstream_stderr).unwrap(),
+                                        )))
+                                    );
                                 self.stack.push(cmd_generator);
                             }
                             Ok(ForkResult::Child) => {

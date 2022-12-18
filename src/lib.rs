@@ -7,6 +7,7 @@ extern crate ipnet;
 extern crate iprange;
 extern crate lazy_static;
 extern crate nix;
+extern crate nonblock;
 extern crate num;
 extern crate num_bigint;
 extern crate num_traits;

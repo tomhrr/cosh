@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::collections::VecDeque;
-use std::io::BufRead;
 use std::mem;
 use std::rc::Rc;
 
@@ -364,23 +363,19 @@ impl VM {
                 self.stack.push(Value::Null);
                 return 1;
             }
-            Value::CommandGenerator(ref mut bufread) => {
-                let mut contents = String::new();
-                let res = bufread.borrow_mut().read_line(&mut contents);
-                match res {
-                    Ok(bytes) => {
-                        if bytes != 0 {
-                            self.stack.push(Value::String(Rc::new(RefCell::new(
-                                StringPair::new(contents, None),
-                            ))));
-                        } else {
-                            self.stack.push(Value::Null);
-                        }
+            Value::CommandGenerator(ref mut command_generator) => {
+                let str_opt = command_generator.borrow_mut().stdout_read_line();
+                match str_opt {
+                    None => {
+                        self.stack.push(Value::Null);
                     }
-                    Err(_) => {
-                        self.print_error("unable to read next line from command output");
+                    Some(s) => {
+                        self.stack.push(Value::String(Rc::new(RefCell::new(
+                            StringPair::new(s, None),
+                        ))));
                     }
                 }
+                return 1;
             }
             Value::KeysGenerator(ref mut hwi) => {
                 {

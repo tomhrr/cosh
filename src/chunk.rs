@@ -15,13 +15,14 @@ use chrono::prelude::*;
 use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
+use nonblock::NonBlockingReader;
 use num::FromPrimitive;
 use num::ToPrimitive;
 use num_bigint::BigInt;
 use num_traits::Zero;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::process::ChildStdout;
+use std::process::{ChildStdout, ChildStderr};
 
 use opcode::{to_opcode, OpCode};
 use vm::VM;
@@ -161,6 +162,50 @@ impl IpSet {
     }
 }
 
+pub struct CommandGenerator {
+    pub stdout: NonBlockingReader<ChildStdout>,
+    pub stderr: NonBlockingReader<ChildStderr>,
+    pub stdout_buffer: Vec<u8>,
+    pub stderr_buffer: Vec<u8>,
+}
+
+impl CommandGenerator {
+    pub fn new(stdout: NonBlockingReader<ChildStdout>,
+               stderr: NonBlockingReader<ChildStderr>)
+            -> CommandGenerator {
+        CommandGenerator {
+            stdout: stdout,
+            stderr: stderr,
+            stdout_buffer: Vec::new(),
+            stderr_buffer: Vec::new(),
+        }
+    }
+
+    pub fn stdout_read_line(&mut self) -> Option<String> {
+        let mut index = self.stdout_buffer.iter().position(|&r| r == '\n' as u8);
+
+        while index.is_none() {
+            if self.stdout.is_eof() {
+                break;
+            } else {
+                let _res = self.stdout.read_available(&mut self.stdout_buffer);
+                index = self.stdout_buffer.iter().position(|&r| r == '\n' as u8);
+            }
+        }
+        if !index.is_none() {
+            /* todo: may not work if newline falls within
+             * a multibyte Unicode character?  Not sure if this
+             * is possible, though. */
+            let new_buf: Vec<u8> =
+                (&mut self.stdout_buffer).drain(0..(index.unwrap() + 1)).collect();
+            let new_str = std::str::from_utf8(&new_buf).unwrap();
+            return Some(new_str.to_string());
+        } else {
+            return None;
+        }
+    }
+}
+
 /// The core value type used by the compiler and VM.
 #[derive(Clone)]
 pub enum Value {
@@ -203,7 +248,7 @@ pub enum Value {
     /// A generator constructed by way of a generator function.
     Generator(Rc<RefCell<GeneratorObject>>),
     /// A generator for getting the output of a Command.
-    CommandGenerator(Rc<RefCell<BufReader<ChildStdout>>>),
+    CommandGenerator(Rc<RefCell<CommandGenerator>>),
     /// A generator over the keys of a hash.
     KeysGenerator(Rc<RefCell<HashWithIndex>>),
     /// A generator over the values of a hash.

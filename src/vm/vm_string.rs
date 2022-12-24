@@ -16,8 +16,8 @@ impl VM {
             return 0;
         }
 
-        let v1 = self.stack.pop().unwrap();
         let v2 = self.stack.pop().unwrap();
+        let v1 = self.stack.pop().unwrap();
 
         match (v1.clone(), v2.clone()) {
             (Value::List(lst1_ref), Value::List(lst2_ref)) => {
@@ -44,7 +44,7 @@ impl VM {
 
                 match (v1_str_opt, v2_str_opt) {
                     (Some(s1), Some(s2)) => {
-                        let s3 = format!("{}{}", s2, s1);
+                        let s3 = format!("{}{}", s1, s2);
                         self.stack
                             .push(Value::String(Rc::new(RefCell::new(StringPair::new(
                                 s3, None,

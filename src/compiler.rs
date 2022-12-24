@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::convert::TryInto;
 use std::fs;
 use std::io::BufRead;
@@ -31,11 +32,11 @@ pub enum TokenType {
     BigInt(num_bigint::BigInt),
     Float(f64),
     String(String),
-    Command(String),
+    Command(String, HashSet<char>),
     /// This is a Command that includes a ';' character at the end, or
     /// otherwise should be executed immediately (e.g. it's followed
     /// by a newline).
-    CommandExplicit(String),
+    CommandExplicit(String, HashSet<char>),
     CommandUncaptured(String),
     Word(String),
     /// This is a Word that should be executed implicitly (e.g. it's
@@ -116,6 +117,69 @@ impl<'a> Scanner<'a> {
             has_lookahead: false,
             lookahead: 0,
             next_is_eof: false,
+        }
+    }
+
+    /// Scans the BufRead for potential parameters, and returns a
+    /// char set for those parameters if they are present.
+    pub fn scan_parameters(&mut self) -> Option<HashSet<char>> {
+        let mut buffer = [0; 1];
+        let mut eof = false;
+        let mut done = false;
+        let mut parameters: HashSet<char> = HashSet::new();
+
+        if self.has_lookahead {
+            buffer[0] = self.lookahead;
+            self.has_lookahead = false;
+        } else {
+            self.fh.read_exact(&mut buffer).unwrap_or_else(|e| {
+                if e.kind() == ErrorKind::UnexpectedEof {
+                    eof = true;
+                } else {
+                    eprintln!("unable to read from buffer!");
+                    std::process::abort();
+                }
+            });
+            if eof {
+                self.next_is_eof = true;
+                return None;
+            }
+        }
+
+        match buffer[0] as char {
+            '/' => {
+                /* Has parameters. */
+                self.column_number = self.column_number + 1;
+                while !done {
+                    self.fh.read_exact(&mut buffer).unwrap_or_else(|e| {
+                        if e.kind() == ErrorKind::UnexpectedEof {
+                            eof = true;
+                        } else {
+                            eprintln!("unable to read from buffer!");
+                            std::process::abort();
+                        }
+                    });
+                    if eof {
+                        self.next_is_eof = true;
+                        return Some(parameters);
+                    }
+                    if char::is_whitespace(buffer[0] as char)
+                            || buffer[0] == ';' as u8 {
+                        self.lookahead = buffer[0];
+                        self.has_lookahead = true;
+                        done = true;
+                    } else {
+                        parameters.insert(buffer[0] as char);
+                        self.column_number = self.column_number + 1;
+                    }
+                }
+                return Some(parameters);
+            }
+            _ => {
+                self.lookahead = buffer[0];
+                self.has_lookahead = true;
+                return None;
+            }
         }
     }
 
@@ -247,6 +311,7 @@ impl<'a> Scanner<'a> {
         // stopped on the preceding character.
         done = false;
         let mut bracket_count = 0;
+        let mut params: HashSet<char> = HashSet::new();
         while !done && !finished {
             let mut eof = false;
             self.fh.read_exact(&mut buffer).unwrap_or_else(|e| {
@@ -309,6 +374,11 @@ impl<'a> Scanner<'a> {
                     if bracket_count < 0 {
                         in_string = false;
                         done = true;
+                        /* Try to get params at this point. */
+                        let params_opt = self.scan_parameters();
+                        if !params_opt.is_none() {
+                            params = params_opt.unwrap();
+                        }
                     } else {
                         result[result_index] = buffer[0];
                         result_index = result_index + 1;
@@ -365,17 +435,27 @@ impl<'a> Scanner<'a> {
         if !finished && (buffer[0] as char) != '\n' {
             done = false;
             while !done {
-                let mut eof = false;
-                self.fh.read_exact(&mut buffer).unwrap_or_else(|e| {
-                    if e.kind() == ErrorKind::UnexpectedEof {
-                        eof = true;
-                    } else {
-                        eprintln!("unable to read from buffer!");
-                        std::process::abort();
+                if self.has_lookahead {
+                    buffer[0] = self.lookahead;
+                    self.has_lookahead = false;
+                    self.column_number = self.column_number + 1;
+                    if real_line_number == 0 {
+                        real_line_number = self.line_number;
+                        real_column_number = self.column_number;
                     }
-                });
-                if eof {
-                    break;
+                } else {
+                    let mut eof = false;
+                    self.fh.read_exact(&mut buffer).unwrap_or_else(|e| {
+                        if e.kind() == ErrorKind::UnexpectedEof {
+                            eof = true;
+                        } else {
+                            eprintln!("unable to read from buffer!");
+                            std::process::abort();
+                        }
+                    });
+                    if eof {
+                        break;
+                    }
                 }
                 match buffer[0] as char {
                     '\n' => {
@@ -460,9 +540,9 @@ impl<'a> Scanner<'a> {
                 if ever_in_string {
                     if string_delimiter == '{' {
                         if is_explicit_word || is_implicit_word {
-                            TokenType::CommandExplicit(s.to_string())
+                            TokenType::CommandExplicit(s.to_string(), params)
                         } else {
-                            TokenType::Command(s.to_string())
+                            TokenType::Command(s.to_string(), params)
                         }
                     } else {
                         TokenType::String(s.to_string())
@@ -1342,9 +1422,10 @@ impl Compiler {
                         }
                     }
                 }
-                TokenType::Command(s) => {
+                TokenType::Command(s, params) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Value::Command(Rc::new(s_escaped));
+                    let s_rr = Value::Command(Rc::new(s_escaped),
+                                              Rc::new(params));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -1363,9 +1444,10 @@ impl Compiler {
                     chunk.add_byte(i_lower as u8);
                     chunk.add_opcode(OpCode::Call);
                 }
-                TokenType::CommandExplicit(s) => {
+                TokenType::CommandExplicit(s, params) => {
                     let s_escaped = escape_string(&s);
-                    let s_rr = Value::Command(Rc::new(s_escaped));
+                    let s_rr = Value::Command(Rc::new(s_escaped),
+                                              Rc::new(params));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;

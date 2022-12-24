@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::io::Write;
 use std::rc::Rc;
@@ -200,10 +201,11 @@ impl VM {
         return Some((executable_final.to_string(), args));
     }
 
-    /// Takes a command string as its single argument.  Substitutes
-    /// for placeholders, executes the command, and places a generator
-    /// over the standard output of the command onto the stack.
-    pub fn core_command(&mut self, cmd: &str) -> i32 {
+    /// Takes a command string and a set of parameters as its
+    /// arguments.  Substitutes for placeholders, executes the
+    /// command, and places a generator over the standard output/error
+    /// (depends on parameters) of the command onto the stack.
+    pub fn core_command(&mut self, cmd: &str, params: HashSet<char>) -> i32 {
         let prepared_cmd_opt = self.prepare_and_split_command(cmd);
         if prepared_cmd_opt.is_none() {
             return 0;
@@ -223,11 +225,17 @@ impl VM {
                     NonBlockingReader::from_fd(upstream_stdout).unwrap();
                 let noblock_stderr =
                     NonBlockingReader::from_fd(upstream_stderr).unwrap();
+                let get_stdout = params.contains(&'o') || params.is_empty();
+                let get_stderr = params.contains(&'e');
+                let get_combined = params.contains(&'c');
                 let cmd_generator =
                     Value::CommandGenerator(
                         Rc::new(RefCell::new(CommandGenerator::new(
                             noblock_stdout,
                             noblock_stderr,
+                            get_stdout,
+                            get_stderr,
+                            get_combined
                         )))
                     );
                 self.stack.push(cmd_generator);
@@ -275,7 +283,7 @@ impl VM {
     /// Takes a generator and a command as its arguments.  Takes
     /// output from the generator and pipes it to the standard input
     /// of the command, and places a generator over the command's
-    /// output onto the stack.
+    /// standard output onto the stack.
     pub fn core_pipe(
         &mut self,
     ) -> i32 {
@@ -287,7 +295,7 @@ impl VM {
         let cmd_rr = self.stack.pop().unwrap();
 
         match cmd_rr {
-            Value::Command(s) => {
+            Value::Command(s, _) => {
                 let prepared_cmd_opt =
                     self.prepare_and_split_command(&s);
                 if prepared_cmd_opt.is_none() {
@@ -334,6 +342,9 @@ impl VM {
                                         Rc::new(RefCell::new(CommandGenerator::new(
                                             NonBlockingReader::from_fd(upstream_stdout).unwrap(),
                                             NonBlockingReader::from_fd(upstream_stderr).unwrap(),
+                                            true,
+                                            false,
+                                            false,
                                         )))
                                     );
                                 self.stack.push(cmd_generator);

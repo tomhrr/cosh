@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::fmt;
@@ -169,19 +170,24 @@ pub struct CommandGenerator {
     pub stderr_buffer: Vec<u8>,
     get_stdout: bool,
     get_stderr: bool,
+    pub get_combined: bool,
 }
 
 impl CommandGenerator {
     pub fn new(stdout: NonBlockingReader<ChildStdout>,
-               stderr: NonBlockingReader<ChildStderr>)
+               stderr: NonBlockingReader<ChildStderr>,
+               get_stdout: bool,
+               get_stderr: bool,
+               get_combined: bool)
             -> CommandGenerator {
         CommandGenerator {
             stdout: stdout,
             stderr: stderr,
             stdout_buffer: Vec::new(),
             stderr_buffer: Vec::new(),
-            get_stdout: true,
-            get_stderr: false,
+            get_stdout: get_stdout,
+            get_stderr: get_stderr,
+            get_combined: get_combined,
         }
     }
 
@@ -230,18 +236,43 @@ impl CommandGenerator {
         while s.is_none() {
             if self.get_stdout {
                 s = self.stdout_read_line_nb();
-                if s.is_none() && self.stdout.is_eof() {
+                if !s.is_none() {
+                    return s;
+                } else if self.stdout.is_eof()
+                        && (!self.get_stderr || self.stderr.is_eof()) {
                     return None;
                 }
             }
             if self.get_stderr {
                 s = self.stderr_read_line_nb();
-                if s.is_none() && self.stderr.is_eof() {
+                if !s.is_none() {
+                    return s;
+                } else if self.stderr.is_eof()
+                        && (!self.get_stdout || self.stdout.is_eof()) {
                     return None;
                 }
             }
         }
-        return s;
+        return None;
+    }
+
+    pub fn read_line_combined(&mut self) -> Option<(i32, String)> {
+        let mut s = None;
+        while s.is_none() {
+            s = self.stdout_read_line_nb();
+            if !s.is_none() {
+                return Some((1, s.unwrap()));
+            } else if self.stdout.is_eof() && self.stderr.is_eof() {
+                return None;
+            }
+            s = self.stderr_read_line_nb();
+            if !s.is_none() {
+                return Some((2, s.unwrap()));
+            } else if self.stderr.is_eof() && self.stdout.is_eof() {
+                return None;
+            }
+        }
+        return None;
     }
 }
 
@@ -264,7 +295,7 @@ pub enum Value {
     String(Rc<RefCell<StringPair>>),
     /// An external command (wrapped in curly brackets), where the
     /// output is captured.
-    Command(Rc<String>),
+    Command(Rc<String>, Rc<HashSet<char>>),
     /// An external command (begins with $), where the output is not
     /// captured.
     CommandUncaptured(Rc<String>),
@@ -338,7 +369,7 @@ impl fmt::Debug for Value {
                 let ss = &s.borrow().s;
                 write!(f, "\"{}\"", ss)
             }
-            Value::Command(s) => {
+            Value::Command(s, _) => {
                 write!(f, "Command \"{}\"", s)
             }
             Value::CommandUncaptured(s) => {
@@ -422,7 +453,7 @@ pub enum ValueSD {
     Float(f64),
     BigInt(String),
     String(String),
-    Command(String),
+    Command(String, HashSet<char>),
     CommandUncaptured(String),
 }
 
@@ -493,7 +524,7 @@ impl Chunk {
             Value::Float(n) => ValueSD::Float(n),
             Value::BigInt(n) => ValueSD::BigInt(n.to_str_radix(10)),
             Value::String(sp) => ValueSD::String(sp.borrow().s.to_string()),
-            Value::Command(s) => ValueSD::Command(s.to_string()),
+            Value::Command(s, params) => ValueSD::Command(s.to_string(), (*params).clone()),
             Value::CommandUncaptured(s) => ValueSD::CommandUncaptured(s.to_string()),
             Value::Bool(b) => ValueSD::Bool(b),
             _ => {
@@ -520,7 +551,7 @@ impl Chunk {
             ValueSD::String(sp) => {
                 Value::String(Rc::new(RefCell::new(StringPair::new(sp.to_string(), None))))
             }
-            ValueSD::Command(s) => Value::Command(Rc::new(s.to_string())),
+            ValueSD::Command(s, params) => Value::Command(Rc::new(s.to_string()), Rc::new((*params).clone())),
             ValueSD::CommandUncaptured(s) => {
                 Value::CommandUncaptured(Rc::new(s.to_string()))
             }
@@ -1312,7 +1343,7 @@ impl Value {
             Value::BigInt(_) => self.clone(),
             Value::Float(_) => self.clone(),
             Value::String(_) => self.clone(),
-            Value::Command(_) => self.clone(),
+            Value::Command(_, _) => self.clone(),
             Value::CommandUncaptured(_) => self.clone(),
             Value::List(lst) => {
                 let cloned_lst =

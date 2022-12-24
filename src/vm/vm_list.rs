@@ -364,15 +364,33 @@ impl VM {
                 return 1;
             }
             Value::CommandGenerator(ref mut command_generator) => {
-                let str_opt = command_generator.borrow_mut().read_line();
-                match str_opt {
-                    None => {
-                        self.stack.push(Value::Null);
+                let mut cg = command_generator.borrow_mut();
+                if cg.get_combined {
+                    let str_opt = cg.read_line_combined();
+                    match str_opt {
+                        None => {
+                            self.stack.push(Value::Null);
+                        }
+                        Some((i, s)) => {
+                            let mut lst = VecDeque::new();
+                            lst.push_back(Value::Int(i));
+                            lst.push_back(Value::String(Rc::new(RefCell::new(
+                                StringPair::new(s, None),
+                            ))));
+                            self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
+                        }
                     }
-                    Some(s) => {
-                        self.stack.push(Value::String(Rc::new(RefCell::new(
-                            StringPair::new(s, None),
-                        ))));
+                } else {
+                    let str_opt = cg.read_line();
+                    match str_opt {
+                        None => {
+                            self.stack.push(Value::Null);
+                        }
+                        Some(s) => {
+                            self.stack.push(Value::String(Rc::new(RefCell::new(
+                                StringPair::new(s, None),
+                            ))));
+                        }
                     }
                 }
                 return 1;

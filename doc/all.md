@@ -750,6 +750,38 @@ The output of a generator can also be piped to a command:
         ...
     )
 
+By default, the generator for a command will return the standard
+output stream of the command.  Flags can be added to the command in
+order to get the generator to return the standard error stream:
+
+    $ {ls asdf}/e;
+    (
+	"ls: cannot access \'asdf\': No such file or directory\n"
+    )
+
+or both combined:
+
+    $ {ls Cargo.toml asdf}/oe;
+    (
+	"ls: cannot access \'asdf\': No such file or directory\n"
+	"Cargo.toml\n"
+    )
+
+or both combined, with a number indicating the stream for the line (1
+for standard output, and 2 for standard error):
+
+    $ {ls Cargo.toml asdf}/c;
+    (
+	(
+	    2
+	    "ls: cannot access \'asdf\': No such file or directory\n"
+	)
+	(
+	    1
+	    "Cargo.toml\n"
+	)
+    )
+
 ### Parsing
 
 JSON and XML can be serialised and deserialised using the

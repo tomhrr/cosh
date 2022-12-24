@@ -807,8 +807,8 @@ impl VM {
         }
 
         match function_rr {
-            Value::Command(s) => {
-                let i2 = self.core_command(&s);
+            Value::Command(s, params) => {
+                let i2 = self.core_command(&s, (*params).clone());
                 if i2 == 0 {
                     return false;
                 }
@@ -1063,11 +1063,11 @@ impl VM {
                     let v1_rr = self.stack.get_mut(len - 1).unwrap();
                     let mut done = false;
                     match v1_rr {
-                        Value::Int(ref mut n1) => {
+                        Value::Int(ref n1) => {
                             if *n1 == n {
-                                *n1 = 1;
+                                self.stack[len - 1] = Value::Bool(true);
                             } else {
-                                *n1 = 0;
+                                self.stack[len - 1] = Value::Bool(false);
                             }
                             done = true;
                         }

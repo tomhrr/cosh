@@ -1115,3 +1115,9 @@ fn stdout_stderr_tests() {
 fn append_generator_tests() {
     basic_test("2 range; 2 range; ++; 2 range; ++; '' join", "010101");
 }
+
+#[test]
+fn env_tests() {
+    basic_test("cosh_key cosh_value setenv; cosh_key getenv", "cosh_value");
+    basic_test("cosh_key cosh_value setenv; env; cosh_key at", "cosh_value");
+}

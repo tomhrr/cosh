@@ -277,6 +277,8 @@ lazy_static! {
         map.insert("link", VM::core_link as fn(&mut VM) -> i32);
         map.insert("sleep", VM::core_sleep as fn(&mut VM) -> i32);
         map.insert("env", VM::core_env as fn(&mut VM) -> i32);
+        map.insert("getenv", VM::core_getenv as fn(&mut VM) -> i32);
+        map.insert("setenv", VM::core_setenv as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

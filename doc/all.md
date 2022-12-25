@@ -862,6 +862,12 @@ and `str` is defined for both IP objects and IP sets.
 `env` returns a hash containing the current set of environment
 variables.
 
+`getenv` takes an environment variable name and returns the value for
+that variable, or null if the variable does not exist.
+
+`setenv` takes an environment variable name and a value, and set that
+environment variable as having that value.
+
 ### Miscellaneous functions
 
 `rand` takes a floating-point value and returns a random value between

@@ -26,6 +26,7 @@ mod vm_arithmetic;
 mod vm_basics;
 mod vm_command;
 mod vm_datetime;
+mod vm_env;
 mod vm_hash;
 mod vm_io;
 mod vm_ip;
@@ -275,6 +276,7 @@ lazy_static! {
         map.insert("rmdir", VM::core_rmdir as fn(&mut VM) -> i32);
         map.insert("link", VM::core_link as fn(&mut VM) -> i32);
         map.insert("sleep", VM::core_sleep as fn(&mut VM) -> i32);
+        map.insert("env", VM::core_env as fn(&mut VM) -> i32);
         map
     };
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {

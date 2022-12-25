@@ -857,6 +857,11 @@ after each call to the minimum set of prefixes required to cover the
 address space in the set.  Finally, `=` is also defined for IP sets,
 and `str` is defined for both IP objects and IP sets.
 
+### Environment variables
+
+`env` returns a hash containing the current set of environment
+variables.
+
 ### Miscellaneous functions
 
 `rand` takes a floating-point value and returns a random value between

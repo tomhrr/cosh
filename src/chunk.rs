@@ -345,6 +345,8 @@ pub enum Value {
     Ipv6Range(Ipv6Range),
     /// An IP set (IPv4 and IPv6 together).
     IpSet(Rc<RefCell<IpSet>>),
+    /// Multiple generators combined together.
+    MultiGenerator(Rc<RefCell<VecDeque<Value>>>),
 }
 
 impl fmt::Debug for Value {
@@ -437,6 +439,9 @@ impl fmt::Debug for Value {
             }
             Value::IpSet(_) => {
                 write!(f, "((IpSet))")
+            }
+            Value::MultiGenerator(_) => {
+                write!(f, "((MultiGenerator))")
             }
         }
     }
@@ -1409,6 +1414,7 @@ impl Value {
             Value::Ipv6(_) => self.clone(),
             Value::Ipv6Range(_) => self.clone(),
             Value::IpSet(_) => self.clone(),
+            Value::MultiGenerator(_) => self.clone(),
         }
     }
 
@@ -1443,7 +1449,22 @@ impl Value {
             (Value::Ipv4Range(..), Value::Ipv4Range(..)) => true,
             (Value::Ipv6Range(..), Value::Ipv6Range(..)) => true,
             (Value::IpSet(..), Value::IpSet(..)) => true,
+            (Value::MultiGenerator(..), Value::MultiGenerator(..)) => true,
             (..) => false
+        }
+    }
+
+    pub fn is_generator(&self) -> bool {
+        match self {
+            Value::Generator(..) => true,
+            Value::KeysGenerator(..) => true,
+            Value::ValuesGenerator(..) => true,
+            Value::EachGenerator(..) => true,
+            Value::FileReader(..) => true,
+            Value::DirectoryHandle(..) => true,
+            Value::IpSet(..) => true,
+            Value::MultiGenerator(..) => true,
+            _ => false,
         }
     }
 }

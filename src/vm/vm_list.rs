@@ -477,6 +477,31 @@ impl VM {
                 let el = hwi.borrow().i + 1;
                 hwi.borrow_mut().i = el;
             }
+            Value::MultiGenerator(ref mut genlist_rr) => {
+                let mut genlist = genlist_rr.borrow_mut();
+                loop {
+                    if genlist.len() == 0 {
+                        self.stack.push(Value::Null);
+                        break;
+                    } else {
+                        let mut next = genlist.front_mut().unwrap();
+                        self.opcode_shift_inner(&mut next);
+                        if self.stack.len() == 0 {
+                            return 0;
+                        }
+                        match self.stack[self.stack.len() - 1] {
+                            Value::Null => {
+                                self.stack.pop();
+                                genlist.pop_front();
+                                continue;
+                            }
+                            _ => {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             _ => {
                 self.print_error("argument cannot be shifted");
                 return 0;

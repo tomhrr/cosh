@@ -519,6 +519,9 @@ impl VM {
                 Value::EachGenerator(_) => {
                     is_generator = true;
                 }
+                Value::MultiGenerator(_) => {
+                    is_generator = true;
+                }
             }
         }
         if is_generator {

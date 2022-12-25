@@ -37,26 +37,37 @@ impl VM {
                 self.stack.push(res);
             }
             (_, _) => {
-                let v1_str_opt: Option<&str>;
-                to_str!(v1, v1_str_opt);
-                let v2_str_opt: Option<&str>;
-                to_str!(v2, v2_str_opt);
+                if v1.is_generator() && v2.is_generator() {
+                    let mut generator_list = VecDeque::new();
+                    generator_list.push_back(v1);
+                    generator_list.push_back(v2);
+                    let mg =
+                        Value::MultiGenerator(
+                            Rc::new(RefCell::new(generator_list))
+                        );
+                    self.stack.push(mg);
+                } else {
+                    let v1_str_opt: Option<&str>;
+                    to_str!(v1, v1_str_opt);
+                    let v2_str_opt: Option<&str>;
+                    to_str!(v2, v2_str_opt);
 
-                match (v1_str_opt, v2_str_opt) {
-                    (Some(s1), Some(s2)) => {
-                        let s3 = format!("{}{}", s1, s2);
-                        self.stack
-                            .push(Value::String(Rc::new(RefCell::new(StringPair::new(
-                                s3, None,
-                            )))));
-                    }
-                    (Some(_), _) => {
-                        self.print_error("second append argument must be string");
-                        return 0;
-                    }
-                    (_, _) => {
-                        self.print_error("first append argument must be string");
-                        return 0;
+                    match (v1_str_opt, v2_str_opt) {
+                        (Some(s1), Some(s2)) => {
+                            let s3 = format!("{}{}", s1, s2);
+                            self.stack
+                                .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+                                    s3, None,
+                                )))));
+                        }
+                        (Some(_), _) => {
+                            self.print_error("second append argument must be string");
+                            return 0;
+                        }
+                        (_, _) => {
+                            self.print_error("first append argument must be string");
+                            return 0;
+                        }
                     }
                 }
             }

@@ -60,6 +60,8 @@ pub struct VM {
     // Whether the stack should be printed after interpretation has
     // finished.
     print_stack: bool,
+    // Whether the stack is currently being printed.
+    printing_stack: bool,
     // The local variable stack.
     local_var_stack: Rc<RefCell<Vec<Value>>>,
     // The scopes.
@@ -341,6 +343,7 @@ impl VM {
             stack: Vec::new(),
             local_var_stack: Rc::new(RefCell::new(Vec::new())),
             print_stack: print_stack,
+            printing_stack: false,
             scopes: vec![Rc::new(RefCell::new(HashMap::new()))],
             global_functions: HashMap::new(),
             call_stack_chunks: Vec::new(),
@@ -386,8 +389,8 @@ impl VM {
     pub fn opcode_printstack(
         &mut self,
     ) -> i32 {
-        self.print_stack(self.chunk.clone(), self.i, true);
-        return 1;
+        let res = self.print_stack(self.chunk.clone(), self.i, true);
+        return if res { 1 } else { 0 };
     }
 
     pub fn opcode_tofunction(
@@ -1677,8 +1680,11 @@ impl VM {
         }
 
         if self.print_stack {
-            self.print_stack(chunk.clone(), i, false);
+            let res = self.print_stack(chunk.clone(), i, false);
             self.stack.clear();
+            if !res {
+                return 0;
+            }
         }
 
         return i + 1;

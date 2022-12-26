@@ -600,7 +600,13 @@ impl VM {
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
         no_remove: bool,
-    ) {
+    ) -> bool {
+        if self.printing_stack {
+            self.print_error("cannot call .s recursively");
+            return false;
+        }
+        self.printing_stack = true;
+
         let mut window_height: i32 = 0;
         let dim_opt = term_size::dimensions();
         match dim_opt {
@@ -627,12 +633,15 @@ impl VM {
                 if !no_remove {
                     self.stack.clear();
                 }
-                return;
+                self.printing_stack = false;
+                return true;
             }
             stack_backup.push(value_rr);
         }
         if no_remove {
             self.stack = stack_backup;
         }
+        self.printing_stack = false;
+        return true;
     }
 }

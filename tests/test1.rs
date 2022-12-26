@@ -485,6 +485,9 @@ fn map_test_generator() {
 fn split_test() {
     basic_test("test-data/split f<; take-all; 0 nth; , split",
                "(\n    asdf\n    qwer\n    \"asdf asdf\"\n    asdf,asdf\n    \"\"\n    \"\"\n    \"\"\n    \"qwer\\n\"\n)");
+
+    basic_test("asdf:asdf:asdf \":\" split; \":\" join",
+               "asdf:asdf:asdf");
 }
 
 #[test]

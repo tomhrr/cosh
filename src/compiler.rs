@@ -520,34 +520,25 @@ impl<'a> Scanner<'a> {
 
         let s_all = str::from_utf8(&result).unwrap();
         let s = &s_all[..result_index];
+        let token_type;
 
-        let token_type = match s {
-            "h(" => TokenType::StartHash,
-            "s(" => TokenType::StartSet,
-            "(" => TokenType::StartList,
-            ")" => TokenType::EndList,
-            "{" => TokenType::LeftBrace,
-            "}" => TokenType::RightBrace,
-            "[" => TokenType::LeftBracket,
-            "]" => TokenType::RightBracket,
-            ":" => TokenType::StartFunction,
-            ":~" => TokenType::StartGenerator,
-            ",," => TokenType::EndFunction,
-            ".t" => TokenType::True,
-            ".f" => TokenType::False,
-            "null" => TokenType::Null,
-            _ => {
-                if ever_in_string {
-                    if string_delimiter == '{' {
-                        if is_explicit_word || is_implicit_word {
-                            TokenType::CommandExplicit(s.to_string(), params)
-                        } else {
-                            TokenType::Command(s.to_string(), params)
-                        }
-                    } else {
-                        TokenType::String(s.to_string())
-                    }
-                } else {
+        if !ever_in_string {
+            token_type = match s {
+                "h(" => TokenType::StartHash,
+                "s(" => TokenType::StartSet,
+                "(" => TokenType::StartList,
+                ")" => TokenType::EndList,
+                "{" => TokenType::LeftBrace,
+                "}" => TokenType::RightBrace,
+                "[" => TokenType::LeftBracket,
+                "]" => TokenType::RightBracket,
+                ":" => TokenType::StartFunction,
+                ":~" => TokenType::StartGenerator,
+                ",," => TokenType::EndFunction,
+                ".t" => TokenType::True,
+                ".f" => TokenType::False,
+                "null" => TokenType::Null,
+                _ => {
                     if INT.is_match(s) {
                         let n_res = s.to_string().parse::<i32>();
                         match n_res {
@@ -568,7 +559,19 @@ impl<'a> Scanner<'a> {
                     }
                 }
             }
-        };
+        } else {
+            token_type =
+                if string_delimiter == '{' {
+                    if is_explicit_word || is_implicit_word {
+                        TokenType::CommandExplicit(s.to_string(), params)
+                    } else {
+                        TokenType::Command(s.to_string(), params)
+                    }
+                } else {
+                    TokenType::String(s.to_string())
+                };
+        }
+
         return Token::new(token_type, real_line_number, real_column_number);
     }
 }

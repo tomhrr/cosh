@@ -1,6 +1,7 @@
 use nix::sys::signal::Signal;
 use nix::unistd::{Group, User, Pid};
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::env;
 use std::fs;
@@ -480,8 +481,25 @@ impl VM {
         let sys = &mut self.sys;
         sys.refresh_processes();
 
+        /* refresh_processes does not remove processes that have
+         * since completed, which is why these extra steps are
+         * necessary. */
+        let mut pids = Vec::new();
+        for (pid, _) in self.sys.processes() {
+            pids.push(*pid);
+        }
+        let mut actual_pids = HashSet::new();
+        for pid in pids {
+            if self.sys.refresh_process(pid) {
+                actual_pids.insert(pid);
+            }
+        }
+
         let mut lst = VecDeque::new();
         for (pid, process) in self.sys.processes() {
+            if !actual_pids.contains(pid) {
+                continue;
+            }
             let mut map = IndexMap::new();
             map.insert(
                 "pid".to_string(),

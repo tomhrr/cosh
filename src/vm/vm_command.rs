@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::collections::VecDeque;
+use std::env;
 use std::io::Write;
 use std::rc::Rc;
 use std::str;
@@ -25,6 +26,7 @@ lazy_static! {
     static ref CAPTURE_WITHOUT_NUM: Regex = Regex::new("\\{\\}").unwrap();
     static ref HOME_DIR_TILDE: Regex = Regex::new("\\s~").unwrap();
     static ref LEADING_WS: Regex = Regex::new("^\\s*").unwrap();
+    static ref ENV_VAR: Regex = Regex::new("^(.*)=(.*)$").unwrap();
 }
 
 /// Splits a string on whitespace, taking into account quoted values
@@ -94,6 +96,12 @@ fn split_command(s: &str) -> Option<VecDeque<String>> {
         }
     }
     return Some(lst);
+}
+
+fn restore_env(env: HashMap<String, String>) {
+    for (key, value) in env {
+        env::set_var(key, value);
+    }
 }
 
 impl VM {
@@ -176,7 +184,7 @@ impl VM {
     fn prepare_and_split_command(
         &mut self,
         cmd: &str,
-    ) -> Option<(String, Vec<String>)> {
+    ) -> Option<(String, Vec<String>, HashMap<String, String>)> {
         let prepared_cmd_opt = self.prepare_command(cmd);
         if prepared_cmd_opt.is_none() {
             return None;
@@ -187,7 +195,36 @@ impl VM {
             self.print_error("syntax error in command");
             return None;
         }
-        let elements = elements_opt.unwrap();
+        let mut elements = elements_opt.unwrap();
+        if elements.len() == 0 {
+            self.print_error("unable to execute empty command");
+            return None;
+        }
+
+        let mut prev_env = HashMap::new();
+        while elements.len() != 0 {
+            let element = elements.get(0).unwrap();
+            let captures = ENV_VAR.captures_iter(&element);
+            let mut has = false;
+            for capture in captures {
+                has = true;
+                let key_str = capture.get(1).unwrap().as_str();
+                let value_str = capture.get(2).unwrap().as_str();
+                let current_str = env::var(key_str);
+                match current_str {
+                    Ok(s) => {
+                        prev_env.insert(key_str.to_string(), s);
+                    }
+                    _ => {}
+                }
+                env::set_var(key_str, value_str);
+            }
+            if has {
+                elements.pop_front();
+            } else {
+                break;
+            }
+        }
 
         let mut element_iter = elements.iter();
         let executable_opt = element_iter.next();
@@ -198,7 +235,7 @@ impl VM {
         let executable = executable_opt.unwrap();
         let executable_final = LEADING_WS.replace_all(&executable, "").to_string();
         let args = element_iter.map(|v| v.to_string()).collect::<Vec<_>>();
-        return Some((executable_final.to_string(), args));
+        return Some((executable_final.to_string(), args, prev_env));
     }
 
     /// Takes a command string and a set of parameters as its
@@ -210,13 +247,14 @@ impl VM {
         if prepared_cmd_opt.is_none() {
             return 0;
         }
-        let (executable, args) = prepared_cmd_opt.unwrap();
+        let (executable, args, env) = prepared_cmd_opt.unwrap();
 
         let process_res = Command::new(executable)
             .args(args)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn();
+        restore_env(env);
         match process_res {
             Ok(mut process) => {
                 let upstream_stdout = process.stdout.take().unwrap();
@@ -256,9 +294,10 @@ impl VM {
         if prepared_cmd_opt.is_none() {
             return 0;
         }
-        let (executable, args) = prepared_cmd_opt.unwrap();
+        let (executable, args, env) = prepared_cmd_opt.unwrap();
 
         let process_res = Command::new(executable).args(args).spawn();
+        restore_env(env);
         match process_res {
             Ok(mut process) => {
                 let res = process.wait();
@@ -301,7 +340,7 @@ impl VM {
                 if prepared_cmd_opt.is_none() {
                     return 0;
                 }
-                let (executable, args) = prepared_cmd_opt.unwrap();
+                let (executable, args, env) = prepared_cmd_opt.unwrap();
 
                 let process_ = Command::new(executable)
                     .args(args)
@@ -309,6 +348,7 @@ impl VM {
                     .stderr(Stdio::piped())
                     .stdin(Stdio::piped())
                     .spawn();
+                restore_env(env);
                 match process_ {
                     Ok(mut process) => {
                         let upstream_stdin_opt = process.stdin;

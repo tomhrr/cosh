@@ -868,6 +868,14 @@ that variable, or null if the variable does not exist.
 `setenv` takes an environment variable name and a value, and set that
 environment variable as having that value.
 
+Environment variables can also be set for commands, in the same way as
+for a standard shell:
+
+    $ {TZ=Europe/London date};
+    (
+	"Mon 26 Dec 2022 11:43:19 GMT\n"
+    )
+
 ### Miscellaneous functions
 
 `rand` takes a floating-point value and returns a random value between

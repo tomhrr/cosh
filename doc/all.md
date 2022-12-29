@@ -356,6 +356,16 @@ the delimiter, or a quotation mark.
 `splitr` splits a string based on a delimiter regex.  It does not
 handle quoting of values, though.
 
+`len` returns the length of a string.  This function also works for
+sets, hashes, strings, and generators.
+
+`empty` returns a boolean indicating whether the length of the string
+is zero.  This function also works for sets, hashes, strings, and
+generators.  In the case of a generator, it will exhaust the generator
+even though that's not strictly necessary for determining whether the
+generator is empty, because having it shift a single element from the
+generator each time it is called could be confusing.
+
 ### Set operators
 
 `shift` removes one element from the beginning of the set and places

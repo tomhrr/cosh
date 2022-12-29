@@ -318,8 +318,6 @@ impl VM {
                 return 0;
             }
         }
-
-        return 1;
     }
 
     /// Converts an integer into an IP object.

@@ -185,6 +185,7 @@ lazy_static! {
         );
         map.insert("pop", VM::opcode_pop as fn(&mut VM) -> i32);
         map.insert("len", VM::core_len as fn(&mut VM) -> i32);
+        map.insert("empty", VM::core_empty as fn(&mut VM) -> i32);
         map.insert(
             "is-dir",
             VM::core_is_dir as fn(&mut VM) -> i32,

@@ -87,9 +87,8 @@ impl VM {
         return 1;
     }
 
-    /// If the topmost element is a list, adds the length of that list
-    /// onto the stack.  If the topmost element is a string, adds the
-    /// length of that sting onto the stack.
+    /// Adds the length of the topmost element onto the stack.
+    /// Supports lists, hashes, sets, strings, and generators.
     pub fn core_len(&mut self) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("len requires one argument");
@@ -100,6 +99,16 @@ impl VM {
         match lst_rr {
             Value::List(lst) => {
                 let len = lst.borrow().len();
+                self.stack.push(Value::Int(len as i32));
+                return 1;
+            }
+            Value::Hash(hsh) => {
+                let len = hsh.borrow().len();
+                self.stack.push(Value::Int(len as i32));
+                return 1;
+            }
+            Value::Set(hsh) => {
+                let len = hsh.borrow().len();
                 self.stack.push(Value::Int(len as i32));
                 return 1;
             }
@@ -127,6 +136,63 @@ impl VM {
                 Value::Null => {
                     self.stack.pop();
                     self.stack.push(Value::Int(len));
+                    return 1;
+                }
+                _ => {}
+            }
+            len = len + 1;
+        }
+    }
+
+    /// Checks whether the length of the topmost element is zero.
+    /// Supports lists, hashes, sets, strings, and generators.
+    pub fn core_empty(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("empty requires one argument");
+            return 0;
+        }
+
+        let lst_rr = self.stack.pop().unwrap();
+        match lst_rr {
+            Value::List(lst) => {
+                let len = lst.borrow().len();
+                self.stack.push(Value::Bool(len == 0));
+                return 1;
+            }
+            Value::Hash(hsh) => {
+                let len = hsh.borrow().len();
+                self.stack.push(Value::Bool(len == 0));
+                return 1;
+            }
+            Value::Set(hsh) => {
+                let len = hsh.borrow().len();
+                self.stack.push(Value::Bool(len == 0));
+                return 1;
+            }
+            Value::String(sp) => {
+                let len = sp.borrow().s.len();
+                self.stack.push(Value::Bool(len == 0));
+                return 1;
+            }
+            _ => {}
+        }
+
+        self.stack.push(lst_rr);
+        let mut len = 0;
+        loop {
+            let dup_res = self.opcode_dup();
+            if dup_res == 0 {
+                return 0;
+            }
+            let shift_res = self.opcode_shift();
+            if shift_res == 0 {
+                return 0;
+            }
+            let value_rr = self.stack.pop().unwrap();
+            match value_rr {
+                Value::Null => {
+                    self.stack.pop();
+                    self.stack.push(Value::Bool(len == 0));
                     return 1;
                 }
                 _ => {}

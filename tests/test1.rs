@@ -1035,7 +1035,15 @@ fn abs_test() {
 fn len_test() {
     basic_test("asdf len;", "4");
     basic_test("(1 2 3) len;", "3");
+    basic_test("s(1 2 3) len;", "3");
+    basic_test("h(1 2 3 4) len;", "2");
     basic_test("10 range; len;", "10");
+
+    basic_test("\"\" empty;", ".t");
+    basic_test("(1 2 3) empty;", ".f");
+    basic_test("s() empty;", ".t");
+    basic_test("h(1 2 3 4) empty;", ".f");
+    basic_test("10 range; empty;", ".f");
 }
 
 #[test]

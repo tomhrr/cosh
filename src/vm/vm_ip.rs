@@ -313,7 +313,10 @@ impl VM {
                     }
                 }
             }
-            _ => {}
+            _ => {
+                self.print_error("unable to parse IP address");
+                return 0;
+            }
         }
 
         return 1;

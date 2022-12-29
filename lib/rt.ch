@@ -627,8 +627,8 @@
         dup; is-null; if;
             leave;
         then;
-        dup; str; seen @; swap; at; is-null; if;
-            dup; str; seen @; swap; 1 at!; drop;
+        dup; str; seen @; swap; get; is-null; if;
+            dup; str; seen @; swap; 1 set; drop;
             yield;
         else;
             drop;

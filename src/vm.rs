@@ -191,8 +191,8 @@ lazy_static! {
         );
         map.insert("split", VM::core_split as fn(&mut VM) -> i32);
         map.insert("splitr", VM::core_splitr as fn(&mut VM) -> i32);
-        map.insert("at", VM::core_at as fn(&mut VM) -> i32);
-        map.insert("at!", VM::core_at_em as fn(&mut VM) -> i32);
+        map.insert("get", VM::core_get as fn(&mut VM) -> i32);
+        map.insert("set", VM::core_set as fn(&mut VM) -> i32);
         map.insert("keys", VM::core_keys as fn(&mut VM) -> i32);
         map.insert(
             "values",

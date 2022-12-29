@@ -118,7 +118,7 @@
     depth; 2 <; if;
         "f> requires two arguments" error;
     then;
-    swap; w open; fh var; fh !;
+    w open; fh var; fh !;
     begin;
         dup; shift;
         dup; is-null; if;

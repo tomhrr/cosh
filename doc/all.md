@@ -607,10 +607,10 @@ lines in that file:
 	"cosh is a concatenative command-line shell.\n"
     )
 
-`f>` takes a filename and a list of strings as its arguments and
+`f>` takes a list of strings and a filename as its arguments and
 writes the strings to that file:
 
-    $ asdf ("asdf\n" "qwer\n" "zxcv\n") f>;
+    $ ("asdf\n" "qwer\n" "zxcv\n") asdf f>;
     $ asdf f<;
     (
 	"asdf\n"

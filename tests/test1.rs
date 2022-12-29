@@ -425,7 +425,7 @@ fn shift_test() {
 
 #[test]
 fn file_copy_test() {
-    basic_test("README.md f<; output swap; f>; ()", "()");
+    basic_test("README.md f<; output f>; ()", "()");
     let md1 = fs::metadata("README.md").unwrap();
     let md2 = fs::metadata("output").unwrap();
     assert_eq!(md1.len(), md2.len());
@@ -1058,7 +1058,7 @@ fn exists_test() {
 
 #[test]
 fn chmod_test() {
-    basic_test("asdf () f>; asdf 700 oct; chmod; {stat -c '%a' asdf}; shift; chomp; 700 m; asdf rm", ".t");
+    basic_test("() asdf f>; asdf 700 oct; chmod; {stat -c '%a' asdf}; shift; chomp; 700 m; asdf rm", ".t");
 }
 
 #[test]

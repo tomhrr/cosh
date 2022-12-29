@@ -399,15 +399,15 @@ it on the stack:
 
 ### Hash operators
 
-`at` returns a value from a hash:
+`get` returns a value from a hash:
 
-    $ h(a 1 b 2) dup; a at; swap; b at;
+    $ h(a 1 b 2) dup; a get; swap; b get;
     1
     2
 
-`at!` is used to update a value in a hash:
+`set` is used to update a value in a hash:
 
-    $ h(a 1 b 2) c 3 at!; c at;
+    $ h(a 1 b 2) c 3 set; c get;
     3
 
 `delete` removes a key-value pair from a hash:
@@ -424,7 +424,7 @@ it on the stack:
 
 `keys` returns a generator over the hash's keys:
 
-    $ h(a 1 b 2) c 3 at!; keys; take-all;
+    $ h(a 1 b 2) c 3 set; keys; take-all;
     (
         b
         a
@@ -433,7 +433,7 @@ it on the stack:
 
 `values` returns a generator over the hash's values:
 
-    $ h(a 1 b 2) c 3 at!; values; take-all;
+    $ h(a 1 b 2) c 3 set; values; take-all;
     (
         2
         1
@@ -442,7 +442,7 @@ it on the stack:
 
 `each` returns a generator over the key-value pairs from the hash:
 
-    $ h(a 1 b 2) c 3 at!; each; take-all;
+    $ h(a 1 b 2) c 3 set; each; take-all;
     (
 	(
 	    b

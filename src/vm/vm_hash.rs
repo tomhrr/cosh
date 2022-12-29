@@ -8,9 +8,9 @@ impl VM {
     /// Takes a hash value and a key string as its arguments.  Puts
     /// the value at that hash key onto the stack, or the null value
     /// if no such hash key exists.
-    pub fn core_at(&mut self) -> i32 {
+    pub fn core_get(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            self.print_error("at requires two arguments");
+            self.print_error("get requires two arguments");
             return 0;
         }
 
@@ -34,11 +34,11 @@ impl VM {
                 }
             }
             (_, Some(_)) => {
-                self.print_error("first at argument must be hash");
+                self.print_error("first get argument must be hash");
                 return 0;
             }
             _ => {
-                self.print_error("second at argument must be string");
+                self.print_error("second get argument must be string");
                 return 0;
             }
         }
@@ -125,9 +125,9 @@ impl VM {
     /// Takes a hash value, a key string, and a value as its
     /// arguments.  Puts the value into the hash against the specified
     /// key, and puts the updated hash back onto the stack.
-    pub fn core_at_em(&mut self) -> i32 {
+    pub fn core_set(&mut self) -> i32 {
         if self.stack.len() < 3 {
-            self.print_error("at! requires three arguments");
+            self.print_error("set requires three arguments");
             return 0;
         }
 
@@ -145,11 +145,11 @@ impl VM {
                     map.borrow_mut().insert(s.to_string(), val_rr);
                 }
                 (_, Some(_)) => {
-                    self.print_error("first at! argument must be hash");
+                    self.print_error("first set argument must be hash");
                     return 0;
                 }
                 _ => {
-                    self.print_error("second at! argument must be key string");
+                    self.print_error("second set argument must be key string");
                     return 0;
                 }
             }

@@ -539,8 +539,8 @@ fn commands_test() {
 
 #[test]
 fn hash_test() {
-    basic_test("h(1 2 3 4) 1 at;", "2");
-    basic_test("h(1 2 3 4) 1 5 at!; 1 at;", "5");
+    basic_test("h(1 2 3 4) 1 get;", "2");
+    basic_test("h(1 2 3 4) 1 5 set; 1 get;", "5");
     basic_test("h(1 2 3 4) keys; take-all;", "(\n    3\n    1\n)");
     basic_test("h(1 2 3 4) values; take-all;", "(\n    4\n    2\n)");
     basic_test(
@@ -551,7 +551,7 @@ fn hash_test() {
 
 #[test]
 fn json_test() {
-    basic_test("'{\"3\":4,\"1\":2}' from-json; 3 at", "4");
+    basic_test("'{\"3\":4,\"1\":2}' from-json; 3 get", "4");
     basic_test("h(1 2 3 4) to-json", "{\\\"3\\\":4,\\\"1\\\":2}");
     basic_test("test-data/json-bigint f<; \"\" join; from-json;",
         "h(\n    \"num1\": 0\n    \"num2\": 100\n    \"num3\": 123.456\n    \"num4\": -123456789123\n    \"num5\": 123456789123\n)");
@@ -1055,12 +1055,12 @@ fn chmod_test() {
 
 #[test]
 fn stat_test() {
-    basic_test("{rm -f asdf}; take-all; drop; {rm -f temp}; take-all; drop; Cargo.toml temp cp; {ln -s temp asdf}; take-all; drop; asdf stat; size at; 500 >; asdf lstat; size at; 100 <; and; {rm -f asdf}; take-all; drop; {rm -f temp}; take-all; drop;", ".t");
+    basic_test("{rm -f asdf}; take-all; drop; {rm -f temp}; take-all; drop; Cargo.toml temp cp; {ln -s temp asdf}; take-all; drop; asdf stat; size get; 500 >; asdf lstat; size get; 100 <; and; {rm -f asdf}; take-all; drop; {rm -f temp}; take-all; drop;", ".t");
 }
 
 #[test]
 fn mv_test() {
-    basic_test("mvtest touch; mvtest mvtest2 rename; mvtest2 mvtest mv; mvtest stat; size at; 0 =; {rm -f mvtest}; take-all; {rm -f mvtest2}; take-all; drop; drop;", ".t");
+    basic_test("mvtest touch; mvtest mvtest2 rename; mvtest2 mvtest mv; mvtest stat; size get; 0 =; {rm -f mvtest}; take-all; {rm -f mvtest2}; take-all; drop; drop;", ".t");
 }
 
 #[test]
@@ -1126,5 +1126,5 @@ fn append_generator_tests() {
 #[test]
 fn env_tests() {
     basic_test("cosh_key cosh_value setenv; cosh_key getenv", "cosh_value");
-    basic_test("cosh_key cosh_value setenv; env; cosh_key at", "cosh_value");
+    basic_test("cosh_key cosh_value setenv; env; cosh_key get", "cosh_value");
 }

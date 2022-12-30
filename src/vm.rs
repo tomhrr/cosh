@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::io::BufRead;
@@ -13,7 +14,7 @@ use std::sync::Arc;
 
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use sysinfo::{System, SystemExt};
 
 use chunk::{
@@ -73,7 +74,7 @@ pub struct VM {
     // A flag for interrupting execution.
     pub running: Arc<AtomicBool>,
     // A lookup for regexes, to save regenerating them.
-    pub regexes: HashMap<String, Rc<Regex>>,
+    pub regexes: HashMap<String, (Rc<Regex>, bool)>,
     // A System object, for getting process information.
     sys: System,
     // The local time zone.
@@ -334,6 +335,12 @@ lazy_static! {
         vec[OpCode::BigInt as usize] = Some(VM::opcode_bigint as fn(&mut VM) -> i32);
         vec
     };
+
+    static ref RE_NOT_PARAMS: Regex = Regex::new("\\\\/[a-z]+$").unwrap();
+    static ref RE_CAPTURE_PARAMS: Regex = Regex::new("/([a-z]+)$").unwrap();
+    static ref RE_ESCAPED_SLASH: Regex = Regex::new("\\\\/").unwrap();
+    static ref RE_NEWLINE: Regex = Regex::new("\n").unwrap();
+    static ref RE_ERROR_PART: Regex = Regex::new(".*error:\\s*").unwrap();
 }
 
 impl VM {
@@ -493,18 +500,57 @@ impl VM {
         }
     }
 
-    pub fn str_to_regex(&self, s: &str) -> Option<Regex> {
-        let regex_res = Regex::new(s);
+    pub fn str_to_regex(&self, s_arg: &str) -> Option<(Regex, bool)> {
+        let mut global = false;
+        let mut s: &str = s_arg;
+        let mut s_replacement: String;
+        let mut params: HashSet<char> = HashSet::new();
+
+        /* If the last slash is an escape, then the parts afterwards
+         * are not flags. */
+        if !RE_NOT_PARAMS.is_match(s) {
+            let params_res = RE_CAPTURE_PARAMS.captures(s);
+            params =
+                if !params_res.is_none() {
+                    s_replacement = RE_CAPTURE_PARAMS.replace_all(s, "").to_string();
+                    s = &s_replacement;
+                    let param_str =
+                        params_res.unwrap().get(1).unwrap().as_str();
+                    param_str.chars().collect()
+                } else {
+                    HashSet::new()
+                };
+        }
+
+        s_replacement = RE_ESCAPED_SLASH.replace_all(s, "/").to_string();
+        s = &s_replacement;
+
+        /* The case_insensitive call here is to make rb a &mut
+         * RegexBuilder, so that the 'rb = rb...' parts work. */
+        let mut rb_init = RegexBuilder::new(s);
+        let mut rb = rb_init.case_insensitive(false);
+        if params.contains(&'i') {
+            rb = rb.case_insensitive(true);
+        }
+        if params.contains(&'m') {
+            rb = rb.multi_line(true);
+        }
+        if params.contains(&'s') {
+            rb = rb.dot_matches_new_line(true);
+        }
+        if params.contains(&'g') {
+            global = true;
+        }
+
+        let regex_res = rb.build();
         match regex_res {
             Ok(regex) => {
-                return Some(regex);
+                return Some((regex, global));
             }
             Err(e) => {
                 let mut err_str = format!("{}", e);
-                let regex_nl = Regex::new("\n").unwrap();
-                err_str = regex_nl.replace_all(&err_str, "").to_string();
-                let regex_errpart = Regex::new(".*error:\\s*").unwrap();
-                err_str = regex_errpart.replace(&err_str, "").to_string();
+                err_str = RE_NEWLINE.replace_all(&err_str, "").to_string();
+                err_str = RE_ERROR_PART.replace(&err_str, "").to_string();
                 err_str = format!("invalid regex: {}", err_str);
                 self.print_error(&err_str);
                 return None;
@@ -512,7 +558,7 @@ impl VM {
         }
     }
 
-    pub fn gen_regex(&mut self, value_rr: Value) -> Option<Rc<Regex>> {
+    pub fn gen_regex(&mut self, value_rr: Value) -> Option<(Rc<Regex>, bool)> {
         match value_rr {
             Value::String(sp) => {
                 match &sp.borrow().r {
@@ -523,10 +569,10 @@ impl VM {
                 }
                 let regex_res = self.str_to_regex(&sp.borrow().s);
                 match regex_res {
-                    Some(regex) => {
+                    Some((regex, global)) => {
                         let rc = Rc::new(regex);
-                        sp.borrow_mut().r = Some(rc.clone());
-                        return Some(rc.clone());
+                        sp.borrow_mut().r = Some((rc.clone(), global));
+                        return Some((rc.clone(), global));
                     }
                     _ => {
                         return None;
@@ -549,10 +595,10 @@ impl VM {
                     _ => {
                         let regex_res = self.str_to_regex(s);
 			match regex_res {
-			    Some(regex) => {
+			    Some((regex, global)) => {
                                 let rc = Rc::new(regex);
-                                self.regexes.insert(s.to_string(), rc.clone());
-                                return Some(rc);
+                                self.regexes.insert(s.to_string(), (rc.clone(), global));
+                                return Some((rc, global));
 			    }
 			    _ => {
                                 return None;

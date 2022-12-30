@@ -106,7 +106,7 @@ impl VM {
 	to_str!(list_str_rr, list_str_opt);
 
         match (regex_opt, list_str_opt) {
-            (Some(regex), Some(list_str)) => {
+            (Some((regex, _)), Some(list_str)) => {
                 let elements = regex.split(list_str);
                 let mut final_elements = VecDeque::new();
                 for e in elements {

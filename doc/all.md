@@ -658,9 +658,9 @@ regular expression.  The `c` form is similar, except that it results
 in a list containing the captures from the expression (if any):
 
     $ asdf asdf m
-    1
+    .t
     $ asdf asdf2 m
-    0
+    .f
     $ asdf "(..)" c
     (
         as
@@ -676,6 +676,26 @@ For the supported syntax, see the Rust
 [https://docs.rs/regex/1.3.9/regex/index.html#syntax](regex) crate.
 It is close to that of PCRE, except that lookahead and backreferences
 are not supported.
+
+The following flags are supported:
+
+ - `i`: case-insensitive matching;
+ - `g`: global matching;
+ - `m`: multi-line matching (`^` and `$` match against the lines
+   within the string); and
+ - `s`: single-line matching (`.` matches against any character,
+   including newline).
+
+Flags are attached to regular expressions like so:
+
+    $ AsDf asdf/i m
+    .t
+    $ AsAs as/ig DF s
+    DFDF
+
+Because flags are separated from the regular expression by a forward
+slash, other forward slash characters that appear within the
+expression must be escaped with a backslash.
 
 ### String-handling functions
 

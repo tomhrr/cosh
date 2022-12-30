@@ -64,15 +64,16 @@ pub struct Chunk {
 }
 
 /// A string paired with its regex, to save regenerating that regex
-/// repeatedly.
+/// repeatedly.  The bool flag indicates whether global matching
+/// should be used for the regex.
 #[derive(Debug, Clone)]
 pub struct StringPair {
     pub s: String,
-    pub r: Option<Rc<Regex>>,
+    pub r: Option<(Rc<Regex>, bool)>,
 }
 
 impl StringPair {
-    pub fn new(s: String, r: Option<Rc<Regex>>) -> StringPair {
+    pub fn new(s: String, r: Option<(Rc<Regex>, bool)>) -> StringPair {
         StringPair { s: s, r: r }
     }
 }

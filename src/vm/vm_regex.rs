@@ -32,7 +32,7 @@ impl VM {
 	to_str!(str_rr, str_opt);
 
         match (regex_opt, str_opt) {
-            (Some(regex), Some(s)) => {
+            (Some((regex, _)), Some(s)) => {
                 let res = regex.is_match(s);
                 self.stack.push(Value::Bool(res));
             }
@@ -80,10 +80,15 @@ impl VM {
 	to_str!(str_rr, str_opt);
 
         match (repl_str_opt, regex_opt, str_opt) {
-            (Some(repl_str), Some(regex), Some(s)) => {
+            (Some(repl_str), Some((regex, global)), Some(s)) => {
                 let updated_repl = RE_ADJUST.replace_all(repl_str, "$${$1}");
                 let updated_repl_str = updated_repl.to_string();
-                let updated_str = regex.replace_all(s, &updated_repl_str[..]);
+                let updated_str =
+                    if global {
+                        regex.replace_all(s, &updated_repl_str[..])
+                    } else {
+                        regex.replace(s, &updated_repl_str[..])
+                    };
                 self.stack
                     .push(Value::String(Rc::new(RefCell::new(StringPair::new(
                         updated_str.to_string(),
@@ -126,16 +131,31 @@ impl VM {
 	to_str!(str_rr, str_opt);
 
         match (regex_opt, str_opt) {
-            (Some(regex), Some(s)) => {
-                let captures = regex.captures_iter(s);
-                let mut lst = VecDeque::new();
-                for capture in captures {
-                    lst.push_back(Value::String(Rc::new(RefCell::new(StringPair::new(
-                        capture.get(0).unwrap().as_str().to_string(),
-                        None,
-                    )))));
+            (Some((regex, global)), Some(s)) => {
+                if global {
+                    let captures = regex.captures_iter(s);
+                    let mut lst = VecDeque::new();
+                    for capture in captures {
+                        lst.push_back(Value::String(Rc::new(RefCell::new(StringPair::new(
+                            capture.get(0).unwrap().as_str().to_string(),
+                            None,
+                        )))));
+                    }
+                    self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
+                } else {
+                    let captures = regex.captures(s);
+                    let mut lst = VecDeque::new();
+                    match captures {
+                        Some(capture) => {
+                            lst.push_back(Value::String(Rc::new(RefCell::new(StringPair::new(
+                                capture.get(0).unwrap().as_str().to_string(),
+                                None,
+                            )))));
+                        }
+                        _ => {}
+                    }
+                    self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                 }
-                self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
             }
             (_, Some(_)) => {
                 self.print_error("first c argument must be string");

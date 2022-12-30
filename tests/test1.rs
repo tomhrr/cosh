@@ -440,8 +440,8 @@ fn single_quote_test() {
 #[test]
 fn regex_tests() {
     basic_test("'asdf asdf' asdf m;", ".t");
-    basic_test("'asdf asdf' asdf qwer s;", "\"qwer qwer\"");
-    basic_test("'12341234' \\d\\d\\d\\d c;", "(\n    1234\n    1234\n)");
+    basic_test("'asdf asdf' asdf/g qwer s;", "\"qwer qwer\"");
+    basic_test("'12341234' \\d\\d\\d\\d/g c;", "(\n    1234\n    1234\n)");
 }
 
 #[test]
@@ -1135,4 +1135,32 @@ fn append_generator_tests() {
 fn env_tests() {
     basic_test("cosh_key cosh_value setenv; cosh_key getenv", "cosh_value");
     basic_test("cosh_key cosh_value setenv; env; cosh_key get", "cosh_value");
+}
+
+#[test]
+fn regex_modifier_tests() {
+    basic_test("asdf asdf m", ".t");
+    basic_test("asdf asdf/i m", ".t");
+    basic_test("asdF asdf/i m", ".t");
+    basic_test("asdF asdf m", ".f");
+
+    basic_test("\"asdf\\nasdf\" asdf.asdf m", ".f");
+    basic_test("\"asdf\\nasdf\" asdf.asdf/s m", ".t");
+
+    basic_test("\"asdf\\nasdf\" ^asdf.asdf$/s m", ".t");
+    basic_test("\"asdf\\nasdf\" ^asdf$.^asdf$/s m", ".f");
+    basic_test("\"asdf\\nasdf\" ^asdf$.^asdf$/sm m", ".t");
+
+    basic_test("asdf_asdf_asdf asdf c", "(\n    asdf\n)");
+    basic_test("asdf_asdf_asdf asdf/g c", "(\n    asdf\n    asdf\n    asdf\n)");
+    basic_test("asDf_aSdf_asdF asdf/ig c", "(\n    asDf\n    aSdf\n    asdF\n)");
+}
+
+#[test]
+fn regex_escape_tests() {
+    basic_test("asdf asdf m", ".t");
+    basic_test("asdf asdf\\/asdf m", ".f");
+    basic_test("asdf/asdf asdf\\/asdf m", ".t");
+    basic_test("asdf/asdF asdf\\/asdf m", ".f");
+    basic_test("asdf/asdF asdf\\/asdf/i m", ".t");
 }

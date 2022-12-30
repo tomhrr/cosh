@@ -615,6 +615,10 @@ impl Compiler {
             chunk.add_opcode(OpCode::PopLocalVar);
             self.locals.pop();
         }
+        if self.scope_depth == 0 {
+            eprintln!("scope depth is already zero!");
+            std::process::abort();
+        }
         self.scope_depth = self.scope_depth - 1;
     }
 

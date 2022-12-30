@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::io::BufRead;
+use std::io::BufReader;
 use std::ops::Index;
 use std::ops::IndexMut;
 use std::rc::Rc;
@@ -370,21 +371,21 @@ impl VM {
     /// arguments.  Prints the error message, including filename, line number
     /// and column number elements (if applicable).
     pub fn print_error(&self, error: &str) {
-	let point = self.chunk.borrow().get_point(self.i);
-	let name = &self.chunk.borrow().name;
-	let error_start = if name == "(main)" {
-	    format!("")
-	} else {
-	    format!("{}:", name)
-	};
-	match point {
-	    Some((line, col)) => {
-		eprintln!("{}{}:{}: {}", error_start, line, col, error);
-	    }
-	    _ => {
-		eprintln!("{}{}", error_start, error);
-	    }
-	}
+        let point = self.chunk.borrow().get_point(self.i);
+        let name = &self.chunk.borrow().name;
+        let error_start = if name == "(main)" {
+            format!("")
+        } else {
+            format!("{}:", name)
+        };
+        match point {
+            Some((line, col)) => {
+                eprintln!("{}{}:{}: {}", error_start, line, col, error);
+            }
+            _ => {
+                eprintln!("{}{}", error_start, error);
+            }
+        }
     }
 
     pub fn opcode_togglemode(
@@ -458,7 +459,36 @@ impl VM {
                         }
                     }
                     None => {
-                        return 0;
+                        let file_res = std::fs::File::open(s);
+                        match file_res {
+                            Ok(file) => {
+                                let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
+                                let mut vm = VM::new(true, false);
+                                let mut functions = HashMap::new();
+                                let chunk_opt = vm.interpret(
+                                    &mut functions,
+                                    &mut bufread,
+                                    s,
+                                );
+                                match chunk_opt {
+                                    Some(chunk) => {
+                                        for (k, v) in chunk.borrow().functions.iter() {
+                                            if !k.starts_with("anon") {
+                                                self.global_functions.insert(k.clone(), v.clone());
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        self.print_error("unable to load import");
+                                        return 0;
+                                    }
+                                }
+                            }
+                            Err(_) => {
+                                self.print_error("unable to open import path");
+                                return 0;
+                            }
+                        }
                     }
                 }
             }
@@ -594,16 +624,16 @@ impl VM {
                     }
                     _ => {
                         let regex_res = self.str_to_regex(s);
-			match regex_res {
-			    Some((regex, global)) => {
+                        match regex_res {
+                            Some((regex, global)) => {
                                 let rc = Rc::new(regex);
                                 self.regexes.insert(s.to_string(), (rc.clone(), global));
                                 return Some((rc, global));
-			    }
-			    _ => {
+                            }
+                            _ => {
                                 return None;
-			    }
-			}
+                            }
+                        }
                     }
                 }
             }
@@ -1351,14 +1381,14 @@ impl VM {
                         ValueSD::String(sp) => {
                             self.i = i;
 
-			    /* todo: the two lookups here may be affecting
-			     * performance. */
+                            /* todo: the two lookups here may be affecting
+                             * performance. */
                             let fsi = (i2 as u32).try_into().unwrap();
-			    self.populate_constant_value(&sp, fsi);
-			    let cv = self.chunk.borrow().get_constant_value(fsi);
-			    match cv {
-				Value::Null => {
-				    match op {
+                            self.populate_constant_value(&sp, fsi);
+                            let cv = self.chunk.borrow().get_constant_value(fsi);
+                            match cv {
+                                Value::Null => {
+                                    match op {
                                         OpCode::CallImplicitConstant => {
                                             let value_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
                                                 sp.to_string(),
@@ -1373,9 +1403,9 @@ impl VM {
                                             return 0;
                                         }
                                     }
-				}
-				_ => {}
-			    }
+                                }
+                                _ => {}
+                            }
 
                             let res = self.call(op, cv);
                             if !res {
@@ -1746,9 +1776,9 @@ impl VM {
         fh: &mut Box<dyn BufRead>,
         name: &str,
     ) -> Option<Rc<RefCell<Chunk>>> {
-	for (k, v) in global_functions.iter() {
-	    self.global_functions.insert(k.clone(), v.clone());
-	}
+        for (k, v) in global_functions.iter() {
+            self.global_functions.insert(k.clone(), v.clone());
+        }
 
         let mut compiler = Compiler::new();
         let chunk_opt = compiler.compile(fh, name);

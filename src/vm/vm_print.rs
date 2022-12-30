@@ -155,16 +155,9 @@ impl VM {
         let mut is_generator = false;
         {
             match value_rr {
-                Value::IpSet(_) => {
-                    let s = format!("{{IPSet}}");
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
-                    if lines_to_print == -1 {
-                        return lines_to_print;
-                    }
-                }
                 Value::Ipv4(_) => {
-                    let s = format!("{{IP}}");
+                    let s = format!("v[{} {}]", &(value_rr.type_string()),
+                                                value_rr.to_string().unwrap());
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -172,7 +165,8 @@ impl VM {
                     }
                 }
                 Value::Ipv4Range(_) => {
-                    let s = format!("{{IP}}");
+                    let s = format!("v[{} {}]", &(value_rr.type_string()),
+                                                value_rr.to_string().unwrap());
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -180,7 +174,8 @@ impl VM {
                     }
                 }
                 Value::Ipv6(_) => {
-                    let s = format!("{{IP}}");
+                    let s = format!("v[{} {}]", &(value_rr.type_string()),
+                                                value_rr.to_string().unwrap());
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -188,23 +183,26 @@ impl VM {
                     }
                 }
                 Value::Ipv6Range(_) => {
-                    let s = format!("{{IP}}");
+                    let s = format!("v[{} {}]", &(value_rr.type_string()),
+                                                value_rr.to_string().unwrap());
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
                 }
-                Value::DateTimeNT(_) => {
-                    let s = format!("{{DateTime}}");
+                Value::DateTimeNT(dt) => {
+                    let s = format!("v[{} {}]", &(value_rr.type_string()),
+                                                dt.format("%F %T %Z"));
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
                 }
-                Value::DateTimeOT(_) => {
-                    let s = format!("{{DateTime}}");
+                Value::DateTimeOT(dt) => {
+                    let s = format!("v[{} {}]", &(value_rr.type_string()),
+                                                dt.format("%F %T %Z"));
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -216,7 +214,7 @@ impl VM {
                 // it may be that having separate representations is
                 // useful for some reason.
                 Value::CoreFunction(_) => {
-                    let s = format!("{{CoreFunction}}");
+                    let s = format!("v[{}]", &(value_rr.type_string()));
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -224,7 +222,7 @@ impl VM {
                     }
                 }
                 Value::NamedFunction(_) => {
-                    let s = format!("{{NamedFunction}}");
+                    let s = format!("v[{}]", &(value_rr.type_string()));
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -233,7 +231,7 @@ impl VM {
                 }
                 Value::Null => {
                     lines_to_print = psv_helper(
-                        "{{Null}}",
+                        "null",
                         indent,
                         no_first_indent,
                         window_height,
@@ -288,7 +286,7 @@ impl VM {
                     }
                 }
                 Value::Command(s, _) => {
-                    let s = format!("{{{}}}", s);
+                    let s = format!("v[{} {}]", &(value_rr.type_string()), s);
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -296,7 +294,7 @@ impl VM {
                     }
                 }
                 Value::CommandUncaptured(s) => {
-                    let s = format!("{{{}}}", s);
+                    let s = format!("v[{} {}]", &(value_rr.type_string()), s);
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
@@ -312,45 +310,17 @@ impl VM {
                     }
                 }
                 Value::AnonymousFunction(_, _) => {
-                    let s = format!("{{Function}}");
+                    let s = format!("v[{}]", &(value_rr.type_string()));
                     lines_to_print =
                         psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
                 }
-                Value::FileReader(_) => {
-                    lines_to_print = psv_helper(
-                        "{{FileReader}}",
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
-                    if lines_to_print == -1 {
-                        return lines_to_print;
-                    }
-                }
                 Value::FileWriter(_) => {
-                    lines_to_print = psv_helper(
-                        "{{FileWriter}}",
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
-                    if lines_to_print == -1 {
-                        return lines_to_print;
-                    }
-                }
-                Value::DirectoryHandle(_) => {
-                    lines_to_print = psv_helper(
-                        "{{DirectoryHandle}}",
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        lines_to_print,
-                    );
+                    let s = format!("v[{}]", &(value_rr.type_string()));
+                    lines_to_print =
+                        psv_helper(&s, indent, no_first_indent, window_height, lines_to_print);
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
@@ -522,6 +492,15 @@ impl VM {
                 Value::MultiGenerator(_) => {
                     is_generator = true;
                 }
+                Value::IpSet(_) => {
+                    is_generator = true;
+                }
+                Value::FileReader(_) => {
+                    is_generator = true;
+                }
+                Value::DirectoryHandle(_) => {
+                    is_generator = true;
+                }
             }
         }
         if is_generator {
@@ -541,9 +520,9 @@ impl VM {
                     break;
                 }
                 let is_null;
-                let value_rr = self.stack.pop().unwrap();
+                let element_rr = self.stack.pop().unwrap();
                 {
-                    match value_rr {
+                    match element_rr {
                         Value::Null => {
                             is_null = true;
                         }
@@ -554,15 +533,16 @@ impl VM {
                 }
                 if !is_null {
                     if !has_elements {
+                        let new_str = format!("v[{} (", &(value_rr.type_string()));
                         lines_to_print =
-                            psv_helper("(", indent, no_first_indent, window_height, lines_to_print);
+                            psv_helper(&new_str, indent, no_first_indent, window_height, lines_to_print);
                         if lines_to_print == -1 {
                             return lines_to_print;
                         }
                         has_elements = true;
                     }
                     lines_to_print = self.print_stack_value(
-                        &value_rr,
+                        &element_rr,
                         chunk.clone(),
                         i,
                         indent + 4,
@@ -579,10 +559,11 @@ impl VM {
             }
             self.stack.pop();
             if !has_elements {
+                let new_str = format!("v[{}]", &(value_rr.type_string()));
                 lines_to_print =
-                    psv_helper("()", indent, no_first_indent, window_height, lines_to_print);
+                    psv_helper(&new_str, indent, no_first_indent, window_height, lines_to_print);
             } else {
-                lines_to_print = psv_helper(")", indent, false, window_height, lines_to_print);
+                lines_to_print = psv_helper(")]", indent, false, window_height, lines_to_print);
             }
             if lines_to_print == -1 {
                 return lines_to_print;

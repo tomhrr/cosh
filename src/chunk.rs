@@ -1468,4 +1468,40 @@ impl Value {
             _ => false,
         }
     }
+
+    pub fn type_string(&self) -> String {
+        let s = match self {
+            Value::Null => "null",
+            Value::Bool(..) => "bool",
+            Value::Int(..) => "int",
+            Value::BigInt(..) => "bigint",
+            Value::Float(..) => "flt",
+            Value::String(..) => "str",
+            Value::Command(..) => "command",
+            Value::CommandUncaptured(..) => "command",
+            Value::List(..) => "list",
+            Value::Hash(..) => "hash",
+            Value::Set(..) => "set",
+            Value::AnonymousFunction(..) => "anon-fn",
+            Value::CoreFunction(..) => "core-fn",
+            Value::NamedFunction(..) => "named-fn",
+            Value::Generator(..) => "gen",
+            Value::CommandGenerator(..) => "command-gen",
+            Value::KeysGenerator(..) => "keys-gen",
+            Value::ValuesGenerator(..) => "values-gen",
+            Value::EachGenerator(..) => "each-gen",
+            Value::FileReader(..) => "file-reader",
+            Value::FileWriter(..) => "file-writer",
+            Value::DirectoryHandle(..) => "dir-handle",
+            Value::DateTimeNT(..) => "datetime",
+            Value::DateTimeOT(..) => "datetime",
+            Value::Ipv4(..) => "ip",
+            Value::Ipv6(..) => "ip",
+            Value::Ipv4Range(..) => "ip",
+            Value::Ipv6Range(..) => "ip",
+            Value::IpSet(..) => "ips",
+            Value::MultiGenerator(..) => "multi-gen",
+        };
+        return s.to_string();
+    }
 }

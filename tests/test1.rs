@@ -381,7 +381,7 @@ test r open;
 fn lsr_test() {
     basic_test(
         ". lsr; begin; dup; shift; is-null; if; leave; then; 0 until;",
-        "()",
+        "v[gen]",
     );
 }
 
@@ -634,7 +634,7 @@ fn nested_function_vars() {
 fn grep_not_iterated_n_is_the_same() {
     basic_test(
         "n var; 10 n !; README.md f<; [n @; 1 +; n !; eeeee m] grep; n @;",
-        "()\n10",
+        "v[gen]\n10",
     );
 }
 
@@ -664,13 +664,13 @@ fn misc_lst_fns() {
     basic_test("(1 2 3) [0 >] notall", ".f");
     basic_test("(1 2 3) [100 >] notall", ".t");
     basic_test("(1 2 3) [2 >] first", "3");
-    basic_test("(1 2 3) [100 >] first", "{{Null}}");
+    basic_test("(1 2 3) [100 >] first", "null");
     basic_test("4 range; dup; shift; drop; product", "6");
     basic_test(
         "(1 2 5 1 2 5 3 6) uniq",
-        "(\n    1\n    2\n    5\n    3\n    6\n)",
+        "v[gen (\n    1\n    2\n    5\n    3\n    6\n)]",
     );
-    basic_test("(a b 1 b 2) uniq", "(\n    a\n    b\n    1\n    2\n)");
+    basic_test("(a b 1 b 2) uniq", "v[gen (\n    a\n    b\n    1\n    2\n)]");
 }
 
 #[test]
@@ -722,7 +722,7 @@ fn nth_bounds_test2() {
 #[test]
 fn anon_fn_var_test() {
     basic_test("3 range; [drop; x var; 3 x !; x @] map;",
-               "(\n    3\n    3\n    3\n)");
+               "v[gen (\n    3\n    3\n    3\n)]");
 }
 
 #[test]
@@ -798,8 +798,6 @@ fn clone_test() {
 
 #[test]
 fn date_test() {
-    basic_test("now;", "{DateTime}");
-    basic_test("lcnow;", "{DateTime}");
     basic_test("now; now; =", ".f");
     basic_test("lcnow; lcnow; =", ".f");
     basic_test("now; now; <", ".t");
@@ -837,7 +835,7 @@ fn date_test() {
 
 #[test]
 fn ip_test() {
-    basic_test("1.0.0.0/24 ip", "{IP}");
+    basic_test("1.0.0.0/24 ip", "v[ip 1.0.0.0/24]");
     basic_test("16777216 4 ip.from-int; str", "1.0.0.0");
     basic_test("1.0.0.0/24 ip; ip.addr", "1.0.0.0");
     basic_test("3.1.0.0/16 ip; ip.len", "16");
@@ -848,7 +846,7 @@ fn ip_test() {
     basic_test("1.0.0.0/24 ip; ip.version", "4");
     basic_test("1.0.0.0/24 ip; str", "1.0.0.0/24");
 
-    basic_test("::/128 ip", "{IP}");
+    basic_test("::/128 ip", "v[ip ::]");
     basic_test("10000000000 6 ip.from-int; str", "::2:540b:e400");
     basic_test("31CC::/64 ip; ip.addr", "31cc::");
     basic_test("305F:305F::/32 ip; ip.len", "32");
@@ -859,7 +857,7 @@ fn ip_test() {
     basic_test(":: ip; ip.version", "6");
     basic_test("ABCD::/32 ip; str", "abcd::/32");
 
-    basic_test("1.0.0.0-1.0.0.255 ip", "{IP}");
+    basic_test("1.0.0.0-1.0.0.255 ip", "v[ip 1.0.0.0-1.0.0.255]");
     basic_test("1.0.0.0-1.0.0.255 ip; ip.addr", "1.0.0.0");
     basic_test("3.1.0.0-3.1.255.255 ip; ip.len", "16");
     basic_test("0.0.0.0-255.255.255.255 ip; ip.addr-int", "0");
@@ -947,7 +945,7 @@ fn bigint_conversion_test() {
     basic_test("1 bigint;", "1");
     basic_test("1000000000000000000000000 bigint;",
                "1000000000000000000000000");
-    basic_test("asdf bigint;", "{{Null}}");
+    basic_test("asdf bigint;", "null");
 }
 
 #[test]

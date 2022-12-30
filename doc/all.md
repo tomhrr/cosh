@@ -856,8 +856,8 @@ result.
 
  - `ip`: Takes a single IP address or range as a string, and returns
    an IP object for that address or range.
- - `ip.from-int`: Takes an IP address as an integer and returns an IP
-   object for the address.
+ - `ip.from-int`: Takes an IP address as an integer and an IP version
+   (either 4 or 6) and returns an IP object for the address.
  - `ip.len`: Takes an IP object and returns the prefix length of the
    range.
  - `ip.addr`: Takes an IP object and returns the first address from
@@ -872,10 +872,10 @@ result.
    covers.
  - `ip.version`: Takes an IP object and returns the version of that
    object (either 4 or 6).
- - `ip.prefixes`: Takes an IP object and returns a list
-   comprising the prefixes (as IP objects) that make up the object.
-   (The main use of this is for converting a range into a set of
-   prefixes, if necessary.)
+ - `ip.prefixes`: Takes an IP object and returns a list comprising the
+   prefixes (as IP objects) that make up the object.  (The main use of
+   this is for converting a range into a set of prefixes, if
+   necessary.)
 
 There is also a separate IP set object, for storing multiple IP
 address ranges in a single type.  The `ips` function takes a single IP

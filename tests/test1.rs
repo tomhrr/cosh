@@ -838,7 +838,7 @@ fn date_test() {
 #[test]
 fn ip_test() {
     basic_test("1.0.0.0/24 ip", "{IP}");
-    basic_test("4 16777216 ip.from-int; str", "1.0.0.0");
+    basic_test("16777216 4 ip.from-int; str", "1.0.0.0");
     basic_test("1.0.0.0/24 ip; ip.addr", "1.0.0.0");
     basic_test("3.1.0.0/16 ip; ip.len", "16");
     basic_test("0.0.0.0/0 ip; ip.addr-int", "0");
@@ -849,7 +849,7 @@ fn ip_test() {
     basic_test("1.0.0.0/24 ip; str", "1.0.0.0/24");
 
     basic_test("::/128 ip", "{IP}");
-    basic_test("6 10000000000 ip.from-int; str", "::2:540b:e400");
+    basic_test("10000000000 6 ip.from-int; str", "::2:540b:e400");
     basic_test("31CC::/64 ip; ip.addr", "31cc::");
     basic_test("305F:305F::/32 ip; ip.len", "32");
     basic_test("::2:540b:e400 ip; ip.addr-int", "10000000000");

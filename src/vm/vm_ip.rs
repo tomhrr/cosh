@@ -327,11 +327,11 @@ impl VM {
             return 0;
         }
 
-        let value_rr = self.stack.pop().unwrap();
-        let value_opt = value_rr.to_bigint();
-
         let version_rr = self.stack.pop().unwrap();
         let version_opt = version_rr.to_int();
+
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt = value_rr.to_bigint();
 
         match (version_opt, value_opt) {
             (Some(4), Some(value)) => {

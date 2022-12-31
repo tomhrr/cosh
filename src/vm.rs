@@ -85,7 +85,7 @@ pub struct VM {
 }
 
 lazy_static! {
-    static ref SIMPLE_FORMS: HashMap<&'static str, fn(&mut VM) -> i32> = {
+    pub static ref SIMPLE_FORMS: HashMap<&'static str, fn(&mut VM) -> i32> = {
         let mut map = HashMap::new();
         map.insert("+", VM::opcode_add as fn(&mut VM) -> i32);
         map.insert(
@@ -286,6 +286,62 @@ lazy_static! {
         map.insert("setenv", VM::core_setenv as fn(&mut VM) -> i32);
         map
     };
+
+    pub static ref LIB_FORMS: HashSet<&'static str> = {
+        let mut set = HashSet::new();
+        set.insert("2over");
+        set.insert("format-xml");
+        set.insert("lsh");
+        set.insert("partition");
+        set.insert("2rot");
+        set.insert("lshr");
+        set.insert("partitionp");
+        set.insert("<=");
+        set.insert("lsr");
+        set.insert("product");
+        set.insert(">=");
+        set.insert("map");
+        set.insert("range");
+        set.insert("all");
+        set.insert("map-generator");
+        set.insert("roa");
+        set.insert("and");
+        set.insert("map-list");
+        set.insert("shuffle");
+        set.insert("any");
+        set.insert("max");
+        set.insert("sort");
+        set.insert("mft");
+        set.insert("sort-internal");
+        set.insert("chomp");
+        set.insert("grep");
+        set.insert("min");
+        set.insert("sort-internalp");
+        set.insert("ding");
+        set.insert("grep-generator");
+        set.insert("nip");
+        set.insert("sortp");
+        set.insert("f<");
+        set.insert("grep-list");
+        set.insert("no-upwards");
+        set.insert("sum");
+        set.insert("f>");
+        set.insert("none");
+        set.insert("take");
+        set.insert("first");
+        set.insert("is-integer");
+        set.insert("not");
+        set.insert("take-all");
+        set.insert("foldl");
+        set.insert("is-list-or-set");
+        set.insert("notall");
+        set.insert("uniq");
+        set.insert("for");
+        set.insert("ls");
+        set.insert("or");
+        set
+    };
+
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {
         let mut vec = vec![None; 255];
         vec[OpCode::Add as usize] = Some(VM::opcode_add as fn(&mut VM) -> i32);
@@ -345,7 +401,9 @@ lazy_static! {
 }
 
 impl VM {
-    pub fn new(print_stack: bool, debug: bool) -> VM {
+    pub fn new(print_stack: bool,
+               debug: bool,
+               global_vars: Rc<RefCell<HashMap<String, Value>>>) -> VM {
         let ltz = iana_time_zone::get_timezone().unwrap();
         VM {
             debug: debug,
@@ -353,7 +411,7 @@ impl VM {
             local_var_stack: Rc::new(RefCell::new(Vec::new())),
             print_stack: print_stack,
             printing_stack: false,
-            scopes: vec![Rc::new(RefCell::new(HashMap::new()))],
+            scopes: vec![global_vars.clone()],
             global_functions: HashMap::new(),
             call_stack_chunks: Vec::new(),
             running: Arc::new(AtomicBool::new(true)),
@@ -463,10 +521,10 @@ impl VM {
                         match file_res {
                             Ok(file) => {
                                 let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                                let mut vm = VM::new(true, false);
-                                let mut functions = HashMap::new();
+                                let mut vm = VM::new(true, false, Rc::new(RefCell::new(HashMap::new())));
+                                let functions = Rc::new(RefCell::new(HashMap::new()));
                                 let chunk_opt = vm.interpret(
-                                    &mut functions,
+                                    functions,
                                     &mut bufread,
                                     s,
                                 );
@@ -1772,11 +1830,11 @@ impl VM {
     /// executes it, returning the chunk (if compiled successfully).
     pub fn interpret(
         &mut self,
-        global_functions: &HashMap<String, Rc<RefCell<Chunk>>>,
+        global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
         fh: &mut Box<dyn BufRead>,
         name: &str,
     ) -> Option<Rc<RefCell<Chunk>>> {
-        for (k, v) in global_functions.iter() {
+        for (k, v) in global_functions.borrow().iter() {
             self.global_functions.insert(k.clone(), v.clone());
         }
 

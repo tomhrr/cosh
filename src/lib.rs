@@ -1,3 +1,4 @@
+extern crate ansi_term;
 extern crate chrono;
 extern crate chrono_tz;
 extern crate chronoutil;

@@ -1,3 +1,4 @@
+extern crate ansi_term;
 extern crate cosh;
 extern crate ctrlc;
 extern crate dirs_next;
@@ -22,6 +23,7 @@ use std::path::{self, Path};
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
 
+use ansi_term::Colour::{Red, Blue, Purple};
 use dirs_next::home_dir;
 use getopts::Options;
 use memchr::memchr;
@@ -38,8 +40,9 @@ use rustyline_derive::Helper;
 use searchpath::search_path;
 use tempfile::tempfile;
 
+use cosh::chunk::{Chunk, Value};
 use cosh::compiler::Compiler;
-use cosh::vm::VM;
+use cosh::vm::{VM, SIMPLE_FORMS, LIB_FORMS};
 
 // Most of the code through to 'impl Completer for ShellCompleter' is
 // taken from kkawakam/rustyline#574 as at 3a41ee9, with some small
@@ -240,6 +243,55 @@ fn filename_complete(
     entries
 }
 
+fn internal_complete(
+    path: &str,
+    esc_char: Option<char>,
+    break_chars: &[u8],
+    quote: Quote,
+    global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
+    global_vars: Rc<RefCell<HashMap<String, Value>>>,
+) -> Vec<Pair> {
+    let mut entries: Vec<Pair> = Vec::new();
+
+    for k in SIMPLE_FORMS.keys() {
+        if k.starts_with(path) {
+            entries.push(Pair {
+                display: Red.paint(*k).to_string(),
+                replacement: escape(path.to_string(), esc_char, break_chars, quote)
+            });
+        }
+    }
+
+    for k in LIB_FORMS.iter() {
+        if k.starts_with(path) {
+            entries.push(Pair {
+                display: Red.paint(*k).to_string(),
+                replacement: escape(path.to_string(), esc_char, break_chars, quote)
+            });
+        }
+    }
+
+    for k in global_functions.borrow().keys() {
+        if k.starts_with(path) && !LIB_FORMS.contains::<str>(k) {
+            entries.push(Pair {
+                display: Blue.paint(k).to_string(),
+                replacement: escape(path.to_string(), esc_char, break_chars, quote)
+            });
+        }
+    }
+
+    for k in global_vars.borrow().keys() {
+        if k.starts_with(path) {
+            entries.push(Pair {
+                display: Purple.paint(k).to_string(),
+                replacement: escape(path.to_string(), esc_char, break_chars, quote)
+            });
+        }
+    }
+
+    return entries;
+}
+
 fn bin_complete(path: &str, esc_char: Option<char>, break_chars: &[u8], quote: Quote) -> Vec<Pair> {
     let mut entries: Vec<Pair> = Vec::new();
     for file in search_path(path, std::env::var_os("PATH").as_deref(), None) {
@@ -255,6 +307,8 @@ fn bin_complete(path: &str, esc_char: Option<char>, break_chars: &[u8], quote: Q
 pub struct ShellCompleter {
     break_chars: &'static [u8],
     double_quotes_special_chars: &'static [u8],
+    global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
+    global_vars: Rc<RefCell<HashMap<String, Value>>>
 }
 
 fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
@@ -301,10 +355,13 @@ fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
 
 impl ShellCompleter {
     /// Constructor
-    pub fn new() -> Self {
+    pub fn new(global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
+               global_vars: Rc<RefCell<HashMap<String, Value>>>) -> Self {
         Self {
             break_chars: &DEFAULT_BREAK_CHARS,
             double_quotes_special_chars: &DOUBLE_QUOTES_SPECIAL_CHARS,
+            global_functions: global_functions,
+            global_vars: global_vars,
         }
     }
 
@@ -352,7 +409,13 @@ impl ShellCompleter {
             filename_complete(&path, esc_char, break_chars, quote)
         };
 
+        let mut internal_matches =
+            internal_complete(&path, esc_char, break_chars, quote,
+                              self.global_functions.clone(),
+                              self.global_vars.clone());
+
         #[allow(clippy::unnecessary_sort_by)]
+        matches.append(&mut internal_matches);
         matches.sort_by(|a, b| a.display().cmp(b.display()));
         Ok((start, matches))
     }
@@ -360,7 +423,8 @@ impl ShellCompleter {
 
 impl Default for ShellCompleter {
     fn default() -> Self {
-        Self::new()
+        Self::new(Rc::new(RefCell::new(HashMap::new())),
+                  Rc::new(RefCell::new(HashMap::new())))
     }
 }
 
@@ -446,7 +510,7 @@ fn main() {
                 std::process::exit(1);
             }
             let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
-            let mut vm = VM::new(true, debug);
+            let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())));
             let mut functions = Vec::new();
             if !matches.opt_present("no-rt") {
                 let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
@@ -512,9 +576,9 @@ fn main() {
                     _ => {}
                 }
             } else {
-                let mut vm = VM::new(true, debug);
+                let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())));
                 let mut compiler = Compiler::new();
-                let mut global_functions = HashMap::new();
+                let global_functions = Rc::new(RefCell::new(HashMap::new()));
 
                 if !matches.opt_present("no-rt") {
                     let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
@@ -527,12 +591,12 @@ fn main() {
                     }
                     let rtchunk = rtchunk_opt.unwrap();
                     for (k, v) in rtchunk.functions.iter() {
-                        global_functions.insert(k.clone(), v.clone());
+                        global_functions.borrow_mut().insert(k.clone(), v.clone());
                     }
                 }
 
                 vm.interpret(
-                    &global_functions,
+                    global_functions.clone(),
                     &mut bufread,
                     "(main)",
                 );
@@ -540,7 +604,8 @@ fn main() {
         }
     } else {
         let mut compiler = Compiler::new();
-        let mut global_functions = HashMap::new();
+        let global_functions =
+            Rc::new(RefCell::new(HashMap::new()));
 
         if !matches.opt_present("no-rt") {
             let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
@@ -553,11 +618,12 @@ fn main() {
             }
             let rtchunk = rtchunk_opt.unwrap();
             for (k, v) in rtchunk.functions.iter() {
-                global_functions.insert(k.clone(), v.clone());
+                global_functions.borrow_mut().insert(k.clone(), v.clone());
             }
         }
 
-        let mut vm = VM::new(true, debug);
+        let global_vars = Rc::new(RefCell::new(HashMap::new()));
+        let mut vm = VM::new(true, debug, global_vars.clone());
 
         let running_clone = vm.running.clone();
         ctrlc::set_handler(move || {
@@ -573,7 +639,7 @@ fn main() {
                     Ok(file) => {
                         let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                         let chunk_opt = vm.interpret(
-                            &global_functions,
+                            global_functions.clone(),
                             &mut bufread,
                             ".coshrc",
                         );
@@ -581,7 +647,7 @@ fn main() {
                             Some(chunk) => {
                                 for (k, v) in chunk.borrow().functions.iter() {
                                     if !k.starts_with("anon") {
-                                        global_functions.insert(k.clone(), v.clone());
+                                        global_functions.borrow_mut().insert(k.clone(), v.clone());
                                     }
                                 }
                             }
@@ -601,7 +667,8 @@ fn main() {
             .build();
 
         let helper = RLHelper {
-            completer: ShellCompleter::new(),
+            completer: ShellCompleter::new(global_functions.clone(),
+                                           global_vars.clone()),
         };
 
         let mut rl = Editor::with_config(config);
@@ -657,7 +724,7 @@ fn main() {
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                     rl.add_history_entry(line.as_str());
                     let chunk_opt = vm.interpret(
-                        &global_functions,
+                        global_functions.clone(),
                         &mut bufread,
                         "(main)",
                     );
@@ -665,7 +732,7 @@ fn main() {
                         Some(chunk) => {
                             for (k, v) in chunk.borrow().functions.iter() {
                                 if !k.starts_with("anon") {
-                                    global_functions.insert(k.clone(), v.clone());
+                                    global_functions.borrow_mut().insert(k.clone(), v.clone());
                                 }
                             }
                         }

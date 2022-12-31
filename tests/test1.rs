@@ -248,12 +248,12 @@ fn get_must_be_string_in_fn_error() {
 
 #[test]
 fn map_test_with_result() {
-    basic_test("(1 2 3) [2 +] map", "(\n    3\n    4\n    5\n)");
+    basic_test("(1 2 3) [2 +] map", "(\n    0: 3\n    1: 4\n    2: 5\n)");
 }
 
 #[test]
 fn grep_test() {
-    basic_test("(1 2 3) [2 =] grep", "(\n    2\n)");
+    basic_test("(1 2 3) [2 =] grep", "(\n    0: 2\n)");
 }
 
 #[test]
@@ -394,7 +394,7 @@ fn implicit_generator_test() {
 fn regex_borrow_problem() {
     basic_test(
         "((\"asdf\") (\"asdf\")) [[asdf m] grep] map",
-        "(\n    (\n        asdf\n    )\n    (\n        asdf\n    )\n)",
+        "(\n    0: (\n        0: asdf\n    )\n    1: (\n        0: asdf\n    )\n)",
     );
 }
 
@@ -405,7 +405,7 @@ fn import_test() {
 
 #[test]
 fn push_test() {
-    basic_test("(1 2 3) 5 push;", "(\n    1\n    2\n    3\n    5\n)");
+    basic_test("(1 2 3) 5 push;", "(\n    0: 1\n    1: 2\n    2: 3\n    3: 5\n)");
 }
 
 #[test]
@@ -415,7 +415,7 @@ fn pop_test() {
 
 #[test]
 fn unshift_test() {
-    basic_test("(1 2 3) 5 unshift;", "(\n    5\n    1\n    2\n    3\n)");
+    basic_test("(1 2 3) 5 unshift;", "(\n    0: 5\n    1: 1\n    2: 2\n    3: 3\n)");
 }
 
 #[test]
@@ -441,31 +441,31 @@ fn single_quote_test() {
 fn regex_tests() {
     basic_test("'asdf asdf' asdf m;", ".t");
     basic_test("'asdf asdf' asdf/g qwer s;", "\"qwer qwer\"");
-    basic_test("'12341234' \\d\\d\\d\\d/g c;", "(\n    1234\n    1234\n)");
+    basic_test("'12341234' \\d\\d\\d\\d/g c;", "(\n    0: 1234\n    1: 1234\n)");
 }
 
 #[test]
 fn nth_test() {
     basic_test("(1 2 3) 1 nth", "2");
-    basic_test("(1 2 3) 1 100 nth!", "(\n    1\n    100\n    3\n)");
+    basic_test("(1 2 3) 1 100 nth!", "(\n    0: 1\n    1: 100\n    2: 3\n)");
 }
 
 #[test]
 fn take_test() {
-    basic_test("(1 2 3) 2 take", "(\n    1\n    2\n)");
-    basic_test("(1 2 3) take-all", "(\n    1\n    2\n    3\n)");
-    basic_test("README.md f<; 1 take", "(\n    \"## cosh\\n\"\n)");
+    basic_test("(1 2 3) 2 take", "(\n    0: 1\n    1: 2\n)");
+    basic_test("(1 2 3) take-all", "(\n    0: 1\n    1: 2\n    2: 3\n)");
+    basic_test("README.md f<; 1 take", "(\n    0: \"## cosh\\n\"\n)");
 }
 
 #[test]
 fn grep_test_generator() {
     basic_test(
         "10 range; [5 <] grep; take-all",
-        "(\n    0\n    1\n    2\n    3\n    4\n)",
+        "(\n    0: 0\n    1: 1\n    2: 2\n    3: 3\n    4: 4\n)",
     );
     basic_test(
         "10 range; take-all; [5 <] grep",
-        "(\n    0\n    1\n    2\n    3\n    4\n)",
+        "(\n    0: 0\n    1: 1\n    2: 2\n    3: 3\n    4: 4\n)",
     );
 }
 
@@ -473,18 +473,18 @@ fn grep_test_generator() {
 fn map_test_generator() {
     basic_test(
         "5 range; [2 *] map; take-all",
-        "(\n    0\n    2\n    4\n    6\n    8\n)",
+        "(\n    0: 0\n    1: 2\n    2: 4\n    3: 6\n    4: 8\n)",
     );
     basic_test(
         "5 range; take-all; [2 *] map",
-        "(\n    0\n    2\n    4\n    6\n    8\n)",
+        "(\n    0: 0\n    1: 2\n    2: 4\n    3: 6\n    4: 8\n)",
     );
 }
 
 #[test]
 fn split_test() {
     basic_test("test-data/split f<; take-all; 0 nth; , split",
-               "(\n    asdf\n    qwer\n    \"asdf asdf\"\n    asdf,asdf\n    \"\"\n    \"\"\n    \"\"\n    \"qwer\\n\"\n)");
+               "(\n    0: asdf\n    1: qwer\n    2: \"asdf asdf\"\n    3: asdf,asdf\n    4: \"\"\n    5: \"\"\n    6: \"\"\n    7: \"qwer\\n\"\n)");
 
     basic_test("asdf:asdf:asdf \":\" split; \":\" join",
                "asdf:asdf:asdf");
@@ -502,7 +502,7 @@ fn join_test() {
 fn append_test() {
     basic_test("a b ++", "ab");
     basic_test("3 range; take-all; 3 range; take-all; ++",
-        "(\n    0\n    1\n    2\n    0\n    1\n    2\n)");
+        "(\n    0: 0\n    1: 1\n    2: 2\n    3: 0\n    4: 1\n    5: 2\n)");
     basic_test("h(1 2) h(3 4) ++; keys; sort; '-' join", "1-3");
 }
 
@@ -510,7 +510,7 @@ fn append_test() {
 fn coerce_to_int_test() {
     basic_test(
         "test-data/csv f<; [chomp] map; [, split] map; [0 [+] foldl] map; take-all;",
-        "(\n    10\n    26\n    42\n)",
+        "(\n    0: 10\n    1: 26\n    2: 42\n)",
     );
 }
 
@@ -523,17 +523,17 @@ fn coerce_to_string_test() {
 fn commands_test() {
     basic_test(
         "{ls}; {sort} |; take-all; [o.toml m] grep; chomp map;",
-        "(\n    Cargo.toml\n)",
+        "(\n    0: Cargo.toml\n)",
     );
     basic_test(". -type f {find {2} -maxdepth 1 {1} {0}}; {sort} |; take-all; [o.toml m] grep; chomp map; nip; nip; nip;",
-               "(\n    ./Cargo.toml\n)");
+               "(\n    0: ./Cargo.toml\n)");
     basic_test(
         "3 2 1 {dc -e \"{2} {0} + {1} + p\"}; shift; chomp; nip; nip; nip;",
         "6",
     );
     basic_test(
         "{ls}; -r {sort {}} |; take-all; [o.toml m] grep; chomp map;",
-        "(\n    Cargo.toml\n)",
+        "(\n    0: Cargo.toml\n)",
     );
 }
 
@@ -541,11 +541,11 @@ fn commands_test() {
 fn hash_test() {
     basic_test("h(1 2 3 4) 1 get;", "2");
     basic_test("h(1 2 3 4) 1 5 set; 1 get;", "5");
-    basic_test("h(1 2 3 4) keys; take-all;", "(\n    3\n    1\n)");
-    basic_test("h(1 2 3 4) values; take-all;", "(\n    4\n    2\n)");
+    basic_test("h(1 2 3 4) keys; take-all;", "(\n    0: 3\n    1: 1\n)");
+    basic_test("h(1 2 3 4) values; take-all;", "(\n    0: 4\n    1: 2\n)");
     basic_test(
         "h(1 2 3 4) each; take-all;",
-        "(\n    (\n        3\n        4\n    )\n    (\n        1\n        2\n    )\n)",
+        "(\n    0: (\n        0: 3\n        1: 4\n    )\n    1: (\n        0: 1\n        1: 2\n    )\n)",
     );
 }
 
@@ -563,7 +563,7 @@ fn json_file_test() {
         "test-data/json1 f<; \"\" join; from-json;",
         "h(\n    \"asdf\": 1\n)",
     );
-    basic_test("test-data/json2 f<; \"\" join; from-json;", "h(\n    \"asdf\": 1\n    \"qwer\": 2\n    \"tyui\": h(\n        \"asdf\": 5\n    )\n    \"zxcv\": (\n        3\n        4\n    )\n)");
+    basic_test("test-data/json2 f<; \"\" join; from-json;", "h(\n    \"asdf\": 1\n    \"qwer\": 2\n    \"tyui\": h(\n        \"asdf\": 5\n    )\n    \"zxcv\": (\n        0: 3\n        1: 4\n    )\n)");
 }
 
 #[test]
@@ -640,7 +640,7 @@ fn grep_not_iterated_n_is_the_same() {
 
 #[test]
 fn regex_numbers() {
-    basic_test("((asdf asdf)) [[243 m] grep] map", "(\n    ()\n)");
+    basic_test("((asdf asdf)) [[243 m] grep] map", "(\n    0: ()\n)");
 }
 
 #[test]
@@ -668,9 +668,9 @@ fn misc_lst_fns() {
     basic_test("4 range; dup; shift; drop; product", "6");
     basic_test(
         "(1 2 5 1 2 5 3 6) uniq",
-        "v[gen (\n    1\n    2\n    5\n    3\n    6\n)]",
+        "v[gen (\n    0: 1\n    1: 2\n    2: 5\n    3: 3\n    4: 6\n)]",
     );
-    basic_test("(a b 1 b 2) uniq", "v[gen (\n    a\n    b\n    1\n    2\n)]");
+    basic_test("(a b 1 b 2) uniq", "v[gen (\n    0: a\n    1: b\n    2: 1\n    3: 2\n)]");
 }
 
 #[test]
@@ -682,11 +682,11 @@ fn return_test() {
 fn sort_test() {
     basic_test(
         "(5 2 3 4 1) sort;",
-        "(\n    1\n    2\n    3\n    4\n    5\n)",
+        "(\n    0: 1\n    1: 2\n    2: 3\n    3: 4\n    4: 5\n)",
     );
     basic_test(
         "(5 2 3 4 1) > sortp;",
-        "(\n    5\n    4\n    3\n    2\n    1\n)",
+        "(\n    0: 5\n    1: 4\n    2: 3\n    3: 2\n    4: 1\n)",
     );
 }
 
@@ -722,7 +722,7 @@ fn nth_bounds_test2() {
 #[test]
 fn anon_fn_var_test() {
     basic_test("3 range; [drop; x var; 3 x !; x @] map;",
-               "v[gen (\n    3\n    3\n    3\n)]");
+               "v[gen (\n    0: 3\n    1: 3\n    2: 3\n)]");
 }
 
 #[test]
@@ -787,7 +787,7 @@ f;
 #[test]
 fn clone_test() {
     basic_test("3 range; take-all; dup; clone; shift;",
-               "(\n    0\n    1\n    2\n)\n0");
+               "(\n    0: 0\n    1: 1\n    2: 2\n)\n0");
     basic_test("3 range; dup; clone; take-all; swap; take-all; ++; '-' join;",
                "0-1-2-0-1-2");
     basic_test("h(1 2) keys; dup; clone; 0 nth; swap; 0 nth; ++",
@@ -880,19 +880,20 @@ fn ip_test() {
 #[test]
 fn ipset_test() {
     basic_test("0.0.0.0-1.0.0.0 ip; ip.prefixes; str map;",
-               "(\n    0.0.0.0/8\n    1.0.0.0\n)");
+               "(\n    0: 0.0.0.0/8\n    1: 1.0.0.0\n)");
     basic_test("0.0.0.0-1.0.0.0 ips; take-all; str map;",
-               "(\n    0.0.0.0/8\n    1.0.0.0\n)");
-    basic_test("::-FFFF:: ip; ip.prefixes; str map;", "(\n    ::/1\n    8000::/2\n    c000::/3\n    e000::/4\n    f000::/5\n    f800::/6\n    fc00::/7\n    fe00::/8\n    ff00::/9\n    ff80::/10\n    ffc0::/11\n    ffe0::/12\n    fff0::/13\n    fff8::/14\n    fffc::/15\n    fffe::/16\n    ffff::\n)");
-    basic_test("::-FFFF:: ips; take-all; str map;", "(\n    ::/1\n    8000::/2\n    c000::/3\n    e000::/4\n    f000::/5\n    f800::/6\n    fc00::/7\n    fe00::/8\n    ff00::/9\n    ff80::/10\n    ffc0::/11\n    ffe0::/12\n    fff0::/13\n    fff8::/14\n    fffc::/15\n    fffe::/16\n    ffff::\n)");
+               "(\n    0: 0.0.0.0/8\n    1: 1.0.0.0\n)");
+    basic_test("::-FFFF:: ip; ip.prefixes; str map;", "(\n    0: ::/1\n    1: 8000::/2\n    2: c000::/3\n    3: e000::/4\n    4: f000::/5\n    5: f800::/6\n    6: fc00::/7\n    7: fe00::/8\n    8: ff00::/9\n    9: ff80::/10\n    10: ffc0::/11\n    11: ffe0::/12\n    12: fff0::/13\n    13: fff8::/14\n    14: fffc::/15\n    15: fffe::/16\n    16: ffff::\n)");
+    basic_test("::-FFFF:: ips; take-all; str map;", "(\n    0: ::/1\n    1: 8000::/2\n    2: c000::/3\n    3: e000::/4\n    4: f000::/5\n    5: f800::/6\n    6: fc00::/7\n    7: fe00::/8\n    8: ff00::/9\n    9: ff80::/10\n    10: ffc0::/11\n    11: ffe0::/12\n    12: fff0::/13\n    13: fff8::/14\n    14: fffc::/15\n    15: fffe::/16\n    16: ffff::\n)");
+
     basic_test("1.0.0.0/8 ip; ip.prefixes; str map;",
-               "(\n    1.0.0.0/8\n)");
+               "(\n    0: 1.0.0.0/8\n)");
     basic_test("0.0.0.251-0.0.5.16 ip; ip.prefixes; str map;",
-               "(\n    0.0.0.251\n    0.0.0.252/30\n    0.0.1.0/24\n    0.0.2.0/23\n    0.0.4.0/24\n    0.0.5.0/28\n    0.0.5.16\n)");
+               "(\n    0: 0.0.0.251\n    1: 0.0.0.252/30\n    2: 0.0.1.0/24\n    3: 0.0.2.0/23\n    4: 0.0.4.0/24\n    5: 0.0.5.0/28\n    6: 0.0.5.16\n)");
     basic_test("::/120 ip; ip.prefixes; str map;",
-               "(\n    ::/120\n)");
+               "(\n    0: ::/120\n)");
     basic_test("1:0:0:0:0:0:0:1-1:0:0:0:0:0:0:8000 ip; ip.prefixes; str map;",
-               "(\n    1::1\n    1::2/127\n    1::4/126\n    1::8/125\n    1::10/124\n    1::20/123\n    1::40/122\n    1::80/121\n    1::100/120\n    1::200/119\n    1::400/118\n    1::800/117\n    1::1000/116\n    1::2000/115\n    1::4000/114\n    1::8000\n)");
+               "(\n    0: 1::1\n    1: 1::2/127\n    2: 1::4/126\n    3: 1::8/125\n    4: 1::10/124\n    5: 1::20/123\n    6: 1::40/122\n    7: 1::80/121\n    8: 1::100/120\n    9: 1::200/119\n    10: 1::400/118\n    11: 1::800/117\n    12: 1::1000/116\n    13: 1::2000/115\n    14: 1::4000/114\n    15: 1::8000\n)");
 
     basic_test("(0.0.0.0/8 1.0.0.0/8) ips; str", "0.0.0.0/7");
     basic_test("(:: ::1) ips; str", "::/127");
@@ -900,7 +901,7 @@ fn ipset_test() {
     basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; isect; str", "1.128.0.0/9");
     basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; diff; str", "1.0.0.0/9");
     basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; symdiff; str", "1.0.0.0/9,2.0.0.0/8");
-    basic_test("1.0.0.0-1.255.255.255 ips; take-all; str map", "(\n    1.0.0.0/8\n)");
+    basic_test("1.0.0.0-1.255.255.255 ips; take-all; str map", "(\n    0: 1.0.0.0/8\n)");
     basic_test("1.0.0.0-1.255.255.255 ips; dup; =;", ".t");
     basic_test("1.0.0.0-255.255.255.255 ips; take-all; shift; str;", "1.0.0.0/8");
 }
@@ -1004,7 +1005,7 @@ fn ucfirst_test() {
 
 #[test]
 fn reverse_test() {
-    basic_test("(1 2 3) reverse;", "(\n    3\n    2\n    1\n)");
+    basic_test("(1 2 3) reverse;", "(\n    0: 3\n    1: 2\n    2: 1\n)");
     basic_test("asdf reverse;", "fdsa");
 }
 
@@ -1149,9 +1150,9 @@ fn regex_modifier_tests() {
     basic_test("\"asdf\\nasdf\" ^asdf$.^asdf$/s m", ".f");
     basic_test("\"asdf\\nasdf\" ^asdf$.^asdf$/sm m", ".t");
 
-    basic_test("asdf_asdf_asdf asdf c", "(\n    asdf\n)");
-    basic_test("asdf_asdf_asdf asdf/g c", "(\n    asdf\n    asdf\n    asdf\n)");
-    basic_test("asDf_aSdf_asdF asdf/ig c", "(\n    asDf\n    aSdf\n    asdF\n)");
+    basic_test("asdf_asdf_asdf asdf c", "(\n    0: asdf\n)");
+    basic_test("asdf_asdf_asdf asdf/g c", "(\n    0: asdf\n    1: asdf\n    2: asdf\n)");
+    basic_test("asDf_aSdf_asdF asdf/ig c", "(\n    0: asDf\n    1: aSdf\n    2: asdF\n)");
 }
 
 #[test]

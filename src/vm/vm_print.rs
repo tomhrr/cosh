@@ -539,12 +539,12 @@ impl VM {
             loop {
                 let dup_res = self.opcode_dup();
                 if dup_res == 0 {
-                    return lines_to_print;
+                    return -1;
                 }
                 let shift_res = self.opcode_shift();
                 if shift_res == 0 {
                     self.stack.pop();
-                    return lines_to_print;
+                    return -1;
                 }
                 if self.stack.len() == 0 {
                     break;

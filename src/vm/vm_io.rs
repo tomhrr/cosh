@@ -7,6 +7,8 @@ use std::io::BufWriter;
 use std::io::Write;
 use std::rc::Rc;
 
+use tempfile::{NamedTempFile, TempDir};
+
 use chunk::{StringPair, Value};
 use vm::*;
 
@@ -303,5 +305,57 @@ impl VM {
             }
         }
         return 1;
+    }
+
+    /// Puts a path and a FileReader on the stack for a new temporary
+    /// file.
+    pub fn opcode_tempfile(&mut self) -> i32 {
+        let file_res = NamedTempFile::new();
+
+        match file_res {
+            Ok(ntf) => {
+                match ntf.keep() {
+                    Ok((file, path)) => {
+                        self.stack.push(Value::String(Rc::new(RefCell::new(
+                            StringPair::new(path.to_str().unwrap().to_string(), None)
+                        ))));
+                        self.stack.push(Value::FileWriter(Rc::new(RefCell::new(
+                            BufWriter::new(file),
+                        ))));
+                        return 1;
+                    }
+                    Err(e) => {
+                        let err_str = format!("unable to open temporary file: {}", e.to_string());
+                        self.print_error(&err_str);
+                        return 0;
+                    }
+                }
+            }
+            Err(e) => {
+                let err_str = format!("unable to open temporary file: {}", e.to_string());
+                self.print_error(&err_str);
+                return 0;
+            }
+        }
+    }
+
+    /// Puts a path on the stack for a new temporary directory.
+    pub fn opcode_tempdir(&mut self) -> i32 {
+        let dir = TempDir::new();
+
+        match dir {
+            Ok(td) => {
+                let path = td.into_path();
+                self.stack.push(Value::String(Rc::new(RefCell::new(
+                    StringPair::new(path.to_str().unwrap().to_string(), None)
+                ))));
+                return 1;
+            }
+            Err(e) => {
+                let err_str = format!("unable to open temporary directory: {}", e.to_string());
+                self.print_error(&err_str);
+                return 0;
+            }
+        }
     }
 }

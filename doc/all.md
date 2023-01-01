@@ -649,6 +649,17 @@ Other operations:
    (directory must be empty).
  - `link`: takes two paths, and creates a symbolic link at the second
    path that targets the first path.
+ - `open`: takes a file path and a mode string (either 'r' or 'w'),
+   and puts a file reader or a file writer object onto the stack.
+ - `readline`: read a line from a file reader object.
+ - `writeline`: write a line to a file writer object.
+ - `close`: close a file reader or file writer object.
+ - `tempfile`: returns a file writer and a path string for a new
+   temporary file.  This file is not cleaned up automatically on
+   program exit or similar.
+ - `tempdir`: returns a path string for a new temporary directory.
+   This directory is not cleaned up automatically on program exit or
+   similar.
 
 ### Regular expressions
 

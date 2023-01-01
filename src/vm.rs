@@ -139,6 +139,8 @@ lazy_static! {
             VM::opcode_isshiftable as fn(&mut VM) -> i32,
         );
         map.insert("open", VM::opcode_open as fn(&mut VM) -> i32);
+        map.insert("tempfile", VM::opcode_tempfile as fn(&mut VM) -> i32);
+        map.insert("tempdir", VM::opcode_tempdir as fn(&mut VM) -> i32);
         map.insert(
             "readline",
             VM::opcode_readline as fn(&mut VM) -> i32,

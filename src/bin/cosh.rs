@@ -257,7 +257,7 @@ fn internal_complete(
         if k.starts_with(path) {
             entries.push(Pair {
                 display: Red.paint(*k).to_string(),
-                replacement: escape(path.to_string(), esc_char, break_chars, quote)
+                replacement: escape((*k).to_string(), esc_char, break_chars, quote)
             });
         }
     }
@@ -266,7 +266,7 @@ fn internal_complete(
         if k.starts_with(path) {
             entries.push(Pair {
                 display: Red.paint(*k).to_string(),
-                replacement: escape(path.to_string(), esc_char, break_chars, quote)
+                replacement: escape((*k).to_string(), esc_char, break_chars, quote)
             });
         }
     }
@@ -275,7 +275,7 @@ fn internal_complete(
         if k.starts_with(path) && !LIB_FORMS.contains::<str>(k) {
             entries.push(Pair {
                 display: Blue.paint(k).to_string(),
-                replacement: escape(path.to_string(), esc_char, break_chars, quote)
+                replacement: escape(k.to_string(), esc_char, break_chars, quote)
             });
         }
     }
@@ -284,7 +284,7 @@ fn internal_complete(
         if k.starts_with(path) {
             entries.push(Pair {
                 display: Purple.paint(k).to_string(),
-                replacement: escape(path.to_string(), esc_char, break_chars, quote)
+                replacement: escape(k.to_string(), esc_char, break_chars, quote)
             });
         }
     }

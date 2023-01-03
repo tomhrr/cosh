@@ -1163,3 +1163,15 @@ fn regex_escape_tests() {
     basic_test("asdf/asdF asdf\\/asdf m", ".f");
     basic_test("asdf/asdF asdf\\/asdf/i m", ".t");
 }
+
+#[test]
+fn xml_ns_test() {
+    basic_test("test-misc/test.xml f<; '' join; from-xml; namespaces get; 0 nth; name get;", "myns");
+    basic_test("test-misc/test.xml f<; '' join; from-xml; key get;", "myns:top");
+    basic_test("test-misc/test.xml f<; '' join; from-xml; value get; 1 nth; namespaces get", "null");
+    basic_test("test-misc/test.xml f<; '' join; from-xml; to-xml; xmlns:myns m", ".t");
+    basic_test("test-misc/test.xml f<; '' join; from-xml; to-xml; myns:middle m", ".t");
+    basic_test("test-misc/test.xml f<; '' join; from-xml; to-xml; myns:top m", ".t");
+    basic_test("test-misc/test.xml f<; '' join; from-xml; to-xml; from-xml; to-xml; xmlns:myns m", ".t");
+    basic_test("test-misc/test-default.xml f<; '' join; from-xml; to-xml; <middle> m", ".t");
+}

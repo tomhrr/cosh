@@ -119,16 +119,21 @@
         "f> requires two arguments" error;
     then;
     w open; fh var; fh !;
-    begin;
-        dup; shift;
-        dup; is-null; if;
-            drop;
-            drop;
-            leave;
-        then;
+    dup; is-str; if;
         fh @; swap; writeline;
-        .f until;
-    fh @; close; ,,
+        fh @; close;
+    else;
+        begin;
+            dup; shift;
+            dup; is-null; if;
+                drop;
+                drop;
+                leave;
+            then;
+            fh @; swap; writeline;
+            .f until;
+        fh @; close;
+    then; ,,
 
 : take
     depth; 2 <; if;

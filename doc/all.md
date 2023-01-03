@@ -151,7 +151,7 @@ null value:
   * `is-int`
   * `is-bigint`
   * `is-float`
-  * `is-string`
+  * `is-str`
   * `is-list`
   * `is-set`
   * `is-hash`
@@ -607,8 +607,8 @@ lines in that file:
 	"cosh is a concatenative command-line shell.\n"
     )
 
-`f>` takes a list of strings and a filename as its arguments and
-writes the strings to that file:
+`f>` takes a list of strings (or a single string) and a filename as
+its arguments and writes the strings (or string) to that file:
 
     $ ("asdf\n" "qwer\n" "zxcv\n") asdf f>;
     $ asdf f<;

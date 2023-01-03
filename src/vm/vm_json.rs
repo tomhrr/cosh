@@ -93,32 +93,43 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-	let value_opt: Option<&str>;
-	to_str!(value_rr, value_opt);
+        if !value_rr.is_generator() {
+            let value_opt: Option<&str>;
+            to_str!(value_rr, value_opt);
 
-        match value_opt {
-            Some(s) => {
-                let doc_res = serde_json::from_str(s);
-                let doc;
-                match doc_res {
-                    Err(e) => {
-                        let err_str = format!("unable to parse JSON: {}", e.to_string());
-                        self.print_error(&err_str);
-                        return 0;
+            match value_opt {
+                Some(s) => {
+                    let doc_res = serde_json::from_str(s);
+                    let doc;
+                    match doc_res {
+                        Err(e) => {
+                            let err_str = format!("unable to parse JSON: {}", e.to_string());
+                            self.print_error(&err_str);
+                            return 0;
+                        }
+                        Ok(d) => {
+                            doc = d;
+                        }
                     }
-                    Ok(d) => {
-                        doc = d;
-                    }
+                    let json_rr = convert_from_json(&doc);
+                    self.stack.push(json_rr);
+                    return 1;
                 }
-                let json_rr = convert_from_json(&doc);
-                self.stack.push(json_rr);
+                _ => {
+                    self.print_error("from-json argument must be string or generator");
+                    return 0;
+                }
             }
-            _ => {
-                self.print_error("from-json argument must be string");
+        } else {
+            self.stack.push(value_rr);
+            self.stack.push(Value::String(Rc::new(RefCell::new(StringPair::new("".to_string(), None)))));
+            let function_rr = self.string_to_callable("join").unwrap();
+            let res = self.call(OpCode::Call, function_rr);
+            if !res {
                 return 0;
             }
+            return self.core_from_json();
         }
-        return 1;
     }
 
     /// Takes a hash, converts it into a JSON string representation,

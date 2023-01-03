@@ -555,6 +555,8 @@ fn json_test() {
     basic_test("h(1 2 3 4) to-json", "{\\\"3\\\":4,\\\"1\\\":2}");
     basic_test("test-data/json-bigint f<; \"\" join; from-json;",
         "h(\n    \"num1\": 0\n    \"num2\": 100\n    \"num3\": 123.456\n    \"num4\": -123456789123\n    \"num5\": 123456789123\n)");
+    basic_test("test-data/json-bigint f<; from-json;",
+        "h(\n    \"num1\": 0\n    \"num2\": 100\n    \"num3\": 123.456\n    \"num4\": -123456789123\n    \"num5\": 123456789123\n)");
 }
 
 #[test]
@@ -1174,4 +1176,5 @@ fn xml_ns_test() {
     basic_test("test-misc/test.xml f<; '' join; from-xml; to-xml; myns:top m", ".t");
     basic_test("test-misc/test.xml f<; '' join; from-xml; to-xml; from-xml; to-xml; xmlns:myns m", ".t");
     basic_test("test-misc/test-default.xml f<; '' join; from-xml; to-xml; <middle> m", ".t");
+    basic_test("test-misc/test-default.xml f<; from-xml; to-xml; <middle> m", ".t");
 }

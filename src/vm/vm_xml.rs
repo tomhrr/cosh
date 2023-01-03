@@ -317,34 +317,45 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-	let value_opt: Option<&str>;
-	to_str!(value_rr, value_opt);
+        if !value_rr.is_generator() {
+            let value_opt: Option<&str>;
+            to_str!(value_rr, value_opt);
 
-        match value_opt {
-            Some(s) => {
-                let doc_res = roxmltree::Document::parse(s);
-                let doc;
-                match doc_res {
-                    Err(e) => {
-                        let err_str = format!("unable to parse XML: {}", e.to_string());
-                        self.print_error(&err_str);
-                        return 0;
+            match value_opt {
+                Some(s) => {
+                    let doc_res = roxmltree::Document::parse(s);
+                    let doc;
+                    match doc_res {
+                        Err(e) => {
+                            let err_str = format!("unable to parse XML: {}", e.to_string());
+                            self.print_error(&err_str);
+                            return 0;
+                        }
+                        Ok(d) => {
+                            doc = d;
+                        }
                     }
-                    Ok(d) => {
-                        doc = d;
-                    }
+                    let namespaces = HashMap::new();
+                    let xml_rr = self.convert_from_xml(&doc.root_element(),
+                                                       &namespaces);
+                    self.stack.push(xml_rr);
+                    return 1;
                 }
-                let namespaces = HashMap::new();
-                let xml_rr = self.convert_from_xml(&doc.root_element(),
-                                                   &namespaces);
-                self.stack.push(xml_rr);
+                _ => {
+                    self.print_error("from-xml argument must be string or generator");
+                    return 0;
+                }
             }
-            _ => {
-                self.print_error("from-xml argument must be string");
+        } else {
+            self.stack.push(value_rr);
+            self.stack.push(Value::String(Rc::new(RefCell::new(StringPair::new("".to_string(), None)))));
+            let function_rr = self.string_to_callable("join").unwrap();
+            let res = self.call(OpCode::Call, function_rr);
+            if !res {
                 return 0;
             }
+            return self.core_from_xml();
         }
-        return 1;
     }
 
     /// Takes a hash that is the result of calling `from-xml`, converts

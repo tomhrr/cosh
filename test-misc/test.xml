@@ -1,0 +1,5 @@
+<myns:top xmlns:myns="https://www.example.org" attr1="value1" attr2="value2">
+    <myns:middle>
+        asdf
+    </myns:middle>
+</myns:top>

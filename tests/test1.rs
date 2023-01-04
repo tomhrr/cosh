@@ -1178,3 +1178,8 @@ fn xml_ns_test() {
     basic_test("test-misc/test-default.xml f<; '' join; from-xml; to-xml; <middle> m", ".t");
     basic_test("test-misc/test-default.xml f<; from-xml; to-xml; <middle> m", ".t");
 }
+
+#[test]
+fn ips_gen_test() {
+    basic_test("test-misc/ipv4-data f<; chomp map; ips; str", "1.0.0.0/24,2.0.0.0/24");
+}

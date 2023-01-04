@@ -796,10 +796,88 @@ impl VM {
     pub fn value_to_nets(&mut self, value_rr: Value) -> Option<(VecDeque<Ipv4Net>, VecDeque<Ipv6Net>)> {
         let mut ipv4_nets = VecDeque::new();
         let mut ipv6_nets = VecDeque::new();
-        match value_rr {
-            Value::List(lst) => {
-                for el in lst.borrow().iter() {
-                    let opt = self.value_to_nets(el.clone());
+
+        if value_rr.is_generator() {
+            self.stack.push(value_rr);
+            loop {
+                let dup_res = self.opcode_dup();
+                if dup_res == 0 {
+                    return None;
+                }
+                let shift_res = self.opcode_shift();
+                if shift_res == 0 {
+                    return None;
+                }
+                let element_rr = self.stack.pop().unwrap();
+                match element_rr {
+                    Value::Null => {
+                        self.stack.pop();
+                        return Some((ipv4_nets, ipv6_nets));
+                    }
+                    _ => {
+                        let opt = self.value_to_nets(element_rr.clone());
+                        match opt {
+                            Some((ipv4_nets2, ipv6_nets2)) => {
+                                for el2 in ipv4_nets2.iter() {
+                                    ipv4_nets.push_back(*el2);
+                                }
+                                for el2 in ipv6_nets2.iter() {
+                                    ipv6_nets.push_back(*el2);
+                                }
+                            }
+                            None => {
+                                return None;
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            match value_rr {
+                Value::List(lst) => {
+                    for el in lst.borrow().iter() {
+                        let opt = self.value_to_nets(el.clone());
+                        match opt {
+                            Some((ipv4_nets2, ipv6_nets2)) => {
+                                for el2 in ipv4_nets2.iter() {
+                                    ipv4_nets.push_back(*el2);
+                                }
+                                for el2 in ipv6_nets2.iter() {
+                                    ipv6_nets.push_back(*el2);
+                                }
+                            }
+                            None => {
+                                return None;
+                            }
+                        }
+                    }
+                }
+                Value::Ipv4(ipv4net) => {
+                    ipv4_nets.push_back(ipv4net);
+                }
+                Value::Ipv6(ipv6net) => {
+                    ipv6_nets.push_back(ipv6net);
+                }
+                Value::Ipv4Range(ipv4range) => {
+                    let lst_ipv4 = ipv4range_to_nets(ipv4range);
+                    for el in lst_ipv4.iter() {
+                        ipv4_nets.push_back(*el);
+                    }
+                }
+                Value::Ipv6Range(ipv6range) => {
+                    let lst_ipv6 = ipv6range_to_nets(ipv6range);
+                    for el in lst_ipv6.iter() {
+                        ipv6_nets.push_back(*el);
+                    }
+                }
+                _ => {
+                    self.stack.push(value_rr);
+                    let res = self.core_ip();
+                    if res == 0 {
+                        return None;
+                    }
+                    let new_value_rr = self.stack.pop().unwrap();
+                    let opt = self.value_to_nets(new_value_rr);
                     match opt {
                         Some((ipv4_nets2, ipv6_nets2)) => {
                             for el2 in ipv4_nets2.iter() {
@@ -815,48 +893,8 @@ impl VM {
                     }
                 }
             }
-            Value::Ipv4(ipv4net) => {
-                ipv4_nets.push_back(ipv4net);
-            }
-            Value::Ipv6(ipv6net) => {
-                ipv6_nets.push_back(ipv6net);
-            }
-            Value::Ipv4Range(ipv4range) => {
-                let lst_ipv4 = ipv4range_to_nets(ipv4range);
-                for el in lst_ipv4.iter() {
-                    ipv4_nets.push_back(*el);
-                }
-            }
-            Value::Ipv6Range(ipv6range) => {
-                let lst_ipv6 = ipv6range_to_nets(ipv6range);
-                for el in lst_ipv6.iter() {
-                    ipv6_nets.push_back(*el);
-                }
-            }
-            _ => {
-                self.stack.push(value_rr);
-                let res = self.core_ip();
-                if res == 0 {
-                    return None;
-                }
-                let new_value_rr = self.stack.pop().unwrap();
-                let opt = self.value_to_nets(new_value_rr);
-                match opt {
-                    Some((ipv4_nets2, ipv6_nets2)) => {
-                        for el2 in ipv4_nets2.iter() {
-                            ipv4_nets.push_back(*el2);
-                        }
-                        for el2 in ipv6_nets2.iter() {
-                            ipv6_nets.push_back(*el2);
-                        }
-                    }
-                    None => {
-                        return None;
-                    }
-                }
-            }
+            return Some((ipv4_nets, ipv6_nets));
         }
-        return Some((ipv4_nets, ipv6_nets));
     }
 
     /// Parses an arbitrary argument into an IP set object.

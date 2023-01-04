@@ -1183,3 +1183,8 @@ fn xml_ns_test() {
 fn ips_gen_test() {
     basic_test("test-misc/ipv4-data f<; chomp map; ips; str", "1.0.0.0/24,2.0.0.0/24");
 }
+
+#[test]
+fn tab_test() {
+    basic_test("asdf\\tqwer\\tzxcv \\t split", "(\n    0: asdf\n    1: qwer\n    2: zxcv\n)");
+}

@@ -13,9 +13,10 @@ use vm::*;
 /// characters (like newline) with string representations.
 fn unescape_string(s: &str) -> String {
     let s1 = s.replace("\n", "\\n");
-    let s2 = s1.replace("\"", "\\\"");
-    let s3 = s2.replace("\'", "\\\'");
-    return s3;
+    let s2 = s1.replace("\t", "\\t");
+    let s3 = s2.replace("\"", "\\\"");
+    let s4 = s3.replace("\'", "\\\'");
+    return s4;
 }
 
 /// Helper function for print_stack_value.  Takes a string, an indent

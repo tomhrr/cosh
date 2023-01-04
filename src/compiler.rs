@@ -588,9 +588,11 @@ pub struct Compiler {
 /// of certain characters (e.g. "\n") with the actual character.
 pub fn escape_string(s: &str) -> String {
     let s1 = s.replace("\\n", "\n");
-    let s2 = s1.replace("\\\"", "\"");
-    let s3 = s2.replace("\\\'", "\'");
-    return s3;
+    let s2 = s1.replace("\\t", "\t");
+    let s2 = s2.replace("\\r", "\r");
+    let s3 = s2.replace("\\\"", "\"");
+    let s4 = s3.replace("\\\'", "\'");
+    return s4;
 }
 
 impl Compiler {

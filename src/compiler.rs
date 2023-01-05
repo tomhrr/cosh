@@ -185,6 +185,8 @@ impl<'a> Scanner<'a> {
 
     /// Scans the BufRead for the next token, and returns it.
     pub fn scan(&mut self) -> Token {
+        let at_start_of_line = self.column_number == 1;
+
         if self.next_is_eof {
             self.next_is_eof = false;
             return Token::new(TokenType::Eof, self.line_number, self.column_number);
@@ -268,14 +270,19 @@ impl<'a> Scanner<'a> {
             if result_index == 1 {
                 match buffer[0] as char {
                     '#' => {
-                        let mut ignored = String::new();
-                        self.fh.read_line(&mut ignored).unwrap();
-                        self.line_number = self.line_number + 1;
-                        return Token::new(
-                            TokenType::Retry,
-                            real_line_number,
-                            real_column_number,
-                        );
+                        /* Treat this as a comment only if it occurs
+                         * at the start of the line (whether after
+                         * whitespace or not). */
+                        if at_start_of_line {
+                            let mut ignored = String::new();
+                            self.fh.read_line(&mut ignored).unwrap();
+                            self.line_number = self.line_number + 1;
+                            return Token::new(
+                                TokenType::Retry,
+                                real_line_number,
+                                real_column_number,
+                            );
+                        }
                     }
                     '(' => {
                         return Token::new(

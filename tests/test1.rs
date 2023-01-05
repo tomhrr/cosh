@@ -784,6 +784,7 @@ fn comment_test() {
 : f 100 ,,
 f;
 ", "100");
+    basic_test("mystring#allgood", "mystring#allgood");
 }
 
 #[test]

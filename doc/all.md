@@ -926,6 +926,10 @@ itself).
 `sleep` takes a floating-point value and pauses execution for that
 number of seconds.
 
+`md5`, `sha1`, `sha256` and `sha512` each take a single string
+argument and return the corresponding cryptographic hash for that
+input.
+
 ### Miscellaneous
 
 Comments can be added by prefixing the comment with `#`.  Any content

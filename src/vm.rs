@@ -28,6 +28,7 @@ mod vm_arithmetic;
 mod vm_basics;
 mod vm_command;
 mod vm_datetime;
+mod vm_digest;
 mod vm_env;
 mod vm_hash;
 mod vm_io;
@@ -286,6 +287,10 @@ lazy_static! {
         map.insert("env", VM::core_env as fn(&mut VM) -> i32);
         map.insert("getenv", VM::core_getenv as fn(&mut VM) -> i32);
         map.insert("setenv", VM::core_setenv as fn(&mut VM) -> i32);
+        map.insert("md5", VM::core_md5 as fn(&mut VM) -> i32);
+        map.insert("sha1", VM::core_sha1 as fn(&mut VM) -> i32);
+        map.insert("sha256", VM::core_sha256 as fn(&mut VM) -> i32);
+        map.insert("sha512", VM::core_sha512 as fn(&mut VM) -> i32);
         map
     };
 

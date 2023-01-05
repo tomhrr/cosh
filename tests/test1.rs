@@ -1188,3 +1188,10 @@ fn ips_gen_test() {
 fn tab_test() {
     basic_test("asdf\\tqwer\\tzxcv \\t split", "(\n    0: asdf\n    1: qwer\n    2: zxcv\n)");
 }
+
+#[test]
+fn regex_escaping_test() {
+    basic_test("\\\\n \\\\ p s", "pn");
+    basic_test("10 \\d/g 3 s", "33");
+    basic_test("\\\\d \\\\d 5 s", "5");
+}

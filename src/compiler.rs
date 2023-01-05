@@ -12,7 +12,7 @@ use std::str;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use chunk::{Chunk, StringPair, Value};
+use chunk::{Chunk, StringTriple, Value};
 use opcode::OpCode;
 
 /// The various token types used by the compiler.
@@ -584,15 +584,32 @@ pub struct Compiler {
     scope_depth: u32,
 }
 
-/// Escapes a single string value, by replacing string representations
-/// of certain characters (e.g. "\n") with the actual character.
-pub fn escape_string(s: &str) -> String {
-    let s1 = s.replace("\\n", "\n");
-    let s2 = s1.replace("\\t", "\t");
-    let s2 = s2.replace("\\r", "\r");
-    let s3 = s2.replace("\\\"", "\"");
-    let s4 = s3.replace("\\\'", "\'");
-    return s4;
+/// Unescapes a single string value, by replacing string
+/// representations of certain characters (e.g. "\n") with the actual
+/// character.
+pub fn unescape_string(s: &str) -> String {
+    let mut s2 = String::from("");
+    let mut next_escaped = false;
+    for c in s.chars() {
+        if next_escaped {
+            match c {
+                'n'  => { s2.push('\n'); },
+                't'  => { s2.push('\t'); },
+                'r'  => { s2.push('\r'); },
+                '\\' => { s2.push('\\'); },
+                _    => { s2.push('\\');
+                          s2.push(c); }
+            }
+            next_escaped = false;
+        } else {
+            match c {
+                '\\' => { next_escaped = true; }
+                _    => { next_escaped = false;
+                          s2.push(c); }
+            }
+        }
+    }
+    return s2;
 }
 
 impl Compiler {
@@ -798,7 +815,7 @@ impl Compiler {
                     if !res {
                         return false;
                     }
-                    let name_str_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
+                    let name_str_rr = Value::String(Rc::new(RefCell::new(StringTriple::new(
                         name_str.as_str().to_string(),
                         None,
                     ))));
@@ -1411,9 +1428,9 @@ impl Compiler {
                     } else if s == "rand" {
                         chunk.add_opcode(OpCode::Rand);
                     } else {
-                        let s_escaped = escape_string(&s);
+                        let s_raw = unescape_string(&s);
                         let s_rr =
-                            Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
+                            Value::String(Rc::new(RefCell::new(StringTriple::new_with_escaped(s_raw, s, None))));
                         let i = chunk.add_constant(s_rr);
 
                         if is_implicit {
@@ -1432,8 +1449,8 @@ impl Compiler {
                     }
                 }
                 TokenType::Command(s, params) => {
-                    let s_escaped = escape_string(&s);
-                    let s_rr = Value::Command(Rc::new(s_escaped),
+                    let s_raw = unescape_string(&s);
+                    let s_rr = Value::Command(Rc::new(s_raw),
                                               Rc::new(params));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
@@ -1443,8 +1460,8 @@ impl Compiler {
                     chunk.add_byte(i_lower as u8);
                 }
                 TokenType::CommandUncaptured(s) => {
-                    let s_escaped = escape_string(&s);
-                    let s_rr = Value::CommandUncaptured(Rc::new(s_escaped));
+                    let s_raw = unescape_string(&s);
+                    let s_rr = Value::CommandUncaptured(Rc::new(s_raw));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -1454,8 +1471,8 @@ impl Compiler {
                     chunk.add_opcode(OpCode::Call);
                 }
                 TokenType::CommandExplicit(s, params) => {
-                    let s_escaped = escape_string(&s);
-                    let s_rr = Value::Command(Rc::new(s_escaped),
+                    let s_raw = unescape_string(&s);
+                    let s_rr = Value::Command(Rc::new(s_raw),
                                               Rc::new(params));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
@@ -1466,9 +1483,9 @@ impl Compiler {
                     chunk.add_opcode(OpCode::Call);
                 }
                 TokenType::String(s) => {
-                    let s_escaped = escape_string(&s);
+                    let s_raw = unescape_string(&s);
                     let s_rr =
-                        Value::String(Rc::new(RefCell::new(StringPair::new(s_escaped, None))));
+                        Value::String(Rc::new(RefCell::new(StringTriple::new_with_escaped(s_raw, s, None))));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;

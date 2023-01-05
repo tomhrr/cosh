@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use regex::Regex;
 
-use chunk::{StringPair, Value};
+use chunk::{StringTriple, Value};
 use vm::*;
 
 lazy_static! {
@@ -90,7 +90,7 @@ impl VM {
                         regex.replace(s, &updated_repl_str[..])
                     };
                 self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
                         updated_str.to_string(),
                         None,
                     )))));
@@ -136,7 +136,7 @@ impl VM {
                     let captures = regex.captures_iter(s);
                     let mut lst = VecDeque::new();
                     for capture in captures {
-                        lst.push_back(Value::String(Rc::new(RefCell::new(StringPair::new(
+                        lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
                             capture.get(0).unwrap().as_str().to_string(),
                             None,
                         )))));
@@ -147,7 +147,7 @@ impl VM {
                     let mut lst = VecDeque::new();
                     match captures {
                         Some(capture) => {
-                            lst.push_back(Value::String(Rc::new(RefCell::new(StringPair::new(
+                            lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
                                 capture.get(0).unwrap().as_str().to_string(),
                                 None,
                             )))));

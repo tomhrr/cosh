@@ -253,12 +253,12 @@ impl VM {
         match (dt_rr, pat_opt) {
             (Value::DateTimeNT(dt), Some(s)) => {
                 let ss = dt.format(s);
-                self.stack.push(Value::String(Rc::new(RefCell::new(StringPair::new(ss.to_string(), None)))));
+                self.stack.push(Value::String(Rc::new(RefCell::new(StringTriple::new(ss.to_string(), None)))));
                 return 1;
             },
             (Value::DateTimeOT(dt), Some(s)) => {
                 let ss = dt.format(s);
-                self.stack.push(Value::String(Rc::new(RefCell::new(StringPair::new(ss.to_string(), None)))));
+                self.stack.push(Value::String(Rc::new(RefCell::new(StringTriple::new(ss.to_string(), None)))));
                 return 1;
             },
             (_, _) => {

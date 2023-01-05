@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use tempfile::{NamedTempFile, TempDir};
 
-use chunk::{StringPair, Value};
+use chunk::{StringTriple, Value};
 use vm::*;
 
 impl VM {
@@ -105,8 +105,9 @@ impl VM {
                     }
                     Ok(_) => {
                         self.stack
-                            .push(Value::String(Rc::new(RefCell::new(StringPair::new(
-                                contents, None,
+                            .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                                contents,
+                                None,
                             )))));
                     }
                     _ => {
@@ -256,7 +257,7 @@ impl VM {
                 match entry_opt {
                     Some(s) => {
                         let path = s.unwrap().path();
-                        Value::String(Rc::new(RefCell::new(StringPair::new(
+                        Value::String(Rc::new(RefCell::new(StringTriple::new(
                             path.to_str().unwrap().to_string(),
                             None,
                         ))))
@@ -317,7 +318,7 @@ impl VM {
                 match ntf.keep() {
                     Ok((file, path)) => {
                         self.stack.push(Value::String(Rc::new(RefCell::new(
-                            StringPair::new(path.to_str().unwrap().to_string(), None)
+                            StringTriple::new(path.to_str().unwrap().to_string(), None)
                         ))));
                         self.stack.push(Value::FileWriter(Rc::new(RefCell::new(
                             BufWriter::new(file),
@@ -347,7 +348,7 @@ impl VM {
             Ok(td) => {
                 let path = td.into_path();
                 self.stack.push(Value::String(Rc::new(RefCell::new(
-                    StringPair::new(path.to_str().unwrap().to_string(), None)
+                    StringTriple::new(path.to_str().unwrap().to_string(), None)
                 ))));
                 return 1;
             }

@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use indexmap::IndexMap;
 
-use chunk::{StringPair, Value};
+use chunk::{StringTriple, Value};
 use vm::*;
 
 /// Converts a value into an XML string.
@@ -223,11 +223,11 @@ impl VM {
 
                 let mut ns_map = IndexMap::new();
                 ns_map.insert("uri".to_string(),
-                    Value::String(Rc::new(RefCell::new(StringPair::new(
+                    Value::String(Rc::new(RefCell::new(StringTriple::new(
                         uri.to_string(), None
                     )))));
                 ns_map.insert("name".to_string(),
-                    Value::String(Rc::new(RefCell::new(StringPair::new(
+                    Value::String(Rc::new(RefCell::new(StringTriple::new(
                         name.to_string(), None
                     )))));
                 node_namespaces.push_back(Value::Hash(Rc::new(RefCell::new(ns_map))));
@@ -261,7 +261,7 @@ impl VM {
 
         map.insert(
             "key".to_string(),
-            Value::String(Rc::new(RefCell::new(StringPair::new(
+            Value::String(Rc::new(RefCell::new(StringTriple::new(
                 key,
                 None,
             )))),
@@ -273,7 +273,7 @@ impl VM {
                 Some(s) => {
                     map.insert(
                         "text".to_string(),
-                        Value::String(Rc::new(RefCell::new(StringPair::new(s.to_string(), None)))),
+                        Value::String(Rc::new(RefCell::new(StringTriple::new(s.to_string(), None)))),
                     );
                 }
             }
@@ -284,7 +284,7 @@ impl VM {
         for attr in node.attributes() {
             attr_map.insert(
                 attr.name().to_string(),
-                Value::String(Rc::new(RefCell::new(StringPair::new(
+                Value::String(Rc::new(RefCell::new(StringTriple::new(
                     attr.value().to_string(),
                     None,
                 )))),
@@ -348,7 +348,7 @@ impl VM {
             }
         } else {
             self.stack.push(value_rr);
-            self.stack.push(Value::String(Rc::new(RefCell::new(StringPair::new("".to_string(), None)))));
+            self.stack.push(Value::String(Rc::new(RefCell::new(StringTriple::new("".to_string(), None)))));
             let function_rr = self.string_to_callable("join").unwrap();
             let res = self.call(OpCode::Call, function_rr);
             if !res {
@@ -374,7 +374,7 @@ impl VM {
             return 0;
         }
         self.stack
-            .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+            .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
                 doc_opt.unwrap(),
                 None,
             )))));

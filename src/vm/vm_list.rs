@@ -7,7 +7,7 @@ use indexmap::IndexMap;
 use iprange::IpRange;
 use ipnet::{Ipv4Net, Ipv6Net};
 
-use chunk::{StringPair, Value, IpSet};
+use chunk::{StringTriple, Value, IpSet};
 use vm::VM;
 
 impl VM {
@@ -375,7 +375,7 @@ impl VM {
                             let mut lst = VecDeque::new();
                             lst.push_back(Value::Int(i));
                             lst.push_back(Value::String(Rc::new(RefCell::new(
-                                StringPair::new(s, None),
+                                StringTriple::new(s, None),
                             ))));
                             self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                         }
@@ -388,7 +388,7 @@ impl VM {
                         }
                         Some(s) => {
                             self.stack.push(Value::String(Rc::new(RefCell::new(
-                                StringPair::new(s, None),
+                                StringTriple::new(s, None),
                             ))));
                         }
                     }
@@ -405,7 +405,7 @@ impl VM {
                             match kv {
                                 Some((k, _)) => {
                                     self.stack.push(Value::String(Rc::new(RefCell::new(
-                                        StringPair::new(k.to_string(), None),
+                                        StringTriple::new(k.to_string(), None),
                                     ))));
                                 }
                                 None => {
@@ -458,7 +458,7 @@ impl VM {
                                 Some((k, v)) => {
                                     let mut lst = VecDeque::new();
                                     lst.push_back(Value::String(Rc::new(RefCell::new(
-                                        StringPair::new(k.to_string(), None),
+                                        StringTriple::new(k.to_string(), None),
                                     ))));
                                     lst.push_back(v.clone());
                                     self.stack.push(Value::List(Rc::new(RefCell::new(lst))));

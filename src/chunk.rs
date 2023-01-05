@@ -63,18 +63,58 @@ pub struct Chunk {
     pub scope_depth: u32,
 }
 
-/// A string paired with its regex, to save regenerating that regex
-/// repeatedly.  The bool flag indicates whether global matching
-/// should be used for the regex.
+/// A display string, an escaped string, and the corresponding regex,
+/// to save regenerating that regex repeatedly.  The bool flag
+/// indicates whether global matching should be used for the regex.
+/// The display string is the 'real' string, and includes e.g. literal
+/// newline characters, whereas the escaped string includes escapes
+/// for those characters.
 #[derive(Debug, Clone)]
-pub struct StringPair {
+pub struct StringTriple {
     pub s: String,
+    pub e: String,
     pub r: Option<(Rc<Regex>, bool)>,
 }
 
-impl StringPair {
-    pub fn new(s: String, r: Option<(Rc<Regex>, bool)>) -> StringPair {
-        StringPair { s: s, r: r }
+fn escape_string(s: &str) -> String {
+    let mut s2 = String::from("");
+    let mut next_escaped = false;
+    for c in s.chars() {
+        if next_escaped {
+            match c {
+                '\\' => { s2.push('\\'); }
+                '"'  => { s2.push('\\');
+                          s2.push('\\');
+                          s2.push(c); }
+                _    => { s2.push('\\');
+                          s2.push(c); }
+            }
+            next_escaped = false;
+        } else {
+            match c {
+                '\\' => { next_escaped = true; }
+                '\n' => { s2.push('\\');
+                          s2.push('n'); }
+                '\r' => { s2.push('\\');
+                          s2.push('r'); }
+                '\t' => { s2.push('\\');
+                          s2.push('t'); }
+                '"'  => { s2.push('\\');
+                          s2.push('"'); }
+                _    => { s2.push(c); }
+            }
+        }
+    }
+    return s2;
+}
+
+impl StringTriple {
+    pub fn new(s: String, r: Option<(Rc<Regex>, bool)>) -> StringTriple {
+        let e = escape_string(&s);
+        StringTriple { s: s.clone(), e: e, r: r }
+    }
+    pub fn new_with_escaped(s: String, e: String, r: Option<(Rc<Regex>, bool)>) -> StringTriple {
+        StringTriple { s: s, e: e, r: r }
     }
 }
 
@@ -293,7 +333,7 @@ pub enum Value {
     /// String.  The second part here is the regex object that
     /// corresponds to the string, which is generated and cached
     /// when the string is used as a regex.
-    String(Rc<RefCell<StringPair>>),
+    String(Rc<RefCell<StringTriple>>),
     /// An external command (wrapped in curly brackets), where the
     /// output is captured.
     Command(Rc<String>, Rc<HashSet<char>>),
@@ -458,7 +498,7 @@ pub enum ValueSD {
     Int(i32),
     Float(f64),
     BigInt(String),
-    String(String),
+    String(String, String),
     Command(String, HashSet<char>),
     CommandUncaptured(String),
 }
@@ -529,7 +569,9 @@ impl Chunk {
             Value::Int(n) => ValueSD::Int(n),
             Value::Float(n) => ValueSD::Float(n),
             Value::BigInt(n) => ValueSD::BigInt(n.to_str_radix(10)),
-            Value::String(sp) => ValueSD::String(sp.borrow().s.to_string()),
+            Value::String(sp) =>
+            ValueSD::String(sp.borrow().s.to_string(),
+                            sp.borrow().e.to_string()),
             Value::Command(s, params) => ValueSD::Command(s.to_string(), (*params).clone()),
             Value::CommandUncaptured(s) => ValueSD::CommandUncaptured(s.to_string()),
             Value::Bool(b) => ValueSD::Bool(b),
@@ -554,8 +596,11 @@ impl Chunk {
                 let nn = n.parse::<num_bigint::BigInt>().unwrap();
                 Value::BigInt(nn)
             }
-            ValueSD::String(sp) => {
-                Value::String(Rc::new(RefCell::new(StringPair::new(sp.to_string(), None))))
+            ValueSD::String(sp1, sp2) => {
+                let st = StringTriple::new_with_escaped(sp1.to_string(),
+                                                        sp2.to_string(),
+                                                        None);
+                Value::String(Rc::new(RefCell::new(st)))
             }
             ValueSD::Command(s, params) => Value::Command(Rc::new(s.to_string()), Rc::new((*params).clone())),
             ValueSD::CommandUncaptured(s) => {

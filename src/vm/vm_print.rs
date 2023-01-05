@@ -9,16 +9,6 @@ use termion::raw::IntoRawMode;
 use chunk::{Chunk, Value};
 use vm::*;
 
-/// Unescapes a single string value, by replacing certain
-/// characters (like newline) with string representations.
-fn unescape_string(s: &str) -> String {
-    let s1 = s.replace("\n", "\\n");
-    let s2 = s1.replace("\t", "\\t");
-    let s3 = s2.replace("\"", "\\\"");
-    let s4 = s3.replace("\'", "\\\'");
-    return s4;
-}
-
 /// Helper function for print_stack_value.  Takes a string, an indent
 /// count, whether the first indent needs to be skipped, the window
 /// height, and the number of lines that can be printed without
@@ -282,7 +272,7 @@ impl VM {
                     }
                 }
                 Value::String(sp) => {
-                    let mut ss = unescape_string(&sp.borrow().s);
+                    let mut ss = sp.borrow().e.clone();
                     if sp.borrow().s.contains(char::is_whitespace) {
                         ss = format!("\"{}\"", ss);
                     } else if ss.len() == 0 {

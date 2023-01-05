@@ -392,7 +392,7 @@ impl VM {
 
         let ip_str_no_len =
             ip_str.chars().take_while(|&c| c != '/').collect::<String>();
-        let sp = StringPair::new(ip_str_no_len.to_string(), None);
+        let sp = StringTriple::new(ip_str_no_len.to_string(), None);
         let st = Value::String(Rc::new(RefCell::new(sp)));
         self.stack.push(st);
         return 1;
@@ -533,7 +533,7 @@ impl VM {
                 if ipv4_addr_to_int(ipv4net.network()) == 0
                         && ipv4net.prefix_len() == 0 {
                     let lastaddr = format!("{}", "255.255.255.255");
-                    let sp = StringPair::new(lastaddr, None);
+                    let sp = StringTriple::new(lastaddr, None);
                     let st = Value::String(Rc::new(RefCell::new(sp)));
                     self.stack.push(st);
                     return 1;
@@ -543,7 +543,7 @@ impl VM {
                         ((1 << (32 - ipv4net.prefix_len())) - 1);
                 let lastaddr_int = int_to_ipv4_addr(ipv4addr_int);
                 let lastaddr = format!("{}", lastaddr_int);
-                let sp = StringPair::new(lastaddr, None);
+                let sp = StringTriple::new(lastaddr, None);
                 let st = Value::String(Rc::new(RefCell::new(sp)));
                 self.stack.push(st);
                 return 1;
@@ -552,7 +552,7 @@ impl VM {
                 let ipv4addr_int = ipv4_addr_to_int(ipv4range.e);
                 let lastaddr_int = int_to_ipv4_addr(ipv4addr_int);
                 let lastaddr = format!("{}", lastaddr_int);
-                let sp = StringPair::new(lastaddr, None);
+                let sp = StringTriple::new(lastaddr, None);
                 let st = Value::String(Rc::new(RefCell::new(sp)));
                 self.stack.push(st);
             }
@@ -564,7 +564,7 @@ impl VM {
                     ipv6_addr_to_int(ipv6net.network()) | prefix_mask;
                 let lastaddr_int = int_to_ipv6_addr(ipv6addr_int);
                 let lastaddr = format!("{}", lastaddr_int);
-                let sp = StringPair::new(lastaddr, None);
+                let sp = StringTriple::new(lastaddr, None);
                 let st = Value::String(Rc::new(RefCell::new(sp)));
                 self.stack.push(st);
             }
@@ -572,7 +572,7 @@ impl VM {
                 let ipv6addr_int = ipv6_addr_to_int(ipv6range.e);
                 let lastaddr_int = int_to_ipv6_addr(ipv6addr_int);
                 let lastaddr = format!("{}", lastaddr_int);
-                let sp = StringPair::new(lastaddr, None);
+                let sp = StringTriple::new(lastaddr, None);
                 let st = Value::String(Rc::new(RefCell::new(sp)));
                 self.stack.push(st);
             }

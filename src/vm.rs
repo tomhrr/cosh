@@ -19,7 +19,7 @@ use regex::{Regex, RegexBuilder};
 use sysinfo::{System, SystemExt};
 
 use chunk::{
-    print_error, Chunk, GeneratorObject, StringPair, Value, ValueSD,
+    print_error, Chunk, GeneratorObject, StringTriple, Value, ValueSD,
 };
 use compiler::Compiler;
 use opcode::{to_opcode, OpCode};
@@ -581,7 +581,7 @@ impl VM {
             to_str!(value_rr, value_opt);
 
             match value_opt {
-                Some(s) => Some(Value::String(Rc::new(RefCell::new(StringPair::new(
+                Some(s) => Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
                     s.to_string(),
                     None,
                 ))))),
@@ -657,7 +657,7 @@ impl VM {
                     }
                     _ => {}
                 }
-                let regex_res = self.str_to_regex(&sp.borrow().s);
+                let regex_res = self.str_to_regex(&sp.borrow().e);
                 match regex_res {
                     Some((regex, global)) => {
                         let rc = Rc::new(regex);
@@ -867,7 +867,7 @@ impl VM {
         }
 
         if is_implicit {
-            let value_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
+            let value_rr = Value::String(Rc::new(RefCell::new(StringTriple::new(
                 s.to_string(),
                 None,
             ))));
@@ -1438,7 +1438,7 @@ impl VM {
 
                     let value_sd = chunk.borrow().constants[i2 as usize].clone();
                     match value_sd {
-                        ValueSD::String(sp) => {
+                        ValueSD::String(sp, _) => {
                             self.i = i;
 
                             /* todo: the two lookups here may be affecting
@@ -1450,7 +1450,7 @@ impl VM {
                                 Value::Null => {
                                     match op {
                                         OpCode::CallImplicitConstant => {
-                                            let value_rr = Value::String(Rc::new(RefCell::new(StringPair::new(
+                                            let value_rr = Value::String(Rc::new(RefCell::new(StringTriple::new(
                                                 sp.to_string(),
                                                 None,
                                             ))));

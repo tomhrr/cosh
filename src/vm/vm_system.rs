@@ -17,7 +17,7 @@ use num_bigint::BigInt;
 use sysinfo::{ProcessExt, SystemExt};
 use utime::*;
 
-use chunk::{StringPair, Value};
+use chunk::{StringTriple, Value};
 use vm::*;
 
 impl VM {
@@ -285,7 +285,7 @@ impl VM {
         match current_dir_res {
             Ok(current_dir) => {
                 self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
                         current_dir.to_str().unwrap().to_string(),
                         None,
                     )))));
@@ -511,7 +511,7 @@ impl VM {
             );
             map.insert(
                 "name".to_string(),
-                Value::String(Rc::new(RefCell::new(StringPair::new(
+                Value::String(Rc::new(RefCell::new(StringTriple::new(
                     process.name().to_string(),
                     None,
                 )))),

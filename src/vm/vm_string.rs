@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use regex::Regex;
 
-use chunk::{StringPair, Value};
+use chunk::{StringTriple, Value};
 use vm::*;
 
 impl VM {
@@ -66,7 +66,7 @@ impl VM {
                             (Some(s1), Some(s2)) => {
                                 let s3 = format!("{}{}", s1, s2);
                                 self.stack
-                                    .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+                                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
                                         s3, None,
                                     )))));
                             }
@@ -111,7 +111,7 @@ impl VM {
                 let mut final_elements = VecDeque::new();
                 for e in elements {
                     final_elements.push_back(
-                        Value::String(Rc::new(RefCell::new(StringPair::new(
+                        Value::String(Rc::new(RefCell::new(StringTriple::new(
                             e.to_string(),
                             None,
                         ))))
@@ -206,7 +206,7 @@ impl VM {
 
                 let mut lst = VecDeque::new();
                 for e in final_elements.iter() {
-                    lst.push_back(Value::String(Rc::new(RefCell::new(StringPair::new(
+                    lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
                         e.to_string(),
                         None,
                     )))));
@@ -332,7 +332,7 @@ impl VM {
                 }
                 let final_str = final_elements.join(separator);
                 self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringPair::new(
+                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
                         final_str, None,
                     )))));
             }

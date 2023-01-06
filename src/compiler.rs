@@ -277,6 +277,7 @@ impl<'a> Scanner<'a> {
                             let mut ignored = String::new();
                             self.fh.read_line(&mut ignored).unwrap();
                             self.line_number = self.line_number + 1;
+                            self.column_number = 1;
                             return Token::new(
                                 TokenType::Retry,
                                 real_line_number,

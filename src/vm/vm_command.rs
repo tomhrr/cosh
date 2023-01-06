@@ -64,15 +64,13 @@ fn split_command(s: &str) -> Option<VecDeque<String>> {
             buffer.push(e_str);
             delimiter = '\'';
         } else {
-            if delimiter == '"' {
-                let new_str2 = START_DOUBLE_QUOTE.replace(&e_str, "");
-                let new_str3 = END_DOUBLE_QUOTE.replace(&new_str2, "");
-                final_elements.push(new_str3.to_string());
-            } else {
-                let new_str2 = START_SINGLE_QUOTE.replace(&e_str, "");
-                let new_str3 = END_SINGLE_QUOTE.replace(&new_str2, "");
-                final_elements.push(new_str3.to_string());
-            }
+            /* If this element is a single string, then replace any
+             * quotation marks that are present. */
+            let new_str2 = START_DOUBLE_QUOTE.replace(&e_str, "");
+            let new_str3 = END_DOUBLE_QUOTE.replace(&new_str2, "");
+            let new_str4 = START_SINGLE_QUOTE.replace(&new_str3, "");
+            let new_str5 = END_SINGLE_QUOTE.replace(&new_str4, "");
+            final_elements.push(new_str5.to_string());
         }
     }
     if buffer.len() > 0 {

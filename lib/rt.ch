@@ -572,3 +572,22 @@
 
         fn @; funcall; yield;
         .f until; ,,
+
+:~ before 2 2
+    drop;
+    fn var; to-function; fn !;
+    lst var; lst !;
+
+    begin;
+        lst @; shift;
+        dup; is-null; if;
+            leave;
+        then;
+        dup;
+        fn @; funcall; not; if;
+            yield;
+        else;
+            drop;
+            leave;
+        then;
+        .f until; ,,

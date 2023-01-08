@@ -566,6 +566,11 @@ sliding pairs from the list.  For example, the first call is for
 elements 0 and 1, the next call is for elements 1 and 2, and so on.
 The result is a generator over the results from the function calls.
 
+`before` takes a list and a function, and calls the function on each
+element from the list, returning elements up until the function call
+returns a value that evaluates to true, at which point it returns no
+more elements.
+
 Each of the above can also accept a set or generator in place of a
 list argument.
 

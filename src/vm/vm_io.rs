@@ -7,12 +7,36 @@ use std::io::BufWriter;
 use std::io::Write;
 use std::rc::Rc;
 
+use lazy_static::lazy_static;
+use regex::Regex;
 use tempfile::{NamedTempFile, TempDir};
 
 use chunk::{StringTriple, Value};
 use vm::*;
 
+lazy_static! {
+    static ref HOME_DIR_TILDE: Regex = Regex::new("~").unwrap();
+}
+
+fn tilde_expansion(input_s: &str) -> String {
+    let homedir_res = std::env::var("HOME");
+    let final_s;
+    match homedir_res {
+	Ok(homedir) => {
+	    let s = "".to_owned() + &homedir;
+	    final_s = HOME_DIR_TILDE.replace_all(&input_s, &*s).to_string();
+	}
+	_ => {
+	    final_s = input_s.to_string();
+	}
+    }
+
+    eprintln!("{}", final_s);
+    return final_s;
+}
+
 impl VM {
+
     /// Takes a file path and a mode string (either 'r' or 'w') as its
     /// arguments, and puts a FileReader or FileWriter object on the
     /// stack as appropriate.
@@ -31,7 +55,8 @@ impl VM {
             Value::String(sp) => match sp.borrow().s.as_ref() {
                 "r" => match path_str_opt {
                     Some(s) => {
-                        let file_res = File::open(s);
+                        let ss = tilde_expansion(s);
+                        let file_res = File::open(ss);
                         match file_res {
                             Ok(file) => {
                                 self.stack.push(Value::FileReader(Rc::new(RefCell::new(
@@ -52,7 +77,8 @@ impl VM {
                 },
                 "w" => match path_str_opt {
                     Some(s) => {
-                        let file_res = File::create(s);
+                        let ss = tilde_expansion(s);
+                        let file_res = File::create(ss);
                         match file_res {
                             Ok(file) => {
                                 self.stack.push(Value::FileWriter(Rc::new(RefCell::new(
@@ -219,7 +245,8 @@ impl VM {
 
         match path_str_opt {
             Some(s) => {
-                let dir_handle_res = std::fs::read_dir(s);
+                let ss = tilde_expansion(s);
+                let dir_handle_res = std::fs::read_dir(ss);
                 match dir_handle_res {
                     Ok(dir_handle) => {
                         self.stack

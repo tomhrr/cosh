@@ -395,8 +395,12 @@ impl<'a> Scanner<'a> {
                     result[result_index] = buffer[0];
                     result_index = result_index + 1;
                 } else if buffer[0] as char == string_delimiter {
-                    in_string = false;
-                    done = true;
+                    if result_index > 0 && result[result_index - 1] as char == '\\' {
+                        result[result_index - 1] = buffer[0];
+                    } else {
+                        in_string = false;
+                        done = true;
+                    }
                 } else {
                     result[result_index] = buffer[0];
                     result_index = result_index + 1;

@@ -98,6 +98,8 @@ pub struct Scanner<'a> {
     fh: &'a mut Box<dyn BufRead>,
     line_number: u32,
     column_number: u32,
+    token_line_number: u32,
+    token_column_number: u32,
     has_lookahead: bool,
     lookahead: u8,
     next_is_eof: bool,
@@ -114,6 +116,8 @@ impl<'a> Scanner<'a> {
             fh: fh,
             line_number: 1,
             column_number: 1,
+            token_line_number: 1,
+            token_column_number: 1,
             has_lookahead: false,
             lookahead: 0,
             next_is_eof: false,
@@ -183,37 +187,22 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    /// Scans the BufRead for the next token, and returns it.
-    pub fn scan(&mut self) -> Token {
-        let at_start_of_line = self.column_number == 1;
-
-        if self.next_is_eof {
-            self.next_is_eof = false;
-            return Token::new(TokenType::Eof, self.line_number, self.column_number);
-        }
-
-        let mut done = false;
-        let mut result = [0; 2048];
-        let mut result_index = 0;
+    /// Skip any whitespace, updating line and column numbers
+    /// accordingly.  The next non-whitespace character will be set as
+    /// the lookahead character.  Returns a boolean indicating whether
+    /// EOF was not hit.
+    pub fn skip_whitespace(&mut self) -> bool {
         let mut buffer = [0; 1];
-        let mut finished = false;
-        let mut in_string = false;
-        let mut ever_in_string = false;
-        let mut string_delimiter = ' ';
+        let mut eof = false;
 
-        let mut real_line_number = 0;
-        let mut real_column_number = 0;
-
-        // This loop is for skipping past any initial whitespace.
-        while !done {
-            let mut eof = false;
+        loop {
             if self.has_lookahead {
                 buffer[0] = self.lookahead;
                 self.has_lookahead = false;
                 self.column_number = self.column_number + 1;
-                if real_line_number == 0 {
-                    real_line_number = self.line_number;
-                    real_column_number = self.column_number;
+                if self.token_line_number == 0 {
+                    self.token_line_number = self.line_number;
+                    self.token_column_number = self.column_number;
                 }
             } else {
                 self.fh.read_exact(&mut buffer).unwrap_or_else(|e| {
@@ -224,15 +213,9 @@ impl<'a> Scanner<'a> {
                         std::process::abort();
                     }
                 });
-                if eof {
-                    if result_index == 0 {
-                        return Token::new(TokenType::Eof, self.line_number, self.column_number);
-                    } else {
-                        self.next_is_eof = true;
-                        finished = true;
-                        break;
-                    }
-                }
+            }
+            if eof {
+                return false;
             }
             match buffer[0] as char {
                 '\n' => {
@@ -246,81 +229,102 @@ impl<'a> Scanner<'a> {
                     self.column_number = self.column_number + (self.column_number % 4);
                 }
                 _ => {
-                    if (buffer[0] as char == '"')
-                        || (buffer[0] as char == '\'')
-                        || (buffer[0] as char == '{')
-                        || (buffer[0] as char == '$')
-                    {
-                        string_delimiter = buffer[0] as char;
-                        in_string = true;
-                        ever_in_string = true;
-                    }
-                    if real_line_number == 0 {
-                        real_line_number = self.line_number;
-                        real_column_number = self.column_number;
-                    }
-                    self.column_number = self.column_number + 1;
-                    if !in_string {
-                        result[result_index] = buffer[0];
-                        result_index = result_index + 1;
-                    }
-                    done = true;
-                }
-            }
-            if result_index == 1 {
-                match buffer[0] as char {
-                    '#' => {
-                        /* Treat this as a comment only if it occurs
-                         * at the start of the line (whether after
-                         * whitespace or not). */
-                        if at_start_of_line {
-                            let mut ignored = String::new();
-                            self.fh.read_line(&mut ignored).unwrap();
-                            self.line_number = self.line_number + 1;
-                            self.column_number = 1;
-                            return Token::new(
-                                TokenType::Retry,
-                                real_line_number,
-                                real_column_number,
-                            );
-                        }
-                    }
-                    '(' => {
-                        return Token::new(
-                            TokenType::StartList,
-                            real_line_number,
-                            real_column_number,
-                        )
-                    }
-                    ')' => {
-                        return Token::new(TokenType::EndList, real_line_number, real_column_number)
-                    }
-                    '[' => {
-                        return Token::new(
-                            TokenType::LeftBracket,
-                            real_line_number,
-                            real_column_number,
-                        )
-                    }
-                    ']' => {
-                        return Token::new(
-                            TokenType::RightBracket,
-                            real_line_number,
-                            real_column_number,
-                        )
-                    }
-                    _ => {}
+                    self.has_lookahead = true;
+                    self.lookahead = buffer[0] as u8;
+                    self.column_number = self.column_number - 1;
+                    return true;
                 }
             }
         }
+    }
 
-        // This loop is for getting the rest of the token.  A token
-        // that ends in a right parenthesis or right bracket is
-        // stopped on the preceding character.
-        done = false;
-        let mut bracket_count = 0;
+    /// Returns a new token object for the given token type.
+    pub fn get_token(&self, token_type: TokenType) -> Token {
+        return Token::new(token_type, self.token_line_number, self.token_column_number);
+    }
+
+    /// Scans the BufRead for the next token, and returns it.
+    pub fn scan(&mut self) -> Token {
+        let at_start_of_line = self.column_number == 1;
+
+        if self.next_is_eof {
+            self.next_is_eof = false;
+            return Token::new(TokenType::Eof, self.line_number, self.column_number);
+        }
+
+        /* For storing the token as a whole. */
+        let mut result = [0; 2048];
+        /* The current index into which the next token character
+         * should be written. */
+        let mut result_index = 0;
+        /* The buffer for reading a character from the input stream.
+         * */
+        let mut buffer = [0; 1];
+
+        /* Whether the token is a string (i.e. can contain
+         * whitespace). */
+        let mut is_string = false;
+        /* Whether token parsing is currently inside the string. */
+        let mut in_string = false;
+        /* The delimiter for the string (if applicable). */
+        let mut string_delimiter = ' ';
+
+        /* Skip whitespace, and deal with the first character of the
+         * token. */
+
+        let res = self.skip_whitespace();
+        if res == false {
+            return self.get_token(TokenType::Eof);
+        }
+
+        buffer[0] = self.lookahead;
+        self.has_lookahead = false;
+        self.column_number = self.column_number + 1;
+
+        self.token_line_number = self.line_number;
+        self.token_column_number = self.column_number;
+
+        self.column_number = self.column_number + 1;
+
+        if (buffer[0] as char == '"')
+            || (buffer[0] as char == '\'')
+            || (buffer[0] as char == '{')
+            || (buffer[0] as char == '$')
+        {
+            string_delimiter = buffer[0] as char;
+            in_string = true;
+            is_string = true;
+        } else {
+            result[result_index] = buffer[0];
+            result_index = result_index + 1;
+
+            match buffer[0] as char {
+                '#' => {
+                    /* Treat this as a comment only if it occurs
+                     * at the start of the line (whether after
+                     * whitespace or not). */
+                    if at_start_of_line {
+                        let mut ignored = String::new();
+                        self.fh.read_line(&mut ignored).unwrap();
+                        self.line_number = self.line_number + 1;
+                        self.column_number = 1;
+                        return self.get_token(TokenType::Retry);
+                    }
+                }
+                '(' => { return self.get_token(TokenType::StartList); },
+                ')' => { return self.get_token(TokenType::EndList); },
+                '[' => { return self.get_token(TokenType::LeftBracket); },
+                ']' => { return self.get_token(TokenType::RightBracket); },
+                _   => {}
+            }
+        }
+
+        /* This loop is for getting the rest of the token. */
+
+        let mut done = false;
+        let mut brace_count = 0;
         let mut params: HashSet<char> = HashSet::new();
-        while !done && !finished {
+        while !done {
             let mut eof = false;
             self.fh.read_exact(&mut buffer).unwrap_or_else(|e| {
                 if e.kind() == ErrorKind::UnexpectedEof {
@@ -332,10 +336,9 @@ impl<'a> Scanner<'a> {
             });
             if eof {
                 if result_index == 0 {
-                    return Token::new(TokenType::Eof, self.line_number, self.column_number);
+                    return self.get_token(TokenType::Eof);
                 } else {
                     self.next_is_eof = true;
-                    finished = true;
                     break;
                 }
             }
@@ -353,18 +356,10 @@ impl<'a> Scanner<'a> {
                 '(' => {
                     self.column_number = self.column_number + 1;
                     if result_index == 1 {
-                        if result[0] as char == 'h' {
-                            return Token::new(
-                                TokenType::StartHash,
-                                real_line_number,
-                                real_column_number,
-                            );
-                        } else if result[0] as char == 's' {
-                            return Token::new(
-                                TokenType::StartSet,
-                                real_line_number,
-                                real_column_number,
-                            );
+                        match result[0] as char {
+                            'h' => { return self.get_token(TokenType::StartHash) },
+                            's' => { return self.get_token(TokenType::StartSet); },
+                            _ => {}
                         }
                     }
                 }
@@ -374,15 +369,18 @@ impl<'a> Scanner<'a> {
             }
             if in_string {
                 if string_delimiter == '{' {
+                    /* Commands may contain nested braces, which are
+                     * used for value substitution, which is why there is
+                     * extra processing here.  Commands may also have
+                     * parameters attached to the end of them. */
                     if buffer[0] as char == '{' {
-                        bracket_count = bracket_count + 1;
+                        brace_count = brace_count + 1;
                     } else if buffer[0] as char == '}' {
-                        bracket_count = bracket_count - 1;
+                        brace_count = brace_count - 1;
                     }
-                    if bracket_count < 0 {
+                    if brace_count < 0 {
                         in_string = false;
                         done = true;
-                        /* Try to get params at this point. */
                         let params_opt = self.scan_parameters();
                         if !params_opt.is_none() {
                             params = params_opt.unwrap();
@@ -392,6 +390,8 @@ impl<'a> Scanner<'a> {
                         result_index = result_index + 1;
                     }
                 } else if string_delimiter == '$' {
+                    /* Uncaptured commands do not need to include a
+                     * terminating delimiter. */
                     result[result_index] = buffer[0];
                     result_index = result_index + 1;
                 } else if buffer[0] as char == string_delimiter {
@@ -406,28 +406,26 @@ impl<'a> Scanner<'a> {
                     '\n' | ' ' | '\t' => {
                         done = true;
                     }
+                    /* A token that ends in a right parenthesis or
+                     * right bracket is stopped on the previous
+                     * character, to allow for syntax like '(1 2 3)'.
+                     * */
                     ')' => {
                         self.has_lookahead = true;
-                        self.lookahead = ')' as u8;
+                        self.lookahead = buffer[0] as u8;
                         self.column_number = self.column_number - 1;
                         done = true;
-                        finished = true;
                     }
                     ']' => {
                         self.has_lookahead = true;
-                        self.lookahead = ']' as u8;
+                        self.lookahead = buffer[0] as u8;
                         self.column_number = self.column_number - 1;
                         done = true;
-                        finished = true;
                     }
                     _ => {
                         if result_index >= 2048 {
                             eprintln!("token is too long (more than 2048 chars)");
-                            return Token::new(
-                                TokenType::Error,
-                                self.line_number,
-                                self.column_number,
-                            );
+                            return self.get_token(TokenType::Error);
                         }
                         result[result_index] = buffer[0];
                         result_index = result_index + 1;
@@ -438,79 +436,41 @@ impl<'a> Scanner<'a> {
                     }
                 }
             }
-        }
-
-        if !finished && (buffer[0] as char) != '\n' {
-            done = false;
-            while !done {
-                if self.has_lookahead {
-                    buffer[0] = self.lookahead;
-                    self.has_lookahead = false;
+            /* Allow for the execution character ';' to occur after
+             * whitespace. */
+            if done && (buffer[0] as char) != '\n' {
+                let res = self.skip_whitespace();
+                if res == true && self.lookahead == ';' as u8 {
                     self.column_number = self.column_number + 1;
-                    if real_line_number == 0 {
-                        real_line_number = self.line_number;
-                        real_column_number = self.column_number;
-                    }
-                } else {
-                    let mut eof = false;
-                    self.fh.read_exact(&mut buffer).unwrap_or_else(|e| {
-                        if e.kind() == ErrorKind::UnexpectedEof {
-                            eof = true;
-                        } else {
-                            eprintln!("unable to read from buffer!");
-                            std::process::abort();
-                        }
-                    });
-                    if eof {
-                        break;
-                    }
-                }
-                match buffer[0] as char {
-                    '\n' => {
-                        self.line_number = self.line_number + 1;
-                        self.column_number = 1;
-                    }
-                    ' ' => {
-                        self.column_number = self.column_number + 1;
-                    }
-                    '\t' => {
-                        self.column_number = self.column_number + (self.column_number % 4);
-                    }
-                    ';' => {
-                        self.column_number = self.column_number + 1;
-                        result[result_index] = buffer[0];
-                        result_index = result_index + 1;
-                        done = true;
-                    }
-                    _ => {
-                        self.has_lookahead = true;
-                        self.lookahead = buffer[0];
-                        self.column_number = self.column_number - 1;
-                        done = true;
-                    }
+                    result[result_index] = self.lookahead;
+                    self.has_lookahead = false;
+                    result_index = result_index + 1;
                 }
             }
         }
 
         if in_string {
+            /* Uncaptured commands do not need to include a
+             * terminating delimiter, so there is special handling for
+             * them here. */
             if string_delimiter == '$' {
                 result[result_index] = 0;
                 let s_all = str::from_utf8(&result).unwrap();
                 let s = &s_all[..result_index];
-                return Token::new(
-                    TokenType::CommandUncaptured(s.to_string()),
-                    real_line_number,
-                    real_column_number,
-                );
+                return self.get_token(TokenType::CommandUncaptured(s.to_string()));
             } else {
                 eprintln!(
                     "{}:{}: unterminated string literal",
-                    real_line_number, real_column_number
+                    self.token_line_number, self.token_column_number
                 );
-                return Token::new(TokenType::Error, real_line_number, real_column_number);
+                return self.get_token(TokenType::Error);
             }
         }
 
+        /* Determine whether the word is explicit or implicit.  An
+         * explicit word terminates in the execution character, while
+         * an implicit word terminates with a newline, the right
+         * bracket of an anonymous function, or EOF. */
         let mut is_explicit_word = false;
         let mut is_implicit_word = false;
         if result_index > 1 && (result[result_index - 1] as char) == ';' {
@@ -528,23 +488,21 @@ impl<'a> Scanner<'a> {
 
         let s_all = str::from_utf8(&result).unwrap();
         let s = &s_all[..result_index];
-        let token_type;
-
-        if !ever_in_string {
-            token_type = match s {
-                "h(" => TokenType::StartHash,
-                "s(" => TokenType::StartSet,
-                "(" => TokenType::StartList,
-                ")" => TokenType::EndList,
-                "{" => TokenType::LeftBrace,
-                "}" => TokenType::RightBrace,
-                "[" => TokenType::LeftBracket,
-                "]" => TokenType::RightBracket,
-                ":" => TokenType::StartFunction,
-                ":~" => TokenType::StartGenerator,
-                ",," => TokenType::EndFunction,
-                ".t" => TokenType::True,
-                ".f" => TokenType::False,
+        let token_type = if !is_string {
+            match s {
+                "h("   => TokenType::StartHash,
+                "s("   => TokenType::StartSet,
+                "("    => TokenType::StartList,
+                ")"    => TokenType::EndList,
+                "{"    => TokenType::LeftBrace,
+                "}"    => TokenType::RightBrace,
+                "["    => TokenType::LeftBracket,
+                "]"    => TokenType::RightBracket,
+                ":"    => TokenType::StartFunction,
+                ":~"   => TokenType::StartGenerator,
+                ",,"   => TokenType::EndFunction,
+                ".t"   => TokenType::True,
+                ".f"   => TokenType::False,
                 "null" => TokenType::Null,
                 _ => {
                     if INT.is_match(s) {
@@ -568,19 +526,18 @@ impl<'a> Scanner<'a> {
                 }
             }
         } else {
-            token_type =
-                if string_delimiter == '{' {
-                    if is_explicit_word || is_implicit_word {
-                        TokenType::CommandExplicit(s.to_string(), params)
-                    } else {
-                        TokenType::Command(s.to_string(), params)
-                    }
+            if string_delimiter == '{' {
+                if is_explicit_word || is_implicit_word {
+                    TokenType::CommandExplicit(s.to_string(), params)
                 } else {
-                    TokenType::String(s.to_string())
-                };
-        }
+                    TokenType::Command(s.to_string(), params)
+                }
+            } else {
+                TokenType::String(s.to_string())
+            }
+        };
 
-        return Token::new(token_type, real_line_number, real_column_number);
+        return self.get_token(token_type);
     }
 }
 

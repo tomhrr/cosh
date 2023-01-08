@@ -37,6 +37,7 @@ mod vm_json;
 mod vm_list;
 mod vm_print;
 mod vm_regex;
+mod vm_sort;
 mod vm_string;
 mod vm_system;
 mod vm_xml;
@@ -291,6 +292,8 @@ lazy_static! {
         map.insert("sha1", VM::core_sha1 as fn(&mut VM) -> i32);
         map.insert("sha256", VM::core_sha256 as fn(&mut VM) -> i32);
         map.insert("sha512", VM::core_sha512 as fn(&mut VM) -> i32);
+        map.insert("<=>", VM::opcode_cmp as fn(&mut VM) -> i32);
+        map.insert("sort", VM::core_sort as fn(&mut VM) -> i32);
         map
     };
 

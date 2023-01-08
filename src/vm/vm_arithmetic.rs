@@ -475,21 +475,16 @@ impl VM {
         return 1;
     }
 
-    /// Helper function for checking whether two values are equal and
-    /// placing a boolean onto the stack indicating whether they are
-    /// equal.  Returns an integer indicating whether the values were
-    /// able to be compared for equality.
-    fn opcode_eq_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
+    /// Helper function for checking whether two values are equal.
+    /// Returns 1 if they are equal, 0 if they are not, and -1 if they
+    /// cannot be compared.
+    pub fn opcode_eq_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::IpSet(s1), Value::IpSet(s2)) => {
-                let res = *s1.borrow() == *s2.borrow();
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if *s1.borrow() == *s2.borrow() { 1 } else { 0 };
             }
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                let res = n1 == n2;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if n1 == n2 { 1 } else { 0 };
             }
             (Value::BigInt(_), Value::Int(n2)) => {
                 return self.opcode_eq_inner(v1, &int_to_bigint(*n2));
@@ -498,9 +493,7 @@ impl VM {
                 return self.opcode_eq_inner(&int_to_bigint(*n1), v2);
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                let res = n1 == n2;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if n1 == n2 { 1 } else { 0 };
             }
             (Value::BigInt(n1), Value::Float(_)) => {
                 return self.opcode_eq_inner(&bigint_to_float(n1), v2);
@@ -515,38 +508,26 @@ impl VM {
                 return self.opcode_eq_inner(v1, &int_to_float(*n2));
             }
             (Value::Float(n1), Value::Float(n2)) => {
-                let res = n1 == n2;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if n1 == n2 { 1 } else { 0 };
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                let res = d1 == d2;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d1 == d2 { 1 } else { 0 };
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                let res = d1 == d2;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d1 == d2 { 1 } else { 0 };
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                let res = d1 == d2;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d1 == d2 { 1 } else { 0 };
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                let res = d1 == d2;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d1 == d2 { 1 } else { 0 };
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n1 == n2;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n1 == n2 { 1 } else { 0 };
                     }
                     _ => {}
                 }
@@ -554,9 +535,7 @@ impl VM {
                 let n2_opt = v2.to_bigint();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n1 == n2;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n1 == n2 { 1 } else { 0 };
                     }
                     _ => {}
                 }
@@ -564,9 +543,7 @@ impl VM {
                 let n2_opt = v2.to_float();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n1 == n2;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n1 == n2 { 1 } else { 0 };
                     }
                     _ => {}
                 }
@@ -579,13 +556,11 @@ impl VM {
 
                 match (i1_str_opt, i2_str_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n1 == n2;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n1 == n2 { 1 } else { 0 };
                     }
                     _ => {}
                 }
-                return 0;
+                return -1;
             }
         }
     }
@@ -602,7 +577,11 @@ impl VM {
         let v2_rr = self.stack.pop().unwrap();
 
         let res = self.opcode_eq_inner(&v1_rr, &v2_rr);
-        if res == 0 {
+        if res == 1 {
+            self.stack.push(Value::Bool(true));
+        } else if res == 0 {
+            self.stack.push(Value::Bool(false));
+        } else {
             self.print_error("= requires two comparable values");
             return 0;
         }
@@ -610,15 +589,12 @@ impl VM {
     }
 
     /// Helper function for checking whether one value is greater than
-    /// another, and placing a boolean onto the stack indicating
-    /// whether that is so.  Returns an integer indicating whether the
-    /// values were able to be compared.
-    fn opcode_gt_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
+    /// another.  Returns 1 if it is, 0 if it isn't, and -1 if the two
+    /// values cannot be compared.
+    pub fn opcode_gt_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                let res = n2 > n1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if n2 > n1 { 1 } else { 0 };
             }
             (Value::BigInt(_), Value::Int(n2)) => {
                 return self.opcode_gt_inner(v1, &int_to_bigint(*n2));
@@ -627,9 +603,7 @@ impl VM {
                 return self.opcode_gt_inner(&int_to_bigint(*n1), v2);
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                let res = n2 > n1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if n2 > n1 { 1 } else { 0 };
             }
             (Value::BigInt(n1), Value::Float(_)) => {
                 return self.opcode_gt_inner(&bigint_to_float(n1), v2);
@@ -644,38 +618,26 @@ impl VM {
                 return self.opcode_gt_inner(v1, &int_to_float(*n2));
             }
             (Value::Float(n1), Value::Float(n2)) => {
-                let res = n2 > n1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if n2 > n1 { 1 } else { 0 };
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                let res = d2 > d1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d2 > d1 { 1 } else { 0 };
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                let res = d2 > d1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d2 > d1 { 1 } else { 0 };
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                let res = d2 > d1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d2 > d1 { 1 } else { 0 };
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                let res = d2 > d1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d2 > d1 { 1 } else { 0 };
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n2 > n1;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n2 > n1 { 1 } else { 0 };
                     }
                     _ => {}
                 }
@@ -683,9 +645,7 @@ impl VM {
                 let n2_opt = v2.to_bigint();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n2 > n1;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n2 > n1 { 1 } else { 0 };
                     }
                     _ => {}
                 }
@@ -693,9 +653,7 @@ impl VM {
                 let n2_opt = v2.to_float();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n2 > n1;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n2 > n1 { 1 } else { 0 };
                     }
                     _ => {}
                 }
@@ -708,9 +666,7 @@ impl VM {
 
                 match (i1_str_opt, i2_str_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n2 > n1;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n2 > n1 { 1 } else { 0 };
                     }
                     _ => {}
                 }
@@ -731,7 +687,11 @@ impl VM {
         let v2_rr = self.stack.pop().unwrap();
 
         let res = self.opcode_gt_inner(&v1_rr, &v2_rr);
-        if res == 0 {
+        if res == 1 {
+            self.stack.push(Value::Bool(true));
+        } else if res == 0 {
+            self.stack.push(Value::Bool(false));
+        } else {
             self.print_error("> requires two comparable values");
             return 0;
         }
@@ -739,15 +699,12 @@ impl VM {
     }
 
     /// Helper function for checking whether one value is less than
-    /// another, and placing a boolean onto the stack indicating
-    /// whether that is so.  Returns an integer indicating whether the
-    /// values were able to be compared.
-    fn opcode_lt_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
+    /// another.  Returns 1 if it is, 0 if it isn't, and -1 if the two
+    /// values cannot be compared.
+    pub fn opcode_lt_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                let res = n2 < n1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if n2 < n1 { 1 } else { 0 };
             }
             (Value::BigInt(_), Value::Int(n2)) => {
                 return self.opcode_lt_inner(v1, &int_to_bigint(*n2));
@@ -756,9 +713,7 @@ impl VM {
                 return self.opcode_lt_inner(&int_to_bigint(*n1), v2);
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                let res = n2 < n1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if n2 < n1 { 1 } else { 0 };
             }
             (Value::BigInt(n1), Value::Float(_)) => {
                 return self.opcode_lt_inner(&bigint_to_float(n1), v2);
@@ -773,38 +728,26 @@ impl VM {
                 return self.opcode_lt_inner(v1, &int_to_float(*n2));
             }
             (Value::Float(n1), Value::Float(n2)) => {
-                let res = n2 < n1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if n2 < n1 { 1 } else { 0 };
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                let res = d2 < d1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d2 < d1 { 1 } else { 0 };
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                let res = d2 < d1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d2 < d1 { 1 } else { 0 };
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                let res = d2 < d1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d2 < d1 { 1 } else { 0 };
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                let res = d2 < d1;
-                self.stack.push(Value::Bool(res));
-                return 1;
+                return if d2 < d1 { 1 } else { 0 };
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n2 < n1;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n2 < n1 { 1 } else { 0 };
                     }
                     _ => {}
                 }
@@ -812,9 +755,7 @@ impl VM {
                 let n2_opt = v2.to_bigint();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n2 < n1;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n2 < n1 { 1 } else { 0 };
                     }
                     _ => {}
                 }
@@ -822,9 +763,7 @@ impl VM {
                 let n2_opt = v2.to_float();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n2 < n1;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n2 < n1 { 1 } else { 0 };
                     }
                     _ => {}
                 }
@@ -837,13 +776,11 @@ impl VM {
 
                 match (i1_str_opt, i2_str_opt) {
                     (Some(n1), Some(n2)) => {
-                        let res = n2 < n1;
-                        self.stack.push(Value::Bool(res));
-                        return 1;
+                        return if n2 < n1 { 1 } else { 0 };
                     }
                     _ => {}
                 }
-                return 0;
+                return -1;
             }
         }
     }
@@ -860,8 +797,126 @@ impl VM {
         let v2_rr = self.stack.pop().unwrap();
 
         let res = self.opcode_lt_inner(&v1_rr, &v2_rr);
-        if res == 0 {
+        if res == 1 {
+            self.stack.push(Value::Bool(true));
+        } else if res == 0 {
+            self.stack.push(Value::Bool(false));
+        } else {
             self.print_error("< requires two comparable values");
+            return 0;
+        }
+        return 1;
+    }
+
+    /// Helper function for comparing two values.  Return 1 if the
+    /// second value is greater than the first, 0 if the two values
+    /// are equal, -1 if the second value is less than the first, and
+    /// -2 if the two values cannot be compared.
+    pub fn opcode_cmp_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
+        match (&*v1, &*v2) {
+            (Value::BigInt(n1), Value::BigInt(n2)) => {
+                return n1.cmp(n2) as i32;
+            }
+            (Value::BigInt(_), Value::Int(n2)) => {
+                return self.opcode_cmp_inner(v1, &int_to_bigint(*n2));
+            }
+            (Value::Int(n1), Value::BigInt(_)) => {
+                return self.opcode_cmp_inner(&int_to_bigint(*n1), v2);
+            }
+            (Value::Int(n1), Value::Int(n2)) => {
+                return n1.cmp(n2) as i32;
+            }
+            (Value::BigInt(n1), Value::Float(_)) => {
+                return self.opcode_cmp_inner(&bigint_to_float(n1), v2);
+            }
+            (Value::Float(_), Value::BigInt(n2)) => {
+                return self.opcode_cmp_inner(v1, &bigint_to_float(n2));
+            }
+            (Value::Int(n1), Value::Float(_)) => {
+                return self.opcode_cmp_inner(&int_to_float(*n1), v2);
+            }
+            (Value::Float(_), Value::Int(n2)) => {
+                return self.opcode_cmp_inner(v1, &int_to_float(*n2));
+            }
+            (Value::Float(n1), Value::Float(n2)) => {
+                return n2.partial_cmp(n1).unwrap() as i32;
+            }
+            (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
+                return d1.cmp(d2) as i32;
+            }
+            (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
+                return d1.cmp(d2) as i32;
+            }
+            (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
+                return if d1 < d2 { -1 }
+                       else if d1 == d2 { 0 }
+                       else { -1 };
+            }
+            (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
+                return if d1 < d2 { -1 }
+                       else if d1 == d2 { 0 }
+                       else { -1 };
+            }
+            (_, _) => {
+                let n1_opt = v1.to_int();
+                let n2_opt = v2.to_int();
+                match (n1_opt, n2_opt) {
+                    (Some(n1), Some(n2)) => {
+                        return n1.cmp(&n2) as i32;
+                    }
+                    _ => {}
+                }
+                let n1_opt = v1.to_bigint();
+                let n2_opt = v2.to_bigint();
+                match (n1_opt, n2_opt) {
+                    (Some(n1), Some(n2)) => {
+                        return n1.cmp(&n2) as i32;
+                    }
+                    _ => {}
+                }
+                let n1_opt = v1.to_float();
+                let n2_opt = v2.to_float();
+                match (n1_opt, n2_opt) {
+                    (Some(n1), Some(n2)) => {
+                        return n1.partial_cmp(&n2).unwrap() as i32;
+                    }
+                    _ => {}
+                }
+
+                let i1_str_opt: Option<&str>;
+                to_str!(v1, i1_str_opt);
+
+                let i2_str_opt: Option<&str>;
+                to_str!(v2, i2_str_opt);
+
+                match (i1_str_opt, i2_str_opt) {
+                    (Some(n1), Some(n2)) => {
+                        return n1.cmp(n2) as i32;
+                    }
+                    _ => {}
+                }
+                return -2;
+            }
+        }
+    }
+
+    /// Takes two values as its arguments, compares them, and places
+    /// the result on the stack (-1 for less than, 0 for equal, and 1
+    /// for greater than).
+    pub fn opcode_cmp(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("<=> requires two arguments");
+            return 0;
+        }
+
+        let v1_rr = self.stack.pop().unwrap();
+        let v2_rr = self.stack.pop().unwrap();
+
+        let res = self.opcode_cmp_inner(&v1_rr, &v2_rr);
+        if res == 1 || res == 0 || res == -1 {
+            self.stack.push(Value::Int(res));
+        } else {
+            self.print_error("<=> requires two comparable values");
             return 0;
         }
         return 1;

@@ -569,7 +569,8 @@ The result is a generator over the results from the function calls.
 `before` takes a list and a function, and calls the function on each
 element from the list, returning elements up until the function call
 returns a value that evaluates to true, at which point it returns no
-more elements.
+more elements.  `after` works similarly, save that it returns the
+elements from after the point where the function returns a true value.
 
 Each of the above can also accept a set or generator in place of a
 list argument.

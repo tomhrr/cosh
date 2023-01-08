@@ -1224,3 +1224,8 @@ fn slide_test() {
 fn before_test() {
     basic_test("5 range; [2 >] before; take-all;", "(\n    0: 0\n    1: 1\n    2: 2\n)");
 }
+
+#[test]
+fn after_test() {
+    basic_test("5 range; [2 >] after; take-all;", "(\n    0: 4\n)");
+}

@@ -167,6 +167,9 @@
     depth; 1 <; if;
         "take-all requires one argument" error;
     then;
+    dup; is-list; if;
+        return;
+    then;
     () lst var; lst !;
     begin;
         dup; shift;

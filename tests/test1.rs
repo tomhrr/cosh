@@ -1209,3 +1209,8 @@ fn fmt_test() {
     basic_test("1 2 \"{} {}\" fmt", "\"2 1\"");
     basic_test("1 2 \"{0} {1}\" fmt; nip; nip;", "\"2 1\"");
 }
+
+#[test]
+fn pairwise_test() {
+    basic_test("3 range; 3 range; + pairwise; take-all;", "(\n    0: 0\n    1: 2\n    2: 4\n)");
+}

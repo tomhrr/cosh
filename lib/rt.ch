@@ -524,3 +524,20 @@
             drop;
         then;
         .f until; ,,
+
+:~ pairwise 3 3
+    drop;
+    fn var; to-function; fn !;
+    lst2 var; lst2 !;
+    lst1 var; lst1 !;
+    begin;
+        lst1 @; shift;
+        dup; is-null; if;
+            leave;
+        then;
+        lst2 @; shift;
+        dup; is-null; if;
+            leave;
+        then;
+        fn @; funcall; yield;
+        .f until; ,,

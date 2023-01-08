@@ -180,6 +180,11 @@ used to avoid this behaviour, if necessary.
 `+`, `-`, `*`, `/`, `=`, `<`, and `>` are defined over the numeric
 types.  `=`, `<`, and `>` are also defined over `String`s.
 
+`<=>` returns -1 if the first argument is less than the second
+argument, 0 if the two arguments are equal, and 1 if the first
+argument is greater than the second argument.  It is defined over the
+numeric types, as well as `String`s.
+
 `sqrt` and `abs` are defined over the numeric types  `**`
 (exponentation) is defined over the numeric types for the base, and
 over `Int` and `Float` for the exponent.
@@ -556,8 +561,8 @@ list argument.
 
 ### sort, sortp
 
-`sort` sorts a list, set, or generator, where the values in the list
-are of primitive types:
+`sort` sorts a list or generator, where the values in the list are of
+primitive types:
 
     $ (1 3 5 4 2 1) sort
     (
@@ -569,16 +574,18 @@ are of primitive types:
 	5
     )
 
-`sortp` accepts an additional predicate argument:
+`sortp` accepts an additional predicate argument, being a function
+that operates like `<=>` (i.e. -1 for less-than, 0 for equal, 1 for
+greater-than):
 
-    $ (1 3 5 4 2 1) > sortp
+    $ (1 3 5 4 2 1) <=> sortp
     (
-	5
-	4
-	3
+	1
+	1
 	2
-	1
-	1
+	3
+	4
+	5
     )
 
 ### Filesystem operations

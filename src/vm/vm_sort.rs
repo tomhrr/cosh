@@ -6,6 +6,32 @@ use chunk::Value;
 use vm::*;
 
 impl VM {
+    fn generator_to_list(&mut self) -> i32 {
+        let mut lst = VecDeque::new();
+        loop {
+            let dup_res = self.opcode_dup();
+            if dup_res == 0 {
+                return 0;
+            }
+            let shift_res = self.opcode_shift();
+            if shift_res == 0 {
+                return 0;
+            }
+            let element_rr = self.stack.pop().unwrap();
+            match element_rr {
+                Value::Null => {
+                    self.stack.pop();
+                    break;
+                },
+                _ => {
+                    lst.push_back(element_rr);
+                }
+            }
+        }
+        self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
+        return 1;
+    }
+
     pub fn core_sort(&mut self) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("sort requires one argument");
@@ -14,29 +40,11 @@ impl VM {
 
         let mut value_rr = self.stack.pop().unwrap();
         if value_rr.is_generator() {
-            let mut lst = VecDeque::new();
             self.stack.push(value_rr);
-            loop {
-                let dup_res = self.opcode_dup();
-                if dup_res == 0 {
-                    return 0;
-                }
-                let shift_res = self.opcode_shift();
-                if shift_res == 0 {
-                    return 0;
-                }
-                let element_rr = self.stack.pop().unwrap();
-                match element_rr {
-                    Value::Null => {
-                        self.stack.pop();
-                        break;
-                    },
-                    _ => {
-                        lst.push_back(element_rr);
-                    }
-                }
+            let res = self.generator_to_list();
+            if res == 0 {
+                return 0;
             }
-            self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
             return self.core_sort();
         }
 
@@ -70,7 +78,7 @@ impl VM {
                 } else {
                     let mut success = true;
                     lst.borrow_mut().make_contiguous().sort_by(|a, b| {
-                        let res = self.opcode_cmp_inner(a, b);
+                        let res = self.opcode_cmp_inner(b, a);
                         if res == -2 {
                             success = false;
                             return Ordering::Equal;
@@ -86,6 +94,85 @@ impl VM {
                         eprintln!("unable to sort elements");
                         return 0;
                     }
+                }
+            }
+            _ => {
+                eprintln!("unable to sort value");
+                return 0;
+            }
+        }
+
+        self.stack.push(value_rr);
+
+        return 1;
+    }
+
+    pub fn core_sortp(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("sortp requires two arguments");
+            return 0;
+        }
+
+        let res = self.opcode_tofunction();
+        if res == 0 {
+            return 0;
+        }
+
+        let fn_rr = self.stack.pop().unwrap();
+
+        let mut value_rr = self.stack.pop().unwrap();
+        if value_rr.is_generator() {
+            self.stack.push(value_rr);
+            let res = self.generator_to_list();
+            if res == 0 {
+                return 0;
+            }
+            return self.core_sort();
+        }
+
+        match value_rr {
+            Value::List(ref mut lst) => {
+                let mut success = true;
+                lst.borrow_mut().make_contiguous().sort_by(|a, b| {
+                    if !success {
+                        return Ordering::Equal;
+                    }
+                    self.stack.push(a.clone());
+                    self.stack.push(b.clone());
+                    let res = self.call(OpCode::Call, fn_rr.clone());
+                    if !res {
+                        success = false;
+                        return Ordering::Equal;
+                    }
+                    if self.stack.len() < 1 {
+                        self.print_error("sortp predicate should return a value");
+                        success = false;
+                        return Ordering::Equal;
+                    }
+                    let ret = self.stack.pop().unwrap();
+                    match ret {
+                        Value::Int(n) => {
+                            if n == -1 {
+                                return Ordering::Less;
+                            } else if n == 0 {
+                                return Ordering::Equal;
+                            } else if n == 1 {
+                                return Ordering::Greater;
+                            } else {
+                                self.print_error("sortp predicate should return an int");
+                                success = false;
+                                return Ordering::Equal;
+                            }
+                        }
+                        _ => {
+                            self.print_error("sortp predicate should return an int");
+                            success = false;
+                            return Ordering::Equal;
+                        }
+                    }
+                });
+                if !success {
+                    return 0;
                 }
             }
             _ => {

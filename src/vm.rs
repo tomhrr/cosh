@@ -294,6 +294,7 @@ lazy_static! {
         map.insert("sha512", VM::core_sha512 as fn(&mut VM) -> i32);
         map.insert("<=>", VM::opcode_cmp as fn(&mut VM) -> i32);
         map.insert("sort", VM::core_sort as fn(&mut VM) -> i32);
+        map.insert("sortp", VM::core_sortp as fn(&mut VM) -> i32);
         map
     };
 

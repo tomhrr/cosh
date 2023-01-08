@@ -687,8 +687,8 @@ fn sort_test() {
         "(\n    0: 1\n    1: 2\n    2: 3\n    3: 4\n    4: 5\n)",
     );
     basic_test(
-        "(5 2 3 4 1) > sortp;",
-        "(\n    0: 5\n    1: 4\n    2: 3\n    3: 2\n    4: 1\n)",
+        "(5 2 3 4 1) <=> sortp;",
+        "(\n    0: 1\n    1: 2\n    2: 3\n    3: 4\n    4: 5\n)",
     );
 }
 
@@ -1195,4 +1195,11 @@ fn regex_escaping_test() {
     basic_test("\\\\n \\\\ p s", "pn");
     basic_test("10 \\d/g 3 s", "33");
     basic_test("\\\\d \\\\d 5 s", "5");
+}
+
+#[test]
+fn cmp_test() {
+    basic_test("100 150 <=>", "-1");
+    basic_test("100 100 <=>", "0");
+    basic_test("150 100 <=>", "1");
 }

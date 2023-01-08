@@ -815,7 +815,7 @@ impl VM {
     pub fn opcode_cmp_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                return n1.cmp(n2) as i32;
+                return n2.cmp(n1) as i32;
             }
             (Value::BigInt(_), Value::Int(n2)) => {
                 return self.opcode_cmp_inner(v1, &int_to_bigint(*n2));
@@ -824,7 +824,7 @@ impl VM {
                 return self.opcode_cmp_inner(&int_to_bigint(*n1), v2);
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                return n1.cmp(n2) as i32;
+                return n2.cmp(n1) as i32;
             }
             (Value::BigInt(n1), Value::Float(_)) => {
                 return self.opcode_cmp_inner(&bigint_to_float(n1), v2);
@@ -842,19 +842,19 @@ impl VM {
                 return n2.partial_cmp(n1).unwrap() as i32;
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                return d1.cmp(d2) as i32;
+                return d2.cmp(d1) as i32;
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                return d1.cmp(d2) as i32;
+                return d2.cmp(d1) as i32;
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                return if d1 < d2 { -1 }
-                       else if d1 == d2 { 0 }
+                return if d2 < d1 { -1 }
+                       else if d2 == d1 { 0 }
                        else { -1 };
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                return if d1 < d2 { -1 }
-                       else if d1 == d2 { 0 }
+                return if d2 < d1 { -1 }
+                       else if d2 == d1 { 0 }
                        else { -1 };
             }
             (_, _) => {
@@ -862,7 +862,7 @@ impl VM {
                 let n2_opt = v2.to_int();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        return n1.cmp(&n2) as i32;
+                        return n2.cmp(&n1) as i32;
                     }
                     _ => {}
                 }
@@ -870,7 +870,7 @@ impl VM {
                 let n2_opt = v2.to_bigint();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        return n1.cmp(&n2) as i32;
+                        return n2.cmp(&n1) as i32;
                     }
                     _ => {}
                 }
@@ -878,7 +878,7 @@ impl VM {
                 let n2_opt = v2.to_float();
                 match (n1_opt, n2_opt) {
                     (Some(n1), Some(n2)) => {
-                        return n1.partial_cmp(&n2).unwrap() as i32;
+                        return n2.partial_cmp(&n1).unwrap() as i32;
                     }
                     _ => {}
                 }
@@ -891,7 +891,7 @@ impl VM {
 
                 match (i1_str_opt, i2_str_opt) {
                     (Some(n1), Some(n2)) => {
-                        return n1.cmp(n2) as i32;
+                        return n2.cmp(n1) as i32;
                     }
                     _ => {}
                 }

@@ -1214,3 +1214,8 @@ fn fmt_test() {
 fn pairwise_test() {
     basic_test("3 range; 3 range; + pairwise; take-all;", "(\n    0: 0\n    1: 2\n    2: 4\n)");
 }
+
+#[test]
+fn slide_test() {
+    basic_test("4 range; ++ slide; take-all;", "(\n    0: 01\n    1: 12\n    2: 23\n)");
+}

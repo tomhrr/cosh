@@ -541,3 +541,34 @@
         then;
         fn @; funcall; yield;
         .f until; ,,
+
+:~ slide 2 2
+    drop;
+    fn var; to-function; fn !;
+    lst var; lst !;
+    last var;
+
+    lst @; shift;
+    dup; is-null; if;
+        return;
+    then;
+    lst @; shift;
+    dup; is-null; if;
+        return;
+    then;
+    dup; last !;
+
+    fn @; funcall; yield;
+
+    begin;
+        last @;
+        lst @; shift;
+        dup; is-null; if;
+            drop;
+            drop;
+            leave;
+        then;
+        dup; last !;
+
+        fn @; funcall; yield;
+        .f until; ,,

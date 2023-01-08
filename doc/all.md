@@ -556,6 +556,16 @@ the list.
 `product` multiplies all of the elements of the list together and
 returns the result.
 
+`pairwise` takes two lists and a function, and on each iteration,
+shifts one element from each of the lists and calls the function on
+those elements.  The result is a generator over the results from the
+function calls.
+
+`slide` takes a list and a function, and calls the function for
+sliding pairs from the list.  For example, the first call is for
+elements 0 and 1, the next call is for elements 1 and 2, and so on.
+The result is a generator over the results from the function calls.
+
 Each of the above can also accept a set or generator in place of a
 list argument.
 

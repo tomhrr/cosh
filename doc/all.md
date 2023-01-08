@@ -632,6 +632,9 @@ greater-than):
  - `readline`: read a line from a file reader object.
  - `writeline`: write a line to a file writer object.
  - `close`: close a file reader or file writer object.
+ - `opendir`: takes a directory path, and put a directory handle
+   object onto the stack.
+ - `readdir`: reads the next entry for a directory handle object.
  - `no-upwards`: takes a directory name as its argument and returns a
    boolean indicating whether that name is not either "." or "..".
 

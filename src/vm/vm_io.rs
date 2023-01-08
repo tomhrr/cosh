@@ -31,7 +31,6 @@ fn tilde_expansion(input_s: &str) -> String {
 	}
     }
 
-    eprintln!("{}", final_s);
     return final_s;
 }
 

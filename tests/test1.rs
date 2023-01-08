@@ -1203,3 +1203,9 @@ fn cmp_test() {
     basic_test("100 100 <=>", "0");
     basic_test("150 100 <=>", "1");
 }
+
+#[test]
+fn fmt_test() {
+    basic_test("1 2 \"{} {}\" fmt", "\"2 1\"");
+    basic_test("1 2 \"{0} {1}\" fmt; nip; nip;", "\"2 1\"");
+}

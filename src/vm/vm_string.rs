@@ -2,10 +2,16 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
+use lazy_static::lazy_static;
 use regex::Regex;
 
 use chunk::{StringTriple, Value};
 use vm::*;
+
+lazy_static! {
+    static ref CAPTURE_NUM: Regex = Regex::new("\\{(\\d+)\\}").unwrap();
+    static ref CAPTURE_WITHOUT_NUM: Regex = Regex::new("\\{\\}").unwrap();
+}
 
 impl VM {
     /// Takes two string/list arguments, appends them together, and
@@ -342,5 +348,95 @@ impl VM {
             }
         }
         return 1;
+    }
+
+    pub fn core_fmt(
+        &mut self,
+    ) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("fmt requires one argument");
+            return 0;
+        }
+
+        let str_rr = self.stack.pop().unwrap();
+	let str_opt: Option<&str>;
+	to_str!(str_rr, str_opt);
+
+        match str_opt {
+            Some(s) => {
+		let captures = CAPTURE_NUM.captures_iter(&s);
+		let mut final_s = s.to_string();
+		for capture in captures {
+		    let capture_str = capture.get(1).unwrap().as_str();
+		    let capture_num_res = capture_str.parse::<usize>();
+		    let capture_num = match capture_num_res {
+			Ok(n) => n,
+			Err(_) => {
+			    self.print_error("invalid stack element");
+			    return 0;
+			}
+		    };
+
+                    if capture_num >= self.stack.len() {
+                        self.print_error("invalid stack element");
+                        return 0;
+                    }
+
+		    let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - capture_num);
+		    match capture_el_rr_opt {
+			Some(capture_el_rr) => {
+			    let capture_el_str_opt: Option<&str>;
+			    to_str!(capture_el_rr, capture_el_str_opt);
+
+			    match capture_el_str_opt {
+				Some(capture_el_str) => {
+				    let capture_str_with_brackets = format!("\\{{{}\\}}", capture_str);
+				    let cswb_regex = Regex::new(&capture_str_with_brackets).unwrap();
+				    final_s = cswb_regex.replace_all(&final_s, capture_el_str).to_string();
+				}
+				_ => {
+				    self.print_error("unable to parse fmt string");
+				    return 0;
+				}
+			    }
+			}
+			None => {
+			    let err_str = format!("stack element {} not present", capture_num);
+			    self.print_error(&err_str);
+			    return 0;
+			}
+		    }
+		}
+
+		while CAPTURE_WITHOUT_NUM.is_match(&final_s) {
+		    if self.stack.len() < 1 {
+			self.print_error("no more elements to pop from stack");
+			return 0;
+		    }
+
+		    let value_rr = self.stack.pop().unwrap();
+		    let value_opt: Option<&str>;
+		    to_str!(value_rr, value_opt);
+
+		    match value_opt {
+			Some(s) => {
+			    final_s = CAPTURE_WITHOUT_NUM.replace(&final_s, s).to_string();
+			}
+			_ => {
+			    self.print_error("unable to parse fmt string");
+			    return 0;
+			}
+		    }
+		}
+
+                let st = StringTriple::new(final_s.to_string(), None);
+                self.stack.push(Value::String(Rc::new(RefCell::new(st))));
+                return 1;
+            }
+            _ => {
+                self.print_error("fmt argument must be string");
+                return 0;
+            }
+        }
     }
 }

@@ -107,76 +107,36 @@ impl VM {
     /// stack element placeholders as well as the ~ home directory
     /// placeholder, and returns the resulting string.
     fn prepare_command(&mut self, s: &str) -> Option<String> {
-        let captures = CAPTURE_NUM.captures_iter(s);
-        let mut final_s = s.to_string();
-        for capture in captures {
-            let capture_str = capture.get(1).unwrap().as_str();
-            let capture_num_res = capture_str.parse::<usize>();
-            let capture_num = match capture_num_res {
-                Ok(n) => n,
-                Err(_) => {
-                    self.print_error("invalid stack element");
-                    return None;
-                }
-            };
+        let st = StringTriple::new(s.to_string(), None);
+        self.stack.push(Value::String(Rc::new(RefCell::new(st))));
+        let res = self.core_fmt();
+        if res == 0 {
+            return None;
+        }
 
-            let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - capture_num);
-            match capture_el_rr_opt {
-                Some(capture_el_rr) => {
-                    let capture_el_str_opt: Option<&str>;
-                    to_str!(capture_el_rr, capture_el_str_opt);
-
-                    match capture_el_str_opt {
-                        Some(capture_el_str) => {
-                            let capture_str_with_brackets = format!("\\{{{}\\}}", capture_str);
-                            let cswb_regex = Regex::new(&capture_str_with_brackets).unwrap();
-                            final_s = cswb_regex.replace_all(&final_s, capture_el_str).to_string();
-                        }
-                        _ => {
-                            self.print_error("unable to parse command");
-                            return None;
-                        }
+        let str_rr = self.stack.pop().unwrap();
+        match str_rr {
+            Value::String(sp) => {
+                let input_s = &(sp.borrow().s);
+                let final_s: String;
+                let homedir_res = std::env::var("HOME");
+                match homedir_res {
+                    Ok(homedir) => {
+                        let s = " ".to_owned() + &homedir;
+                        final_s = HOME_DIR_TILDE.replace_all(&input_s, &*s).to_string();
+                    }
+                    _ => {
+                        final_s = input_s.to_string();
                     }
                 }
-                None => {
-                    let err_str = format!("stack element {} not present", capture_num);
-                    self.print_error(&err_str);
-                    return None;
-                }
+
+                return Some(final_s);
+            }
+            _ => {
+                eprintln!("expected string!");
+                std::process::abort();
             }
         }
-
-        while CAPTURE_WITHOUT_NUM.is_match(&final_s) {
-            if self.stack.len() < 1 {
-                self.print_error("no more elements to pop from stack");
-                return None;
-            }
-
-            let value_rr = self.stack.pop().unwrap();
-	    let value_opt: Option<&str>;
-	    to_str!(value_rr, value_opt);
-
-            match value_opt {
-                Some(s) => {
-                    final_s = CAPTURE_WITHOUT_NUM.replace(&final_s, s).to_string();
-                }
-                _ => {
-                    self.print_error("unable to parse command");
-                    return None;
-                }
-            }
-        }
-
-        let homedir_res = std::env::var("HOME");
-        match homedir_res {
-            Ok(homedir) => {
-                let s = " ".to_owned() + &homedir;
-                final_s = HOME_DIR_TILDE.replace_all(&final_s, &*s).to_string();
-            }
-            _ => {}
-        }
-
-        return Some(final_s);
     }
 
     fn prepare_and_split_command(

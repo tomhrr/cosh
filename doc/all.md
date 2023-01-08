@@ -789,6 +789,9 @@ element most recently pushed onto the stack):
     3
     6
 
+This behaviour is available for standard strings as well, by way of
+the `fmt` function.
+
 The output of a generator can also be piped to a command:
 
     $ {ls}; {sort -r} |; take-all;

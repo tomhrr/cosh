@@ -11,8 +11,6 @@
 
 : no-upwards dup; "." =; swap; ".." =; or; not; ,,
 
-: is-integer ^\d+ m; ,,
-
 :~ lsh 1 0
     0 =; if; . then;
     opendir;
@@ -139,7 +137,7 @@
     depth; 2 <; if;
         "take requires two arguments" error;
     then;
-    dup; is-integer; not; if;
+    dup; int; is-null; if;
         "second take argument must be integer" error;
     then;
     dup; 0 =; if;
@@ -300,7 +298,7 @@
 
 :~ range 1 1
     drop;
-    dup; is-integer; not; if;
+    dup; int; is-null; if;
         "range argument must be integer" error;
     then;
     limit var; limit !;

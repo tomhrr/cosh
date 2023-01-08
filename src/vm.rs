@@ -229,7 +229,6 @@ lazy_static! {
         map.insert("rand", VM::opcode_rand as fn(&mut VM) -> i32);
         map.insert("shift", VM::opcode_shift as fn(&mut VM) -> i32);
         map.insert("join", VM::core_join as fn(&mut VM) -> i32);
-        map.insert("shift-all", VM::core_shift_all as fn(&mut VM) -> i32);
         map.insert("|", VM::core_pipe as fn(&mut VM) -> i32);
         map.insert("clone", VM::opcode_clone as fn(&mut VM) -> i32);
         map.insert("now", VM::core_now as fn(&mut VM) -> i32);
@@ -302,12 +301,9 @@ lazy_static! {
     pub static ref LIB_FORMS: HashSet<&'static str> = {
         let mut set = HashSet::new();
         set.insert("2over");
-        set.insert("format-xml");
         set.insert("lsh");
-        set.insert("partition");
         set.insert("2rot");
         set.insert("lshr");
-        set.insert("partitionp");
         set.insert("<=");
         set.insert("lsr");
         set.insert("product");
@@ -316,23 +312,16 @@ lazy_static! {
         set.insert("range");
         set.insert("all");
         set.insert("map-generator");
-        set.insert("roa");
         set.insert("and");
         set.insert("map-list");
         set.insert("shuffle");
         set.insert("any");
         set.insert("max");
-        set.insert("sort");
-        set.insert("mft");
-        set.insert("sort-internal");
         set.insert("chomp");
         set.insert("grep");
         set.insert("min");
-        set.insert("sort-internalp");
-        set.insert("ding");
         set.insert("grep-generator");
         set.insert("nip");
-        set.insert("sortp");
         set.insert("f<");
         set.insert("grep-list");
         set.insert("no-upwards");
@@ -341,7 +330,6 @@ lazy_static! {
         set.insert("none");
         set.insert("take");
         set.insert("first");
-        set.insert("is-integer");
         set.insert("not");
         set.insert("take-all");
         set.insert("foldl");

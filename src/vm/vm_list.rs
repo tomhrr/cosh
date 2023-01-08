@@ -533,53 +533,6 @@ impl VM {
         );
     }
 
-    /// Takes a shiftable object as its single argument, and places
-    /// copies of all the elements from the list onto the stack, in
-    /// the order that they are shifted.
-    pub fn core_shift_all(
-        &mut self,
-    ) -> i32 {
-        if self.stack.len() < 1 {
-            self.print_error("shift-all requires one argument");
-            return 0;
-        }
-
-        loop {
-            let dup_res = self.opcode_dup();
-            if dup_res == 0 {
-                return 0;
-            }
-            let shift_res = self.opcode_shift();
-            if shift_res == 0 {
-                self.stack.pop();
-                return 0;
-            }
-            let is_null;
-            {
-                let shifted_rr = &self.stack[self.stack.len() - 1];
-                match shifted_rr {
-                    Value::Null => {
-                        is_null = true;
-                    }
-                    _ => {
-                        is_null = false;
-                    }
-                }
-            }
-            if is_null {
-                self.stack.pop();
-                self.stack.pop();
-                break;
-            }
-
-            let swap_res = self.opcode_swap();
-            if swap_res == 0 {
-                return 0;
-            }
-        }
-        return 1;
-    }
-
     /// Takes an arbitrary value as its single argument.  Places a
     /// boolean onto the stack indicating whether the argument can be
     /// shifted.

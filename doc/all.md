@@ -141,6 +141,22 @@ Some of the more commonly-used stack operators from Forth are defined:
     2
     3
     3
+    $ 1 2 over
+    1
+    2
+    1
+    $ 1 2 nip
+    2
+    $ 1 2 3 2over
+    1
+    2
+    3
+    2
+    3
+    $ 1 2 3 2rot
+    3
+    1
+    2
 
 ### Type predicates
 
@@ -536,9 +552,11 @@ whether the function returns true for any element of the list.
 `all` takes a list and a function, and returns a boolean indicating whether
 the function returns true for all of the elements of the list.
 
-`none`/`notall` is like `all`, except it returns a boolean indicating
-whether the function returns false for all of the elements of the
-list.
+`none` is like `all`, except it returns a boolean indicating whether
+the function returns false for all of the elements of the list.
+Similarly, `notall` is like `any`, except it returns a boolean
+indicating whether the function returns false for any of the elements
+of the list.
 
 `first` takes a list and a function, and returns the first
 element for which the function returns true.
@@ -604,6 +622,19 @@ greater-than):
 	5
     )
 
+### Input/output operations
+
+ - `print`: takes a value and prints it to standard output.
+ - `println`: takes a value and prints it to standard output, followed
+   by a newline.
+ - `open`: takes a file path and a mode string (either 'r' or 'w'),
+   and puts a file reader or a file writer object onto the stack.
+ - `readline`: read a line from a file reader object.
+ - `writeline`: write a line to a file writer object.
+ - `close`: close a file reader or file writer object.
+ - `no-upwards`: takes a directory name as its argument and returns a
+   boolean indicating whether that name is not either "." or "..".
+
 ### Filesystem operations
 
 `ls` takes a directory name as its argument and returns a generator
@@ -619,6 +650,9 @@ object over the files in that directory:
 directories as well.  If the stack is empty when either of these
 functions is called, then they will act as if they were called on the
 current working directory.
+
+`lsh` and `lshr` operate in the same way as `ls` and `lsr`, except
+that hidden files/directories are included in the output.
 
 `f<` takes a filename as its argument and returns a generator over the
 lines in that file:
@@ -672,11 +706,6 @@ Other operations:
    (directory must be empty).
  - `link`: takes two paths, and creates a symbolic link at the second
    path that targets the first path.
- - `open`: takes a file path and a mode string (either 'r' or 'w'),
-   and puts a file reader or a file writer object onto the stack.
- - `readline`: read a line from a file reader object.
- - `writeline`: write a line to a file writer object.
- - `close`: close a file reader or file writer object.
  - `tempfile`: returns a file writer and a path string for a new
    temporary file.  This file is not cleaned up automatically on
    program exit or similar.
@@ -738,7 +767,8 @@ expression must be escaped with a backslash.
     $ asdf qwer append
     "asdfqwer"
 
-`++` also works for lists and hashes.
+`++` also works for lists and hashes.  It can also be used to make a
+single generator using two other generators as input.
 
 `chomp` removes the final newline from the end of a string, if the
 string ends in a newline:
@@ -955,6 +985,9 @@ number of seconds.
 `md5`, `sha1`, `sha256` and `sha512` each take a single string
 argument and return the corresponding cryptographic hash for that
 input.
+
+`range` takes an integer and returns a generator over the integers
+from zero to that integer, minus one.
 
 ### Miscellaneous
 

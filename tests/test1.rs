@@ -646,11 +646,6 @@ fn regex_numbers() {
 }
 
 #[test]
-fn shift_all() {
-    basic_test("(1 2 3) shift-all", "1\n2\n3");
-}
-
-#[test]
 fn negative_numbers() {
     basic_test("-5 4 +; -6.5 3.2 +;", "-1\n-3.3");
 }

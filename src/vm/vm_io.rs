@@ -212,9 +212,7 @@ impl VM {
             Value::FileWriter(ref mut line_writer) => {
                 let res = line_writer.borrow_mut().flush();
                 match res {
-                    Ok(_) => {
-                        1
-                    }
+                    Ok(_) => 1,
                     Err(e) => {
                         let err_str = format!("unable to flush data: {}", e);
                         self.print_error(&err_str);

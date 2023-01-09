@@ -85,10 +85,7 @@ pub struct Local {
 
 impl Local {
     pub fn new(name: String, depth: u32) -> Local {
-        Local {
-            name,
-            depth,
-        }
+        Local { name, depth }
     }
 }
 
@@ -392,7 +389,9 @@ impl<'a> Scanner<'a> {
                         in_string = false;
                         done = true;
                         let params_opt = self.scan_parameters();
-                        if let Some(po) = params_opt { params = po; }
+                        if let Some(po) = params_opt {
+                            params = po;
+                        }
                     } else {
                         result[result_index] = buffer[0];
                         result_index += 1;
@@ -1257,8 +1256,7 @@ impl Compiler {
                                     chunk.set_fourth_last_opcode(OpCode::JumpNeREqC);
                                     let cb1 = chunk.get_second_last_byte();
                                     let cb2 = chunk.get_last_byte();
-                                    let i3 =
-                                        (((cb1 as u16) << 8) & 0xFF00) | (cb2 as u16);
+                                    let i3 = (((cb1 as u16) << 8) & 0xFF00) | (cb2 as u16);
                                     if chunk.has_constant_int(i3 as i32) {
                                         let jmp_len = chunk.data.len() - n + 1;
                                         chunk.set_third_last_byte(
@@ -1277,8 +1275,8 @@ impl Compiler {
                                     if let OpCode::Constant = chunk.get_third_last_opcode() {
                                         let i_upper = chunk.get_second_last_byte();
                                         let i_lower = chunk.get_last_byte();
-                                        let constant_i = (((i_upper as u16) << 8) & 0xFF00)
-                                            | (i_lower as u16);
+                                        let constant_i =
+                                            (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                                         let v = chunk.get_constant(constant_i.into());
                                         if let Value::Int(0) = v {
                                             chunk.set_third_last_opcode(OpCode::JumpR);
@@ -1444,9 +1442,7 @@ impl Compiler {
             Ok(encoded) => {
                 let res = file.write_all(&encoded);
                 match res {
-                    Ok(_) => {
-                        true
-                    }
+                    Ok(_) => true,
                     Err(e) => {
                         eprintln!("unable to write compiled file: {}", e);
                         false
@@ -1469,17 +1465,11 @@ impl Compiler {
                 let data_chars: &[u8] = &data;
                 let decoded_res = bincode::deserialize(data_chars);
                 match decoded_res {
-                    Ok(decoded) => {
-                        Some(decoded)
-                    }
-                    Err(_) => {
-                        None
-                    }
+                    Ok(decoded) => Some(decoded),
+                    Err(_) => None,
                 }
             }
-            Err(_) => {
-                None
-            }
+            Err(_) => None,
         }
     }
 }

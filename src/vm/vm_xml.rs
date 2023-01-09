@@ -109,8 +109,7 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             let value_opt = vmm.get("value");
             let mut has_none = false;
             child_nodes = match value_opt {
-                Some(Value::List(lst)) => {
-                    lst
+                Some(Value::List(lst)) => lst
                     .borrow()
                     .iter()
                     .map(|lst_value_rr| {
@@ -124,9 +123,8 @@ fn convert_to_xml(v: &Value) -> Option<String> {
                         }
                     })
                     .collect::<Vec<_>>()
-                    .join("")
-                },
-                _ => "".to_string()
+                    .join(""),
+                _ => "".to_string(),
             };
             if has_none {
                 return None;
@@ -167,7 +165,7 @@ impl VM {
             let ns_name_opt = ns.name();
             let name = match ns_name_opt {
                 Some(ns_name) => ns_name.to_string(),
-                None => "".to_string()
+                None => "".to_string(),
             };
 
             if let Some(prev_name) = current_namespaces.get(uri) {
@@ -190,7 +188,7 @@ impl VM {
                 let ns_name_opt = ns.name();
                 let name = match ns_name_opt {
                     Some(ns_name) => ns_name.to_string(),
-                    None => "".to_string()
+                    None => "".to_string(),
                 };
 
                 if let Some(prev_name) = current_namespaces.get(uri) {
@@ -242,7 +240,7 @@ impl VM {
                     tag_name_str
                 }
             }
-            None => tag_name_str
+            None => tag_name_str,
         };
 
         map.insert(

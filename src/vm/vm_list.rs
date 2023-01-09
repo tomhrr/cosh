@@ -531,15 +531,17 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let res =
-            matches!(value_rr, Value::List(_)
-                                | Value::Set(_)
-                                | Value::IpSet(_)
-                                | Value::Generator(_)
-                                | Value::CommandGenerator(_)
-                                | Value::KeysGenerator(_)
-                                | Value::ValuesGenerator(_)
-                                | Value::EachGenerator(_));
+        let res = matches!(
+            value_rr,
+            Value::List(_)
+                | Value::Set(_)
+                | Value::IpSet(_)
+                | Value::Generator(_)
+                | Value::CommandGenerator(_)
+                | Value::KeysGenerator(_)
+                | Value::ValuesGenerator(_)
+                | Value::EachGenerator(_)
+        );
         self.stack.push(Value::Bool(res));
         1
     }

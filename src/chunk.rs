@@ -232,10 +232,7 @@ pub struct IpSet {
 
 impl IpSet {
     pub fn new(ipv4: IpRange<Ipv4Net>, ipv6: IpRange<Ipv6Net>) -> IpSet {
-        IpSet {
-            ipv4,
-            ipv6,
-        }
+        IpSet { ipv4, ipv6 }
     }
 }
 
@@ -282,15 +279,11 @@ impl CommandGenerator {
                 /* todo: may not work if newline falls within
                  * a multibyte Unicode character?  Not sure if this
                  * is possible, though. */
-                let new_buf: Vec<u8> = (&mut self.stdout_buffer)
-                    .drain(0..(n + 1))
-                    .collect();
+                let new_buf: Vec<u8> = (&mut self.stdout_buffer).drain(0..(n + 1)).collect();
                 let new_str = std::str::from_utf8(&new_buf).unwrap();
                 Some(new_str.to_string())
             }
-            _ => {
-                None
-            }
+            _ => None,
         }
     }
 
@@ -307,15 +300,11 @@ impl CommandGenerator {
                 /* todo: may not work if newline falls within
                  * a multibyte Unicode character?  Not sure if this
                  * is possible, though. */
-                let new_buf: Vec<u8> = (&mut self.stderr_buffer)
-                    .drain(0..(n + 1))
-                    .collect();
+                let new_buf: Vec<u8> = (&mut self.stderr_buffer).drain(0..(n + 1)).collect();
                 let new_str = std::str::from_utf8(&new_buf).unwrap();
                 Some(new_str.to_string())
             }
-            _ => {
-                None
-            }
+            _ => None,
         }
     }
 
@@ -630,12 +619,10 @@ impl Chunk {
             Value::Int(n) => ValueSD::Int(n),
             Value::Float(n) => ValueSD::Float(n),
             Value::BigInt(n) => ValueSD::BigInt(n.to_str_radix(10)),
-            Value::String(st) => {
-                ValueSD::String(
-                    st.borrow().string.to_string(),
-                    st.borrow().escaped_string.to_string()
-                )
-            }
+            Value::String(st) => ValueSD::String(
+                st.borrow().string.to_string(),
+                st.borrow().escaped_string.to_string(),
+            ),
             Value::Command(s, params) => ValueSD::Command(s.to_string(), (*params).clone()),
             Value::CommandUncaptured(s) => ValueSD::CommandUncaptured(s.to_string()),
             Value::Bool(b) => ValueSD::Bool(b),
@@ -678,7 +665,7 @@ impl Chunk {
         let value = self.constant_values.get(i as usize);
         match value {
             Some(v) => v.clone(),
-            _ => Value::Null
+            _ => Value::Null,
         }
     }
 
@@ -1338,12 +1325,8 @@ impl Value {
                 let s = &st.borrow().string;
                 let n_r = s.parse::<i32>();
                 match n_r {
-                    Ok(n) => {
-                        Some(n)
-                    }
-                    _ => {
-                        None
-                    }
+                    Ok(n) => Some(n),
+                    _ => None,
                 }
             }
             Value::Null => Some(0),
@@ -1362,12 +1345,8 @@ impl Value {
                 let s = &st.borrow().string;
                 let n_r = s.to_string().parse::<num_bigint::BigInt>();
                 match n_r {
-                    Ok(n) => {
-                        Some(n)
-                    }
-                    _ => {
-                        None
-                    }
+                    Ok(n) => Some(n),
+                    _ => None,
                 }
             }
             Value::Null => Some(BigInt::from_i32(0).unwrap()),
@@ -1387,12 +1366,8 @@ impl Value {
                 let s = &st.borrow().string;
                 let n_r = s.parse::<f64>();
                 match n_r {
-                    Ok(n) => {
-                        Some(n)
-                    }
-                    _ => {
-                        None
-                    }
+                    Ok(n) => Some(n),
+                    _ => None,
                 }
             }
             Value::Null => Some(0.0),
@@ -1523,15 +1498,17 @@ impl Value {
     }
 
     pub fn is_generator(&self) -> bool {
-        matches!(self,
-                 Value::Generator(..)
-                    | Value::KeysGenerator(..)
-                    | Value::ValuesGenerator(..)
-                    | Value::EachGenerator(..)
-                    | Value::FileReader(..)
-                    | Value::DirectoryHandle(..)
-                    | Value::IpSet(..)
-                    | Value::MultiGenerator(..))
+        matches!(
+            self,
+            Value::Generator(..)
+                | Value::KeysGenerator(..)
+                | Value::ValuesGenerator(..)
+                | Value::EachGenerator(..)
+                | Value::FileReader(..)
+                | Value::DirectoryHandle(..)
+                | Value::IpSet(..)
+                | Value::MultiGenerator(..)
+        )
     }
 
     pub fn type_string(&self) -> String {

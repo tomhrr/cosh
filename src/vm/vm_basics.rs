@@ -246,12 +246,13 @@ impl VM {
         }
 
         let i1_rr = self.stack.pop().unwrap();
-        let is_callable =
-            matches!(i1_rr,
-                     Value::AnonymousFunction(_, _)
-                        | Value::CoreFunction(_)
-                        | Value::NamedFunction(_)
-                        | Value::String(_));
+        let is_callable = matches!(
+            i1_rr,
+            Value::AnonymousFunction(_, _)
+                | Value::CoreFunction(_)
+                | Value::NamedFunction(_)
+                | Value::String(_)
+        );
         self.stack.push(Value::Bool(is_callable));
         1
     }

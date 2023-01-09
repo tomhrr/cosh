@@ -377,9 +377,7 @@ impl VM {
                         self.stack.push(Value::DateTimeOT(dt_res));
                         1
                     }
-                    _ => {
-                        0
-                    }
+                    _ => 0,
                 }
             }
             (Some(_), _) => {
@@ -433,9 +431,7 @@ impl VM {
                                 ));
                                 1
                             }
-                            _ => {
-                                0
-                            }
+                            _ => 0,
                         }
                     }
                     _ => {

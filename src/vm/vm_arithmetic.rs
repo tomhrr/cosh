@@ -80,12 +80,8 @@ impl VM {
                 self.stack.push(n3);
                 1
             }
-            (Value::BigInt(_), Value::Int(n2)) => {
-                self.opcode_add_inner(v1, &int_to_bigint(*n2))
-            }
-            (Value::Int(n1), Value::BigInt(_)) => {
-                self.opcode_add_inner(&int_to_bigint(*n1), v2)
-            }
+            (Value::BigInt(_), Value::Int(n2)) => self.opcode_add_inner(v1, &int_to_bigint(*n2)),
+            (Value::Int(n1), Value::BigInt(_)) => self.opcode_add_inner(&int_to_bigint(*n1), v2),
             (Value::Int(n1), Value::Int(n2)) => {
                 self.stack.push(add_ints(*n1, *n2));
                 1
@@ -94,18 +90,10 @@ impl VM {
                 self.stack.push(Value::Float(n1 + n2));
                 1
             }
-            (Value::BigInt(n1), Value::Float(_)) => {
-                self.opcode_add_inner(&bigint_to_float(n1), v2)
-            }
-            (Value::Float(_), Value::BigInt(n2)) => {
-                self.opcode_add_inner(v1, &bigint_to_float(n2))
-            }
-            (Value::Int(n1), Value::Float(_)) => {
-                self.opcode_add_inner(&int_to_float(*n1), v2)
-            }
-            (Value::Float(_), Value::Int(n2)) => {
-                self.opcode_add_inner(v1, &int_to_float(*n2))
-            }
+            (Value::BigInt(n1), Value::Float(_)) => self.opcode_add_inner(&bigint_to_float(n1), v2),
+            (Value::Float(_), Value::BigInt(n2)) => self.opcode_add_inner(v1, &bigint_to_float(n2)),
+            (Value::Int(n1), Value::Float(_)) => self.opcode_add_inner(&int_to_float(*n1), v2),
+            (Value::Float(_), Value::Int(n2)) => self.opcode_add_inner(v1, &int_to_float(*n2)),
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
@@ -141,7 +129,9 @@ impl VM {
 
         let v1_rr = self.stack.pop().unwrap();
         let mut done = false;
-        if let (Value::Int(n1), Value::Int(ref mut n2)) = (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
+        if let (Value::Int(n1), Value::Int(ref mut n2)) =
+            (&v1_rr, self.stack.get_mut(len - 2).unwrap())
+        {
             *n2 += n1;
             done = true;
         }
@@ -189,12 +179,8 @@ impl VM {
             (Value::Float(_), Value::BigInt(n2)) => {
                 self.opcode_subtract_inner(v1, &bigint_to_float(n2))
             }
-            (Value::Int(n1), Value::Float(_)) => {
-                self.opcode_subtract_inner(&int_to_float(*n1), v2)
-            }
-            (Value::Float(_), Value::Int(n2)) => {
-                self.opcode_subtract_inner(v1, &int_to_float(*n2))
-            }
+            (Value::Int(n1), Value::Float(_)) => self.opcode_subtract_inner(&int_to_float(*n1), v2),
+            (Value::Float(_), Value::Int(n2)) => self.opcode_subtract_inner(v1, &int_to_float(*n2)),
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
@@ -231,7 +217,8 @@ impl VM {
         let v1_rr = self.stack.pop().unwrap();
         let mut done = false;
         if let (Value::Int(n1), Value::Int(ref mut n2)) =
-                (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
+            (&v1_rr, self.stack.get_mut(len - 2).unwrap())
+        {
             *n2 -= n1;
             done = true;
         }
@@ -280,12 +267,8 @@ impl VM {
             (Value::Float(_), Value::BigInt(n2)) => {
                 self.opcode_multiply_inner(v1, &bigint_to_float(n2))
             }
-            (Value::Int(n1), Value::Float(_)) => {
-                self.opcode_multiply_inner(&int_to_float(*n1), v2)
-            }
-            (Value::Float(_), Value::Int(n2)) => {
-                self.opcode_multiply_inner(v1, &int_to_float(*n2))
-            }
+            (Value::Int(n1), Value::Float(_)) => self.opcode_multiply_inner(&int_to_float(*n1), v2),
+            (Value::Float(_), Value::Int(n2)) => self.opcode_multiply_inner(v1, &int_to_float(*n2)),
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
@@ -322,7 +305,8 @@ impl VM {
         let v1_rr = self.stack.pop().unwrap();
         let mut done = false;
         if let (Value::Int(n1), Value::Int(ref mut n2)) =
-                (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
+            (&v1_rr, self.stack.get_mut(len - 2).unwrap())
+        {
             *n2 *= n1;
             done = true;
         }
@@ -350,12 +334,8 @@ impl VM {
                 self.stack.push(n3);
                 1
             }
-            (Value::BigInt(_), Value::Int(n2)) => {
-                self.opcode_divide_inner(v1, &int_to_bigint(*n2))
-            }
-            (Value::Int(n1), Value::BigInt(_)) => {
-                self.opcode_divide_inner(&int_to_bigint(*n1), v2)
-            }
+            (Value::BigInt(_), Value::Int(n2)) => self.opcode_divide_inner(v1, &int_to_bigint(*n2)),
+            (Value::Int(n1), Value::BigInt(_)) => self.opcode_divide_inner(&int_to_bigint(*n1), v2),
             (Value::Int(n1), Value::Int(n2)) => {
                 self.stack.push(divide_ints(*n1, *n2));
                 1
@@ -370,12 +350,8 @@ impl VM {
             (Value::Float(_), Value::BigInt(n2)) => {
                 self.opcode_divide_inner(v1, &bigint_to_float(n2))
             }
-            (Value::Int(n1), Value::Float(_)) => {
-                self.opcode_divide_inner(&int_to_float(*n1), v2)
-            }
-            (Value::Float(_), Value::Int(n2)) => {
-                self.opcode_divide_inner(v1, &int_to_float(*n2))
-            }
+            (Value::Int(n1), Value::Float(_)) => self.opcode_divide_inner(&int_to_float(*n1), v2),
+            (Value::Float(_), Value::Int(n2)) => self.opcode_divide_inner(v1, &int_to_float(*n2)),
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
@@ -413,7 +389,8 @@ impl VM {
         let mut done = false;
 
         if let (Value::Int(n1), Value::Int(ref mut n2)) =
-                (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
+            (&v1_rr, self.stack.get_mut(len - 2).unwrap())
+        {
             *n2 /= n1;
             done = true;
         }
@@ -437,46 +414,66 @@ impl VM {
     pub fn opcode_eq_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (v1, v2) {
             (Value::IpSet(s1), Value::IpSet(s2)) => {
-                if *s1.borrow() == *s2.borrow() { 1 } else { 0 }
+                if *s1.borrow() == *s2.borrow() {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                if n1 == n2 { 1 } else { 0 }
+                if n1 == n2 {
+                    1
+                } else {
+                    0
+                }
             }
-            (Value::BigInt(_), Value::Int(n2)) => {
-                self.opcode_eq_inner(v1, &int_to_bigint(*n2))
-            }
-            (Value::Int(n1), Value::BigInt(_)) => {
-                self.opcode_eq_inner(&int_to_bigint(*n1), v2)
-            }
+            (Value::BigInt(_), Value::Int(n2)) => self.opcode_eq_inner(v1, &int_to_bigint(*n2)),
+            (Value::Int(n1), Value::BigInt(_)) => self.opcode_eq_inner(&int_to_bigint(*n1), v2),
             (Value::Int(n1), Value::Int(n2)) => {
-                if n1 == n2 { 1 } else { 0 }
+                if n1 == n2 {
+                    1
+                } else {
+                    0
+                }
             }
-            (Value::BigInt(n1), Value::Float(_)) => {
-                self.opcode_eq_inner(&bigint_to_float(n1), v2)
-            }
-            (Value::Float(_), Value::BigInt(n2)) => {
-                self.opcode_eq_inner(v1, &bigint_to_float(n2))
-            }
-            (Value::Int(n1), Value::Float(_)) => {
-                self.opcode_eq_inner(&int_to_float(*n1), v2)
-            }
-            (Value::Float(_), Value::Int(n2)) => {
-                self.opcode_eq_inner(v1, &int_to_float(*n2))
-            }
+            (Value::BigInt(n1), Value::Float(_)) => self.opcode_eq_inner(&bigint_to_float(n1), v2),
+            (Value::Float(_), Value::BigInt(n2)) => self.opcode_eq_inner(v1, &bigint_to_float(n2)),
+            (Value::Int(n1), Value::Float(_)) => self.opcode_eq_inner(&int_to_float(*n1), v2),
+            (Value::Float(_), Value::Int(n2)) => self.opcode_eq_inner(v1, &int_to_float(*n2)),
             (Value::Float(n1), Value::Float(n2)) => {
-                if n1 == n2 { 1 } else { 0 }
+                if n1 == n2 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                if d1 == d2 { 1 } else { 0 }
+                if d1 == d2 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                if d1 == d2 { 1 } else { 0 }
+                if d1 == d2 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                if d1 == d2 { 1 } else { 0 }
+                if d1 == d2 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                if d1 == d2 { 1 } else { 0 }
+                if d1 == d2 {
+                    1
+                } else {
+                    0
+                }
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
@@ -538,43 +535,59 @@ impl VM {
     pub fn opcode_gt_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (v1, v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                if n2 > n1 { 1 } else { 0 }
+                if n2 > n1 {
+                    1
+                } else {
+                    0
+                }
             }
-            (Value::BigInt(_), Value::Int(n2)) => {
-                self.opcode_gt_inner(v1, &int_to_bigint(*n2))
-            }
-            (Value::Int(n1), Value::BigInt(_)) => {
-                self.opcode_gt_inner(&int_to_bigint(*n1), v2)
-            }
+            (Value::BigInt(_), Value::Int(n2)) => self.opcode_gt_inner(v1, &int_to_bigint(*n2)),
+            (Value::Int(n1), Value::BigInt(_)) => self.opcode_gt_inner(&int_to_bigint(*n1), v2),
             (Value::Int(n1), Value::Int(n2)) => {
-                if n2 > n1 { 1 } else { 0 }
+                if n2 > n1 {
+                    1
+                } else {
+                    0
+                }
             }
-            (Value::BigInt(n1), Value::Float(_)) => {
-                self.opcode_gt_inner(&bigint_to_float(n1), v2)
-            }
-            (Value::Float(_), Value::BigInt(n2)) => {
-                self.opcode_gt_inner(v1, &bigint_to_float(n2))
-            }
-            (Value::Int(n1), Value::Float(_)) => {
-                self.opcode_gt_inner(&int_to_float(*n1), v2)
-            }
-            (Value::Float(_), Value::Int(n2)) => {
-                self.opcode_gt_inner(v1, &int_to_float(*n2))
-            }
+            (Value::BigInt(n1), Value::Float(_)) => self.opcode_gt_inner(&bigint_to_float(n1), v2),
+            (Value::Float(_), Value::BigInt(n2)) => self.opcode_gt_inner(v1, &bigint_to_float(n2)),
+            (Value::Int(n1), Value::Float(_)) => self.opcode_gt_inner(&int_to_float(*n1), v2),
+            (Value::Float(_), Value::Int(n2)) => self.opcode_gt_inner(v1, &int_to_float(*n2)),
             (Value::Float(n1), Value::Float(n2)) => {
-                if n2 > n1 { 1 } else { 0 }
+                if n2 > n1 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                if d2 > d1 { 1 } else { 0 }
+                if d2 > d1 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                if d2 > d1 { 1 } else { 0 }
+                if d2 > d1 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                if d2 > d1 { 1 } else { 0 }
+                if d2 > d1 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                if d2 > d1 { 1 } else { 0 }
+                if d2 > d1 {
+                    1
+                } else {
+                    0
+                }
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
@@ -636,43 +649,59 @@ impl VM {
     pub fn opcode_lt_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (v1, v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                if n2 < n1 { 1 } else { 0 }
+                if n2 < n1 {
+                    1
+                } else {
+                    0
+                }
             }
-            (Value::BigInt(_), Value::Int(n2)) => {
-                self.opcode_lt_inner(v1, &int_to_bigint(*n2))
-            }
-            (Value::Int(n1), Value::BigInt(_)) => {
-                self.opcode_lt_inner(&int_to_bigint(*n1), v2)
-            }
+            (Value::BigInt(_), Value::Int(n2)) => self.opcode_lt_inner(v1, &int_to_bigint(*n2)),
+            (Value::Int(n1), Value::BigInt(_)) => self.opcode_lt_inner(&int_to_bigint(*n1), v2),
             (Value::Int(n1), Value::Int(n2)) => {
-                if n2 < n1 { 1 } else { 0 }
+                if n2 < n1 {
+                    1
+                } else {
+                    0
+                }
             }
-            (Value::BigInt(n1), Value::Float(_)) => {
-                self.opcode_lt_inner(&bigint_to_float(n1), v2)
-            }
-            (Value::Float(_), Value::BigInt(n2)) => {
-                self.opcode_lt_inner(v1, &bigint_to_float(n2))
-            }
-            (Value::Int(n1), Value::Float(_)) => {
-                self.opcode_lt_inner(&int_to_float(*n1), v2)
-            }
-            (Value::Float(_), Value::Int(n2)) => {
-                self.opcode_lt_inner(v1, &int_to_float(*n2))
-            }
+            (Value::BigInt(n1), Value::Float(_)) => self.opcode_lt_inner(&bigint_to_float(n1), v2),
+            (Value::Float(_), Value::BigInt(n2)) => self.opcode_lt_inner(v1, &bigint_to_float(n2)),
+            (Value::Int(n1), Value::Float(_)) => self.opcode_lt_inner(&int_to_float(*n1), v2),
+            (Value::Float(_), Value::Int(n2)) => self.opcode_lt_inner(v1, &int_to_float(*n2)),
             (Value::Float(n1), Value::Float(n2)) => {
-                if n2 < n1 { 1 } else { 0 }
+                if n2 < n1 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                if d2 < d1 { 1 } else { 0 }
+                if d2 < d1 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                if d2 < d1 { 1 } else { 0 }
+                if d2 < d1 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                if d2 < d1 { 1 } else { 0 }
+                if d2 < d1 {
+                    1
+                } else {
+                    0
+                }
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                if d2 < d1 { 1 } else { 0 }
+                if d2 < d1 {
+                    1
+                } else {
+                    0
+                }
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
@@ -734,39 +763,17 @@ impl VM {
     /// -2 if the two values cannot be compared.
     pub fn opcode_cmp_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (v1, v2) {
-            (Value::BigInt(n1), Value::BigInt(n2)) => {
-                n2.cmp(n1) as i32
-            }
-            (Value::BigInt(_), Value::Int(n2)) => {
-                self.opcode_cmp_inner(v1, &int_to_bigint(*n2))
-            }
-            (Value::Int(n1), Value::BigInt(_)) => {
-                self.opcode_cmp_inner(&int_to_bigint(*n1), v2)
-            }
-            (Value::Int(n1), Value::Int(n2)) => {
-                n2.cmp(n1) as i32
-            }
-            (Value::BigInt(n1), Value::Float(_)) => {
-                self.opcode_cmp_inner(&bigint_to_float(n1), v2)
-            }
-            (Value::Float(_), Value::BigInt(n2)) => {
-                self.opcode_cmp_inner(v1, &bigint_to_float(n2))
-            }
-            (Value::Int(n1), Value::Float(_)) => {
-                self.opcode_cmp_inner(&int_to_float(*n1), v2)
-            }
-            (Value::Float(_), Value::Int(n2)) => {
-                self.opcode_cmp_inner(v1, &int_to_float(*n2))
-            }
-            (Value::Float(n1), Value::Float(n2)) => {
-                n2.partial_cmp(n1).unwrap() as i32
-            }
-            (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                d2.cmp(d1) as i32
-            }
-            (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                d2.cmp(d1) as i32
-            }
+            (Value::BigInt(n1), Value::BigInt(n2)) => n2.cmp(n1) as i32,
+            (Value::BigInt(_), Value::Int(n2)) => self.opcode_cmp_inner(v1, &int_to_bigint(*n2)),
+            (Value::Int(n1), Value::BigInt(_)) => self.opcode_cmp_inner(&int_to_bigint(*n1), v2),
+            (Value::Int(n1), Value::Int(n2)) => n2.cmp(n1) as i32,
+            (Value::BigInt(n1), Value::Float(_)) => self.opcode_cmp_inner(&bigint_to_float(n1), v2),
+            (Value::Float(_), Value::BigInt(n2)) => self.opcode_cmp_inner(v1, &bigint_to_float(n2)),
+            (Value::Int(n1), Value::Float(_)) => self.opcode_cmp_inner(&int_to_float(*n1), v2),
+            (Value::Float(_), Value::Int(n2)) => self.opcode_cmp_inner(v1, &int_to_float(*n2)),
+            (Value::Float(n1), Value::Float(n2)) => n2.partial_cmp(n1).unwrap() as i32,
+            (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => d2.cmp(d1) as i32,
+            (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => d2.cmp(d1) as i32,
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
                 if d2 < d1 {
                     -1

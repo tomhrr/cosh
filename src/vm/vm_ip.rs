@@ -218,10 +218,8 @@ impl VM {
                                 1
                             }
                             Err(e) => {
-                                let err_str = format!(
-                                    "ip argument must be valid IP address string: {}",
-                                    e
-                                );
+                                let err_str =
+                                    format!("ip argument must be valid IP address string: {}", e);
                                 self.print_error(&err_str);
                                 0
                             }
@@ -288,13 +286,11 @@ impl VM {
                                 return 0;
                             }
                             if !(prefix_len == 0 && addr_int == BigUint::from(0u8)) {
-                                let prefix_mask = (BigUint::from(1u8) << (128 - prefix_len))
-                                    - BigUint::from(1u8);
+                                let prefix_mask =
+                                    (BigUint::from(1u8) << (128 - prefix_len)) - BigUint::from(1u8);
                                 let addr_check: BigUint = addr_int & prefix_mask;
                                 if !addr_check.is_zero() {
-                                    self.print_error(
-                                        "ip argument must be valid IP address string",
-                                    );
+                                    self.print_error("ip argument must be valid IP address string");
                                     return 0;
                                 }
                             }
@@ -302,10 +298,8 @@ impl VM {
                             1
                         }
                         Err(e) => {
-                            let err_str = format!(
-                                "ip argument must be valid IP address string: {}",
-                                e
-                            );
+                            let err_str =
+                                format!("ip argument must be valid IP address string: {}", e);
                             self.print_error(&err_str);
                             0
                         }
@@ -911,9 +905,7 @@ impl VM {
                 self.stack.push(nvv);
                 1
             }
-            None => {
-                0
-            }
+            None => 0,
         }
     }
 }

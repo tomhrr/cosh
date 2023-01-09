@@ -563,12 +563,7 @@ impl VM {
     /// global functions, and a boolean indicating whether the stack
     /// needs to be cleared after the stack is printed.  Prints the
     /// stack to standard output.
-    pub fn print_stack(
-        &mut self,
-        chunk: Rc<RefCell<Chunk>>,
-        i: usize,
-        no_remove: bool,
-    ) -> bool {
+    pub fn print_stack(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize, no_remove: bool) -> bool {
         if self.printing_stack {
             self.print_error("cannot call .s recursively");
             return false;

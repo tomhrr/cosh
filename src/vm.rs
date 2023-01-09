@@ -395,7 +395,11 @@ impl VM {
     /// Prints the stack.
     pub fn opcode_printstack(&mut self) -> i32 {
         let res = self.print_stack(self.chunk.clone(), self.i, true);
-        if res { 1 } else { 0 }
+        if res {
+            1
+        } else {
+            0
+        }
     }
 
     /// Converts a callable (e.g. a string) into a function object.
@@ -506,12 +510,12 @@ impl VM {
             let value_opt: Option<&str>;
             to_str!(value_rr, value_opt);
 
-            value_opt.map(|s|
+            value_opt.map(|s| {
                 Value::String(Rc::new(RefCell::new(StringTriple::new(
                     s.to_string(),
                     None,
                 ))))
-            )
+            })
         }
     }
 
@@ -533,9 +537,7 @@ impl VM {
                     let param_str = params.get(1).unwrap().as_str();
                     param_str.chars().collect()
                 }
-                _ => {
-                    HashSet::new()
-                }
+                _ => HashSet::new(),
             };
         }
 
@@ -561,9 +563,7 @@ impl VM {
 
         let regex_res = rb.build();
         match regex_res {
-            Ok(regex) => {
-                Some((regex, global))
-            }
+            Ok(regex) => Some((regex, global)),
             Err(e) => {
                 let mut err_str = format!("{}", e);
                 err_str = RE_NEWLINE.replace_all(&err_str, "").to_string();
@@ -602,9 +602,7 @@ impl VM {
             Some(s) => {
                 let rr = self.regexes.get(s);
                 match rr {
-                    Some(r) => {
-                        Some(r.clone())
-                    }
+                    Some(r) => Some(r.clone()),
                     _ => {
                         let regex_res = self.str_to_regex(s);
                         match regex_res {
@@ -613,9 +611,7 @@ impl VM {
                                 self.regexes.insert(s.to_string(), (rc.clone(), global));
                                 Some((rc, global))
                             }
-                            _ => {
-                                None
-                            }
+                            _ => None,
                         }
                     }
                 }
@@ -688,9 +684,7 @@ impl VM {
                 self.local_var_stack = plvs;
                 true
             }
-            None => {
-                false
-            }
+            None => false,
         };
         if !has_plvs_stack && !call_chunk.borrow().nested {
             prev_stack = Some(self.local_var_stack.clone());

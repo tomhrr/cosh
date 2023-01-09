@@ -318,7 +318,10 @@ fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
     // executable completion should be used (unless the path is
     // qualified).
     let before = &line[0..start];
-    if !before.is_empty() && before.chars().all(char::is_whitespace) && !path.contains(char::is_whitespace) {
+    if !before.is_empty()
+        && before.chars().all(char::is_whitespace)
+        && !path.contains(char::is_whitespace)
+    {
         return !(path.starts_with("./") || path.starts_with('/'));
     }
 
@@ -641,8 +644,7 @@ fn main() {
                 let file_res = fs::File::open(coshrc_path);
                 if let Ok(file) = file_res {
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                    let chunk_opt =
-                        vm.interpret(global_functions.clone(), &mut bufread, ".coshrc");
+                    let chunk_opt = vm.interpret(global_functions.clone(), &mut bufread, ".coshrc");
                     if let Some(chunk) = chunk_opt {
                         for (k, v) in chunk.borrow().functions.iter() {
                             if !k.starts_with("anon") {
@@ -712,10 +714,7 @@ fn main() {
                     match res {
                         Ok(_) => {}
                         Err(e) => {
-                            eprintln!(
-                                "unable to write content to temporary REPL file: {}",
-                                e
-                            );
+                            eprintln!("unable to write content to temporary REPL file: {}", e);
                             std::process::exit(1);
                         }
                     }

@@ -38,9 +38,7 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
             StringTriple::new(s.to_string(), None),
         ))),
         serde_json::value::Value::Array(lst) => Value::List(Rc::new(RefCell::new(
-            lst.iter()
-                .map(convert_from_json)
-                .collect::<VecDeque<_>>(),
+            lst.iter().map(convert_from_json).collect::<VecDeque<_>>(),
         ))),
         serde_json::value::Value::Object(map) => Value::Hash(Rc::new(RefCell::new(
             map.iter()
@@ -103,8 +101,7 @@ impl VM {
                     let doc;
                     match doc_res {
                         Err(e) => {
-                            let err_str =
-                                format!("from-json argument is not valid JSON: {}", e);
+                            let err_str = format!("from-json argument is not valid JSON: {}", e);
                             self.print_error(&err_str);
                             return 0;
                         }

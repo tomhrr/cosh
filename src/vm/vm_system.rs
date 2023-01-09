@@ -118,20 +118,16 @@ impl VM {
                     Ok(_) => {
                         let res = std::fs::remove_file(src);
                         match res {
-                            Ok(_) => {
-                                1
-                            }
+                            Ok(_) => 1,
                             Err(e) => {
-                                let err_str =
-                                    format!("unable to remove original file: {}", e);
+                                let err_str = format!("unable to remove original file: {}", e);
                                 self.print_error(&err_str);
                                 0
                             }
                         }
                     }
                     Err(e) => {
-                        let err_str =
-                            format!("unable to copy file to destination: {}", e);
+                        let err_str = format!("unable to copy file to destination: {}", e);
                         self.print_error(&err_str);
                         0
                     }
@@ -170,9 +166,7 @@ impl VM {
             (Some(src), Some(dst)) => {
                 let res = std::fs::rename(src, dst);
                 match res {
-                    Ok(_) => {
-                        1
-                    }
+                    Ok(_) => 1,
                     Err(e) => {
                         let err_str = format!("unable to rename file: {}", e);
                         self.print_error(&err_str);
@@ -344,8 +338,7 @@ impl VM {
                             match sft_res {
                                 Ok(_) => {}
                                 Err(e) => {
-                                    let err_str =
-                                        format!("unable to write file: {}", e);
+                                    let err_str = format!("unable to write file: {}", e);
                                     self.print_error(&err_str);
                                     return 0;
                                 }
@@ -608,9 +601,7 @@ impl VM {
                 perms.set_mode(mode.try_into().unwrap());
                 let res = fs::set_permissions(&path, perms);
                 match res {
-                    Ok(_) => {
-                        1
-                    }
+                    Ok(_) => 1,
                     Err(e) => {
                         let s = format!("unable to chmod: {}", e);
                         self.print_error(&s);
@@ -677,9 +668,7 @@ impl VM {
 
                 let chown_res = nix::unistd::chown(path, Some(user_obj.uid), Some(group_obj.gid));
                 match chown_res {
-                    Ok(_) => {
-                        1
-                    }
+                    Ok(_) => 1,
                     Err(e) => {
                         let s = format!("unable to chown path: {}", e);
                         self.print_error(&s);
@@ -718,9 +707,7 @@ impl VM {
             Some(dir) => {
                 let res = std::fs::create_dir(dir);
                 match res {
-                    Ok(_) => {
-                        1
-                    }
+                    Ok(_) => 1,
                     Err(e) => {
                         let s = format!("unable to make directory: {}", e);
                         self.print_error(&s);
@@ -751,9 +738,7 @@ impl VM {
             Some(dir) => {
                 let res = std::fs::remove_dir(dir);
                 match res {
-                    Ok(_) => {
-                        1
-                    }
+                    Ok(_) => 1,
                     Err(e) => {
                         let s = format!("unable to remove directory: {}", e);
                         self.print_error(&s);

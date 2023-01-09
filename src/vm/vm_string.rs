@@ -179,9 +179,7 @@ impl VM {
                                 buffer.push(e_str);
                             }
                         }
-                    } else if !e_str.is_empty()
-                        && e_str.starts_with('\"')
-                        && !e_str.ends_with('\"')
+                    } else if !e_str.is_empty() && e_str.starts_with('\"') && !e_str.ends_with('\"')
                     {
                         buffer.push(e_str);
                     } else {

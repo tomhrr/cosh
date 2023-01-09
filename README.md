@@ -7,73 +7,55 @@ cosh is a concatenative command-line shell.
 
 ### Why?
 
-Basic shell operations like `ls`, `ps`, and so on are implemented as
-functions that return first-class values, as opposed to relying on
-executables that return text streams.  This makes working with the
-results simpler:
+Basic shell operations like `ls`, `ps`, `stat`, and so on are
+implemented as functions that return first-class values, as opposed to
+relying on executables that return text streams.  This makes working
+with the results simpler.  For example, to find the size of all files
+in the current directory:
 
-```
-/test$ ls;
-(
-    0: ./file-0
-    1: ./file-1
-    2: ./file-2
-)
-/test$ ls; shift;
-file-0
-/test$ ls; shift; stat; size get
-1024
-```
+<table>
+    <tr>
+        <th><b>sh</b></th>
+        <td><code>ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -</code></td>
+    </tr>
+    <tr>
+        <th><b>cosh</b></th>
+        <td><code>ls; [stat; size get] map; sum</code></td>
+    </tr>
+</table>
 
 A small set of versatile primitives means that less needs to be
 remembered when compared with typical shells (see e.g. the various
-flags for `cut(1)`):
+flags for `cut(1)`).  For example, to get the second column from each
+row of a CSV file:
 
-```
-/test$ file-0 f<;
-v[gen (
-    0: "1,2,3\n"
-    1: "4,5,6\n"
-)]
-/test$ file-0 f<; [chomp; , split] map;
-v[gen (
-    0: (
-        0: 1
-        1: 2
-        2: 3
-    )
-    1: (
-        0: 4
-        1: 5
-        2: 6
-    )
-)]
-/test$ file-0 f<; [chomp; , split] map; [2 nth] map; sum
-9
-```
+<table>
+    <tr>
+        <th><b>sh</b></th>
+        <td><code>cat test-data/csv | cut -d, -f2</code></td>
+    </tr>
+    <tr>
+        <th><b>cosh</b></th>
+        <td><code>test-data/csv f<; [chomp; , split; 1 nth] map;</code></td>
+    </tr>
+</table>
 
 Arithmetical operators and XML/JSON/CSV encoding/decoding functions
 reduce the number of times that it becomes necessary to use a more
-full-featured programming language:
+full-featured programming language or a third-party executable.  For
+example, to get the first value from the "zxcv" array member of a JSON
+file:
 
-```
-/test$ file-1 f<; print for;
-{"asdf":1,"qwer":2,"zxcv":3}
-/test$ file-1 f<; from-json;
-h(
-    "asdf": 1
-    "qwer": 2
-    "zxcv": 3
-)
-/test$ file-1 f<; from-json; each; [dup; pop; 3 *; push; , join; \n ++] map;
-v[gen (
-    0: "asdf,3\n"
-    1: "qwer,6\n"
-    2: "zxcv,9\n"
-)]
-/test$ file-1 f<; from-json; each; [dup; pop; 3 *; push; , join; \n ++] map; file-1-csv f>;
-/test$
-```
+<table>
+    <tr>
+        <th><b>sh</b></th>
+        <td><code>cat test-data/json2 | jq .zxcv[0]</code></td>
+    </tr>
+    <tr>
+        <th><b>cosh</b></th>
+        <td><code>test-data/json2 f<; from-json; zxcv get; 0 nth</code></td>
+    </tr>
+</table>
 
 ### Install
 

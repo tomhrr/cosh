@@ -1007,6 +1007,9 @@ impl Chunk {
 
                     println!("OP_JUMPNEREQC {:?} {:?}", jump_i, value);
                 }
+                OpCode::Cmp => {
+                    println!("OP_CMP");
+                }
                 OpCode::Eq => {
                     println!("OP_EQ");
                 }

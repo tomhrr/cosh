@@ -104,6 +104,7 @@ lazy_static! {
         map.insert("||", VM::core_or as fn(&mut VM) -> i32);
         map.insert("&", VM::core_and as fn(&mut VM) -> i32);
         map.insert("/", VM::opcode_divide as fn(&mut VM) -> i32);
+        map.insert("<=>", VM::opcode_cmp as fn(&mut VM) -> i32);
         map.insert("=", VM::opcode_eq as fn(&mut VM) -> i32);
         map.insert(">", VM::opcode_gt as fn(&mut VM) -> i32);
         map.insert("<", VM::opcode_lt as fn(&mut VM) -> i32);
@@ -291,7 +292,6 @@ lazy_static! {
         map.insert("sha1", VM::core_sha1 as fn(&mut VM) -> i32);
         map.insert("sha256", VM::core_sha256 as fn(&mut VM) -> i32);
         map.insert("sha512", VM::core_sha512 as fn(&mut VM) -> i32);
-        map.insert("<=>", VM::opcode_cmp as fn(&mut VM) -> i32);
         map.insert("sort", VM::core_sort as fn(&mut VM) -> i32);
         map.insert("sortp", VM::core_sortp as fn(&mut VM) -> i32);
         map.insert("fmt", VM::core_fmt as fn(&mut VM) -> i32);
@@ -350,6 +350,7 @@ lazy_static! {
         vec[OpCode::Multiply as usize] =
             Some(VM::opcode_multiply as fn(&mut VM) -> i32);
         vec[OpCode::Divide as usize] = Some(VM::opcode_divide as fn(&mut VM) -> i32);
+        vec[OpCode::Cmp as usize] = Some(VM::opcode_cmp as fn(&mut VM) -> i32);
         vec[OpCode::Eq as usize] = Some(VM::opcode_eq as fn(&mut VM) -> i32);
         vec[OpCode::Gt as usize] = Some(VM::opcode_gt as fn(&mut VM) -> i32);
         vec[OpCode::Lt as usize] = Some(VM::opcode_lt as fn(&mut VM) -> i32);

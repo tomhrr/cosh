@@ -922,6 +922,8 @@ impl Compiler {
                                 chunk.add_opcode(OpCode::Divide);
                             }
                         }
+                    } else if s == "<=>" {
+                        chunk.add_opcode(OpCode::Cmp);
                     } else if s == ">" {
                         chunk.add_opcode(OpCode::Gt);
                     } else if s == "<" {

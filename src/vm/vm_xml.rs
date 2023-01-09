@@ -44,8 +44,8 @@ fn convert_to_xml(v: &Value) -> Option<String> {
                             .borrow()
                             .iter()
                             .map(|(key, value_rr)| {
-				let value_str_opt: Option<&str>;
-				to_str!(value_rr, value_str_opt);
+                                let value_str_opt: Option<&str>;
+                                to_str!(value_rr, value_str_opt);
 
                                 match value_str_opt {
                                     Some(s) => {
@@ -81,31 +81,29 @@ fn convert_to_xml(v: &Value) -> Option<String> {
                         let namespaces_lst = lst
                             .borrow()
                             .iter()
-                            .map(|el| {
-                                match el {
-                                    Value::Hash(hsh) => {
-                                        let hb = hsh.borrow();
-                                        let uri_opt =  hb.get("uri").unwrap();
-                                        let name_opt = hb.get("name").unwrap();
+                            .map(|el| match el {
+                                Value::Hash(hsh) => {
+                                    let hb = hsh.borrow();
+                                    let uri_opt = hb.get("uri").unwrap();
+                                    let name_opt = hb.get("name").unwrap();
 
-                                        let uri_str_opt: Option<&str>;
-                                        to_str!(uri_opt, uri_str_opt);
-                                        let name_str_opt: Option<&str>;
-                                        to_str!(name_opt, name_str_opt);
+                                    let uri_str_opt: Option<&str>;
+                                    to_str!(uri_opt, uri_str_opt);
+                                    let name_str_opt: Option<&str>;
+                                    to_str!(name_opt, name_str_opt);
 
-                                        match (name_str_opt, uri_str_opt) {
-                                            (Some(name), Some(uri)) => {
-                                                if name.eq("") {
-                                                    format!("xmlns=\"{}\"", uri)
-                                                } else {
-                                                    format!("xmlns:{}=\"{}\"", name, uri)
-                                                }
+                                    match (name_str_opt, uri_str_opt) {
+                                        (Some(name), Some(uri)) => {
+                                            if name.eq("") {
+                                                format!("xmlns=\"{}\"", uri)
+                                            } else {
+                                                format!("xmlns:{}=\"{}\"", name, uri)
                                             }
-                                            _ => { "".to_string() }
                                         }
+                                        _ => "".to_string(),
                                     }
-                                    _ => { "".to_string() }
                                 }
+                                _ => "".to_string(),
                             })
                             .collect::<Vec<_>>();
                         namespaces_lst.join(" ")
@@ -158,7 +156,13 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             };
             return Some(format!(
                 "{}{}{}{}{}{}{}",
-                begin_open_element, namespaces, attributes, begin_close_element, text, child_nodes, end_element
+                begin_open_element,
+                namespaces,
+                attributes,
+                begin_close_element,
+                text,
+                child_nodes,
+                end_element
             ));
         }
         _ => Some("".to_string()),
@@ -167,9 +171,11 @@ fn convert_to_xml(v: &Value) -> Option<String> {
 
 impl VM {
     /// Converts a roxmltree object into a value.
-    fn convert_from_xml(&self,
-                        node: &roxmltree::Node,
-                        param_namespaces: &HashMap<String, String>) -> Value {
+    fn convert_from_xml(
+        &self,
+        node: &roxmltree::Node,
+        param_namespaces: &HashMap<String, String>,
+    ) -> Value {
         let mut map = IndexMap::new();
 
         let mut current_namespaces = param_namespaces;
@@ -177,12 +183,11 @@ impl VM {
         for ns in node.namespaces() {
             let uri = ns.uri();
             let ns_name = ns.name();
-            let name =
-                if ns_name.is_none() {
-                    "".to_string()
-                } else {
-                    ns_name.unwrap().to_string()
-                };
+            let name = if ns_name.is_none() {
+                "".to_string()
+            } else {
+                ns_name.unwrap().to_string()
+            };
 
             match current_namespaces.get(uri) {
                 Some(prev_name) => {
@@ -205,12 +210,11 @@ impl VM {
             for ns in node.namespaces() {
                 let uri = ns.uri();
                 let ns_name = ns.name();
-                let name =
-                    if ns_name.is_none() {
-                        "".to_string()
-                    } else {
-                        ns_name.unwrap().to_string()
-                    };
+                let name = if ns_name.is_none() {
+                    "".to_string()
+                } else {
+                    ns_name.unwrap().to_string()
+                };
 
                 match current_namespaces.get(uri) {
                     Some(prev_name) => {
@@ -222,49 +226,53 @@ impl VM {
                 }
 
                 let mut ns_map = IndexMap::new();
-                ns_map.insert("uri".to_string(),
+                ns_map.insert(
+                    "uri".to_string(),
                     Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        uri.to_string(), None
-                    )))));
-                ns_map.insert("name".to_string(),
+                        uri.to_string(),
+                        None,
+                    )))),
+                );
+                ns_map.insert(
+                    "name".to_string(),
                     Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        name.to_string(), None
-                    )))));
+                        name.to_string(),
+                        None,
+                    )))),
+                );
                 node_namespaces.push_back(Value::Hash(Rc::new(RefCell::new(ns_map))));
                 new_namespaces.insert(uri.to_string(), name.to_string());
             }
-            map.insert("namespaces".to_string(),
-                       Value::List(Rc::new(RefCell::new(node_namespaces))));
+            map.insert(
+                "namespaces".to_string(),
+                Value::List(Rc::new(RefCell::new(node_namespaces))),
+            );
             current_namespaces = &new_namespaces;
         }
 
         let tag_name = node.tag_name();
         let tag_name_str = tag_name.name().to_string();
         let tag_name_ns = tag_name.namespace();
-        let key =
-            if tag_name_ns.is_none() {
-                tag_name_str
+        let key = if tag_name_ns.is_none() {
+            tag_name_str
+        } else {
+            let tag_ns = tag_name_ns.unwrap();
+            let ns_prefix_opt = current_namespaces.get(tag_ns);
+            if ns_prefix_opt.is_none() {
+                self.print_error("invalid XML namespace");
+                return Value::Null;
+            }
+            let ns_prefix = ns_prefix_opt.unwrap();
+            if !ns_prefix.eq("") {
+                format!("{}:{}", ns_prefix, tag_name_str)
             } else {
-                let tag_ns = tag_name_ns.unwrap();
-                let ns_prefix_opt = current_namespaces.get(tag_ns);
-                if ns_prefix_opt.is_none() {
-                    self.print_error("invalid XML namespace");
-                    return Value::Null;
-                }
-                let ns_prefix = ns_prefix_opt.unwrap();
-                if !ns_prefix.eq("") {
-                    format!("{}:{}", ns_prefix, tag_name_str)
-                } else {
-                    format!("{}", tag_name_str)
-                }
-            };
+                format!("{}", tag_name_str)
+            }
+        };
 
         map.insert(
             "key".to_string(),
-            Value::String(Rc::new(RefCell::new(StringTriple::new(
-                key,
-                None,
-            )))),
+            Value::String(Rc::new(RefCell::new(StringTriple::new(key, None)))),
         );
         if node.is_text() {
             let text_opt = node.text();
@@ -273,7 +281,10 @@ impl VM {
                 Some(s) => {
                     map.insert(
                         "text".to_string(),
-                        Value::String(Rc::new(RefCell::new(StringTriple::new(s.to_string(), None)))),
+                        Value::String(Rc::new(RefCell::new(StringTriple::new(
+                            s.to_string(),
+                            None,
+                        )))),
                     );
                 }
             }
@@ -297,8 +308,7 @@ impl VM {
 
         let mut child_nodes = VecDeque::new();
         for child_node in node.children() {
-            let child_node_value = self.convert_from_xml(&child_node,
-                                                         current_namespaces);
+            let child_node_value = self.convert_from_xml(&child_node, current_namespaces);
             child_nodes.push_back(child_node_value);
         }
         map.insert(
@@ -336,8 +346,7 @@ impl VM {
                         }
                     }
                     let namespaces = HashMap::new();
-                    let xml_rr = self.convert_from_xml(&doc.root_element(),
-                                                       &namespaces);
+                    let xml_rr = self.convert_from_xml(&doc.root_element(), &namespaces);
                     self.stack.push(xml_rr);
                     return 1;
                 }
@@ -348,7 +357,11 @@ impl VM {
             }
         } else {
             self.stack.push(value_rr);
-            self.stack.push(Value::String(Rc::new(RefCell::new(StringTriple::new("".to_string(), None)))));
+            self.stack
+                .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                    "".to_string(),
+                    None,
+                )))));
             let function_rr = self.string_to_callable("join").unwrap();
             let res = self.call(OpCode::Call, function_rr);
             if !res {

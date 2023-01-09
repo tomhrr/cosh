@@ -15,8 +15,8 @@ impl VM {
         }
 
         let key_str_rr = self.stack.pop().unwrap();
-	let key_str_opt: Option<&str>;
-	to_str!(key_str_rr, key_str_opt);
+        let key_str_opt: Option<&str>;
+        to_str!(key_str_rr, key_str_opt);
 
         let hash_rr = self.stack.pop().unwrap();
 
@@ -134,8 +134,8 @@ impl VM {
         let val_rr = self.stack.pop().unwrap();
 
         let key_str_rr = self.stack.pop().unwrap();
-	let key_str_opt: Option<&str>;
-	to_str!(key_str_rr, key_str_opt);
+        let key_str_opt: Option<&str>;
+        to_str!(key_str_rr, key_str_opt);
 
         let mut hash_rr = self.stack.pop().unwrap();
 

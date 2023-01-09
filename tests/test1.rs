@@ -405,7 +405,10 @@ fn import_test() {
 
 #[test]
 fn push_test() {
-    basic_test("(1 2 3) 5 push;", "(\n    0: 1\n    1: 2\n    2: 3\n    3: 5\n)");
+    basic_test(
+        "(1 2 3) 5 push;",
+        "(\n    0: 1\n    1: 2\n    2: 3\n    3: 5\n)",
+    );
 }
 
 #[test]
@@ -415,7 +418,10 @@ fn pop_test() {
 
 #[test]
 fn unshift_test() {
-    basic_test("(1 2 3) 5 unshift;", "(\n    0: 5\n    1: 1\n    2: 2\n    3: 3\n)");
+    basic_test(
+        "(1 2 3) 5 unshift;",
+        "(\n    0: 5\n    1: 1\n    2: 2\n    3: 3\n)",
+    );
 }
 
 #[test]
@@ -441,7 +447,10 @@ fn single_quote_test() {
 fn regex_tests() {
     basic_test("'asdf asdf' asdf m;", ".t");
     basic_test("'asdf asdf' asdf/g qwer s;", "\"qwer qwer\"");
-    basic_test("'12341234' \\d\\d\\d\\d/g c;", "(\n    0: 1234\n    1: 1234\n)");
+    basic_test(
+        "'12341234' \\d\\d\\d\\d/g c;",
+        "(\n    0: 1234\n    1: 1234\n)",
+    );
 }
 
 #[test]
@@ -486,8 +495,7 @@ fn split_test() {
     basic_test("test-data/split f<; take-all; 0 nth; , split",
                "(\n    0: asdf\n    1: qwer\n    2: \"asdf asdf\"\n    3: asdf,asdf\n    4: \"\"\n    5: \"\"\n    6: \"\"\n    7: \"qwer\\n\"\n)");
 
-    basic_test("asdf:asdf:asdf \":\" split; \":\" join",
-               "asdf:asdf:asdf");
+    basic_test("asdf:asdf:asdf \":\" split; \":\" join", "asdf:asdf:asdf");
 }
 
 #[test]
@@ -501,8 +509,10 @@ fn join_test() {
 #[test]
 fn append_test() {
     basic_test("a b ++", "ab");
-    basic_test("3 range; take-all; 3 range; take-all; ++",
-        "(\n    0: 0\n    1: 1\n    2: 2\n    3: 0\n    4: 1\n    5: 2\n)");
+    basic_test(
+        "3 range; take-all; 3 range; take-all; ++",
+        "(\n    0: 0\n    1: 1\n    2: 2\n    3: 0\n    4: 1\n    5: 2\n)",
+    );
     basic_test("h(1 2) h(3 4) ++; keys; sort; '-' join", "1-3");
 }
 
@@ -667,7 +677,10 @@ fn misc_lst_fns() {
         "(1 2 5 1 2 5 3 6) uniq",
         "v[gen (\n    0: 1\n    1: 2\n    2: 5\n    3: 3\n    4: 6\n)]",
     );
-    basic_test("(a b 1 b 2) uniq", "v[gen (\n    0: a\n    1: b\n    2: 1\n    3: 2\n)]");
+    basic_test(
+        "(a b 1 b 2) uniq",
+        "v[gen (\n    0: a\n    1: b\n    2: 1\n    3: 2\n)]",
+    );
 }
 
 #[test]
@@ -706,25 +719,32 @@ fn eq_test() {
 
 #[test]
 fn nth_bounds_test1() {
-    basic_error_test("10 range; take-all; 15 nth",
-                     "1:24: second nth argument must fall within list bounds");
+    basic_error_test(
+        "10 range; take-all; 15 nth",
+        "1:24: second nth argument must fall within list bounds",
+    );
 }
 
 #[test]
 fn nth_bounds_test2() {
-    basic_error_test("10 range; take-all; 10 15 nth!",
-                     "1:27: second nth! argument must fall within list bounds");
+    basic_error_test(
+        "10 range; take-all; 10 15 nth!",
+        "1:27: second nth! argument must fall within list bounds",
+    );
 }
 
 #[test]
 fn anon_fn_var_test() {
-    basic_test("3 range; [drop; x var; 3 x !; x @] map;",
-               "v[gen (\n    0: 3\n    1: 3\n    2: 3\n)]");
+    basic_test(
+        "3 range; [drop; x var; 3 x !; x @] map;",
+        "v[gen (\n    0: 3\n    1: 3\n    2: 3\n)]",
+    );
 }
 
 #[test]
 fn generator_closure_test() {
-    basic_test("
+    basic_test(
+        "
 : f
     x var;
     10 x !;
@@ -744,12 +764,15 @@ dup; shift; println;
 dup; shift; println;
 dup; shift; println;
 drop;
-    ", "65\n100\n135");
+    ",
+        "65\n100\n135",
+    );
 }
 
 #[test]
 fn anon_fn_test() {
-    basic_error_test("
+    basic_error_test(
+        "
 : f
     x var;
     10 x !;
@@ -757,7 +780,9 @@ fn anon_fn_test() {
 
 f;
 funcall;
-    ", "5:6: anonymous function environment has gone out of scope");
+    ",
+        "5:6: anonymous function environment has gone out of scope",
+    );
 }
 
 #[test]
@@ -768,30 +793,34 @@ fn bool_test() {
 
 #[test]
 fn json_bool_test() {
-    basic_test("\"[true, false]\" from-json; to-json",
-               "[true,false]");
+    basic_test("\"[true, false]\" from-json; to-json", "[true,false]");
 }
 
 #[test]
 fn comment_test() {
-    basic_test("
+    basic_test(
+        "
 # A function.
 : f 100 ,,
 f;
-", "100");
+",
+        "100",
+    );
     basic_test("mystring#allgood", "mystring#allgood");
 }
 
 #[test]
 fn clone_test() {
-    basic_test("3 range; take-all; dup; clone; shift;",
-               "(\n    0: 0\n    1: 1\n    2: 2\n)\n0");
-    basic_test("3 range; dup; clone; take-all; swap; take-all; ++; '-' join;",
-               "0-1-2-0-1-2");
-    basic_test("h(1 2) keys; dup; clone; 0 nth; swap; 0 nth; ++",
-               "11");
-    basic_test("h(1 2) values; dup; clone; 0 nth; swap; 0 nth; ++",
-               "22");
+    basic_test(
+        "3 range; take-all; dup; clone; shift;",
+        "(\n    0: 0\n    1: 1\n    2: 2\n)\n0",
+    );
+    basic_test(
+        "3 range; dup; clone; take-all; swap; take-all; ++; '-' join;",
+        "0-1-2-0-1-2",
+    );
+    basic_test("h(1 2) keys; dup; clone; 0 nth; swap; 0 nth; ++", "11");
+    basic_test("h(1 2) values; dup; clone; 0 nth; swap; 0 nth; ++", "22");
 }
 
 #[test]
@@ -801,27 +830,42 @@ fn date_test() {
     basic_test("now; now; <", ".t");
     basic_test("now; now; >", ".f");
     basic_test("now; to-epoch; \\d+ m;", ".t");
-    basic_test("now; dup; '%F %T' strftime; swap; to-epoch; from-epoch; '%F %T' strftime; =",
-               ".t");
-    basic_test("1664280627 from-epoch; '%F %T' strftime",
-               "\"2022-09-27 12:10:27\"");
+    basic_test(
+        "now; dup; '%F %T' strftime; swap; to-epoch; from-epoch; '%F %T' strftime; =",
+        ".t",
+    );
+    basic_test(
+        "1664280627 from-epoch; '%F %T' strftime",
+        "\"2022-09-27 12:10:27\"",
+    );
     basic_test("now; dup; '%F %T' strftime; swap; Australia/Brisbane set-tz; UTC set-tz; '%F %T' strftime; =",
                ".t");
-    basic_test("'2022-09-27 12:10:27' '%F %T' strptime; to-epoch;",
-               "1664280627");
-    basic_test("'2022-09-27 22:10:27' '%F %T' Australia/Brisbane strptimez; to-epoch;",
-               "1664280627");
-    basic_test("'2022' '%Y' Australia/Brisbane strptimez; '%F %T %z' strftime;",
-               "\"2022-01-01 00:00:00 +1000\"");
+    basic_test(
+        "'2022-09-27 12:10:27' '%F %T' strptime; to-epoch;",
+        "1664280627",
+    );
+    basic_test(
+        "'2022-09-27 22:10:27' '%F %T' Australia/Brisbane strptimez; to-epoch;",
+        "1664280627",
+    );
+    basic_test(
+        "'2022' '%Y' Australia/Brisbane strptimez; '%F %T %z' strftime;",
+        "\"2022-01-01 00:00:00 +1000\"",
+    );
 
-    basic_test("'2022-09-27' '%F' strptime; '%F' strftime;",
-               "2022-09-27");
-    basic_test("'2022-09-27' '%F' strptime; '%F %T' strftime;",
-               "\"2022-09-27 00:00:00\"");
-    basic_test("'02' '%H' strptime; '%F %T' strftime;",
-               "\"1970-01-01 02:00:00\"");
-    basic_test("'02 +10:00' '%H %z' strptime; '%F %T %z' strftime;",
-               "\"1970-01-01 02:00:00 +1000\"");
+    basic_test("'2022-09-27' '%F' strptime; '%F' strftime;", "2022-09-27");
+    basic_test(
+        "'2022-09-27' '%F' strptime; '%F %T' strftime;",
+        "\"2022-09-27 00:00:00\"",
+    );
+    basic_test(
+        "'02' '%H' strptime; '%F %T' strftime;",
+        "\"1970-01-01 02:00:00\"",
+    );
+    basic_test(
+        "'02 +10:00' '%H %z' strptime; '%F %T %z' strftime;",
+        "\"1970-01-01 02:00:00 +1000\"",
+    );
 
     basic_test("\"2000-01-01 00:00:00\" \"%F %T\" Asia/Vladivostok strptimez; \"2000-01-01 00:00:00 +1000\" \"%F %T %z\" strptime; =",
                ".t");
@@ -849,8 +893,14 @@ fn ip_test() {
     basic_test("31CC::/64 ip; ip.addr", "31cc::");
     basic_test("305F:305F::/32 ip; ip.len", "32");
     basic_test("::2:540b:e400 ip; ip.addr-int", "10000000000");
-    basic_test("3000::/16 ip; ip.last-addr", "3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff");
-    basic_test("3000::/16 ip; ip.last-addr-int", "63808136094534496727011269389785759743");
+    basic_test(
+        "3000::/16 ip; ip.last-addr",
+        "3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+    );
+    basic_test(
+        "3000::/16 ip; ip.last-addr-int",
+        "63808136094534496727011269389785759743",
+    );
     basic_test("::/112 ip; ip.size", "65536");
     basic_test(":: ip; ip.version", "6");
     basic_test("ABCD::/32 ip; str", "abcd::/32");
@@ -866,48 +916,83 @@ fn ip_test() {
     basic_test("1.0.0.0-1.0.0.255 ip; str", "1.0.0.0-1.0.0.255");
 
     basic_test("31CC::-31CC::ffff:ffff:ffff:ffff ip; ip.addr", "31cc::");
-    basic_test("305F:305F::-305F:305F:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.len", "32");
+    basic_test(
+        "305F:305F::-305F:305F:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.len",
+        "32",
+    );
     basic_test("::2:540b:e400 ip; ip.addr-int", "10000000000");
-    basic_test("3000::-3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.last-addr", "3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff");
-    basic_test("3000::-3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.last-addr-int", "63808136094534496727011269389785759743");
+    basic_test(
+        "3000::-3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.last-addr",
+        "3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+    );
+    basic_test(
+        "3000::-3000:ffff:ffff:ffff:ffff:ffff:ffff:ffff ip; ip.last-addr-int",
+        "63808136094534496727011269389785759743",
+    );
     basic_test("::/112 ip; ip.size", "65536");
     basic_test(":: ip; ip.version", "6");
-    basic_test("ABCD::-ABCD:0000:ffff:ffff:ffff:ffff:ffff:ffff ip; str", "abcd::-abcd:0:ffff:ffff:ffff:ffff:ffff:ffff");
+    basic_test(
+        "ABCD::-ABCD:0000:ffff:ffff:ffff:ffff:ffff:ffff ip; str",
+        "abcd::-abcd:0:ffff:ffff:ffff:ffff:ffff:ffff",
+    );
 }
 
 #[test]
 fn ipset_test() {
-    basic_test("0.0.0.0-1.0.0.0 ip; ip.prefixes; str map;",
-               "(\n    0: 0.0.0.0/8\n    1: 1.0.0.0\n)");
-    basic_test("0.0.0.0-1.0.0.0 ips; take-all; str map;",
-               "(\n    0: 0.0.0.0/8\n    1: 1.0.0.0\n)");
+    basic_test(
+        "0.0.0.0-1.0.0.0 ip; ip.prefixes; str map;",
+        "(\n    0: 0.0.0.0/8\n    1: 1.0.0.0\n)",
+    );
+    basic_test(
+        "0.0.0.0-1.0.0.0 ips; take-all; str map;",
+        "(\n    0: 0.0.0.0/8\n    1: 1.0.0.0\n)",
+    );
     basic_test("::-FFFF:: ip; ip.prefixes; str map;", "(\n    0: ::/1\n    1: 8000::/2\n    2: c000::/3\n    3: e000::/4\n    4: f000::/5\n    5: f800::/6\n    6: fc00::/7\n    7: fe00::/8\n    8: ff00::/9\n    9: ff80::/10\n    10: ffc0::/11\n    11: ffe0::/12\n    12: fff0::/13\n    13: fff8::/14\n    14: fffc::/15\n    15: fffe::/16\n    16: ffff::\n)");
     basic_test("::-FFFF:: ips; take-all; str map;", "(\n    0: ::/1\n    1: 8000::/2\n    2: c000::/3\n    3: e000::/4\n    4: f000::/5\n    5: f800::/6\n    6: fc00::/7\n    7: fe00::/8\n    8: ff00::/9\n    9: ff80::/10\n    10: ffc0::/11\n    11: ffe0::/12\n    12: fff0::/13\n    13: fff8::/14\n    14: fffc::/15\n    15: fffe::/16\n    16: ffff::\n)");
 
-    basic_test("1.0.0.0/8 ip; ip.prefixes; str map;",
-               "(\n    0: 1.0.0.0/8\n)");
+    basic_test(
+        "1.0.0.0/8 ip; ip.prefixes; str map;",
+        "(\n    0: 1.0.0.0/8\n)",
+    );
     basic_test("0.0.0.251-0.0.5.16 ip; ip.prefixes; str map;",
                "(\n    0: 0.0.0.251\n    1: 0.0.0.252/30\n    2: 0.0.1.0/24\n    3: 0.0.2.0/23\n    4: 0.0.4.0/24\n    5: 0.0.5.0/28\n    6: 0.0.5.16\n)");
-    basic_test("::/120 ip; ip.prefixes; str map;",
-               "(\n    0: ::/120\n)");
+    basic_test("::/120 ip; ip.prefixes; str map;", "(\n    0: ::/120\n)");
     basic_test("1:0:0:0:0:0:0:1-1:0:0:0:0:0:0:8000 ip; ip.prefixes; str map;",
                "(\n    0: 1::1\n    1: 1::2/127\n    2: 1::4/126\n    3: 1::8/125\n    4: 1::10/124\n    5: 1::20/123\n    6: 1::40/122\n    7: 1::80/121\n    8: 1::100/120\n    9: 1::200/119\n    10: 1::400/118\n    11: 1::800/117\n    12: 1::1000/116\n    13: 1::2000/115\n    14: 1::4000/114\n    15: 1::8000\n)");
 
     basic_test("(0.0.0.0/8 1.0.0.0/8) ips; str", "0.0.0.0/7");
     basic_test("(:: ::1) ips; str", "::/127");
     basic_test("(::) ips; ::1 ips; union; str", "::/127");
-    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; isect; str", "1.128.0.0/9");
-    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; diff; str", "1.0.0.0/9");
-    basic_test("1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; symdiff; str", "1.0.0.0/9,2.0.0.0/8");
-    basic_test("1.0.0.0-1.255.255.255 ips; take-all; str map", "(\n    0: 1.0.0.0/8\n)");
+    basic_test(
+        "1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; isect; str",
+        "1.128.0.0/9",
+    );
+    basic_test(
+        "1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; diff; str",
+        "1.0.0.0/9",
+    );
+    basic_test(
+        "1.0.0.0-1.255.255.255 ips; 1.128.0.0-2.255.255.255 ips; symdiff; str",
+        "1.0.0.0/9,2.0.0.0/8",
+    );
+    basic_test(
+        "1.0.0.0-1.255.255.255 ips; take-all; str map",
+        "(\n    0: 1.0.0.0/8\n)",
+    );
     basic_test("1.0.0.0-1.255.255.255 ips; dup; =;", ".t");
-    basic_test("1.0.0.0-255.255.255.255 ips; take-all; shift; str;", "1.0.0.0/8");
+    basic_test(
+        "1.0.0.0-255.255.255.255 ips; take-all; shift; str;",
+        "1.0.0.0/8",
+    );
 }
 
 #[test]
 fn set_test() {
     basic_test("s(1 2 3) 4 push;", "s(\n    1\n    2\n    3\n    4\n)");
-    basic_test("s(1 2 3) s(2 3 4) union;", "s(\n    1\n    2\n    3\n    4\n)");
+    basic_test(
+        "s(1 2 3) s(2 3 4) union;",
+        "s(\n    1\n    2\n    3\n    4\n)",
+    );
     basic_test("s(1 2 3) s(2 3 4) isect;", "s(\n    2\n    3\n)");
     basic_test("s(1 2 3) s(2 3 4) diff;", "s(\n    1\n)");
     basic_test("s(1 2 3) s(2 3 4) symdiff;", "s(\n    1\n    4\n)");
@@ -942,8 +1027,10 @@ fn predicate_test() {
 #[test]
 fn bigint_conversion_test() {
     basic_test("1 bigint;", "1");
-    basic_test("1000000000000000000000000 bigint;",
-               "1000000000000000000000000");
+    basic_test(
+        "1000000000000000000000000 bigint;",
+        "1000000000000000000000000",
+    );
     basic_test("asdf bigint;", "null");
 }
 
@@ -951,15 +1038,17 @@ fn bigint_conversion_test() {
 fn chr_test() {
     basic_test("100 chr;", "d");
     basic_test("100 bigint; chr;", "d");
-    basic_error_test("-100 bigint; chr",
-                     "1:14: chr argument must be u32 integer");
+    basic_error_test("-100 bigint; chr", "1:14: chr argument must be u32 integer");
 }
 
 #[test]
 fn ord_test() {
     basic_test("d ord;", "100");
     basic_test("千 ord;", "21315");
-    basic_error_test("asdf ord;", "1:6: ord argument must be one character in length");
+    basic_error_test(
+        "asdf ord;",
+        "1:6: ord argument must be one character in length",
+    );
 }
 
 #[test]
@@ -1055,7 +1144,10 @@ fn exists_test() {
 
 #[test]
 fn chmod_test() {
-    basic_test("() asdf f>; asdf 700 oct; chmod; {stat -c '%a' asdf}; shift; chomp; 700 m; asdf rm", ".t");
+    basic_test(
+        "() asdf f>; asdf 700 oct; chmod; {stat -c '%a' asdf}; shift; chomp; 700 m; asdf rm",
+        ".t",
+    );
 }
 
 #[test]
@@ -1131,7 +1223,10 @@ fn append_generator_tests() {
 #[test]
 fn env_tests() {
     basic_test("cosh_key cosh_value setenv; cosh_key getenv", "cosh_value");
-    basic_test("cosh_key cosh_value setenv; env; cosh_key get", "cosh_value");
+    basic_test(
+        "cosh_key cosh_value setenv; env; cosh_key get",
+        "cosh_value",
+    );
 }
 
 #[test]
@@ -1149,8 +1244,14 @@ fn regex_modifier_tests() {
     basic_test("\"asdf\\nasdf\" ^asdf$.^asdf$/sm m", ".t");
 
     basic_test("asdf_asdf_asdf asdf c", "(\n    0: asdf\n)");
-    basic_test("asdf_asdf_asdf asdf/g c", "(\n    0: asdf\n    1: asdf\n    2: asdf\n)");
-    basic_test("asDf_aSdf_asdF asdf/ig c", "(\n    0: asDf\n    1: aSdf\n    2: asdF\n)");
+    basic_test(
+        "asdf_asdf_asdf asdf/g c",
+        "(\n    0: asdf\n    1: asdf\n    2: asdf\n)",
+    );
+    basic_test(
+        "asDf_aSdf_asdF asdf/ig c",
+        "(\n    0: asDf\n    1: aSdf\n    2: asdF\n)",
+    );
 }
 
 #[test]
@@ -1164,25 +1265,58 @@ fn regex_escape_tests() {
 
 #[test]
 fn xml_ns_test() {
-    basic_test("test-misc/test.xml f<; '' join; from-xml; namespaces get; 0 nth; name get;", "myns");
-    basic_test("test-misc/test.xml f<; '' join; from-xml; key get;", "myns:top");
-    basic_test("test-misc/test.xml f<; '' join; from-xml; value get; 1 nth; namespaces get", "null");
-    basic_test("test-misc/test.xml f<; '' join; from-xml; to-xml; xmlns:myns m", ".t");
-    basic_test("test-misc/test.xml f<; '' join; from-xml; to-xml; myns:middle m", ".t");
-    basic_test("test-misc/test.xml f<; '' join; from-xml; to-xml; myns:top m", ".t");
-    basic_test("test-misc/test.xml f<; '' join; from-xml; to-xml; from-xml; to-xml; xmlns:myns m", ".t");
-    basic_test("test-misc/test-default.xml f<; '' join; from-xml; to-xml; <middle> m", ".t");
-    basic_test("test-misc/test-default.xml f<; from-xml; to-xml; <middle> m", ".t");
+    basic_test(
+        "test-misc/test.xml f<; '' join; from-xml; namespaces get; 0 nth; name get;",
+        "myns",
+    );
+    basic_test(
+        "test-misc/test.xml f<; '' join; from-xml; key get;",
+        "myns:top",
+    );
+    basic_test(
+        "test-misc/test.xml f<; '' join; from-xml; value get; 1 nth; namespaces get",
+        "null",
+    );
+    basic_test(
+        "test-misc/test.xml f<; '' join; from-xml; to-xml; xmlns:myns m",
+        ".t",
+    );
+    basic_test(
+        "test-misc/test.xml f<; '' join; from-xml; to-xml; myns:middle m",
+        ".t",
+    );
+    basic_test(
+        "test-misc/test.xml f<; '' join; from-xml; to-xml; myns:top m",
+        ".t",
+    );
+    basic_test(
+        "test-misc/test.xml f<; '' join; from-xml; to-xml; from-xml; to-xml; xmlns:myns m",
+        ".t",
+    );
+    basic_test(
+        "test-misc/test-default.xml f<; '' join; from-xml; to-xml; <middle> m",
+        ".t",
+    );
+    basic_test(
+        "test-misc/test-default.xml f<; from-xml; to-xml; <middle> m",
+        ".t",
+    );
 }
 
 #[test]
 fn ips_gen_test() {
-    basic_test("test-misc/ipv4-data f<; chomp map; ips; str", "1.0.0.0/24,2.0.0.0/24");
+    basic_test(
+        "test-misc/ipv4-data f<; chomp map; ips; str",
+        "1.0.0.0/24,2.0.0.0/24",
+    );
 }
 
 #[test]
 fn tab_test() {
-    basic_test("asdf\\tqwer\\tzxcv \\t split", "(\n    0: asdf\n    1: qwer\n    2: zxcv\n)");
+    basic_test(
+        "asdf\\tqwer\\tzxcv \\t split",
+        "(\n    0: asdf\n    1: qwer\n    2: zxcv\n)",
+    );
 }
 
 #[test]
@@ -1207,17 +1341,26 @@ fn fmt_test() {
 
 #[test]
 fn pairwise_test() {
-    basic_test("3 range; 3 range; + pairwise; take-all;", "(\n    0: 0\n    1: 2\n    2: 4\n)");
+    basic_test(
+        "3 range; 3 range; + pairwise; take-all;",
+        "(\n    0: 0\n    1: 2\n    2: 4\n)",
+    );
 }
 
 #[test]
 fn slide_test() {
-    basic_test("4 range; ++ slide; take-all;", "(\n    0: 01\n    1: 12\n    2: 23\n)");
+    basic_test(
+        "4 range; ++ slide; take-all;",
+        "(\n    0: 01\n    1: 12\n    2: 23\n)",
+    );
 }
 
 #[test]
 fn before_test() {
-    basic_test("5 range; [2 >] before; take-all;", "(\n    0: 0\n    1: 1\n    2: 2\n)");
+    basic_test(
+        "5 range; [2 >] before; take-all;",
+        "(\n    0: 0\n    1: 1\n    2: 2\n)",
+    );
 }
 
 #[test]

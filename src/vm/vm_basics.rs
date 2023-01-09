@@ -2,8 +2,8 @@ use std::char;
 use std::{thread, time};
 
 use num_bigint::BigInt;
-use num_traits::Num;
 use num_traits::FromPrimitive;
+use num_traits::Num;
 use num_traits::ToPrimitive;
 use rand::Rng;
 use unicode_segmentation::UnicodeSegmentation;
@@ -293,11 +293,9 @@ impl VM {
 
                     match value_opt {
                         Some(s) => {
-                            self.stack
-                                .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                    s.to_string(),
-                                    None,
-                                )))));
+                            self.stack.push(Value::String(Rc::new(RefCell::new(
+                                StringTriple::new(s.to_string(), None),
+                            ))));
                             return 1;
                         }
                         _ => {
@@ -454,7 +452,7 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let res = match value_rr {
             Value::Bool(_) => true,
-            _              => false
+            _ => false,
         };
         self.stack.push(Value::Bool(res));
         return 1;
@@ -470,7 +468,7 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let res = match value_rr {
             Value::Int(_) => true,
-            _             => false
+            _ => false,
         };
         self.stack.push(Value::Bool(res));
         return 1;
@@ -486,7 +484,7 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let res = match value_rr {
             Value::BigInt(_) => true,
-            _                => false
+            _ => false,
         };
         self.stack.push(Value::Bool(res));
         return 1;
@@ -502,7 +500,7 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let res = match value_rr {
             Value::String(_) => true,
-            _                => false
+            _ => false,
         };
         self.stack.push(Value::Bool(res));
         return 1;
@@ -518,7 +516,7 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let res = match value_rr {
             Value::Float(_) => true,
-            _               => false
+            _ => false,
         };
         self.stack.push(Value::Bool(res));
         return 1;
@@ -534,7 +532,7 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let res = match value_rr {
             Value::Set(_) => true,
-            _             => false
+            _ => false,
         };
         self.stack.push(Value::Bool(res));
         return 1;
@@ -550,7 +548,7 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let res = match value_rr {
             Value::Hash(_) => true,
-            _              => false
+            _ => false,
         };
         self.stack.push(Value::Bool(res));
         return 1;
@@ -604,9 +602,7 @@ impl VM {
             Some(n) => {
                 let n_u32_opt: Result<u32, _> = n.try_into();
                 if n_u32_opt.is_err() {
-                    self.print_error(
-                        "chr argument must be u32 integer"
-                    );
+                    self.print_error("chr argument must be u32 integer");
                     return 0;
                 }
                 let c_opt = char::from_u32(n_u32_opt.unwrap());
@@ -628,9 +624,7 @@ impl VM {
                 let value_bi = value_bi_opt.unwrap();
                 let value_bi_u32_opt = value_bi.to_u32();
                 if value_bi_u32_opt.is_none() {
-                    self.print_error(
-                        "chr argument must be u32 integer"
-                    );
+                    self.print_error("chr argument must be u32 integer");
                     return 0;
                 }
                 let n_u32 = value_bi_u32_opt.unwrap();
@@ -695,8 +689,7 @@ impl VM {
             self.stack.push(Value::Int(n.unwrap()));
             return 1;
         }
-        let n_bi: Result<BigInt, _> =
-            BigInt::from_str_radix(&value_str, 16);
+        let n_bi: Result<BigInt, _> = BigInt::from_str_radix(&value_str, 16);
         if !n_bi.is_err() {
             self.stack.push(Value::BigInt(n_bi.unwrap()));
             return 1;
@@ -724,8 +717,7 @@ impl VM {
             self.stack.push(Value::Int(n.unwrap()));
             return 1;
         }
-        let n_bi: Result<BigInt, _> =
-            BigInt::from_str_radix(&value_str, 8);
+        let n_bi: Result<BigInt, _> = BigInt::from_str_radix(&value_str, 8);
         if !n_bi.is_err() {
             self.stack.push(Value::BigInt(n_bi.unwrap()));
             return 1;
@@ -768,14 +760,12 @@ impl VM {
         }
         let vst = value_opt.unwrap();
         if vst.len() == 0 {
-            let st =
-                Rc::new(RefCell::new(StringTriple::new(vst.to_string(), None)));
+            let st = Rc::new(RefCell::new(StringTriple::new(vst.to_string(), None)));
             self.stack.push(Value::String(st));
             return 1;
         }
         let mut iter = vst.chars();
-        let mut new_st =
-            iter.next().unwrap().to_lowercase().to_string();
+        let mut new_st = iter.next().unwrap().to_lowercase().to_string();
         for c in iter {
             new_st.push(c);
         }
@@ -818,14 +808,12 @@ impl VM {
         }
         let vst = value_opt.unwrap();
         if vst.len() == 0 {
-            let st =
-                Rc::new(RefCell::new(StringTriple::new(vst.to_string(), None)));
+            let st = Rc::new(RefCell::new(StringTriple::new(vst.to_string(), None)));
             self.stack.push(Value::String(st));
             return 1;
         }
         let mut iter = vst.chars();
-        let mut new_st =
-            iter.next().unwrap().to_uppercase().to_string();
+        let mut new_st = iter.next().unwrap().to_uppercase().to_string();
         for c in iter {
             new_st.push(c);
         }
@@ -887,5 +875,4 @@ impl VM {
             }
         }
     }
-
 }

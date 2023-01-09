@@ -12,7 +12,7 @@ use nonblock::NonBlockingReader;
 use regex::Regex;
 use std::process::{Command, Stdio};
 
-use chunk::{Value, CommandGenerator};
+use chunk::{CommandGenerator, Value};
 use vm::*;
 
 lazy_static! {
@@ -217,23 +217,19 @@ impl VM {
             Ok(mut process) => {
                 let upstream_stdout = process.stdout.take().unwrap();
                 let upstream_stderr = process.stderr.take().unwrap();
-                let noblock_stdout =
-                    NonBlockingReader::from_fd(upstream_stdout).unwrap();
-                let noblock_stderr =
-                    NonBlockingReader::from_fd(upstream_stderr).unwrap();
+                let noblock_stdout = NonBlockingReader::from_fd(upstream_stdout).unwrap();
+                let noblock_stderr = NonBlockingReader::from_fd(upstream_stderr).unwrap();
                 let get_stdout = params.contains(&'o') || params.is_empty();
                 let get_stderr = params.contains(&'e');
                 let get_combined = params.contains(&'c');
                 let cmd_generator =
-                    Value::CommandGenerator(
-                        Rc::new(RefCell::new(CommandGenerator::new(
-                            noblock_stdout,
-                            noblock_stderr,
-                            get_stdout,
-                            get_stderr,
-                            get_combined
-                        )))
-                    );
+                    Value::CommandGenerator(Rc::new(RefCell::new(CommandGenerator::new(
+                        noblock_stdout,
+                        noblock_stderr,
+                        get_stdout,
+                        get_stderr,
+                        get_combined,
+                    ))));
                 self.stack.push(cmd_generator);
             }
             Err(e) => {
@@ -281,9 +277,7 @@ impl VM {
     /// output from the generator and pipes it to the standard input
     /// of the command, and places a generator over the command's
     /// standard output onto the stack.
-    pub fn core_pipe(
-        &mut self,
-    ) -> i32 {
+    pub fn core_pipe(&mut self) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("| requires two arguments");
             return 0;
@@ -293,8 +287,7 @@ impl VM {
 
         match cmd_rr {
             Value::Command(s, _) => {
-                let prepared_cmd_opt =
-                    self.prepare_and_split_command(&s);
+                let prepared_cmd_opt = self.prepare_and_split_command(&s);
                 if prepared_cmd_opt.is_none() {
                     return 0;
                 }
@@ -335,22 +328,20 @@ impl VM {
                                 }
                                 let upstream_stderr = upstream_stderr_opt.unwrap();
 
-                                let cmd_generator =
-                                    Value::CommandGenerator(
-                                        Rc::new(RefCell::new(CommandGenerator::new(
-                                            NonBlockingReader::from_fd(upstream_stdout).unwrap(),
-                                            NonBlockingReader::from_fd(upstream_stderr).unwrap(),
-                                            true,
-                                            false,
-                                            false,
-                                        )))
-                                    );
+                                let cmd_generator = Value::CommandGenerator(Rc::new(RefCell::new(
+                                    CommandGenerator::new(
+                                        NonBlockingReader::from_fd(upstream_stdout).unwrap(),
+                                        NonBlockingReader::from_fd(upstream_stderr).unwrap(),
+                                        true,
+                                        false,
+                                        false,
+                                    ),
+                                )));
                                 self.stack.push(cmd_generator);
                             }
                             Ok(ForkResult::Child) => {
                                 loop {
-                                    let dup_res =
-                                        self.opcode_dup();
+                                    let dup_res = self.opcode_dup();
                                     if dup_res == 0 {
                                         return 0;
                                     }
@@ -365,8 +356,8 @@ impl VM {
                                         }
                                         _ => {}
                                     }
-				    let element_str_opt: Option<&str>;
-				    to_str!(element_rr, element_str_opt);
+                                    let element_str_opt: Option<&str>;
+                                    to_str!(element_rr, element_str_opt);
 
                                     match element_str_opt {
                                         Some(s) => {

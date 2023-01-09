@@ -35,10 +35,7 @@ impl VM {
                     let mut genlist = VecDeque::new();
                     genlist.push_back(v1);
                     genlist.push_back(v2);
-                    let mg =
-                        Value::MultiGenerator(
-                            Rc::new(RefCell::new(genlist))
-                        );
+                    let mg = Value::MultiGenerator(Rc::new(RefCell::new(genlist)));
                     self.stack.push(mg);
                 }
             }
@@ -71,10 +68,9 @@ impl VM {
                         match (v1_str_opt, v2_str_opt) {
                             (Some(s1), Some(s2)) => {
                                 let s3 = format!("{}{}", s1, s2);
-                                self.stack
-                                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                        s3, None,
-                                    )))));
+                                self.stack.push(Value::String(Rc::new(RefCell::new(
+                                    StringTriple::new(s3, None),
+                                ))));
                             }
                             (Some(_), _) => {
                                 self.print_error("second append argument must be string");
@@ -108,22 +104,20 @@ impl VM {
         }
         let list_str_rr = self.stack.pop().unwrap();
 
-	let list_str_opt: Option<&str>;
-	to_str!(list_str_rr, list_str_opt);
+        let list_str_opt: Option<&str>;
+        to_str!(list_str_rr, list_str_opt);
 
         match (regex_opt, list_str_opt) {
             (Some((regex, _)), Some(list_str)) => {
                 let elements = regex.split(list_str);
                 let mut final_elements = VecDeque::new();
                 for e in elements {
-                    final_elements.push_back(
-                        Value::String(Rc::new(RefCell::new(StringTriple::new(
-                            e.to_string(),
-                            None,
-                        ))))
-                    );
+                    final_elements.push_back(Value::String(Rc::new(RefCell::new(
+                        StringTriple::new(e.to_string(), None),
+                    ))));
                 }
-                self.stack.push(Value::List(Rc::new(RefCell::new(final_elements))));
+                self.stack
+                    .push(Value::List(Rc::new(RefCell::new(final_elements))));
             }
             (Some(_), _) => {
                 self.print_error("first splitr argument must be string");
@@ -150,11 +144,11 @@ impl VM {
         let separator_rr = self.stack.pop().unwrap();
         let list_str_rr = self.stack.pop().unwrap();
 
-	let separator_opt: Option<&str>;
-	to_str!(separator_rr, separator_opt);
+        let separator_opt: Option<&str>;
+        to_str!(separator_rr, separator_opt);
 
-	let list_str_opt: Option<&str>;
-	to_str!(list_str_rr, list_str_opt);
+        let list_str_opt: Option<&str>;
+        to_str!(list_str_rr, list_str_opt);
 
         match (separator_opt, list_str_opt) {
             (Some(separator), Some(list_str)) => {
@@ -188,8 +182,9 @@ impl VM {
                             }
                         }
                     } else if (e_str.len() > 0)
-                                && (e_str.chars().next().unwrap() == '"')
-                                && (e_str.chars().last().unwrap() != '"') {
+                        && (e_str.chars().next().unwrap() == '"')
+                        && (e_str.chars().last().unwrap() != '"')
+                    {
                         buffer.push(e_str);
                     } else {
                         if e_str.len() > 0 {
@@ -235,17 +230,15 @@ impl VM {
     /// Joins the elements retrieved from the shiftable object by
     /// using the separator string between the elements, and puts the
     /// resulting joined string onto the stack.
-    pub fn core_join(
-        &mut self,
-    ) -> i32 {
+    pub fn core_join(&mut self) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("join requires two arguments");
             return 0;
         }
 
         let separator_rr = self.stack.pop().unwrap();
-	let separator_opt: Option<&str>;
-	to_str!(separator_rr, separator_opt);
+        let separator_opt: Option<&str>;
+        to_str!(separator_rr, separator_opt);
 
         let esc_quotes = Regex::new(r#"""#).unwrap();
 
@@ -258,77 +251,81 @@ impl VM {
                 let separator_regex_res = Regex::new(separator);
                 let mut final_elements = Vec::new();
                 match separator_regex_res {
-                    Ok(separator_regex) => loop {
-                        let dup_res = self.opcode_dup();
-                        if dup_res == 0 {
-                            return 0;
-                        }
-                        let shift_res = self.opcode_shift();
-                        if shift_res == 0 {
-                            return 0;
-                        }
-                        let element_rr = self.stack.pop().unwrap();
-                        match element_rr {
-                            Value::Null => {
-                                break;
+                    Ok(separator_regex) => {
+                        loop {
+                            let dup_res = self.opcode_dup();
+                            if dup_res == 0 {
+                                return 0;
                             }
-                            Value::String(sp) => {
-                                if !separator_is_empty_string
-                                    && (separator_regex.is_match(&sp.borrow().s)
-                                        || esc_quotes.is_match(&sp.borrow().s))
-                                {
-                                    let s1 = &sp.borrow();
-                                    let s2 = esc_quotes.replace_all(&s1.s, "\\\"");
-                                    final_elements.push(format!("\"{}\"", s2));
-                                } else {
-                                    final_elements.push(sp.borrow().s.to_string());
+                            let shift_res = self.opcode_shift();
+                            if shift_res == 0 {
+                                return 0;
+                            }
+                            let element_rr = self.stack.pop().unwrap();
+                            match element_rr {
+                                Value::Null => {
+                                    break;
                                 }
-                            }
-                            _ => {
-                                let element_s;
-                                let element_b;
-                                let element_str;
-                                let element_bk: Option<String>;
-                                let element_opt: Option<&str> = match element_rr {
-                                    Value::String(sp) => {
-                                        element_s = sp;
-                                        element_b = element_s.borrow();
-                                        Some(&element_b.s)
+                                Value::String(sp) => {
+                                    if !separator_is_empty_string
+                                        && (separator_regex.is_match(&sp.borrow().s)
+                                            || esc_quotes.is_match(&sp.borrow().s))
+                                    {
+                                        let s1 = &sp.borrow();
+                                        let s2 = esc_quotes.replace_all(&s1.s, "\\\"");
+                                        final_elements.push(format!("\"{}\"", s2));
+                                    } else {
+                                        final_elements.push(sp.borrow().s.to_string());
                                     }
-                                    _ => {
-                                        element_bk = element_rr.to_string();
-                                        match element_bk {
-                                            Some(s) => {
-                                                element_str = s;
-                                                Some(&element_str)
+                                }
+                                _ => {
+                                    let element_s;
+                                    let element_b;
+                                    let element_str;
+                                    let element_bk: Option<String>;
+                                    let element_opt: Option<&str> = match element_rr {
+                                        Value::String(sp) => {
+                                            element_s = sp;
+                                            element_b = element_s.borrow();
+                                            Some(&element_b.s)
+                                        }
+                                        _ => {
+                                            element_bk = element_rr.to_string();
+                                            match element_bk {
+                                                Some(s) => {
+                                                    element_str = s;
+                                                    Some(&element_str)
+                                                }
+                                                _ => None,
                                             }
-                                            _ => None,
                                         }
-                                    }
-                                };
+                                    };
 
-                                match element_opt {
-                                    Some(s) => {
-                                        if !separator_is_empty_string
-                                            && (separator_regex.is_match(&s)
-                                                || esc_quotes.is_match(&s))
-                                        {
-                                            let s2 = esc_quotes.replace_all(s, "\\\"");
-                                            final_elements.push(format!("\"{}\"", s2));
-                                        } else {
-                                            final_elements.push(s.to_string());
+                                    match element_opt {
+                                        Some(s) => {
+                                            if !separator_is_empty_string
+                                                && (separator_regex.is_match(&s)
+                                                    || esc_quotes.is_match(&s))
+                                            {
+                                                let s2 = esc_quotes.replace_all(s, "\\\"");
+                                                final_elements.push(format!("\"{}\"", s2));
+                                            } else {
+                                                final_elements.push(s.to_string());
+                                            }
                                         }
-                                    }
-                                    _ => {
-                                        self.print_error("first join argument must be a generator over strings");
-                                        return 0;
+                                        _ => {
+                                            self.print_error("first join argument must be a generator over strings");
+                                            return 0;
+                                        }
                                     }
                                 }
                             }
                         }
-                    },
+                    }
                     Err(_) => {
-                        self.print_error("second join argument must be valid separator regular expression");
+                        self.print_error(
+                            "second join argument must be valid separator regular expression",
+                        );
                         return 0;
                     }
                 }
@@ -350,83 +347,85 @@ impl VM {
         return 1;
     }
 
-    pub fn core_fmt(
-        &mut self,
-    ) -> i32 {
+    pub fn core_fmt(&mut self) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("fmt requires one argument");
             return 0;
         }
 
         let str_rr = self.stack.pop().unwrap();
-	let str_opt: Option<&str>;
-	to_str!(str_rr, str_opt);
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
 
         match str_opt {
             Some(s) => {
-		let captures = CAPTURE_NUM.captures_iter(&s);
-		let mut final_s = s.to_string();
-		for capture in captures {
-		    let capture_str = capture.get(1).unwrap().as_str();
-		    let capture_num_res = capture_str.parse::<usize>();
-		    let capture_num = match capture_num_res {
-			Ok(n) => n,
-			Err(_) => {
-			    self.print_error("fmt string contains invalid stack element reference");
-			    return 0;
-			}
-		    };
+                let captures = CAPTURE_NUM.captures_iter(&s);
+                let mut final_s = s.to_string();
+                for capture in captures {
+                    let capture_str = capture.get(1).unwrap().as_str();
+                    let capture_num_res = capture_str.parse::<usize>();
+                    let capture_num = match capture_num_res {
+                        Ok(n) => n,
+                        Err(_) => {
+                            self.print_error("fmt string contains invalid stack element reference");
+                            return 0;
+                        }
+                    };
 
                     if capture_num >= self.stack.len() {
                         self.print_error("fmt string contains invalid stack element reference");
                         return 0;
                     }
 
-		    let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - capture_num);
-		    match capture_el_rr_opt {
-			Some(capture_el_rr) => {
-			    let capture_el_str_opt: Option<&str>;
-			    to_str!(capture_el_rr, capture_el_str_opt);
+                    let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - capture_num);
+                    match capture_el_rr_opt {
+                        Some(capture_el_rr) => {
+                            let capture_el_str_opt: Option<&str>;
+                            to_str!(capture_el_rr, capture_el_str_opt);
 
-			    match capture_el_str_opt {
-				Some(capture_el_str) => {
-				    let capture_str_with_brackets = format!("\\{{{}\\}}", capture_str);
-				    let cswb_regex = Regex::new(&capture_str_with_brackets).unwrap();
-				    final_s = cswb_regex.replace_all(&final_s, capture_el_str).to_string();
-				}
-				_ => {
+                            match capture_el_str_opt {
+                                Some(capture_el_str) => {
+                                    let capture_str_with_brackets =
+                                        format!("\\{{{}\\}}", capture_str);
+                                    let cswb_regex =
+                                        Regex::new(&capture_str_with_brackets).unwrap();
+                                    final_s = cswb_regex
+                                        .replace_all(&final_s, capture_el_str)
+                                        .to_string();
+                                }
+                                _ => {
                                     self.print_error("fmt string is not able to be parsed");
-				    return 0;
-				}
-			    }
-			}
-			None => {
+                                    return 0;
+                                }
+                            }
+                        }
+                        None => {
                             self.print_error("fmt string contains invalid stack element reference");
-			    return 0;
-			}
-		    }
-		}
+                            return 0;
+                        }
+                    }
+                }
 
-		while CAPTURE_WITHOUT_NUM.is_match(&final_s) {
-		    if self.stack.len() < 1 {
-			self.print_error("fmt string has exhausted stack");
-			return 0;
-		    }
+                while CAPTURE_WITHOUT_NUM.is_match(&final_s) {
+                    if self.stack.len() < 1 {
+                        self.print_error("fmt string has exhausted stack");
+                        return 0;
+                    }
 
-		    let value_rr = self.stack.pop().unwrap();
-		    let value_opt: Option<&str>;
-		    to_str!(value_rr, value_opt);
+                    let value_rr = self.stack.pop().unwrap();
+                    let value_opt: Option<&str>;
+                    to_str!(value_rr, value_opt);
 
-		    match value_opt {
-			Some(s) => {
-			    final_s = CAPTURE_WITHOUT_NUM.replace(&final_s, s).to_string();
-			}
-			_ => {
+                    match value_opt {
+                        Some(s) => {
+                            final_s = CAPTURE_WITHOUT_NUM.replace(&final_s, s).to_string();
+                        }
+                        _ => {
                             self.print_error("fmt string is not able to be parsed");
-			    return 0;
-			}
-		    }
-		}
+                            return 0;
+                        }
+                    }
+                }
 
                 let st = StringTriple::new(final_s.to_string(), None);
                 self.stack.push(Value::String(Rc::new(RefCell::new(st))));

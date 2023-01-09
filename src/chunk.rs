@@ -23,7 +23,7 @@ use num_bigint::BigInt;
 use num_traits::Zero;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::process::{ChildStdout, ChildStderr};
+use std::process::{ChildStderr, ChildStdout};
 
 use opcode::{to_opcode, OpCode};
 use vm::VM;
@@ -82,26 +82,44 @@ fn escape_string(s: &str) -> String {
     for c in s.chars() {
         if next_escaped {
             match c {
-                '\\' => { s2.push('\\'); }
-                '"'  => { s2.push('\\');
-                          s2.push('\\');
-                          s2.push(c); }
-                _    => { s2.push('\\');
-                          s2.push(c); }
+                '\\' => {
+                    s2.push('\\');
+                }
+                '"' => {
+                    s2.push('\\');
+                    s2.push('\\');
+                    s2.push(c);
+                }
+                _ => {
+                    s2.push('\\');
+                    s2.push(c);
+                }
             }
             next_escaped = false;
         } else {
             match c {
-                '\\' => { next_escaped = true; }
-                '\n' => { s2.push('\\');
-                          s2.push('n'); }
-                '\r' => { s2.push('\\');
-                          s2.push('r'); }
-                '\t' => { s2.push('\\');
-                          s2.push('t'); }
-                '"'  => { s2.push('\\');
-                          s2.push('"'); }
-                _    => { s2.push(c); }
+                '\\' => {
+                    next_escaped = true;
+                }
+                '\n' => {
+                    s2.push('\\');
+                    s2.push('n');
+                }
+                '\r' => {
+                    s2.push('\\');
+                    s2.push('r');
+                }
+                '\t' => {
+                    s2.push('\\');
+                    s2.push('t');
+                }
+                '"' => {
+                    s2.push('\\');
+                    s2.push('"');
+                }
+                _ => {
+                    s2.push(c);
+                }
             }
         }
     }
@@ -111,7 +129,11 @@ fn escape_string(s: &str) -> String {
 impl StringTriple {
     pub fn new(s: String, r: Option<(Rc<Regex>, bool)>) -> StringTriple {
         let e = escape_string(&s);
-        StringTriple { s: s.clone(), e: e, r: r }
+        StringTriple {
+            s: s.clone(),
+            e: e,
+            r: r,
+        }
     }
     pub fn new_with_escaped(s: String, e: String, r: Option<(Rc<Regex>, bool)>) -> StringTriple {
         StringTriple { s: s, e: e, r: r }
@@ -142,7 +164,7 @@ impl GeneratorObject {
         index: usize,
         chunk: Rc<RefCell<Chunk>>,
         call_stack_chunks: Vec<(Rc<RefCell<Chunk>>, usize)>,
-        gen_args: Vec<Value>
+        gen_args: Vec<Value>,
     ) -> GeneratorObject {
         GeneratorObject {
             local_vars_stack: local_vars_stack,
@@ -171,7 +193,7 @@ impl HashWithIndex {
 #[derive(Debug, Clone)]
 pub struct Ipv4Range {
     pub s: Ipv4Addr,
-    pub e: Ipv4Addr
+    pub e: Ipv4Addr,
 }
 
 impl Ipv4Range {
@@ -183,7 +205,7 @@ impl Ipv4Range {
 #[derive(Debug, Clone)]
 pub struct Ipv6Range {
     pub s: Ipv6Addr,
-    pub e: Ipv6Addr
+    pub e: Ipv6Addr,
 }
 
 impl Ipv6Range {
@@ -200,7 +222,10 @@ pub struct IpSet {
 
 impl IpSet {
     pub fn new(ipv4: IpRange<Ipv4Net>, ipv6: IpRange<Ipv6Net>) -> IpSet {
-        IpSet { ipv4: ipv4, ipv6: ipv6 }
+        IpSet {
+            ipv4: ipv4,
+            ipv6: ipv6,
+        }
     }
 }
 
@@ -215,12 +240,13 @@ pub struct CommandGenerator {
 }
 
 impl CommandGenerator {
-    pub fn new(stdout: NonBlockingReader<ChildStdout>,
-               stderr: NonBlockingReader<ChildStderr>,
-               get_stdout: bool,
-               get_stderr: bool,
-               get_combined: bool)
-            -> CommandGenerator {
+    pub fn new(
+        stdout: NonBlockingReader<ChildStdout>,
+        stderr: NonBlockingReader<ChildStderr>,
+        get_stdout: bool,
+        get_stderr: bool,
+        get_combined: bool,
+    ) -> CommandGenerator {
         CommandGenerator {
             stdout: stdout,
             stderr: stderr,
@@ -243,8 +269,9 @@ impl CommandGenerator {
             /* todo: may not work if newline falls within
              * a multibyte Unicode character?  Not sure if this
              * is possible, though. */
-            let new_buf: Vec<u8> =
-                (&mut self.stdout_buffer).drain(0..(index.unwrap() + 1)).collect();
+            let new_buf: Vec<u8> = (&mut self.stdout_buffer)
+                .drain(0..(index.unwrap() + 1))
+                .collect();
             let new_str = std::str::from_utf8(&new_buf).unwrap();
             return Some(new_str.to_string());
         } else {
@@ -263,8 +290,9 @@ impl CommandGenerator {
             /* todo: may not work if newline falls within
              * a multibyte Unicode character?  Not sure if this
              * is possible, though. */
-            let new_buf: Vec<u8> =
-                (&mut self.stderr_buffer).drain(0..(index.unwrap() + 1)).collect();
+            let new_buf: Vec<u8> = (&mut self.stderr_buffer)
+                .drain(0..(index.unwrap() + 1))
+                .collect();
             let new_str = std::str::from_utf8(&new_buf).unwrap();
             return Some(new_str.to_string());
         } else {
@@ -279,8 +307,7 @@ impl CommandGenerator {
                 s = self.stdout_read_line_nb();
                 if !s.is_none() {
                     return s;
-                } else if self.stdout.is_eof()
-                        && (!self.get_stderr || self.stderr.is_eof()) {
+                } else if self.stdout.is_eof() && (!self.get_stderr || self.stderr.is_eof()) {
                     return None;
                 }
             }
@@ -288,8 +315,7 @@ impl CommandGenerator {
                 s = self.stderr_read_line_nb();
                 if !s.is_none() {
                     return s;
-                } else if self.stderr.is_eof()
-                        && (!self.get_stdout || self.stdout.is_eof()) {
+                } else if self.stderr.is_eof() && (!self.get_stdout || self.stdout.is_eof()) {
                     return None;
                 }
             }
@@ -569,9 +595,9 @@ impl Chunk {
             Value::Int(n) => ValueSD::Int(n),
             Value::Float(n) => ValueSD::Float(n),
             Value::BigInt(n) => ValueSD::BigInt(n.to_str_radix(10)),
-            Value::String(sp) =>
-            ValueSD::String(sp.borrow().s.to_string(),
-                            sp.borrow().e.to_string()),
+            Value::String(sp) => {
+                ValueSD::String(sp.borrow().s.to_string(), sp.borrow().e.to_string())
+            }
             Value::Command(s, params) => ValueSD::Command(s.to_string(), (*params).clone()),
             Value::CommandUncaptured(s) => ValueSD::CommandUncaptured(s.to_string()),
             Value::Bool(b) => ValueSD::Bool(b),
@@ -597,15 +623,13 @@ impl Chunk {
                 Value::BigInt(nn)
             }
             ValueSD::String(sp1, sp2) => {
-                let st = StringTriple::new_with_escaped(sp1.to_string(),
-                                                        sp2.to_string(),
-                                                        None);
+                let st = StringTriple::new_with_escaped(sp1.to_string(), sp2.to_string(), None);
                 Value::String(Rc::new(RefCell::new(st)))
             }
-            ValueSD::Command(s, params) => Value::Command(Rc::new(s.to_string()), Rc::new((*params).clone())),
-            ValueSD::CommandUncaptured(s) => {
-                Value::CommandUncaptured(Rc::new(s.to_string()))
+            ValueSD::Command(s, params) => {
+                Value::Command(Rc::new(s.to_string()), Rc::new((*params).clone()))
             }
+            ValueSD::CommandUncaptured(s) => Value::CommandUncaptured(Rc::new(s.to_string())),
         };
         return value;
     }
@@ -613,8 +637,12 @@ impl Chunk {
     pub fn get_constant_value(&self, i: i32) -> Value {
         let value = self.constant_values.get(i as usize);
         match value {
-            Some(v) => { return v.clone(); }
-            _ => { return Value::Null; }
+            Some(v) => {
+                return v.clone();
+            }
+            _ => {
+                return Value::Null;
+            }
         }
     }
 
@@ -656,12 +684,7 @@ impl Chunk {
         if self.data.len() < 2 {
             return OpCode::Call;
         }
-        return to_opcode(
-            *self
-                .data
-                .get(self.data.len() - 2)
-                .unwrap(),
-        );
+        return to_opcode(*self.data.get(self.data.len() - 2).unwrap());
     }
 
     /// Get the third-last opcode from the current chunk's data.
@@ -669,12 +692,7 @@ impl Chunk {
         if self.data.len() < 3 {
             return OpCode::Call;
         }
-        return to_opcode(
-            *self
-                .data
-                .get(self.data.len() - 3)
-                .unwrap(),
-        );
+        return to_opcode(*self.data.get(self.data.len() - 3).unwrap());
     }
 
     /// Get the fourth-last opcode from the current chunk's data.
@@ -682,12 +700,7 @@ impl Chunk {
         if self.data.len() < 4 {
             return OpCode::Call;
         }
-        return to_opcode(
-            *self
-                .data
-                .get(self.data.len() - 4)
-                .unwrap(),
-        );
+        return to_opcode(*self.data.get(self.data.len() - 4).unwrap());
     }
 
     /// Set the second-last opcode for the current chunk's data.
@@ -742,10 +755,7 @@ impl Chunk {
         if self.data.len() < 2 {
             return 0;
         }
-        return *self
-            .data
-            .get(self.data.len() - 2)
-            .unwrap();
+        return *self.data.get(self.data.len() - 2).unwrap();
     }
 
     /// Get the third-last byte from the current chunk's data.
@@ -753,10 +763,7 @@ impl Chunk {
         if self.data.len() < 3 {
             return 0;
         }
-        return *self
-            .data
-            .get(self.data.len() - 3)
-            .unwrap();
+        return *self.data.get(self.data.len() - 3).unwrap();
     }
 
     /// Set the last byte for the current chunk's data.
@@ -1194,7 +1201,7 @@ macro_rules! to_str {
                 }
             }
         }
-    }
+    };
 }
 
 impl Value {
@@ -1223,8 +1230,7 @@ impl Value {
                 if prefix_len == 32 {
                     let ip_str = format!("{}", ipv4net);
                     let ip_str_no_len =
-                        ip_str.chars().take_while(|&c| c != '/')
-                                      .collect::<String>();
+                        ip_str.chars().take_while(|&c| c != '/').collect::<String>();
                     let s = ip_str_no_len.to_string();
                     Some(s)
                 } else {
@@ -1238,20 +1244,16 @@ impl Value {
                     let s = format!("{}", ipv6net.network());
                     Some(s)
                 } else {
-                    let s =
-                        format!("{}/{}",
-                                ipv6net.network(), ipv6net.prefix_len());
+                    let s = format!("{}/{}", ipv6net.network(), ipv6net.prefix_len());
                     Some(s)
                 }
             }
             Value::Ipv4Range(ipv4range) => {
-                let s = format!("{}-{}", ipv4range.s,
-                                         ipv4range.e);
+                let s = format!("{}-{}", ipv4range.s, ipv4range.e);
                 Some(s)
             }
             Value::Ipv6Range(ipv6range) => {
-                let s = format!("{}-{}", ipv6range.s,
-                                         ipv6range.e);
+                let s = format!("{}-{}", ipv6range.s, ipv6range.e);
                 Some(s)
             }
             Value::IpSet(ipset) => {
@@ -1265,8 +1267,7 @@ impl Value {
                     if prefix_len == 32 {
                         let ip_str = format!("{}", ipv4net);
                         let ip_str_no_len =
-                            ip_str.chars().take_while(|&c| c != '/')
-                                        .collect::<String>();
+                            ip_str.chars().take_while(|&c| c != '/').collect::<String>();
                         lst.push(ip_str_no_len);
                     } else {
                         let ip_str = format!("{}", ipv4net);
@@ -1281,9 +1282,7 @@ impl Value {
                         let ip_str = format!("{}", ipv6net.network());
                         lst.push(ip_str);
                     } else {
-                        let ip_str =
-                            format!("{}/{}",
-                                    ipv6net.network(), ipv6net.prefix_len());
+                        let ip_str = format!("{}/{}", ipv6net.network(), ipv6net.prefix_len());
                         lst.push(ip_str);
                     }
                 }
@@ -1372,20 +1371,14 @@ impl Value {
         match self {
             Value::Bool(b) => *b,
             Value::Int(0) => false,
-            Value::Float(n) => {
-                *n != 0.0
-            },
+            Value::Float(n) => *n != 0.0,
             Value::String(sp) => {
                 let ss = &sp.borrow().s;
-                ss != ""
-                    && ss != "0"
-                    && ss != "0.0"
+                ss != "" && ss != "0" && ss != "0.0"
             }
-            Value::BigInt(n) => {
-                *n == Zero::zero()
-            }
+            Value::BigInt(n) => *n == Zero::zero(),
             Value::Null => false,
-            _ => true
+            _ => true,
         }
     }
 
@@ -1400,24 +1393,23 @@ impl Value {
             Value::Command(_, _) => self.clone(),
             Value::CommandUncaptured(_) => self.clone(),
             Value::List(lst) => {
-                let cloned_lst =
-                    lst.borrow().iter().map(|v| v.value_clone()).collect();
+                let cloned_lst = lst.borrow().iter().map(|v| v.value_clone()).collect();
                 Value::List(Rc::new(RefCell::new(cloned_lst)))
-            },
+            }
             Value::Hash(hsh) => {
                 let mut cloned_hsh = IndexMap::new();
                 for (k, v) in hsh.borrow().iter() {
                     cloned_hsh.insert(k.clone(), v.value_clone());
                 }
                 Value::Hash(Rc::new(RefCell::new(cloned_hsh)))
-            },
+            }
             Value::Set(hsh) => {
                 let mut cloned_hsh = IndexMap::new();
                 for (k, v) in hsh.borrow().iter() {
                     cloned_hsh.insert(k.clone(), v.value_clone());
                 }
                 Value::Set(Rc::new(RefCell::new(cloned_hsh)))
-            },
+            }
             Value::AnonymousFunction(_, _) => self.clone(),
             Value::CoreFunction(_) => self.clone(),
             Value::NamedFunction(_) => self.clone(),
@@ -1436,23 +1428,17 @@ impl Value {
                     gen_args,
                 );
                 Value::Generator(Rc::new(RefCell::new(new_gen)))
-            },
+            }
             Value::CommandGenerator(_) => self.clone(),
             Value::KeysGenerator(keys_gen_ref) => {
-                Value::KeysGenerator(
-                    Rc::new(RefCell::new(keys_gen_ref.borrow().clone()))
-                )
-            },
+                Value::KeysGenerator(Rc::new(RefCell::new(keys_gen_ref.borrow().clone())))
+            }
             Value::ValuesGenerator(values_gen_ref) => {
-                Value::ValuesGenerator(
-                    Rc::new(RefCell::new(values_gen_ref.borrow().clone()))
-                )
-            },
+                Value::ValuesGenerator(Rc::new(RefCell::new(values_gen_ref.borrow().clone())))
+            }
             Value::EachGenerator(each_gen_ref) => {
-                Value::EachGenerator(
-                    Rc::new(RefCell::new(each_gen_ref.borrow().clone()))
-                )
-            },
+                Value::EachGenerator(Rc::new(RefCell::new(each_gen_ref.borrow().clone())))
+            }
             Value::FileReader(_) => self.clone(),
             Value::FileWriter(_) => self.clone(),
             Value::DirectoryHandle(_) => self.clone(),
@@ -1499,7 +1485,7 @@ impl Value {
             (Value::Ipv6Range(..), Value::Ipv6Range(..)) => true,
             (Value::IpSet(..), Value::IpSet(..)) => true,
             (Value::MultiGenerator(..), Value::MultiGenerator(..)) => true,
-            (..) => false
+            (..) => false,
         }
     }
 

@@ -1,5 +1,5 @@
 use nix::sys::signal::Signal;
-use nix::unistd::{Group, User, Pid};
+use nix::unistd::{Group, Pid, User};
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::collections::VecDeque;
@@ -122,20 +122,16 @@ impl VM {
                                 return 1;
                             }
                             Err(e) => {
-                                let err_str = format!(
-                                    "unable to remove original file: {}",
-                                    e.to_string()
-                                );
+                                let err_str =
+                                    format!("unable to remove original file: {}", e.to_string());
                                 self.print_error(&err_str);
                                 return 0;
                             }
                         }
                     }
                     Err(e) => {
-                        let err_str = format!(
-                            "unable to copy file to destination: {}",
-                            e.to_string()
-                        );
+                        let err_str =
+                            format!("unable to copy file to destination: {}", e.to_string());
                         self.print_error(&err_str);
                         return 0;
                     }
@@ -178,10 +174,7 @@ impl VM {
                         return 1;
                     }
                     Err(e) => {
-                        let err_str = format!(
-                            "unable to rename file: {}",
-                            e.to_string()
-                        );
+                        let err_str = format!("unable to rename file: {}", e.to_string());
                         self.print_error(&err_str);
                         return 0;
                     }
@@ -221,10 +214,7 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str = format!(
-                            "unable to create symbolic link: {}",
-                            e.to_string()
-                        );
+                        let err_str = format!("unable to create symbolic link: {}", e.to_string());
                         self.print_error(&err_str);
                         return 0;
                     }
@@ -401,12 +391,11 @@ impl VM {
 
         match path_opt {
             Some(s) => {
-                let meta_res =
-                    if use_symlink {
-                        fs::symlink_metadata(&s)
-                    } else {
-                        fs::metadata(&s)
-                    };
+                let meta_res = if use_symlink {
+                    fs::symlink_metadata(&s)
+                } else {
+                    fs::metadata(&s)
+                };
                 match meta_res {
                     Ok(meta) => {
                         let mut map = IndexMap::new();
@@ -686,9 +675,7 @@ impl VM {
                 }
                 let group_obj = group_opt.unwrap();
 
-                let chown_res =
-                    nix::unistd::chown(path, Some(user_obj.uid),
-                                             Some(group_obj.gid));
+                let chown_res = nix::unistd::chown(path, Some(user_obj.uid), Some(group_obj.gid));
                 match chown_res {
                     Ok(_) => {
                         return 1;

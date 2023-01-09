@@ -4,10 +4,10 @@ use std::mem;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
-use iprange::IpRange;
 use ipnet::{Ipv4Net, Ipv6Net};
+use iprange::IpRange;
 
-use chunk::{StringTriple, Value, IpSet};
+use chunk::{IpSet, StringTriple, Value};
 use vm::VM;
 
 impl VM {
@@ -127,7 +127,9 @@ impl VM {
                         if !mb.is_empty() {
                             let (_, val) = mb.iter().next().unwrap().clone();
                             if !val.variants_equal(&element_rr) {
-                                self.print_error("second push argument type does not match first argument set");
+                                self.print_error(
+                                    "second push argument type does not match first argument set",
+                                );
                                 return 0;
                             }
                         }
@@ -138,23 +140,25 @@ impl VM {
                      * just use IP sets in those cases. */
                     match element_rr {
                         Value::IpSet(_)
-                                | Value::Ipv4(_)
-                                | Value::Ipv6(_)
-                                | Value::Ipv4Range(_)
-                                | Value::Ipv6Range(_) => {
-                            self.print_error("second push argument cannot be an IP address object (see ips)");
+                        | Value::Ipv4(_)
+                        | Value::Ipv6(_)
+                        | Value::Ipv4Range(_)
+                        | Value::Ipv6Range(_) => {
+                            self.print_error(
+                                "second push argument cannot be an IP address object (see ips)",
+                            );
                             return 0;
                         }
                         _ => {}
                     }
 
-		    let element_str_opt: Option<&str>;
-		    to_str!(element_rr.clone(), element_str_opt);
+                    let element_str_opt: Option<&str>;
+                    to_str!(element_rr.clone(), element_str_opt);
                     match element_str_opt {
                         None => {
-			    self.print_error("second push argument cannot be added to set");
-			    return 0;
-			},
+                            self.print_error("second push argument cannot be added to set");
+                            return 0;
+                        }
                         Some(s) => {
                             map.borrow_mut().insert(s.to_string(), element_rr);
                         }
@@ -226,10 +230,7 @@ impl VM {
         return 1;
     }
 
-    pub fn opcode_shift_inner<'a>(
-        &mut self,
-        shiftable_rr: &mut Value
-    ) -> i32 {
+    pub fn opcode_shift_inner<'a>(&mut self, shiftable_rr: &mut Value) -> i32 {
         let mut repush = false;
         let mut stack_len = 0;
         let mut new_stack_len = 0;
@@ -323,8 +324,7 @@ impl VM {
                      * how lists are processed.  There is probably a
                      * more appropriate structure that can be used for
                      * sets. */
-                    let (_, value_rr) =
-                        hsh.borrow_mut().shift_remove_index(0).unwrap();
+                    let (_, value_rr) = hsh.borrow_mut().shift_remove_index(0).unwrap();
                     self.stack.push(value_rr);
                 } else {
                     self.stack.push(Value::Null);
@@ -374,9 +374,9 @@ impl VM {
                         Some((i, s)) => {
                             let mut lst = VecDeque::new();
                             lst.push_back(Value::Int(i));
-                            lst.push_back(Value::String(Rc::new(RefCell::new(
-                                StringTriple::new(s, None),
-                            ))));
+                            lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                                s, None,
+                            )))));
                             self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                         }
                     }
@@ -516,21 +516,16 @@ impl VM {
         return 1;
     }
 
-
     /// Takes a shiftable object as its single argument.  Shifts an
     /// element from that object and puts it onto the stack.
-    pub fn opcode_shift<'a>(
-        &mut self,
-    ) -> i32 {
+    pub fn opcode_shift<'a>(&mut self) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("shift requires one argument");
             return 0;
         }
 
         let mut shiftable_rr = self.stack.pop().unwrap();
-        return self.opcode_shift_inner(
-            &mut shiftable_rr
-        );
+        return self.opcode_shift_inner(&mut shiftable_rr);
     }
 
     /// Takes an arbitrary value as its single argument.  Places a
@@ -588,7 +583,8 @@ impl VM {
                 let new_ipv4 = ipset1_ipv4.merge(&ipset2_ipv4);
                 let new_ipv6 = ipset1_ipv6.merge(&ipset2_ipv6);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
-                self.stack.push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
+                self.stack
+                    .push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
                 return 1;
             }
             (Value::Set(_), _) => {
@@ -633,7 +629,8 @@ impl VM {
                 let new_ipv4 = ipset1_ipv4.intersect(&ipset2_ipv4);
                 let new_ipv6 = ipset1_ipv6.intersect(&ipset2_ipv6);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
-                self.stack.push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
+                self.stack
+                    .push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
                 return 1;
             }
             (Value::Set(_), _) => {
@@ -678,7 +675,8 @@ impl VM {
                 let new_ipv4 = ipset1_ipv4.exclude(&ipset2_ipv4);
                 let new_ipv6 = ipset1_ipv6.exclude(&ipset2_ipv6);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
-                self.stack.push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
+                self.stack
+                    .push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
                 return 1;
             }
             (Value::Set(_), _) => {
@@ -730,7 +728,8 @@ impl VM {
                 let new_ipv4 = ipset1_ipv4.merge(&ipset2_ipv4).exclude(&ipv4_is);
                 let new_ipv6 = ipset1_ipv6.merge(&ipset2_ipv6).exclude(&ipv6_is);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
-                self.stack.push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
+                self.stack
+                    .push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
                 return 1;
             }
             (Value::Set(_), _) => {

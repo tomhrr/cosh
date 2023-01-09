@@ -167,8 +167,7 @@ impl<'a> Scanner<'a> {
                         self.next_is_eof = true;
                         return Some(parameters);
                     }
-                    if char::is_whitespace(buffer[0] as char)
-                            || buffer[0] == ';' as u8 {
+                    if char::is_whitespace(buffer[0] as char) || buffer[0] == ';' as u8 {
                         self.lookahead = buffer[0];
                         self.has_lookahead = true;
                         done = true;
@@ -311,11 +310,19 @@ impl<'a> Scanner<'a> {
                         return self.get_token(TokenType::Retry);
                     }
                 }
-                '(' => { return self.get_token(TokenType::StartList); },
-                ')' => { return self.get_token(TokenType::EndList); },
-                '[' => { return self.get_token(TokenType::LeftBracket); },
-                ']' => { return self.get_token(TokenType::RightBracket); },
-                _   => {}
+                '(' => {
+                    return self.get_token(TokenType::StartList);
+                }
+                ')' => {
+                    return self.get_token(TokenType::EndList);
+                }
+                '[' => {
+                    return self.get_token(TokenType::LeftBracket);
+                }
+                ']' => {
+                    return self.get_token(TokenType::RightBracket);
+                }
+                _ => {}
             }
         }
 
@@ -357,8 +364,10 @@ impl<'a> Scanner<'a> {
                     self.column_number = self.column_number + 1;
                     if result_index == 1 {
                         match result[0] as char {
-                            'h' => { return self.get_token(TokenType::StartHash) },
-                            's' => { return self.get_token(TokenType::StartSet); },
+                            'h' => return self.get_token(TokenType::StartHash),
+                            's' => {
+                                return self.get_token(TokenType::StartSet);
+                            }
                             _ => {}
                         }
                     }
@@ -494,19 +503,19 @@ impl<'a> Scanner<'a> {
         let s = &s_all[..result_index];
         let token_type = if !is_string {
             match s {
-                "h("   => TokenType::StartHash,
-                "s("   => TokenType::StartSet,
-                "("    => TokenType::StartList,
-                ")"    => TokenType::EndList,
-                "{"    => TokenType::LeftBrace,
-                "}"    => TokenType::RightBrace,
-                "["    => TokenType::LeftBracket,
-                "]"    => TokenType::RightBracket,
-                ":"    => TokenType::StartFunction,
-                ":~"   => TokenType::StartGenerator,
-                ",,"   => TokenType::EndFunction,
-                ".t"   => TokenType::True,
-                ".f"   => TokenType::False,
+                "h(" => TokenType::StartHash,
+                "s(" => TokenType::StartSet,
+                "(" => TokenType::StartList,
+                ")" => TokenType::EndList,
+                "{" => TokenType::LeftBrace,
+                "}" => TokenType::RightBrace,
+                "[" => TokenType::LeftBracket,
+                "]" => TokenType::RightBracket,
+                ":" => TokenType::StartFunction,
+                ":~" => TokenType::StartGenerator,
+                ",," => TokenType::EndFunction,
+                ".t" => TokenType::True,
+                ".f" => TokenType::False,
                 "null" => TokenType::Null,
                 _ => {
                     if INT.is_match(s) {
@@ -562,19 +571,33 @@ pub fn unescape_string(s: &str) -> String {
     for c in s.chars() {
         if next_escaped {
             match c {
-                'n'  => { s2.push('\n'); },
-                't'  => { s2.push('\t'); },
-                'r'  => { s2.push('\r'); },
-                '\\' => { s2.push('\\'); },
-                _    => { s2.push('\\');
-                          s2.push(c); }
+                'n' => {
+                    s2.push('\n');
+                }
+                't' => {
+                    s2.push('\t');
+                }
+                'r' => {
+                    s2.push('\r');
+                }
+                '\\' => {
+                    s2.push('\\');
+                }
+                _ => {
+                    s2.push('\\');
+                    s2.push(c);
+                }
             }
             next_escaped = false;
         } else {
             match c {
-                '\\' => { next_escaped = true; }
-                _    => { next_escaped = false;
-                          s2.push(c); }
+                '\\' => {
+                    next_escaped = true;
+                }
+                _ => {
+                    next_escaped = false;
+                    s2.push(c);
+                }
             }
         }
     }
@@ -1123,9 +1146,7 @@ impl Compiler {
                         let mut done = false;
                         match chunk.get_second_last_opcode() {
                             OpCode::GetLocalVar => {
-                                chunk.set_second_last_opcode(
-                                    OpCode::GLVCall
-                                );
+                                chunk.set_second_last_opcode(OpCode::GLVCall);
                                 done = true;
                             }
                             _ => {}
@@ -1137,9 +1158,7 @@ impl Compiler {
                         let mut done = false;
                         match chunk.get_second_last_opcode() {
                             OpCode::GetLocalVar => {
-                                chunk.set_second_last_opcode(
-                                    OpCode::GLVShift
-                                );
+                                chunk.set_second_last_opcode(OpCode::GLVShift);
                                 done = true;
                             }
                             _ => {}
@@ -1213,10 +1232,8 @@ impl Compiler {
                         match else_index {
                             Some(n) => {
                                 let jmp_len = chunk.data.len() - n - 2;
-                                chunk.data[n] =
-                                    ((jmp_len >> 8) & 0xff).try_into().unwrap();
-                                chunk.data[n + 1] =
-                                    (jmp_len & 0xff).try_into().unwrap();
+                                chunk.data[n] = ((jmp_len >> 8) & 0xff).try_into().unwrap();
+                                chunk.data[n + 1] = (jmp_len & 0xff).try_into().unwrap();
                                 has_else = true;
                                 else_index = None;
                             }
@@ -1226,10 +1243,8 @@ impl Compiler {
                             match if_index {
                                 Some(n) => {
                                     let jmp_len = chunk.data.len() - n - 2;
-                                    chunk.data[n] =
-                                        ((jmp_len >> 8) & 0xff).try_into().unwrap();
-                                    chunk.data[n + 1] =
-                                        (jmp_len & 0xff).try_into().unwrap();
+                                    chunk.data[n] = ((jmp_len >> 8) & 0xff).try_into().unwrap();
+                                    chunk.data[n + 1] = (jmp_len & 0xff).try_into().unwrap();
                                     if_index = None;
                                 }
                                 _ => {
@@ -1264,10 +1279,8 @@ impl Compiler {
                         match if_index {
                             Some(n) => {
                                 let jmp_len = chunk.data.len() - n - 2;
-                                chunk.data[n] =
-                                    ((jmp_len >> 8) & 0xff).try_into().unwrap();
-                                chunk.data[n + 1] =
-                                    (jmp_len & 0xff).try_into().unwrap();
+                                chunk.data[n] = ((jmp_len >> 8) & 0xff).try_into().unwrap();
+                                chunk.data[n + 1] = (jmp_len & 0xff).try_into().unwrap();
                             }
                             _ => {
                                 eprintln!(
@@ -1375,10 +1388,8 @@ impl Compiler {
                         }
                         for leave_index in leave_indexes.iter() {
                             let jmp_len = chunk.data.len() - *leave_index - 2;
-                            chunk.data[*leave_index] =
-                                ((jmp_len >> 8) & 0xff).try_into().unwrap();
-                            chunk.data[*leave_index + 1] =
-                                (jmp_len & 0xff).try_into().unwrap();
+                            chunk.data[*leave_index] = ((jmp_len >> 8) & 0xff).try_into().unwrap();
+                            chunk.data[*leave_index + 1] = (jmp_len & 0xff).try_into().unwrap();
                         }
                         if begin_indexes.len() > 0 {
                             let (prev_begin_index, prev_leave_indexes) =
@@ -1400,8 +1411,9 @@ impl Compiler {
                         chunk.add_opcode(OpCode::Rand);
                     } else {
                         let s_raw = unescape_string(&s);
-                        let s_rr =
-                            Value::String(Rc::new(RefCell::new(StringTriple::new_with_escaped(s_raw, s, None))));
+                        let s_rr = Value::String(Rc::new(RefCell::new(
+                            StringTriple::new_with_escaped(s_raw, s, None),
+                        )));
                         let i = chunk.add_constant(s_rr);
 
                         if is_implicit {
@@ -1421,8 +1433,7 @@ impl Compiler {
                 }
                 TokenType::Command(s, params) => {
                     let s_raw = unescape_string(&s);
-                    let s_rr = Value::Command(Rc::new(s_raw),
-                                              Rc::new(params));
+                    let s_rr = Value::Command(Rc::new(s_raw), Rc::new(params));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -1443,8 +1454,7 @@ impl Compiler {
                 }
                 TokenType::CommandExplicit(s, params) => {
                     let s_raw = unescape_string(&s);
-                    let s_rr = Value::Command(Rc::new(s_raw),
-                                              Rc::new(params));
+                    let s_rr = Value::Command(Rc::new(s_raw), Rc::new(params));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;
@@ -1455,8 +1465,9 @@ impl Compiler {
                 }
                 TokenType::String(s) => {
                     let s_raw = unescape_string(&s);
-                    let s_rr =
-                        Value::String(Rc::new(RefCell::new(StringTriple::new_with_escaped(s_raw, s, None))));
+                    let s_rr = Value::String(Rc::new(RefCell::new(
+                        StringTriple::new_with_escaped(s_raw, s, None),
+                    )));
                     let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
                     let i_upper = (i >> 8) & 0xFF;

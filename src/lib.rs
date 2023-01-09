@@ -20,10 +20,10 @@ extern crate serde;
 extern crate sha1;
 extern crate sha2;
 extern crate sysinfo;
-extern crate unicode_segmentation;
 extern crate tempfile;
 extern crate term_size;
 extern crate termion;
+extern crate unicode_segmentation;
 extern crate utime;
 extern crate xml;
 

@@ -23,7 +23,7 @@ use std::path::{self, Path};
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
 
-use ansi_term::Colour::{Red, Blue, Purple};
+use ansi_term::Colour::{Blue, Purple, Red};
 use dirs_next::home_dir;
 use getopts::Options;
 use memchr::memchr;
@@ -34,7 +34,9 @@ use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::validate::Validator;
-use rustyline::{CompletionType, Config, Context, EditMode, Editor, Result, At, Cmd, KeyPress, Movement, Word};
+use rustyline::{
+    At, Cmd, CompletionType, Config, Context, EditMode, Editor, KeyPress, Movement, Result, Word,
+};
 
 use rustyline_derive::Helper;
 use searchpath::search_path;
@@ -42,7 +44,7 @@ use tempfile::tempfile;
 
 use cosh::chunk::{Chunk, Value};
 use cosh::compiler::Compiler;
-use cosh::vm::{VM, SIMPLE_FORMS, LIB_FORMS};
+use cosh::vm::{LIB_FORMS, SIMPLE_FORMS, VM};
 
 // Most of the code through to 'impl Completer for ShellCompleter' is
 // taken from kkawakam/rustyline#574 as at 3a41ee9, with some small
@@ -257,7 +259,7 @@ fn internal_complete(
         if k.starts_with(path) {
             entries.push(Pair {
                 display: Red.paint(*k).to_string(),
-                replacement: escape((*k).to_string(), esc_char, break_chars, quote)
+                replacement: escape((*k).to_string(), esc_char, break_chars, quote),
             });
         }
     }
@@ -266,7 +268,7 @@ fn internal_complete(
         if k.starts_with(path) {
             entries.push(Pair {
                 display: Red.paint(*k).to_string(),
-                replacement: escape((*k).to_string(), esc_char, break_chars, quote)
+                replacement: escape((*k).to_string(), esc_char, break_chars, quote),
             });
         }
     }
@@ -275,7 +277,7 @@ fn internal_complete(
         if k.starts_with(path) && !LIB_FORMS.contains::<str>(k) {
             entries.push(Pair {
                 display: Blue.paint(k).to_string(),
-                replacement: escape(k.to_string(), esc_char, break_chars, quote)
+                replacement: escape(k.to_string(), esc_char, break_chars, quote),
             });
         }
     }
@@ -284,7 +286,7 @@ fn internal_complete(
         if k.starts_with(path) {
             entries.push(Pair {
                 display: Purple.paint(k).to_string(),
-                replacement: escape(k.to_string(), esc_char, break_chars, quote)
+                replacement: escape(k.to_string(), esc_char, break_chars, quote),
             });
         }
     }
@@ -308,7 +310,7 @@ pub struct ShellCompleter {
     break_chars: &'static [u8],
     double_quotes_special_chars: &'static [u8],
     global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
-    global_vars: Rc<RefCell<HashMap<String, Value>>>
+    global_vars: Rc<RefCell<HashMap<String, Value>>>,
 }
 
 fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
@@ -355,8 +357,10 @@ fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
 
 impl ShellCompleter {
     /// Constructor
-    pub fn new(global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
-               global_vars: Rc<RefCell<HashMap<String, Value>>>) -> Self {
+    pub fn new(
+        global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
+        global_vars: Rc<RefCell<HashMap<String, Value>>>,
+    ) -> Self {
         Self {
             break_chars: &DEFAULT_BREAK_CHARS,
             double_quotes_special_chars: &DOUBLE_QUOTES_SPECIAL_CHARS,
@@ -409,10 +413,14 @@ impl ShellCompleter {
             filename_complete(&path, esc_char, break_chars, quote)
         };
 
-        let mut internal_matches =
-            internal_complete(&path, esc_char, break_chars, quote,
-                              self.global_functions.clone(),
-                              self.global_vars.clone());
+        let mut internal_matches = internal_complete(
+            &path,
+            esc_char,
+            break_chars,
+            quote,
+            self.global_functions.clone(),
+            self.global_vars.clone(),
+        );
 
         #[allow(clippy::unnecessary_sort_by)]
         matches.append(&mut internal_matches);
@@ -423,8 +431,10 @@ impl ShellCompleter {
 
 impl Default for ShellCompleter {
     fn default() -> Self {
-        Self::new(Rc::new(RefCell::new(HashMap::new())),
-                  Rc::new(RefCell::new(HashMap::new())))
+        Self::new(
+            Rc::new(RefCell::new(HashMap::new())),
+            Rc::new(RefCell::new(HashMap::new())),
+        )
     }
 }
 
@@ -595,17 +605,12 @@ fn main() {
                     }
                 }
 
-                vm.interpret(
-                    global_functions.clone(),
-                    &mut bufread,
-                    "(main)",
-                );
+                vm.interpret(global_functions.clone(), &mut bufread, "(main)");
             }
         }
     } else {
         let mut compiler = Compiler::new();
-        let global_functions =
-            Rc::new(RefCell::new(HashMap::new()));
+        let global_functions = Rc::new(RefCell::new(HashMap::new()));
 
         if !matches.opt_present("no-rt") {
             let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
@@ -638,11 +643,8 @@ fn main() {
                 match file_res {
                     Ok(file) => {
                         let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                        let chunk_opt = vm.interpret(
-                            global_functions.clone(),
-                            &mut bufread,
-                            ".coshrc",
-                        );
+                        let chunk_opt =
+                            vm.interpret(global_functions.clone(), &mut bufread, ".coshrc");
                         match chunk_opt {
                             Some(chunk) => {
                                 for (k, v) in chunk.borrow().functions.iter() {
@@ -667,13 +669,18 @@ fn main() {
             .build();
 
         let helper = RLHelper {
-            completer: ShellCompleter::new(global_functions.clone(),
-                                           global_vars.clone()),
+            completer: ShellCompleter::new(global_functions.clone(), global_vars.clone()),
         };
 
         let mut rl = Editor::with_config(config);
-        rl.bind_sequence(KeyPress::ControlLeft, Cmd::Move(Movement::BackwardWord(1, Word::Vi)));
-        rl.bind_sequence(KeyPress::ControlRight, Cmd::Move(Movement::ForwardWord(1, At::AfterEnd, Word::Vi)));
+        rl.bind_sequence(
+            KeyPress::ControlLeft,
+            Cmd::Move(Movement::BackwardWord(1, Word::Vi)),
+        );
+        rl.bind_sequence(
+            KeyPress::ControlRight,
+            Cmd::Move(Movement::ForwardWord(1, At::AfterEnd, Word::Vi)),
+        );
         rl.set_helper(Some(helper));
         if rl.load_history(".cosh_history").is_err() {}
 
@@ -723,11 +730,7 @@ fn main() {
 
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                     rl.add_history_entry(line.as_str());
-                    let chunk_opt = vm.interpret(
-                        global_functions.clone(),
-                        &mut bufread,
-                        "(main)",
-                    );
+                    let chunk_opt = vm.interpret(global_functions.clone(), &mut bufread, "(main)");
                     match chunk_opt {
                         Some(chunk) => {
                             for (k, v) in chunk.borrow().functions.iter() {

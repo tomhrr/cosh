@@ -11,8 +11,7 @@ impl VM {
     pub fn core_env(&mut self) -> i32 {
         let mut hsh = IndexMap::new();
         for (key, value) in env::vars() {
-            let value_str =
-                Value::String(Rc::new(RefCell::new(StringTriple::new(value, None))));
+            let value_str = Value::String(Rc::new(RefCell::new(StringTriple::new(value, None))));
             hsh.insert(key, value_str);
         }
         let hsh_rr = Value::Hash(Rc::new(RefCell::new(hsh)));

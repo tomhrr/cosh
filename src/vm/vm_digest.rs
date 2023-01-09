@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use sha1::{Sha1, Digest};
+use sha1::{Digest, Sha1};
 use sha2::{Sha256, Sha512};
 
 use chunk::{StringTriple, Value};
@@ -15,8 +15,8 @@ impl VM {
         }
 
         let str_rr = self.stack.pop().unwrap();
-	let str_opt: Option<&str>;
-	to_str!(str_rr, str_opt);
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
 
         match str_opt {
             Some(s) => {
@@ -39,8 +39,8 @@ impl VM {
         }
 
         let str_rr = self.stack.pop().unwrap();
-	let str_opt: Option<&str>;
-	to_str!(str_rr, str_opt);
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
 
         match str_opt {
             Some(s) => {
@@ -65,8 +65,8 @@ impl VM {
         }
 
         let str_rr = self.stack.pop().unwrap();
-	let str_opt: Option<&str>;
-	to_str!(str_rr, str_opt);
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
 
         match str_opt {
             Some(s) => {
@@ -91,8 +91,8 @@ impl VM {
         }
 
         let str_rr = self.stack.pop().unwrap();
-	let str_opt: Option<&str>;
-	to_str!(str_rr, str_opt);
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
 
         match str_opt {
             Some(s) => {

@@ -22,7 +22,7 @@ impl VM {
                 Value::Null => {
                     self.stack.pop();
                     break;
-                },
+                }
                 _ => {
                     lst.push_back(element_rr);
                 }
@@ -62,8 +62,9 @@ impl VM {
                 }
 
                 if all_strings {
-                    lst.borrow_mut().make_contiguous().sort_by(|a, b| {
-                        match (a, b) {
+                    lst.borrow_mut()
+                        .make_contiguous()
+                        .sort_by(|a, b| match (a, b) {
                             (Value::String(sp1), Value::String(sp2)) => {
                                 let s1 = &(sp1.borrow().s);
                                 let s2 = &(sp2.borrow().s);
@@ -73,8 +74,7 @@ impl VM {
                                 eprintln!("expected string in sort!");
                                 std::process::abort();
                             }
-                        }
-                    });
+                        });
                 } else {
                     let mut success = true;
                     lst.borrow_mut().make_contiguous().sort_by(|a, b| {

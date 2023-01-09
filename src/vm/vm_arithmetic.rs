@@ -3,7 +3,7 @@ use num::ToPrimitive;
 use num_bigint::BigInt;
 use num_traits::Signed;
 
-use chunk::{Value};
+use chunk::Value;
 use vm::*;
 
 /// Convert an i32 to a bigint value.
@@ -848,14 +848,22 @@ impl VM {
                 return d2.cmp(d1) as i32;
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                return if d2 < d1 { -1 }
-                       else if d2 == d1 { 0 }
-                       else { -1 };
+                return if d2 < d1 {
+                    -1
+                } else if d2 == d1 {
+                    0
+                } else {
+                    -1
+                };
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                return if d2 < d1 { -1 }
-                       else if d2 == d1 { 0 }
-                       else { -1 };
+                return if d2 < d1 {
+                    -1
+                } else if d2 == d1 {
+                    0
+                } else {
+                    -1
+                };
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
@@ -1350,7 +1358,7 @@ impl VM {
                 if *right < 0 {
                     return 0;
                 }
-                let u_left:  u32 = (*left).try_into().unwrap();
+                let u_left: u32 = (*left).try_into().unwrap();
                 let u_right: u32 = (*right).try_into().unwrap();
                 let result = u_left ^ u_right;
                 let int_result: Result<i32, _> = result.try_into();
@@ -1359,11 +1367,8 @@ impl VM {
                         self.stack.push(Value::Int(n));
                     }
                     Err(_) => {
-                        self.stack.push(
-                            Value::BigInt(
-                                BigInt::from_u32(result).unwrap()
-                            )
-                        );
+                        self.stack
+                            .push(Value::BigInt(BigInt::from_u32(result).unwrap()));
                     }
                 }
                 return 1;
@@ -1454,7 +1459,7 @@ impl VM {
                 if *right < 0 {
                     return 0;
                 }
-                let u_left:  u32 = (*left).try_into().unwrap();
+                let u_left: u32 = (*left).try_into().unwrap();
                 let u_right: u32 = (*right).try_into().unwrap();
                 let result = u_left | u_right;
                 let int_result: Result<i32, _> = result.try_into();
@@ -1463,11 +1468,8 @@ impl VM {
                         self.stack.push(Value::Int(n));
                     }
                     Err(_) => {
-                        self.stack.push(
-                            Value::BigInt(
-                                BigInt::from_u32(result).unwrap()
-                            )
-                        );
+                        self.stack
+                            .push(Value::BigInt(BigInt::from_u32(result).unwrap()));
                     }
                 }
                 return 1;
@@ -1558,7 +1560,7 @@ impl VM {
                 if *right < 0 {
                     return 0;
                 }
-                let u_left:  u32 = (*left).try_into().unwrap();
+                let u_left: u32 = (*left).try_into().unwrap();
                 let u_right: u32 = (*right).try_into().unwrap();
                 let result = u_left & u_right;
                 let int_result: Result<i32, _> = result.try_into();
@@ -1567,11 +1569,8 @@ impl VM {
                         self.stack.push(Value::Int(n));
                     }
                     Err(_) => {
-                        self.stack.push(
-                            Value::BigInt(
-                                BigInt::from_u32(result).unwrap()
-                            )
-                        );
+                        self.stack
+                            .push(Value::BigInt(BigInt::from_u32(result).unwrap()));
                     }
                 }
                 return 1;

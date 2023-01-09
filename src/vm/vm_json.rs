@@ -34,9 +34,9 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
                 Value::Float(n.as_f64().unwrap())
             }
         }
-        serde_json::value::Value::String(s) => {
-            Value::String(Rc::new(RefCell::new(StringTriple::new(s.to_string(), None))))
-        }
+        serde_json::value::Value::String(s) => Value::String(Rc::new(RefCell::new(
+            StringTriple::new(s.to_string(), None),
+        ))),
         serde_json::value::Value::Array(lst) => Value::List(Rc::new(RefCell::new(
             lst.iter()
                 .map(|v| convert_from_json(v))
@@ -103,7 +103,8 @@ impl VM {
                     let doc;
                     match doc_res {
                         Err(e) => {
-                            let err_str = format!("from-json argument is not valid JSON: {}", e.to_string());
+                            let err_str =
+                                format!("from-json argument is not valid JSON: {}", e.to_string());
                             self.print_error(&err_str);
                             return 0;
                         }
@@ -122,7 +123,11 @@ impl VM {
             }
         } else {
             self.stack.push(value_rr);
-            self.stack.push(Value::String(Rc::new(RefCell::new(StringTriple::new("".to_string(), None)))));
+            self.stack
+                .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                    "".to_string(),
+                    None,
+                )))));
             let function_rr = self.string_to_callable("join").unwrap();
             let res = self.call(OpCode::Call, function_rr);
             if !res {

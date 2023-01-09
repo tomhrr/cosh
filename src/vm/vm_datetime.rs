@@ -3,8 +3,8 @@ use std::convert::TryFrom;
 use std::rc::Rc;
 use std::str::FromStr;
 
-use chrono::{NaiveDateTime, DateTime, Utc, Duration, TimeZone};
-use chrono::format::{StrftimeItems, Parsed, parse};
+use chrono::format::{parse, Parsed, StrftimeItems};
+use chrono::{DateTime, Duration, NaiveDateTime, TimeZone, Utc};
 use chronoutil::RelativeDuration;
 
 use vm::*;
@@ -30,7 +30,7 @@ impl VM {
     /// Takes a date-time object and returns the epoch time that
     /// corresponds to that object.
     pub fn core_to_epoch(&mut self) -> i32 {
-	if self.stack.len() < 1 {
+        if self.stack.len() < 1 {
             self.print_error("to-epoch requires one argument");
             return 0;
         }
@@ -42,13 +42,13 @@ impl VM {
                 let epoch32 = i32::try_from(epoch).unwrap();
                 self.stack.push(Value::Int(epoch32));
                 return 1;
-            },
+            }
             Value::DateTimeOT(dt) => {
                 let epoch = dt.timestamp();
                 let epoch32 = i32::try_from(epoch).unwrap();
                 self.stack.push(Value::Int(epoch32));
                 return 1;
-            },
+            }
             _ => {
                 self.print_error("to-epoch argument must be date-time object");
                 return 0;
@@ -60,7 +60,7 @@ impl VM {
     /// elapsed since 1970-01-01 00:00:00 UTC) and returns a date-time
     /// object (offset at UTC) that corresponds to that time.
     pub fn core_from_epoch(&mut self) -> i32 {
-	if self.stack.len() < 1 {
+        if self.stack.len() < 1 {
             self.print_error("from-epoch requires one argument");
             return 0;
         }
@@ -70,8 +70,7 @@ impl VM {
         match epoch_int_opt {
             Some(epoch_int) => {
                 let epoch64 = i64::try_from(epoch_int).unwrap();
-                let naive =
-                    NaiveDateTime::from_timestamp_opt(epoch64, 0).unwrap();
+                let naive = NaiveDateTime::from_timestamp_opt(epoch64, 0).unwrap();
                 let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
                 let newdate = datetime.with_timezone(&self.utc_tz);
                 self.stack.push(Value::DateTimeNT(newdate));
@@ -88,7 +87,7 @@ impl VM {
     /// database) and returns a new date-time object offset at that
     /// timezone.
     pub fn core_set_tz(&mut self) -> i32 {
-	if self.stack.len() < 2 {
+        if self.stack.len() < 2 {
             self.print_error("set-tz requires two arguments");
             return 0;
         }
@@ -101,33 +100,33 @@ impl VM {
 
         match (dt_rr, tz_opt) {
             (Value::DateTimeNT(dt), Some(s)) => {
-		let tzr = chrono_tz::Tz::from_str(&s);
+                let tzr = chrono_tz::Tz::from_str(&s);
                 match tzr {
                     Ok(tz) => {
-			let newdate = dt.with_timezone(&tz);
+                        let newdate = dt.with_timezone(&tz);
                         self.stack.push(Value::DateTimeNT(newdate));
                         return 1;
-                    },
+                    }
                     _ => {
                         self.print_error("second set-tz argument must be valid timezone");
                         return 0;
                     }
                 }
-            },
+            }
             (Value::DateTimeOT(dt), Some(s)) => {
-		let tzr = chrono_tz::Tz::from_str(&s);
+                let tzr = chrono_tz::Tz::from_str(&s);
                 match tzr {
                     Ok(tz) => {
-			let newdate = dt.with_timezone(&tz);
+                        let newdate = dt.with_timezone(&tz);
                         self.stack.push(Value::DateTimeNT(newdate));
                         return 1;
-                    },
+                    }
                     _ => {
                         self.print_error("second set-tz argument must be valid timezone");
                         return 0;
                     }
                 }
-            },
+            }
             (_, _) => {
                 self.print_error("first set-tz argument must be date-time object");
                 return 0;
@@ -136,7 +135,7 @@ impl VM {
     }
 
     fn addtime(&mut self, fn_name: &str) -> i32 {
-	if self.stack.len() < 3 {
+        if self.stack.len() < 3 {
             let err_str = format!("{} requires three arguments", fn_name);
             self.print_error(&err_str);
             return 0;
@@ -156,32 +155,31 @@ impl VM {
         match (period_opt, num_int_opt) {
             (Some("years"), Some(n)) => {
                 rdur = Some(RelativeDuration::years(n));
-            },
+            }
             (Some("months"), Some(n)) => {
                 rdur = Some(RelativeDuration::months(n));
-            },
+            }
             (Some("days"), Some(n)) => {
                 dur = Some(Duration::days(i64::try_from(n).unwrap()));
-            },
+            }
             (Some("hours"), Some(n)) => {
                 dur = Some(Duration::hours(i64::try_from(n).unwrap()));
-            },
+            }
             (Some("minutes"), Some(n)) => {
                 dur = Some(Duration::minutes(i64::try_from(n).unwrap()));
-            },
+            }
             (Some("seconds"), Some(n)) => {
                 dur = Some(Duration::seconds(i64::try_from(n).unwrap()));
-            },
-            (Some("years")
-                    | Some("months")
-                    | Some("days")
-                    | Some("hours")
-                    | Some("minutes")
-                    | Some("seconds"), _) => {
+            }
+            (
+                Some("years") | Some("months") | Some("days") | Some("hours") | Some("minutes")
+                | Some("seconds"),
+                _,
+            ) => {
                 let err_str = format!("third {} argument must be integer", fn_name);
                 self.print_error(&err_str);
                 return 0;
-            },
+            }
             (..) => {
                 let err_str = format!("second {} argument must be time unit", fn_name);
                 self.print_error(&err_str);
@@ -194,28 +192,27 @@ impl VM {
                 let ndt = dt + d;
                 self.stack.push(Value::DateTimeNT(ndt));
                 return 1;
-            },
+            }
             (Value::DateTimeNT(dt), _, Some(d)) => {
                 let ndt = dt + d;
                 self.stack.push(Value::DateTimeNT(ndt));
                 return 1;
-            },
+            }
             (Value::DateTimeOT(dt), Some(d), _) => {
                 let ndt = dt + d;
                 self.stack.push(Value::DateTimeOT(ndt));
                 return 1;
-            },
+            }
             (Value::DateTimeOT(dt), _, Some(d)) => {
                 let ndt = dt + d;
                 self.stack.push(Value::DateTimeOT(ndt));
                 return 1;
-            },
-            (Value::DateTimeNT(_)
-                    | Value::DateTimeOT(_), _, _) => {
+            }
+            (Value::DateTimeNT(_) | Value::DateTimeOT(_), _, _) => {
                 let err_str = format!("second {} argument must be time unit", fn_name);
                 self.print_error(&err_str);
                 return 0;
-            },
+            }
             (..) => {
                 let err_str = format!("second {} argument must be date-time object", fn_name);
                 self.print_error(&err_str);
@@ -229,7 +226,7 @@ impl VM {
     /// Adds the specified number of periods to the date-time object
     /// and returns the result as a new date-time object.
     pub fn core_addtime(&mut self) -> i32 {
-	if self.stack.len() < 3 {
+        if self.stack.len() < 3 {
             self.print_error("+time requires three arguments");
             return 0;
         }
@@ -242,7 +239,7 @@ impl VM {
     /// Subtracts the specified number of periods to the date-time
     /// object and returns the result as a new date-time object.
     pub fn core_subtime(&mut self) -> i32 {
-	if self.stack.len() < 3 {
+        if self.stack.len() < 3 {
             self.print_error("-time requires three arguments");
             return 0;
         }
@@ -255,7 +252,7 @@ impl VM {
                 let n2 = n * -1;
                 self.stack.push(Value::Int(n2));
                 return self.addtime("-time");
-            },
+            }
             _ => {
                 self.print_error("third -time argument must be integer");
                 return 0;
@@ -267,7 +264,7 @@ impl VM {
     /// arguments.  Returns the stringification of the date per the
     /// pattern.
     pub fn core_strftime(&mut self) -> i32 {
-	if self.stack.len() < 2 {
+        if self.stack.len() < 2 {
             self.print_error("strftime requires two arguments");
             return 0;
         }
@@ -281,20 +278,28 @@ impl VM {
         match (dt_rr, pat_opt) {
             (Value::DateTimeNT(dt), Some(s)) => {
                 let ss = dt.format(s);
-                self.stack.push(Value::String(Rc::new(RefCell::new(StringTriple::new(ss.to_string(), None)))));
+                self.stack
+                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                        ss.to_string(),
+                        None,
+                    )))));
                 return 1;
-            },
+            }
             (Value::DateTimeOT(dt), Some(s)) => {
                 let ss = dt.format(s);
-                self.stack.push(Value::String(Rc::new(RefCell::new(StringTriple::new(ss.to_string(), None)))));
+                self.stack
+                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                        ss.to_string(),
+                        None,
+                    )))));
                 return 1;
-            },
+            }
             (_, Some(_)) => {
-		self.print_error("first strftime argument must be date-time object");
+                self.print_error("first strftime argument must be date-time object");
                 return 0;
-            },
+            }
             (..) => {
-		self.print_error("second strftime argument must be string");
+                self.print_error("second strftime argument must be string");
                 return 0;
             }
         }
@@ -331,10 +336,9 @@ impl VM {
                     parsed.set_offset(0).unwrap();
                 }
                 return Some(parsed);
-            },
+            }
             Err(e) => {
-                let err_str = format!("unable to parse date-time string: {}",
-                                      e.to_string());
+                let err_str = format!("unable to parse date-time string: {}", e.to_string());
                 self.print_error(&err_str);
                 return None;
             }
@@ -347,7 +351,7 @@ impl VM {
     /// with components got via the strftime pattern applied on top of
     /// the default.
     pub fn core_strptime(&mut self) -> i32 {
-	if self.stack.len() < 2 {
+        if self.stack.len() < 2 {
             self.print_error("strptime requires two arguments");
             return 0;
         }
@@ -368,7 +372,7 @@ impl VM {
                         let dt_res = parsed.to_datetime().unwrap();
                         self.stack.push(Value::DateTimeOT(dt_res));
                         return 1;
-                    },
+                    }
                     _ => {
                         return 0;
                     }
@@ -379,7 +383,7 @@ impl VM {
                 return 0;
             }
             (..) => {
-		self.print_error("first strptime argument must be a string");
+                self.print_error("first strptime argument must be a string");
                 return 0;
             }
         }
@@ -391,7 +395,7 @@ impl VM {
     /// datetime defaults to 1970-01-01 00:00:00, with components got
     /// via the strftime pattern applied on top of the default.
     pub fn core_strptimez(&mut self) -> i32 {
-	if self.stack.len() < 3 {
+        if self.stack.len() < 3 {
             self.print_error("strptimez requires three arguments");
             return 0;
         }
@@ -410,20 +414,21 @@ impl VM {
 
         match (str_opt, pat_opt, tz_opt) {
             (Some(st), Some(pat), Some(tzs)) => {
-		let tzr = chrono_tz::Tz::from_str(&tzs);
+                let tzr = chrono_tz::Tz::from_str(&tzs);
                 match tzr {
                     Ok(tz) => {
                         let parsed_opt = self.strptime(&pat, &st);
                         match parsed_opt {
                             Some(parsed) => {
-                                let dt_res =
-                                    parsed.to_naive_date().unwrap()
-                                        .and_time(parsed.to_naive_time().unwrap());
+                                let dt_res = parsed
+                                    .to_naive_date()
+                                    .unwrap()
+                                    .and_time(parsed.to_naive_time().unwrap());
                                 self.stack.push(Value::DateTimeNT(
-                                    tz.from_local_datetime(&dt_res).unwrap()
+                                    tz.from_local_datetime(&dt_res).unwrap(),
                                 ));
                                 return 1;
-                            },
+                            }
                             _ => {
                                 return 0;
                             }
@@ -436,15 +441,15 @@ impl VM {
                 }
             }
             (Some(_), Some(_), _) => {
-		self.print_error("third strptimez argument must be string");
+                self.print_error("third strptimez argument must be string");
                 return 0;
             }
             (Some(_), _, _) => {
-		self.print_error("second strptimez argument must be string");
+                self.print_error("second strptimez argument must be string");
                 return 0;
             }
             (..) => {
-		self.print_error("first strptimez argument must be string");
+                self.print_error("first strptimez argument must be string");
                 return 0;
             }
         }

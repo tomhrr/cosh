@@ -52,7 +52,7 @@ fn psv_helper(
                     }
                     /* The default behaviour for these two might be
                      * confusing, so make them no-ops. */
-                    termion::event::Key::Home   => {
+                    termion::event::Key::Home => {
                         continue;
                     }
                     termion::event::Key::PageUp => {
@@ -155,69 +155,107 @@ impl VM {
         let type_string = value_rr.type_string();
         {
             match value_rr {
-                Value::Ipv4(_)
-                        | Value::Ipv4Range(_)
-                        | Value::Ipv6(_)
-                        | Value::Ipv6Range(_) => {
-                    let s = format!("v[{} {}]", &type_string,
-                                                value_rr.to_string().unwrap());
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                Value::Ipv4(_) | Value::Ipv4Range(_) | Value::Ipv6(_) | Value::Ipv6Range(_) => {
+                    let s = format!("v[{} {}]", &type_string, value_rr.to_string().unwrap());
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::DateTimeNT(dt) => {
-                    let s = format!("v[{} {}]", &type_string,
-                                                dt.format("%F %T %Z"));
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    let s = format!("v[{} {}]", &type_string, dt.format("%F %T %Z"));
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::DateTimeOT(dt) => {
-                    let s = format!("v[{} {}]", &type_string,
-                                                dt.format("%F %T %Z"));
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    let s = format!("v[{} {}]", &type_string, dt.format("%F %T %Z"));
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 /* The way this works is less than ideal, what with it
                  * being different from standard stringification, but
                  * it may be that having separate representations is
                  * useful for some reason. */
-                Value::CoreFunction(_)
-                        | Value::NamedFunction(_) => {
+                Value::CoreFunction(_) | Value::NamedFunction(_) => {
                     let s = format!("v[{}]", &type_string);
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::Null => {
-                    lines_to_print =
-                        psv_helper("null", indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        "null",
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::Bool(b) => {
                     let s = if *b { ".t" } else { ".f" };
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::Int(n) => {
                     let s = format!("{}", n);
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::BigInt(n) => {
                     let s = format!("{}", n);
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::Float(f) => {
                     let s = format!("{}", f);
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::String(sp) => {
                     let mut ss = sp.borrow().e.clone();
@@ -232,45 +270,78 @@ impl VM {
                     } else {
                         ss = format!("{}", ss);
                     }
-                    lines_to_print =
-                        psv_helper(&ss, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        &ss,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::Command(s, _) => {
                     let s = format!("v[{} {}]", &type_string, s);
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::CommandUncaptured(s) => {
                     let s = format!("v[{} {}]", &type_string, s);
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
-                Value::FileWriter(_)
-                        | Value::FileReader(_)
-                        | Value::DirectoryHandle(_) => {
+                Value::FileWriter(_) | Value::FileReader(_) | Value::DirectoryHandle(_) => {
                     let s = format!("v[{}]", &type_string);
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::AnonymousFunction(_, _) => {
                     let s = format!("v[{}]", &(value_rr.type_string()));
-                    lines_to_print =
-                        psv_helper(&s, indent, no_first_indent,
-                                   window_height, lines_to_print, index);
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        lines_to_print,
+                        index,
+                    );
                 }
                 Value::List(list) => {
                     if list.borrow().len() == 0 {
-                        lines_to_print =
-                            psv_helper("()", indent, no_first_indent,
-                                    window_height, lines_to_print, index);
+                        lines_to_print = psv_helper(
+                            "()",
+                            indent,
+                            no_first_indent,
+                            window_height,
+                            lines_to_print,
+                            index,
+                        );
                     } else {
-                        lines_to_print =
-                            psv_helper("(", indent, no_first_indent,
-                                       window_height, lines_to_print, index);
+                        lines_to_print = psv_helper(
+                            "(",
+                            indent,
+                            no_first_indent,
+                            window_height,
+                            lines_to_print,
+                            index,
+                        );
                         if lines_to_print == -1 {
                             return lines_to_print;
                         }
@@ -285,7 +356,7 @@ impl VM {
                                 false,
                                 window_height,
                                 lines_to_print,
-                                Some(index)
+                                Some(index),
                             );
                             if lines_to_print == -1 {
                                 return lines_to_print;
@@ -293,8 +364,7 @@ impl VM {
                             index = index + 1;
                         }
                         lines_to_print =
-                            psv_helper(")", indent, false, window_height, lines_to_print,
-                                       None);
+                            psv_helper(")", indent, false, window_height, lines_to_print, None);
                     }
                 }
                 Value::Hash(map) => {
@@ -354,8 +424,7 @@ impl VM {
                             }
                         }
                         lines_to_print =
-                            psv_helper(")", indent, false, window_height,
-                                       lines_to_print, None);
+                            psv_helper(")", indent, false, window_height, lines_to_print, None);
                     }
                 }
                 Value::Set(map) => {
@@ -366,7 +435,7 @@ impl VM {
                             no_first_indent,
                             window_height,
                             lines_to_print,
-                            index
+                            index,
                         );
                     } else {
                         lines_to_print = psv_helper(
@@ -375,7 +444,7 @@ impl VM {
                             no_first_indent,
                             window_height,
                             lines_to_print,
-                            index
+                            index,
                         );
                         if lines_to_print == -1 {
                             return lines_to_print;
@@ -391,24 +460,23 @@ impl VM {
                                 false,
                                 window_height,
                                 lines_to_print,
-                                index
+                                index,
                             );
                             if lines_to_print == -1 {
                                 return lines_to_print;
                             }
                         }
                         lines_to_print =
-                            psv_helper(")", indent, false, window_height, lines_to_print,
-                                       None);
+                            psv_helper(")", indent, false, window_height, lines_to_print, None);
                     }
                 }
                 Value::Generator(_)
-                        | Value::CommandGenerator(_)
-                        | Value::KeysGenerator(_)
-                        | Value::ValuesGenerator(_)
-                        | Value::EachGenerator(_)
-                        | Value::MultiGenerator(_)
-                        | Value::IpSet(_) => {
+                | Value::CommandGenerator(_)
+                | Value::KeysGenerator(_)
+                | Value::ValuesGenerator(_)
+                | Value::EachGenerator(_)
+                | Value::MultiGenerator(_)
+                | Value::IpSet(_) => {
                     is_generator = true;
                 }
             }
@@ -445,9 +513,14 @@ impl VM {
                 if !is_null {
                     if !has_elements {
                         let new_str = format!("v[{} (", &type_string);
-                        lines_to_print =
-                            psv_helper(&new_str, indent, no_first_indent, window_height, lines_to_print,
-                                       index);
+                        lines_to_print = psv_helper(
+                            &new_str,
+                            indent,
+                            no_first_indent,
+                            window_height,
+                            lines_to_print,
+                            index,
+                        );
                         if lines_to_print == -1 {
                             return lines_to_print;
                         }
@@ -474,12 +547,17 @@ impl VM {
             self.stack.pop();
             if !has_elements {
                 let new_str = format!("v[{}]", &type_string);
-                lines_to_print =
-                    psv_helper(&new_str, indent, no_first_indent, window_height, lines_to_print,
-                               index);
+                lines_to_print = psv_helper(
+                    &new_str,
+                    indent,
+                    no_first_indent,
+                    window_height,
+                    lines_to_print,
+                    index,
+                );
             } else {
-                lines_to_print = psv_helper(")]", indent, false, window_height, lines_to_print,
-                                            None);
+                lines_to_print =
+                    psv_helper(")]", indent, false, window_height, lines_to_print, None);
             }
         }
         if lines_to_print == -1 {
@@ -526,7 +604,7 @@ impl VM {
                 false,
                 window_height,
                 lines_to_print,
-                None
+                None,
             );
             if lines_to_print == -1 {
                 if !no_remove {

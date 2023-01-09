@@ -22,20 +22,19 @@ fn tilde_expansion(input_s: &str) -> String {
     let homedir_res = std::env::var("HOME");
     let final_s;
     match homedir_res {
-	Ok(homedir) => {
-	    let s = "".to_owned() + &homedir;
-	    final_s = HOME_DIR_TILDE.replace_all(&input_s, &*s).to_string();
-	}
-	_ => {
-	    final_s = input_s.to_string();
-	}
+        Ok(homedir) => {
+            let s = "".to_owned() + &homedir;
+            final_s = HOME_DIR_TILDE.replace_all(&input_s, &*s).to_string();
+        }
+        _ => {
+            final_s = input_s.to_string();
+        }
     }
 
     return final_s;
 }
 
 impl VM {
-
     /// Takes a file path and a mode string (either 'r' or 'w') as its
     /// arguments, and puts a FileReader or FileWriter object on the
     /// stack as appropriate.
@@ -131,8 +130,7 @@ impl VM {
                     Ok(_) => {
                         self.stack
                             .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                contents,
-                                None,
+                                contents, None,
                             )))));
                     }
                     _ => {
@@ -158,8 +156,8 @@ impl VM {
         }
 
         let line_rr = self.stack.pop().unwrap();
-	let line_str_opt: Option<&str>;
-	to_str!(line_rr, line_str_opt);
+        let line_str_opt: Option<&str>;
+        to_str!(line_rr, line_str_opt);
 
         match line_str_opt {
             Some(s) => {
@@ -239,8 +237,8 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-	let path_str_opt: Option<&str>;
-	to_str!(path_rr, path_str_opt);
+        let path_str_opt: Option<&str>;
+        to_str!(path_rr, path_str_opt);
 
         match path_str_opt {
             Some(s) => {
@@ -310,8 +308,8 @@ impl VM {
         }
 
         let path_rr = self.stack.pop().unwrap();
-	let path_str_opt: Option<&str>;
-	to_str!(path_rr, path_str_opt);
+        let path_str_opt: Option<&str>;
+        to_str!(path_rr, path_str_opt);
 
         match path_str_opt {
             Some(s) => {
@@ -340,24 +338,25 @@ impl VM {
         let file_res = NamedTempFile::new();
 
         match file_res {
-            Ok(ntf) => {
-                match ntf.keep() {
-                    Ok((file, path)) => {
-                        self.stack.push(Value::String(Rc::new(RefCell::new(
-                            StringTriple::new(path.to_str().unwrap().to_string(), None)
-                        ))));
-                        self.stack.push(Value::FileWriter(Rc::new(RefCell::new(
-                            BufWriter::new(file),
-                        ))));
-                        return 1;
-                    }
-                    Err(e) => {
-                        let err_str = format!("unable to open temporary file: {}", e.to_string());
-                        self.print_error(&err_str);
-                        return 0;
-                    }
+            Ok(ntf) => match ntf.keep() {
+                Ok((file, path)) => {
+                    self.stack
+                        .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                            path.to_str().unwrap().to_string(),
+                            None,
+                        )))));
+                    self.stack
+                        .push(Value::FileWriter(Rc::new(RefCell::new(BufWriter::new(
+                            file,
+                        )))));
+                    return 1;
                 }
-            }
+                Err(e) => {
+                    let err_str = format!("unable to open temporary file: {}", e.to_string());
+                    self.print_error(&err_str);
+                    return 0;
+                }
+            },
             Err(e) => {
                 let err_str = format!("unable to open temporary file: {}", e.to_string());
                 self.print_error(&err_str);
@@ -373,9 +372,11 @@ impl VM {
         match dir {
             Ok(td) => {
                 let path = td.into_path();
-                self.stack.push(Value::String(Rc::new(RefCell::new(
-                    StringTriple::new(path.to_str().unwrap().to_string(), None)
-                ))));
+                self.stack
+                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                        path.to_str().unwrap().to_string(),
+                        None,
+                    )))));
                 return 1;
             }
             Err(e) => {

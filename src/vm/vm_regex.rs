@@ -28,8 +28,8 @@ impl VM {
         }
 
         let str_rr = self.stack.pop().unwrap();
-	let str_opt: Option<&str>;
-	to_str!(str_rr, str_opt);
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
 
         match (regex_opt, str_opt) {
             (Some((regex, _)), Some(s)) => {
@@ -72,23 +72,22 @@ impl VM {
             return 0;
         }
 
-	let repl_str_opt: Option<&str>;
-	to_str!(repl_str_rr, repl_str_opt);
+        let repl_str_opt: Option<&str>;
+        to_str!(repl_str_rr, repl_str_opt);
 
         let str_rr = self.stack.pop().unwrap();
-	let str_opt: Option<&str>;
-	to_str!(str_rr, str_opt);
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
 
         match (repl_str_opt, regex_opt, str_opt) {
             (Some(repl_str), Some((regex, global)), Some(s)) => {
                 let updated_repl = RE_ADJUST.replace_all(repl_str, "$${$1}");
                 let updated_repl_str = updated_repl.to_string();
-                let updated_str =
-                    if global {
-                        regex.replace_all(s, &updated_repl_str[..])
-                    } else {
-                        regex.replace(s, &updated_repl_str[..])
-                    };
+                let updated_str = if global {
+                    regex.replace_all(s, &updated_repl_str[..])
+                } else {
+                    regex.replace(s, &updated_repl_str[..])
+                };
                 self.stack
                     .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
                         updated_str.to_string(),
@@ -127,8 +126,8 @@ impl VM {
         }
 
         let str_rr = self.stack.pop().unwrap();
-	let str_opt: Option<&str>;
-	to_str!(str_rr, str_opt);
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
 
         match (regex_opt, str_opt) {
             (Some((regex, global)), Some(s)) => {

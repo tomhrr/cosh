@@ -26,7 +26,7 @@ fn basic_test(input: &str, output: &str) {
     let path = file.path();
     let assert = cmd.arg(path).assert();
     let output2 = format!("{}\n", output);
-    assert.success().stdout(output2.to_owned());
+    assert.success().stdout(output2);
 }
 
 fn basic_error_test(input: &str, output: &str) {

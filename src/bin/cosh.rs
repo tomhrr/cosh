@@ -291,7 +291,7 @@ fn internal_complete(
         }
     }
 
-    return entries;
+    entries
 }
 
 fn bin_complete(path: &str, esc_char: Option<char>, break_chars: &[u8], quote: Quote) -> Vec<Pair> {
@@ -318,19 +318,17 @@ fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
     // executable completion should be used (unless the path is
     // qualified).
     let before = &line[0..start];
-    if before.len() > 0 && before.chars().all(char::is_whitespace) {
-        if !path.contains(char::is_whitespace) {
-            return !(path.starts_with("./") || path.starts_with('/'));
-        }
+    if !before.is_empty() && before.chars().all(char::is_whitespace) && !path.contains(char::is_whitespace) {
+        return !(path.starts_with("./") || path.starts_with('/'));
     }
 
     // If the string prior to path includes a $ or { character,
     // followed by (optional) whitespace, and then the path, then
     // executable completion should be used (unless the path is
     // qualified).
-    let mut index_opt = before.rfind("$");
+    let mut index_opt = before.rfind('$');
     if index_opt.is_none() {
-        index_opt = before.rfind("{");
+        index_opt = before.rfind('{');
     }
     if index_opt.is_none() {
         return false;
@@ -352,7 +350,7 @@ fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
             hit_char = true;
         }
     }
-    return !(path.starts_with("./") || path.starts_with('/'));
+    !(path.starts_with("./") || path.starts_with('/'))
 }
 
 impl ShellCompleter {
@@ -364,8 +362,8 @@ impl ShellCompleter {
         Self {
             break_chars: &DEFAULT_BREAK_CHARS,
             double_quotes_special_chars: &DOUBLE_QUOTES_SPECIAL_CHARS,
-            global_functions: global_functions,
-            global_vars: global_vars,
+            global_functions,
+            global_vars,
         }
     }
 
@@ -485,7 +483,7 @@ fn main() {
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => {
-            eprintln!("unable to parse option: {}", f.to_string());
+            eprintln!("unable to parse option: {}", f);
             std::process::exit(1);
         }
     };
@@ -533,7 +531,7 @@ fn main() {
                 }
                 functions.push(Rc::new(RefCell::new(rtchunk_opt.unwrap())));
             }
-            if functions.len() > 0 {
+            if !functions.is_empty() {
                 vm.call_stack_chunks.push((functions[0].clone(), 0));
             }
             vm.run(chunk);
@@ -542,7 +540,7 @@ fn main() {
             match file_res {
                 Ok(_) => {}
                 Err(e) => {
-                    let err_str = format!("unable to open file: {}", e.to_string());
+                    let err_str = format!("unable to open file: {}", e);
                     eprintln!("{}", err_str);
                     std::process::exit(1);
                 }
@@ -575,11 +573,11 @@ fn main() {
                                 }
                                 Err(e) => {
                                     res = false;
-                                    err_str = e.to_string().clone();
+                                    err_str = e.to_string();
                                 }
                             }
                         }
-                        if res == false {
+                        if !res {
                             eprintln!("unable to write to path {}: {}", output_path, err_str);
                         }
                     }
@@ -605,7 +603,7 @@ fn main() {
                     }
                 }
 
-                vm.interpret(global_functions.clone(), &mut bufread, "(main)");
+                vm.interpret(global_functions, &mut bufread, "(main)");
             }
         }
     } else {
@@ -669,7 +667,7 @@ fn main() {
             .build();
 
         let helper = RLHelper {
-            completer: ShellCompleter::new(global_functions.clone(), global_vars.clone()),
+            completer: ShellCompleter::new(global_functions.clone(), global_vars),
         };
 
         let mut rl = Editor::with_config(config);
@@ -689,7 +687,7 @@ fn main() {
             match cwd_res {
                 Ok(_) => {}
                 Err(e) => {
-                    eprintln!("unable to get current working directory: {}", e.to_string());
+                    eprintln!("unable to get current working directory: {}", e);
                     std::process::exit(1);
                 }
             }
@@ -700,17 +698,17 @@ fn main() {
             let readline_res = rl.readline(&prompt);
             match readline_res {
                 Ok(mut line) => {
-                    if line.len() == 0 {
+                    if line.is_empty() {
                         continue;
                     }
-                    if line.chars().nth(0).unwrap() == ' ' {
+                    if line.starts_with(' ') {
                         line = "$".to_owned() + &line;
                     }
                     let file_res = tempfile();
                     match file_res {
                         Ok(_) => {}
                         Err(e) => {
-                            eprintln!("unable to create temporary REPL file: {}", e.to_string());
+                            eprintln!("unable to create temporary REPL file: {}", e);
                             std::process::exit(1);
                         }
                     }
@@ -721,7 +719,7 @@ fn main() {
                         Err(e) => {
                             eprintln!(
                                 "unable to write content to temporary REPL file: {}",
-                                e.to_string()
+                                e
                             );
                             std::process::exit(1);
                         }
@@ -753,7 +751,7 @@ fn main() {
         let res = rl.save_history(".cosh_history");
         match res {
             Err(e) => {
-                eprintln!("unable to save REPL history: {}", e.to_string());
+                eprintln!("unable to save REPL history: {}", e);
             }
             _ => {}
         }

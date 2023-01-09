@@ -134,6 +134,9 @@ impl VM {
         }
     }
 
+    /// The internal time-modification function.  Takes a function name
+    /// argument that is used only in error messages, so that this can
+    /// be used by both +time and -time.
     fn addtime(&mut self, fn_name: &str) -> i32 {
         if self.stack.len() < 3 {
             let err_str = format!("{} requires three arguments", fn_name);
@@ -304,6 +307,8 @@ impl VM {
         }
     }
 
+    /// The internal strptime function, used by both core_strptime and
+    /// core_strptimez.
     fn strptime(&self, pattern: &str, value: &str) -> Option<Parsed> {
         let mut parsed = Parsed::new();
         let si = StrftimeItems::new(pattern);

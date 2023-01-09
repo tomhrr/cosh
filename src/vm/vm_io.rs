@@ -18,6 +18,8 @@ lazy_static! {
     static ref HOME_DIR_TILDE: Regex = Regex::new("~").unwrap();
 }
 
+/// Takes a path, and replaces any ~ characters with the user's home
+/// directory (if available).
 fn tilde_expansion(input_s: &str) -> String {
     let homedir_res = std::env::var("HOME");
     let final_s;

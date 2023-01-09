@@ -588,7 +588,7 @@ fn xml_test() {
 
 #[test]
 fn external_command_test() {
-    basic_test("$ls tests", "test1.rs");
+    basic_test("$ls tests", "tests.rs");
 }
 
 #[test]

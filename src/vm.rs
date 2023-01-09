@@ -50,41 +50,43 @@ pub enum ListType {
 
 /// For running compiled bytecode.
 pub struct VM {
-    // Whether to print debug information to standard error while
-    // running.
+    /// Whether to print debug information to standard error while
+    /// running.
     debug: bool,
-    // The stack.
+    /// The stack.
     stack: Vec<Value>,
-    // The current chunk.
+    /// The current chunk.
     chunk: Rc<RefCell<Chunk>>,
-    // The instruction index for the current chunk.
+    /// The instruction index for the current chunk.
     i: usize,
-    // Whether the stack should be printed after interpretation has
-    // finished.
+    /// Whether the stack should be printed after interpretation has
+    /// finished.
     print_stack: bool,
-    // Whether the stack is currently being printed.
+    /// Whether the stack is currently being printed.
     printing_stack: bool,
-    // The local variable stack.
+    /// The local variable stack.
     local_var_stack: Rc<RefCell<Vec<Value>>>,
-    // The scopes.
+    /// The scopes.
     scopes: Vec<Rc<RefCell<HashMap<String, Value>>>>,
-    // The global functions.
+    /// The global functions.
     global_functions: HashMap<String, Rc<RefCell<Chunk>>>,
-    // The call stack chunks.
+    /// The call stack chunks.
     pub call_stack_chunks: Vec<(Rc<RefCell<Chunk>>, usize)>,
-    // A flag for interrupting execution.
+    /// A flag for interrupting execution.
     pub running: Arc<AtomicBool>,
-    // A lookup for regexes, to save regenerating them.
+    /// A lookup for regexes, to save regenerating them.
     pub regexes: HashMap<String, (Rc<Regex>, bool)>,
-    // A System object, for getting process information.
+    /// A System object, for getting process information.
     sys: System,
-    // The local time zone.
+    /// The local time zone.
     local_tz: chrono_tz::Tz,
-    // The UTC timezone.
+    /// The UTC timezone.
     utc_tz: chrono_tz::Tz,
 }
 
 lazy_static! {
+    /// A map from form name to the internal function supporting that
+    /// name.
     pub static ref SIMPLE_FORMS: HashMap<&'static str, fn(&mut VM) -> i32> = {
         let mut map = HashMap::new();
         map.insert("+", VM::opcode_add as fn(&mut VM) -> i32);
@@ -232,6 +234,12 @@ lazy_static! {
         map.insert("fmt", VM::core_fmt as fn(&mut VM) -> i32);
         map
     };
+
+    /// A set containing the function names that are defined in
+    /// lib/rt.ch (i.e. that are core functions, but are not
+    /// implemented in the compiler proper).  This is so that
+    /// bin/cosh.rs can distinguish these function names from
+    /// user-defined function names in its autocomplete logic.
     pub static ref LIB_FORMS: HashSet<&'static str> = {
         let mut set = HashSet::new();
         set.insert("2over");
@@ -275,6 +283,9 @@ lazy_static! {
         set.insert("or");
         set
     };
+
+    /// A vector mapping from opcode to the function implementing that
+    /// opcode.
     static ref SIMPLE_OPS: Vec<Option<fn(&mut VM) -> i32>> = {
         let mut vec = vec![None; 255];
         vec[OpCode::Add as usize] = Some(VM::opcode_add as fn(&mut VM) -> i32);
@@ -374,16 +385,22 @@ impl VM {
         }
     }
 
+    /// Toggles whether the stack is printed and cleared on command
+    /// execution when running interactively.
     pub fn opcode_togglemode(&mut self) -> i32 {
         self.print_stack = !self.print_stack;
         1
     }
 
+    /// Prints the stack.
     pub fn opcode_printstack(&mut self) -> i32 {
         let res = self.print_stack(self.chunk.clone(), self.i, true);
         if res { 1 } else { 0 }
     }
 
+    /// Converts a callable (e.g. a string) into a function object.
+    /// Calling funcall on the function object will be faster than
+    /// calling it on the original string.
     pub fn opcode_tofunction(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("to-function requires one argument");
@@ -408,6 +425,8 @@ impl VM {
         1
     }
 
+    /// Import the functions from the specified path into the current
+    /// context.
     pub fn opcode_import(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("import requires one argument");
@@ -496,6 +515,7 @@ impl VM {
         }
     }
 
+    /// Takes a string and converts it into a regex.
     pub fn str_to_regex(&self, s_arg: &str) -> Option<(Regex, bool)> {
         let mut global = false;
         let mut s: &str = s_arg;
@@ -555,6 +575,8 @@ impl VM {
         }
     }
 
+    /// Takes a value, converts it into a string, and then generates a
+    /// regex from that string and returns it.
     pub fn gen_regex(&mut self, value_rr: Value) -> Option<(Rc<Regex>, bool)> {
         if let Value::String(st) = value_rr {
             if let Some(r) = &st.borrow().regex {
@@ -605,6 +627,7 @@ impl VM {
         }
     }
 
+    /// Call a generator chunk.
     pub fn call_generator(&mut self, call_chunk: Rc<RefCell<Chunk>>) -> bool {
         let mut gen_args = Vec::new();
         let req_arg_count = call_chunk.borrow().req_arg_count;
@@ -633,10 +656,10 @@ impl VM {
         }
         gen_call_stack_chunks.push((self.chunk.clone(), self.i));
         let gen_rr = Value::Generator(Rc::new(RefCell::new(GeneratorObject::new(
-            // Get a deep copy of the current local variable stack,
-            // because a shallow copy will have all the variables
-            // popped off before the generator can be called, in some
-            // cases.
+            /* Get a deep copy of the current local variable stack,
+             * because a shallow copy will have all the variables
+             * popped off before the generator can be called, in some
+             * cases. */
             Rc::new(RefCell::new(self.local_var_stack.borrow().clone())),
             0,
             call_chunk,
@@ -647,6 +670,7 @@ impl VM {
         true
     }
 
+    /// Call a non-generator chunk.
     pub fn call_non_generator(
         &mut self,
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
@@ -682,6 +706,7 @@ impl VM {
         res != 0
     }
 
+    /// Call a named function.
     pub fn call_named_function(
         &mut self,
         plvs_stack: Option<Rc<RefCell<Vec<Value>>>>,
@@ -694,6 +719,8 @@ impl VM {
         }
     }
 
+    /// Convert a string into a callable object, by looking at the
+    /// built-in forms and the current functions that are in scope.
     pub fn string_to_callable(&mut self, s: &str) -> Option<Value> {
         let sf_fn_opt = SIMPLE_FORMS.get(s);
         if let Some(sf_fn) = sf_fn_opt {
@@ -731,6 +758,10 @@ impl VM {
         None
     }
 
+    /// Attempt to call the function associated with the argument
+    /// string.  If no function with that name can be found, and the
+    /// call is implicit, then just put the function name back onto
+    /// the stack and return.
     pub fn call_string(&mut self, is_implicit: bool, s: &str) -> bool {
         let sv = self.string_to_callable(s);
         match sv {
@@ -762,6 +793,8 @@ impl VM {
         true
     }
 
+    /// Attempts to set the constant value at the given index with the
+    /// callable object for the argument function string.
     pub fn populate_constant_value(&mut self, function_str: &str, function_str_index: i32) {
         let not_present;
         {
@@ -860,6 +893,7 @@ impl VM {
         true
     }
 
+    /// Run the bytecode associated with the given chunk.
     pub fn run(&mut self, chunk: Rc<RefCell<Chunk>>) -> usize {
         self.call_stack_chunks.push((self.chunk.clone(), self.i));
         self.chunk = chunk;

@@ -8,6 +8,8 @@ use chunk::StringTriple;
 use vm::*;
 
 impl VM {
+    /// Add a hash containing the data from the current environment to
+    /// the stack.
     pub fn core_env(&mut self) -> i32 {
         let mut hsh = IndexMap::new();
         for (key, value) in env::vars() {
@@ -19,6 +21,9 @@ impl VM {
         1
     }
 
+    /// Takes an environment variable name as its argument.  Puts the
+    /// corresponding environment variable value onto the stack.  If
+    /// no such environment variable exists, puts null onto the stack.
     pub fn core_getenv(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("getenv requires one argument");
@@ -54,6 +59,9 @@ impl VM {
         1
     }
 
+    /// Takes an environment variable name and a value as its
+    /// arguments.  Sets the environment variable with the given name
+    /// to have the given value.
     pub fn core_setenv(&mut self) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("setenv requires two arguments");
@@ -71,17 +79,17 @@ impl VM {
         match (key_opt, value_opt) {
             (Some(key_s), Some(value_s)) => {
                 if key_s.is_empty() {
-                    self.print_error("setenv first argument must be a variable name");
+                    self.print_error("first setenv argument must be a variable name");
                     return 0;
                 }
                 env::set_var(key_s, value_s);
             }
-            (_, Some(_)) => {
-                self.print_error("setenv first argument must be a variable name");
+            (Some(_), _) => {
+                self.print_error("second setenv argument must be a variable value");
                 return 0;
             }
             (_, _) => {
-                self.print_error("setenv second argument must be a variable value");
+                self.print_error("first setenv argument must be a variable name");
                 return 0;
             }
         }

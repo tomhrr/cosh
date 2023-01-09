@@ -500,6 +500,9 @@ fn main() {
     let debug = matches.opt_present("debug");
 
     if !matches.free.is_empty() {
+        /* A path has been provided, so the user is attempting to run
+         * non-interactively, for compilation/disassembly or similar.
+         * */
         let path = &matches.free[0];
         if matches.opt_present("disassemble") {
             let mut compiler = Compiler::new();
@@ -604,6 +607,7 @@ fn main() {
             }
         }
     } else {
+        /* A path has not been provided, so start the shell. */
         let mut compiler = Compiler::new();
         let global_functions = Rc::new(RefCell::new(HashMap::new()));
 

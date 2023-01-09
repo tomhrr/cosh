@@ -46,6 +46,7 @@ pub struct Chunk {
     /// The functions defined within the chunk.
     pub functions: HashMap<String, Rc<RefCell<Chunk>>>,
     #[serde(skip)]
+    /// Initialised values for the constants of the chunk.
     pub constant_values: Vec<Value>,
     /// Whether the chunk is for a generator function.
     pub is_generator: bool,
@@ -63,12 +64,13 @@ pub struct Chunk {
     pub scope_depth: u32,
 }
 
-/// A display string, an escaped string, and the corresponding regex,
-/// to save regenerating that regex repeatedly.  The bool flag
-/// indicates whether global matching should be used for the regex.
-/// The display string is the 'real' string, and includes e.g. literal
-/// newline characters, whereas the escaped string includes escapes
-/// for those characters.
+/// StringTriple is used for the core string type.  It binds together
+/// a display string (i.e. a raw string), an escaped string (to save
+/// repeating that operation), and the corresponding regex (to save
+/// regenerating that regex).  The bool flag indicates whether global
+/// matching should be used for the regex.  The display string is the
+/// 'real' string, and includes e.g. literal newline characters,
+/// whereas the escaped string includes escapes for those characters.
 #[derive(Debug, Clone)]
 pub struct StringTriple {
     pub string: String,
@@ -76,6 +78,7 @@ pub struct StringTriple {
     pub regex: Option<(Rc<Regex>, bool)>,
 }
 
+/// Takes a display string and returns an escaped string.
 fn escape_string(s: &str) -> String {
     let mut s2 = String::from("");
     let mut next_escaped = false;
@@ -194,6 +197,7 @@ impl HashWithIndex {
     }
 }
 
+/// An IPv4 range object.
 #[derive(Debug, Clone)]
 pub struct Ipv4Range {
     pub s: Ipv4Addr,
@@ -206,6 +210,7 @@ impl Ipv4Range {
     }
 }
 
+/// An IPv6 range object.
 #[derive(Debug, Clone)]
 pub struct Ipv6Range {
     pub s: Ipv6Addr,
@@ -218,6 +223,7 @@ impl Ipv6Range {
     }
 }
 
+/// An IP set object.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IpSet {
     pub ipv4: IpRange<Ipv4Net>,
@@ -233,6 +239,7 @@ impl IpSet {
     }
 }
 
+/// A command generator object.
 pub struct CommandGenerator {
     pub stdout: NonBlockingReader<ChildStdout>,
     pub stderr: NonBlockingReader<ChildStderr>,
@@ -262,6 +269,7 @@ impl CommandGenerator {
         }
     }
 
+    /// Read a line from standard output (non-blocking).
     fn stdout_read_line_nb(&mut self) -> Option<String> {
         let mut index = self.stdout_buffer.iter().position(|&r| r == b'\n');
 
@@ -286,6 +294,7 @@ impl CommandGenerator {
         }
     }
 
+    /// Read a line from standard error (non-blocking).
     fn stderr_read_line_nb(&mut self) -> Option<String> {
         let mut index = self.stderr_buffer.iter().position(|&r| r == b'\n');
 
@@ -310,6 +319,8 @@ impl CommandGenerator {
         }
     }
 
+    /// Read a line from standard output or standard error.  This
+    /// blocks until one returns a line.
     pub fn read_line(&mut self) -> Option<String> {
         let mut s = None;
         while s.is_none() {
@@ -333,6 +344,9 @@ impl CommandGenerator {
         None
     }
 
+    /// Read a line from standard output or standard error, and return
+    /// an identifier for the stream and the string.  This blocks
+    /// until one returns a line.
     pub fn read_line_combined(&mut self) -> Option<(i32, String)> {
         let mut s = None;
         while s.is_none() {
@@ -657,15 +671,14 @@ impl Chunk {
         }
     }
 
+    /// Get a constant value from the current chunk.  If the relevant
+    /// constant value has not been initialised, this will return
+    /// Value::Null.
     pub fn get_constant_value(&self, i: i32) -> Value {
         let value = self.constant_values.get(i as usize);
         match value {
-            Some(v) => {
-                v.clone()
-            }
-            _ => {
-                Value::Null
-            }
+            Some(v) => v.clone(),
+            _ => Value::Null
         }
     }
 
@@ -1197,6 +1210,8 @@ impl Chunk {
     }
 }
 
+/// A macro for converting a value into a string, that avoids any
+/// copies or similar if the argument is already a string.
 macro_rules! to_str {
     ($val:expr, $var:expr) => {
         let lib_str_s;

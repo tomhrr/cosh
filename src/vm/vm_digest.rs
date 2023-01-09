@@ -8,6 +8,8 @@ use chunk::{StringTriple, Value};
 use vm::*;
 
 impl VM {
+    /// Takes a string as its single argument.  Hashes the string
+    /// using the MD5 algorithm and adds the result to the stack.
     pub fn core_md5(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("md5 requires one argument");
@@ -32,6 +34,8 @@ impl VM {
         1
     }
 
+    /// Takes a string as its single argument.  Hashes the string
+    /// using the SHA1 algorithm and adds the result to the stack.
     pub fn core_sha1(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("sha1 requires one argument");
@@ -58,6 +62,8 @@ impl VM {
         1
     }
 
+    /// Takes a string as its single argument.  Hashes the string
+    /// using the SHA256 algorithm and adds the result to the stack.
     pub fn core_sha256(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("sha256 requires one argument");
@@ -84,6 +90,8 @@ impl VM {
         1
     }
 
+    /// Takes a string as its single argument.  Hashes the string
+    /// using the SHA512 algorithm and adds the result to the stack.
     pub fn core_sha512(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("sha512 requires one argument");

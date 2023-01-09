@@ -6,6 +6,10 @@ use chunk::Value;
 use vm::*;
 
 impl VM {
+    /// Takes all of the elements from the generator at the top of the
+    /// stack, instantiates a list containing those elements, removes
+    /// the generator from the stack, and places the new list at the
+    /// top of the stack.
     fn generator_to_list(&mut self) -> i32 {
         let mut lst = VecDeque::new();
         loop {
@@ -32,6 +36,8 @@ impl VM {
         1
     }
 
+    /// Sorts the elements of a list or generator using behaviour per
+    /// the default cmp operation.
     pub fn core_sort(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("sort requires one argument");
@@ -61,6 +67,8 @@ impl VM {
                     }
                 }
 
+                /* If the list comprises strings only, then
+                 * short-circuit the call to opcode_cmp_inner. */
                 if all_strings {
                     lst.borrow_mut()
                         .make_contiguous()
@@ -107,6 +115,8 @@ impl VM {
         1
     }
 
+    /// Sorts the elements of a list or generator using behaviour per
+    /// the provided predicate.
     pub fn core_sortp(&mut self) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("sortp requires two arguments");

@@ -125,7 +125,8 @@ impl<'a> Scanner<'a> {
     }
 
     /// Scans the BufRead for potential parameters, and returns a
-    /// char set for those parameters if they are present.
+    /// char set for those parameters if they are present.  Parameters
+    /// are currently used only with commands.
     pub fn scan_parameters(&mut self) -> Option<HashSet<char>> {
         let mut buffer = [0; 1];
         let mut eof = false;

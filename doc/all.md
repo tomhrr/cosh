@@ -1017,6 +1017,10 @@ input.
 `range` takes an integer and returns a generator over the integers
 from zero to that integer, minus one.
 
+`to-function` takes a callable string (e.g. a function name) and
+converts it into a function object.  Using `funcall` on the function
+object will then be quicker than using it on the original string.
+
 ### Miscellaneous
 
 Comments can be added by prefixing the comment with `#`.  Any content

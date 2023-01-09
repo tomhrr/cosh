@@ -8,6 +8,7 @@ use num_traits::{FromPrimitive, ToPrimitive, Zero};
 use chunk::{IpSet, Ipv4Range, Ipv6Range};
 use vm::*;
 
+/// Convert an IPv4 address to a u32.
 fn ipv4_addr_to_int(ipv4: Ipv4Addr) -> u32 {
     let octets = ipv4.octets();
     let mut n: u32 = 0;
@@ -18,6 +19,7 @@ fn ipv4_addr_to_int(ipv4: Ipv4Addr) -> u32 {
     n
 }
 
+/// Convert an IPv4 address to a BigUint.
 fn ipv6_addr_to_int(ipv6: Ipv6Addr) -> BigUint {
     let octets = ipv6.octets();
     let mut n = BigUint::zero();
@@ -28,6 +30,7 @@ fn ipv6_addr_to_int(ipv6: Ipv6Addr) -> BigUint {
     n
 }
 
+/// Convert a u32 to an IPv4 address.
 fn int_to_ipv4_addr(n: u32) -> Ipv4Addr {
     let o1 = (n >> 24 & 0xFF).to_u8().unwrap();
     let o2 = (n >> 16 & 0xFF).to_u8().unwrap();
@@ -36,6 +39,7 @@ fn int_to_ipv4_addr(n: u32) -> Ipv4Addr {
     Ipv4Addr::new(o1, o2, o3, o4)
 }
 
+/// Convert a BigUint to an IPv6 address.
 fn int_to_ipv6_addr(n: BigUint) -> Ipv6Addr {
     let mask = BigUint::from_u32(0xFFFF).unwrap();
     let o1 = (n.clone() >> 112u16 & mask.clone()).to_u16().unwrap();
@@ -49,6 +53,8 @@ fn int_to_ipv6_addr(n: BigUint) -> Ipv6Addr {
     Ipv6Addr::new(o1, o2, o3, o4, o5, o6, o7, o8)
 }
 
+/// Convert an IPv4 range (arbitrary start-end pair) into a list of
+/// IPv4Net objects (prefixes).
 fn ipv4range_to_nets(ipv4range: Ipv4Range) -> VecDeque<Ipv4Net> {
     let mut lst = VecDeque::new();
     let s = ipv4range.s;
@@ -86,6 +92,8 @@ fn ipv4range_to_nets(ipv4range: Ipv4Range) -> VecDeque<Ipv4Net> {
     lst
 }
 
+/// Convert an IPv6 range (arbitrary start-end pair) into a list of
+/// IPv6Net objects (prefixes).
 fn ipv6range_to_nets(ipv6range: Ipv6Range) -> VecDeque<Ipv6Net> {
     let mut lst = VecDeque::new();
     let s = ipv6range.s;

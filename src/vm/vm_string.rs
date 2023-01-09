@@ -153,10 +153,10 @@ impl VM {
         match (separator_opt, list_str_opt) {
             (Some(separator), Some(list_str)) => {
                 let elements = list_str.split(separator);
-                // The final set of separated elements.
+                /* The final set of separated elements. */
                 let mut final_elements = Vec::new();
-                // A list containing a partially-complete element, if
-                // applicable.
+                /* A list containing a partially-complete element, if
+                 * applicable. */
                 let mut buffer = Vec::new();
                 for e in elements {
                     let mut e_str = e.to_string();
@@ -343,6 +343,8 @@ impl VM {
         1
     }
 
+    /// Takes a format string as its argument, and substitutes into
+    /// that string values from the stack, as required.
     pub fn core_fmt(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("fmt requires one argument");

@@ -316,7 +316,7 @@ impl VM {
             }
             Value::Set(ref mut hsh) => {
                 if hsh.borrow().len() > 0 {
-                    /* shift_remove_index takes O(n), which is
+                    /* todo: shift_remove_index takes O(n), which is
                      * unpleasant, but necessary for uniformity with
                      * how lists are processed.  There is probably a
                      * more appropriate structure that can be used for

@@ -20,7 +20,7 @@ impl VM {
     }
 
     pub fn core_getenv(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("getenv requires one argument");
             return 0;
         }

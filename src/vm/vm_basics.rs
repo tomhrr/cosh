@@ -14,30 +14,30 @@ use vm::*;
 impl VM {
     /// Remove the top element from the stack.
     pub fn opcode_drop(&mut self) -> i32 {
-        if self.stack.len() == 0 {
+        if self.stack.is_empty() {
             self.print_error("drop requires one argument");
             return 0;
         }
         self.stack.pop();
-        return 1;
+        1
     }
 
     /// Remove all elements from the stack.
     #[allow(unused_variables)]
     pub fn opcode_clear(&mut self) -> i32 {
         self.stack.clear();
-        return 1;
+        1
     }
 
     /// Take the top element from the stack, duplicate it, and add it
     /// onto the stack.
     pub fn opcode_dup(&mut self) -> i32 {
-        if self.stack.len() == 0 {
+        if self.stack.is_empty() {
             self.print_error("dup requires one argument");
             return 0;
         }
         self.stack.push(self.stack.last().unwrap().clone());
-        return 1;
+        1
     }
 
     /// Take the second element from the top from the stack, duplicate
@@ -48,7 +48,7 @@ impl VM {
             return 0;
         }
         self.stack.push(self.stack[self.stack.len() - 2].clone());
-        return 1;
+        1
     }
 
     /// Swap the top two elements from the stack.
@@ -59,7 +59,7 @@ impl VM {
             return 0;
         }
         self.stack.swap(len - 1, len - 2);
-        return 1;
+        1
     }
 
     /// Rotate the top three elements from the stack: the top element
@@ -77,20 +77,20 @@ impl VM {
         self.stack.push(second_rr);
         self.stack.push(first_rr);
         self.stack.push(third_rr);
-        return 1;
+        1
     }
 
     /// Push the current depth of the stack onto the stack.
     #[allow(unused_variables)]
     pub fn opcode_depth(&mut self) -> i32 {
         self.stack.push(Value::Int(self.stack.len() as i32));
-        return 1;
+        1
     }
 
     /// Adds the length of the topmost element onto the stack.
     /// Supports lists, hashes, sets, strings, and generators.
     pub fn core_len(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("len requires one argument");
             return 0;
         }
@@ -132,22 +132,19 @@ impl VM {
                 return 0;
             }
             let value_rr = self.stack.pop().unwrap();
-            match value_rr {
-                Value::Null => {
-                    self.stack.pop();
-                    self.stack.push(Value::Int(len));
-                    return 1;
-                }
-                _ => {}
+            if let Value::Null = value_rr {
+                self.stack.pop();
+                self.stack.push(Value::Int(len));
+                return 1;
             }
-            len = len + 1;
+            len += 1;
         }
     }
 
     /// Checks whether the length of the topmost element is zero.
     /// Supports lists, hashes, sets, strings, and generators.
     pub fn core_empty(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("empty requires one argument");
             return 0;
         }
@@ -189,65 +186,53 @@ impl VM {
                 return 0;
             }
             let value_rr = self.stack.pop().unwrap();
-            match value_rr {
-                Value::Null => {
-                    self.stack.pop();
-                    self.stack.push(Value::Bool(len == 0));
-                    return 1;
-                }
-                _ => {}
+            if let Value::Null = value_rr {
+                self.stack.pop();
+                self.stack.push(Value::Bool(len == 0));
+                return 1;
             }
-            len = len + 1;
+            len += 1;
         }
     }
 
     /// Adds a boolean onto the stack indicating whether the topmost
     /// element is a null value.
     pub fn opcode_isnull(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-null requires one argument");
             return 0;
         }
 
         let i1_rr = self.stack.pop().unwrap();
-        let is_null = match i1_rr {
-            Value::Null => true,
-            _ => false,
-        };
+        let is_null = matches!(i1_rr, Value::Null);
         self.stack.push(Value::Bool(is_null));
-        return 1;
+        1
     }
 
     pub fn opcode_dupisnull(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-null requires one argument");
             return 0;
         }
 
         let i1_rr = self.stack.last().unwrap();
-        let is_null = match i1_rr {
-            &Value::Null => true,
-            _ => false,
-        };
+        let is_null = matches!(i1_rr, Value::Null);
         self.stack.push(Value::Bool(is_null));
-        return 1;
+        1
     }
 
     /// Adds a boolean onto the stack indicating whether the topmost
     /// element is a list.
     pub fn opcode_islist(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-list requires one argument");
             return 0;
         }
 
         let i1_rr = self.stack.pop().unwrap();
-        let is_list = match i1_rr {
-            Value::List(_) => true,
-            _ => false,
-        };
+        let is_list = matches!(i1_rr, Value::List(_));
         self.stack.push(Value::Bool(is_list));
-        return 1;
+        1
     }
 
     /// Adds a boolean onto the stack indicating whether the topmost
@@ -255,27 +240,25 @@ impl VM {
     /// currently check that the string name maps to a function or
     /// core form, though.)
     pub fn opcode_iscallable(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-callable requires one argument");
             return 0;
         }
 
         let i1_rr = self.stack.pop().unwrap();
-        let is_callable = match i1_rr {
-            Value::AnonymousFunction(_, _) => true,
-            Value::CoreFunction(_) => true,
-            Value::NamedFunction(_) => true,
-            /* This could be better. */
-            Value::String(_) => true,
-            _ => false,
-        };
+        let is_callable =
+            matches!(i1_rr,
+                     Value::AnonymousFunction(_, _)
+                        | Value::CoreFunction(_)
+                        | Value::NamedFunction(_)
+                        | Value::String(_));
         self.stack.push(Value::Bool(is_callable));
-        return 1;
+        1
     }
 
     /// Convert a value into a string value.
     pub fn opcode_str(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("str requires one argument");
             return 0;
         }
@@ -309,12 +292,12 @@ impl VM {
         if is_string {
             self.stack.push(value_rr);
         }
-        return 1;
+        1
     }
 
     /// Convert a value into an integer/bigint value.
     pub fn opcode_int(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("int requires one argument");
             return 0;
         }
@@ -356,12 +339,12 @@ impl VM {
         if is_int {
             self.stack.push(value_rr);
         }
-        return 1;
+        1
     }
 
     /// Convert a value into a bigint value.
     pub fn opcode_bigint(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("bigint requires one argument");
             return 0;
         }
@@ -391,12 +374,12 @@ impl VM {
         if is_bigint {
             self.stack.push(value_rr);
         }
-        return 1;
+        1
     }
 
     /// Convert a value into a floating-point value.
     pub fn opcode_flt(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("flt requires one argument");
             return 0;
         }
@@ -426,12 +409,12 @@ impl VM {
         if is_float {
             self.stack.push(value_rr);
         }
-        return 1;
+        1
     }
 
     /// Convert a value into a boolean value.
     pub fn opcode_bool(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("bool requires one argument");
             return 0;
         }
@@ -439,124 +422,103 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let new_value = Value::Bool(value_rr.to_bool());
         self.stack.push(new_value);
-        return 1;
+        1
     }
 
     /// Check whether a value is of boolean type.
     pub fn opcode_is_bool(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-bool requires one argument");
             return 0;
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let res = match value_rr {
-            Value::Bool(_) => true,
-            _ => false,
-        };
+        let res = matches!(value_rr, Value::Bool(_));
         self.stack.push(Value::Bool(res));
-        return 1;
+        1
     }
 
     /// Check whether a value is of int type.
     pub fn opcode_is_int(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-int requires one argument");
             return 0;
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let res = match value_rr {
-            Value::Int(_) => true,
-            _ => false,
-        };
+        let res = matches!(value_rr, Value::Int(_));
         self.stack.push(Value::Bool(res));
-        return 1;
+        1
     }
 
     /// Check whether a value is of bigint type.
     pub fn opcode_is_bigint(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-bigint requires one argument");
             return 0;
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let res = match value_rr {
-            Value::BigInt(_) => true,
-            _ => false,
-        };
+        let res = matches!(value_rr, Value::BigInt(_));
         self.stack.push(Value::Bool(res));
-        return 1;
+        1
     }
 
     /// Check whether a value is of string type.
     pub fn opcode_is_str(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-str requires one argument");
             return 0;
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let res = match value_rr {
-            Value::String(_) => true,
-            _ => false,
-        };
+        let res = matches!(value_rr, Value::String(_));
         self.stack.push(Value::Bool(res));
-        return 1;
+        1
     }
 
     /// Check whether a value is of floating-point type.
     pub fn opcode_is_flt(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-flt requires one argument");
             return 0;
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let res = match value_rr {
-            Value::Float(_) => true,
-            _ => false,
-        };
+        let res = matches!(value_rr, Value::Float(_));
         self.stack.push(Value::Bool(res));
-        return 1;
+        1
     }
 
     /// Check whether a value is a set.
     pub fn opcode_is_set(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-set requires one argument");
             return 0;
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let res = match value_rr {
-            Value::Set(_) => true,
-            _ => false,
-        };
+        let res = matches!(value_rr, Value::Set(_));
         self.stack.push(Value::Bool(res));
-        return 1;
+        1
     }
 
     /// Check whether a value is a hash.
     pub fn opcode_is_hash(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-hash requires one argument");
             return 0;
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let res = match value_rr {
-            Value::Hash(_) => true,
-            _ => false,
-        };
+        let res = matches!(value_rr, Value::Hash(_));
         self.stack.push(Value::Bool(res));
-        return 1;
+        1
     }
 
     /// Get a random floating-point value.
     pub fn opcode_rand(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("rand requires one argument");
             return 0;
         }
@@ -575,24 +537,24 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 
     /// Return a deep clone of the argument (compare dup).
     pub fn opcode_clone(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("clone requires one argument");
             return 0;
         }
         let value_rr = self.stack.pop().unwrap();
         let cloned_value_rr = value_rr.value_clone();
         self.stack.push(cloned_value_rr);
-        return 1;
+        1
     }
 
     /// Converts a Unicode numeral into a character.
     pub fn core_chr(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("chr requires one argument");
             return 0;
         }
@@ -636,14 +598,14 @@ impl VM {
                 let c = c_opt.unwrap().to_string();
                 let st = Rc::new(RefCell::new(StringTriple::new(c, None)));
                 self.stack.push(Value::String(st));
-                return 1;
+                1
             }
         }
     }
 
     /// Converts a character into a Unicode numeral.
     pub fn core_ord(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ord requires one argument");
             return 0;
         }
@@ -667,12 +629,12 @@ impl VM {
             return 1;
         }
         self.stack.push(Value::BigInt(BigInt::from_u32(n).unwrap()));
-        return 1;
+        1
     }
 
     /// Converts a hex string into an integer or bigint.
     pub fn core_hex(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("hex requires one argument");
             return 0;
         }
@@ -695,12 +657,12 @@ impl VM {
             return 1;
         }
         self.print_error("hex argument must be hexadecimal string");
-        return 0;
+        0
     }
 
     /// Converts an octal string into an integer or bigint.
     pub fn core_oct(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("oct requires one argument");
             return 0;
         }
@@ -723,12 +685,12 @@ impl VM {
             return 1;
         }
         self.print_error("oct argument must be string");
-        return 0;
+        0
     }
 
     /// Converts a string to lowercase.
     pub fn core_lc(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("lc requires one argument");
             return 0;
         }
@@ -742,12 +704,12 @@ impl VM {
         let lc_str = value_opt.unwrap().to_lowercase();
         let st = Rc::new(RefCell::new(StringTriple::new(lc_str, None)));
         self.stack.push(Value::String(st));
-        return 1;
+        1
     }
 
     /// Converts the first character of a string to lowercase.
     pub fn core_lcfirst(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("lcfirst requires one argument");
             return 0;
         }
@@ -771,12 +733,12 @@ impl VM {
         }
         let st = Rc::new(RefCell::new(StringTriple::new(new_st, None)));
         self.stack.push(Value::String(st));
-        return 1;
+        1
     }
 
     /// Converts a string to uppercase.
     pub fn core_uc(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("uc requires one argument");
             return 0;
         }
@@ -790,12 +752,12 @@ impl VM {
         let uc_str = value_opt.unwrap().to_uppercase();
         let st = Rc::new(RefCell::new(StringTriple::new(uc_str, None)));
         self.stack.push(Value::String(st));
-        return 1;
+        1
     }
 
     /// Converts the first character of a string to uppercase.
     pub fn core_ucfirst(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ucfirst requires one argument");
             return 0;
         }
@@ -819,12 +781,12 @@ impl VM {
         }
         let st = Rc::new(RefCell::new(StringTriple::new(new_st, None)));
         self.stack.push(Value::String(st));
-        return 1;
+        1
     }
 
     /// Reverses a list or a string.
     pub fn core_reverse(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("reverse requires one argument");
             return 0;
         }
@@ -850,14 +812,14 @@ impl VM {
                 let rev: String = vst.graphemes(true).rev().collect();
                 let st = Rc::new(RefCell::new(StringTriple::new(rev, None)));
                 self.stack.push(Value::String(st));
-                return 1;
+                1
             }
         }
     }
 
     /// Pauses processing for the specified number of seconds.
     pub fn core_sleep(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("sleep requires one argument");
             return 0;
         }

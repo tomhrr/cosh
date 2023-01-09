@@ -30,7 +30,7 @@ impl VM {
     /// Takes a date-time object and returns the epoch time that
     /// corresponds to that object.
     pub fn core_to_epoch(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("to-epoch requires one argument");
             return 0;
         }
@@ -60,7 +60,7 @@ impl VM {
     /// elapsed since 1970-01-01 00:00:00 UTC) and returns a date-time
     /// object (offset at UTC) that corresponds to that time.
     pub fn core_from_epoch(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("from-epoch requires one argument");
             return 0;
         }

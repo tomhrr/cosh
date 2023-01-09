@@ -321,7 +321,7 @@ impl VM {
     /// Takes an XML string, converts it into a hash, and puts the
     /// result onto the stack.
     pub fn core_from_xml(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("from-xml requires one argument");
             return 0;
         }
@@ -375,7 +375,7 @@ impl VM {
     /// it into a string representation, and puts the result onto the
     /// stack.
     pub fn core_to_xml(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("to-xml requires one argument");
             return 0;
         }

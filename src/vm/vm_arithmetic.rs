@@ -230,13 +230,11 @@ impl VM {
 
         let v1_rr = self.stack.pop().unwrap();
         let mut done = false;
-        match (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
-            (Value::Int(n1), Value::Int(ref mut n2)) => {
-                *n2 = *n2 - n1;
-                done = true;
-            }
-            (_, _) => {}
-        };
+	if let (Value::Int(n1), Value::Int(ref mut n2)) =
+                (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
+            *n2 -= n1;
+            done = true;
+        }
 
         if !done {
             let v2_rr = self.stack.pop().unwrap();
@@ -256,7 +254,7 @@ impl VM {
     /// indicating whether the values were able to be multiplied
     /// together.
     fn opcode_multiply_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n1 * n2);
                 self.stack.push(n3);
@@ -323,13 +321,11 @@ impl VM {
 
         let v1_rr = self.stack.pop().unwrap();
         let mut done = false;
-        match (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
-            (Value::Int(n1), Value::Int(ref mut n2)) => {
-                *n2 = *n2 * n1;
-                done = true;
-            }
-            (_, _) => {}
-        };
+	if let (Value::Int(n1), Value::Int(ref mut n2)) =
+                (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
+            *n2 *= n1;
+            done = true;
+        }
 
         if !done {
             let v2_rr = self.stack.pop().unwrap();
@@ -341,14 +337,14 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 
     /// Helper function for dividing two values and placing the result
     /// onto the stack.  Returns an integer indicating whether the
     /// values were able to be divided.
     fn opcode_divide_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n2 / n1);
                 self.stack.push(n3);
@@ -415,13 +411,12 @@ impl VM {
 
         let v1_rr = self.stack.pop().unwrap();
         let mut done = false;
-        match (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
-            (Value::Int(n1), Value::Int(ref mut n2)) => {
-                *n2 = *n2 / n1;
-                done = true;
-            }
-            (_, _) => {}
-        };
+
+	if let (Value::Int(n1), Value::Int(ref mut n2)) =
+                (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
+            *n2 /= n1;
+            done = true;
+        }
 
         if !done {
             let v2_rr = self.stack.pop().unwrap();
@@ -433,14 +428,14 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 
     /// Helper function for checking whether two values are equal.
     /// Returns 1 if they are equal, 0 if they are not, and -1 if they
     /// cannot be compared.
     pub fn opcode_eq_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::IpSet(s1), Value::IpSet(s2)) => {
                 if *s1.borrow() == *s2.borrow() { 1 } else { 0 }
             }
@@ -506,11 +501,8 @@ impl VM {
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
-                match (i1_str_opt, i2_str_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n1 == n2 { 1 } else { 0 };
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
+		    return if n1 == n2 { 1 } else { 0 };
                 }
                 -1
             }
@@ -537,77 +529,68 @@ impl VM {
             self.print_error("= requires two comparable values");
             return 0;
         }
-        return 1;
+        1
     }
 
     /// Helper function for checking whether one value is greater than
     /// another.  Returns 1 if it is, 0 if it isn't, and -1 if the two
     /// values cannot be compared.
     pub fn opcode_gt_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                return if n2 > n1 { 1 } else { 0 };
+                if n2 > n1 { 1 } else { 0 }
             }
             (Value::BigInt(_), Value::Int(n2)) => {
-                return self.opcode_gt_inner(v1, &int_to_bigint(*n2));
+                self.opcode_gt_inner(v1, &int_to_bigint(*n2))
             }
             (Value::Int(n1), Value::BigInt(_)) => {
-                return self.opcode_gt_inner(&int_to_bigint(*n1), v2);
+                self.opcode_gt_inner(&int_to_bigint(*n1), v2)
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                return if n2 > n1 { 1 } else { 0 };
+                if n2 > n1 { 1 } else { 0 }
             }
             (Value::BigInt(n1), Value::Float(_)) => {
-                return self.opcode_gt_inner(&bigint_to_float(n1), v2);
+                self.opcode_gt_inner(&bigint_to_float(n1), v2)
             }
             (Value::Float(_), Value::BigInt(n2)) => {
-                return self.opcode_gt_inner(v1, &bigint_to_float(n2));
+                self.opcode_gt_inner(v1, &bigint_to_float(n2))
             }
             (Value::Int(n1), Value::Float(_)) => {
-                return self.opcode_gt_inner(&int_to_float(*n1), v2);
+                self.opcode_gt_inner(&int_to_float(*n1), v2)
             }
             (Value::Float(_), Value::Int(n2)) => {
-                return self.opcode_gt_inner(v1, &int_to_float(*n2));
+                self.opcode_gt_inner(v1, &int_to_float(*n2))
             }
             (Value::Float(n1), Value::Float(n2)) => {
-                return if n2 > n1 { 1 } else { 0 };
+                if n2 > n1 { 1 } else { 0 }
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                return if d2 > d1 { 1 } else { 0 };
+                if d2 > d1 { 1 } else { 0 }
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                return if d2 > d1 { 1 } else { 0 };
+                if d2 > d1 { 1 } else { 0 }
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                return if d2 > d1 { 1 } else { 0 };
+                if d2 > d1 { 1 } else { 0 }
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                return if d2 > d1 { 1 } else { 0 };
+                if d2 > d1 { 1 } else { 0 }
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n2 > n1 { 1 } else { 0 };
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+		    return if n2 > n1 { 1 } else { 0 };
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n2 > n1 { 1 } else { 0 };
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+		    return if n2 > n1 { 1 } else { 0 };
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n2 > n1 { 1 } else { 0 };
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+		    return if n2 > n1 { 1 } else { 0 };
                 }
 
                 let i1_str_opt: Option<&str>;
@@ -616,13 +599,10 @@ impl VM {
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
-                match (i1_str_opt, i2_str_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n2 > n1 { 1 } else { 0 };
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
+		    return if n2 > n1 { 1 } else { 0 };
                 }
-                return 0;
+                0
             }
         }
     }
@@ -647,77 +627,68 @@ impl VM {
             self.print_error("> requires two comparable values");
             return 0;
         }
-        return 1;
+        1
     }
 
     /// Helper function for checking whether one value is less than
     /// another.  Returns 1 if it is, 0 if it isn't, and -1 if the two
     /// values cannot be compared.
     pub fn opcode_lt_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                return if n2 < n1 { 1 } else { 0 };
+                if n2 < n1 { 1 } else { 0 }
             }
             (Value::BigInt(_), Value::Int(n2)) => {
-                return self.opcode_lt_inner(v1, &int_to_bigint(*n2));
+                self.opcode_lt_inner(v1, &int_to_bigint(*n2))
             }
             (Value::Int(n1), Value::BigInt(_)) => {
-                return self.opcode_lt_inner(&int_to_bigint(*n1), v2);
+                self.opcode_lt_inner(&int_to_bigint(*n1), v2)
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                return if n2 < n1 { 1 } else { 0 };
+                if n2 < n1 { 1 } else { 0 }
             }
             (Value::BigInt(n1), Value::Float(_)) => {
-                return self.opcode_lt_inner(&bigint_to_float(n1), v2);
+                self.opcode_lt_inner(&bigint_to_float(n1), v2)
             }
             (Value::Float(_), Value::BigInt(n2)) => {
-                return self.opcode_lt_inner(v1, &bigint_to_float(n2));
+                self.opcode_lt_inner(v1, &bigint_to_float(n2))
             }
             (Value::Int(n1), Value::Float(_)) => {
-                return self.opcode_lt_inner(&int_to_float(*n1), v2);
+                self.opcode_lt_inner(&int_to_float(*n1), v2)
             }
             (Value::Float(_), Value::Int(n2)) => {
-                return self.opcode_lt_inner(v1, &int_to_float(*n2));
+                self.opcode_lt_inner(v1, &int_to_float(*n2))
             }
             (Value::Float(n1), Value::Float(n2)) => {
-                return if n2 < n1 { 1 } else { 0 };
+                if n2 < n1 { 1 } else { 0 }
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                return if d2 < d1 { 1 } else { 0 };
+                if d2 < d1 { 1 } else { 0 }
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                return if d2 < d1 { 1 } else { 0 };
+                if d2 < d1 { 1 } else { 0 }
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                return if d2 < d1 { 1 } else { 0 };
+                if d2 < d1 { 1 } else { 0 }
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                return if d2 < d1 { 1 } else { 0 };
+                if d2 < d1 { 1 } else { 0 }
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n2 < n1 { 1 } else { 0 };
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+		    return if n2 < n1 { 1 } else { 0 };
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n2 < n1 { 1 } else { 0 };
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+		    return if n2 < n1 { 1 } else { 0 };
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n2 < n1 { 1 } else { 0 };
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+		    return if n2 < n1 { 1 } else { 0 };
                 }
 
                 let i1_str_opt: Option<&str>;
@@ -726,13 +697,10 @@ impl VM {
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
-                match (i1_str_opt, i2_str_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n2 < n1 { 1 } else { 0 };
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
+		    return if n2 < n1 { 1 } else { 0 };
                 }
-                return -1;
+                -1
             }
         }
     }
@@ -757,7 +725,7 @@ impl VM {
             self.print_error("< requires two comparable values");
             return 0;
         }
-        return 1;
+        1
     }
 
     /// Helper function for comparing two values.  Return 1 if the
@@ -765,82 +733,73 @@ impl VM {
     /// are equal, -1 if the second value is less than the first, and
     /// -2 if the two values cannot be compared.
     pub fn opcode_cmp_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                return n2.cmp(n1) as i32;
+                n2.cmp(n1) as i32
             }
             (Value::BigInt(_), Value::Int(n2)) => {
-                return self.opcode_cmp_inner(v1, &int_to_bigint(*n2));
+                self.opcode_cmp_inner(v1, &int_to_bigint(*n2))
             }
             (Value::Int(n1), Value::BigInt(_)) => {
-                return self.opcode_cmp_inner(&int_to_bigint(*n1), v2);
+                self.opcode_cmp_inner(&int_to_bigint(*n1), v2)
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                return n2.cmp(n1) as i32;
+                n2.cmp(n1) as i32
             }
             (Value::BigInt(n1), Value::Float(_)) => {
-                return self.opcode_cmp_inner(&bigint_to_float(n1), v2);
+                self.opcode_cmp_inner(&bigint_to_float(n1), v2)
             }
             (Value::Float(_), Value::BigInt(n2)) => {
-                return self.opcode_cmp_inner(v1, &bigint_to_float(n2));
+                self.opcode_cmp_inner(v1, &bigint_to_float(n2))
             }
             (Value::Int(n1), Value::Float(_)) => {
-                return self.opcode_cmp_inner(&int_to_float(*n1), v2);
+                self.opcode_cmp_inner(&int_to_float(*n1), v2)
             }
             (Value::Float(_), Value::Int(n2)) => {
-                return self.opcode_cmp_inner(v1, &int_to_float(*n2));
+                self.opcode_cmp_inner(v1, &int_to_float(*n2))
             }
             (Value::Float(n1), Value::Float(n2)) => {
-                return n2.partial_cmp(n1).unwrap() as i32;
+                n2.partial_cmp(n1).unwrap() as i32
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                return d2.cmp(d1) as i32;
+                d2.cmp(d1) as i32
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                return d2.cmp(d1) as i32;
+                d2.cmp(d1) as i32
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                return if d2 < d1 {
+                if d2 < d1 {
                     -1
                 } else if d2 == d1 {
                     0
                 } else {
                     -1
-                };
+                }
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                return if d2 < d1 {
+                if d2 < d1 {
                     -1
                 } else if d2 == d1 {
                     0
                 } else {
                     -1
-                };
+                }
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return n2.cmp(&n1) as i32;
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+		    return n2.cmp(&n1) as i32;
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return n2.cmp(&n1) as i32;
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+		    return n2.cmp(&n1) as i32;
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return n2.partial_cmp(&n1).unwrap() as i32;
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+		    return n2.partial_cmp(&n1).unwrap() as i32;
                 }
 
                 let i1_str_opt: Option<&str>;
@@ -849,13 +808,10 @@ impl VM {
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
-                match (i1_str_opt, i2_str_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return n2.cmp(n1) as i32;
-                    }
-                    _ => {}
+		if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
+		    return n2.cmp(n1) as i32;
                 }
-                return -2;
+                -2
             }
         }
     }
@@ -879,12 +835,12 @@ impl VM {
             self.print_error("<=> requires two comparable values");
             return 0;
         }
-        return 1;
+        1
     }
 
     /// Get the square root of a number.
     pub fn core_sqrt(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("sqrt requires one argument");
             return 0;
         }
@@ -895,18 +851,18 @@ impl VM {
             Some(f) => {
                 let fs = f.sqrt();
                 self.stack.push(Value::Float(fs));
-                return 1;
+                1
             }
             None => {
                 self.print_error("sqrt argument must be float");
-                return 0;
+                0
             }
         }
     }
 
     /// Helper function for exponentiation.
     fn core_exp_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::Int(n), Value::Int(exp)) => {
                 if *exp < 0 {
                     self.print_error("second exp argument cannot be negative");
@@ -916,13 +872,13 @@ impl VM {
                 match nn {
                     Some(nnn) => {
                         self.stack.push(Value::Int(nnn));
-                        return 1;
+                        1
                     }
                     None => {
                         let bi = BigInt::from_i32(*n).unwrap();
                         let bb = bi.pow((*exp).try_into().unwrap());
                         self.stack.push(Value::BigInt(bb));
-                        return 1;
+                        1
                     }
                 }
             }
@@ -933,7 +889,7 @@ impl VM {
                 }
                 let ff = (*f).powf((*exp).try_into().unwrap());
                 self.stack.push(Value::Float(ff));
-                return 1;
+                1
             }
             (Value::BigInt(bi), Value::Int(exp)) => {
                 if *exp < 0 {
@@ -942,7 +898,7 @@ impl VM {
                 }
                 let bb = (*bi).pow((*exp).try_into().unwrap());
                 self.stack.push(Value::BigInt(bb));
-                return 1;
+                1
             }
             (Value::Int(n), Value::Float(exp)) => {
                 if *exp < 0.0 {
@@ -950,111 +906,84 @@ impl VM {
                     return 0;
                 }
                 let f = *n as f64;
-                let ff = f.powf((*exp).try_into().unwrap());
+                let ff = f.powf(*exp);
                 self.stack.push(Value::Float(ff));
-                return 1;
+                1
             }
             (Value::Float(f), Value::Float(exp)) => {
                 if *exp < 0.0 {
                     self.print_error("second exp argument cannot be negative");
                     return 0;
                 }
-                let ff = (*f).powf((*exp).try_into().unwrap());
+                let ff = (*f).powf(*exp);
                 self.stack.push(Value::Float(ff));
-                return 1;
+                1
             }
             (Value::BigInt(bi), Value::Float(exp)) => {
                 if *exp < 0.0 {
                     self.print_error("second exp argument cannot be negative");
                     return 0;
                 }
-                let ff = (*bi).to_f64().unwrap().powf((*exp).try_into().unwrap());
+                let ff = (*bi).to_f64().unwrap().powf(*exp);
                 self.stack.push(Value::Float(ff));
-                return 1;
+                1
             }
             (Value::Int(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_exp_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_exp_inner(v1, &Value::Int(n));
                 }
 
                 let f_opt = v2.to_float();
-                match f_opt {
-                    Some(f) => {
-                        return self.core_exp_inner(v1, &Value::Float(f));
-                    }
-                    _ => {}
+                if let Some(f) = f_opt {
+                    return self.core_exp_inner(v1, &Value::Float(f));
                 }
 
-                return 0;
+                0
             }
             (Value::BigInt(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_exp_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_exp_inner(v1, &Value::Int(n));
                 }
 
                 let f_opt = v2.to_float();
-                match f_opt {
-                    Some(f) => {
-                        return self.core_exp_inner(v1, &Value::Float(f));
-                    }
-                    _ => {}
+                if let Some(f) = f_opt {
+                    return self.core_exp_inner(v1, &Value::Float(f));
                 }
 
-                return 0;
+                0
             }
             (Value::Float(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_exp_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_exp_inner(v1, &Value::Int(n));
                 }
 
                 let f_opt = v2.to_float();
-                match f_opt {
-                    Some(f) => {
-                        return self.core_exp_inner(v1, &Value::Float(f));
-                    }
-                    _ => {}
+                if let Some(f) = f_opt {
+                    return self.core_exp_inner(v1, &Value::Float(f));
                 }
 
-                return 0;
+                0
             }
             (_, _) => {
                 let n_opt = v1.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_exp_inner(&Value::Int(n), v2);
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_exp_inner(&Value::Int(n), v2);
                 }
 
                 let f_opt = v1.to_float();
-                match f_opt {
-                    Some(f) => {
-                        return self.core_exp_inner(&Value::Float(f), v2);
-                    }
-                    _ => {}
+                if let Some(f) = f_opt {
+                    return self.core_exp_inner(&Value::Float(f), v2);
                 }
 
                 let bi_opt = v1.to_bigint();
-                match bi_opt {
-                    Some(bi) => {
-                        return self.core_exp_inner(&Value::BigInt(bi), v2);
-                    }
-                    _ => {}
+                if let Some(bi) = bi_opt {
+                    return self.core_exp_inner(&Value::BigInt(bi), v2);
                 }
 
-                return 0;
+                0
             }
         }
     }
@@ -1075,12 +1004,12 @@ impl VM {
             return 0;
         }
 
-        return 1;
+        1
     }
 
     /// Get the absolute value of the argument.
     pub fn core_abs(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("sqrt requires one argument");
             return 0;
         }
@@ -1106,42 +1035,33 @@ impl VM {
         }
 
         let n_opt = value_rr.to_int();
-        match n_opt {
-            Some(n) => {
-                let nn = n.abs();
-                self.stack.push(Value::Int(nn));
-                return 1;
-            }
-            _ => {}
+        if let Some(n) = n_opt {
+            let nn = n.abs();
+            self.stack.push(Value::Int(nn));
+            return 1;
         }
 
         let bi_opt = value_rr.to_bigint();
-        match bi_opt {
-            Some(bi) => {
-                let bb = bi.abs();
-                self.stack.push(Value::BigInt(bb));
-                return 1;
-            }
-            _ => {}
+        if let Some(bi) = bi_opt {
+            let bb = bi.abs();
+            self.stack.push(Value::BigInt(bb));
+            return 1;
         }
 
         let f_opt = value_rr.to_float();
-        match f_opt {
-            Some(f) => {
-                let ff = f.abs();
-                self.stack.push(Value::Float(ff));
-                return 1;
-            }
-            _ => {}
+        if let Some(f) = f_opt {
+            let ff = f.abs();
+            self.stack.push(Value::Float(ff));
+            return 1;
         }
 
         self.print_error("abs argument unable to be handled");
-        return 0;
+        0
     }
 
     /// Helper function for left shift.
     fn core_lsft_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::Int(n), Value::Int(shift)) => {
                 if *n < 0 {
                     return 0;
@@ -1158,49 +1078,37 @@ impl VM {
                 }
                 let nn = un << shift;
                 self.stack.push(Value::Int(nn.try_into().unwrap()));
-                return 1;
+                1
             }
             (Value::BigInt(bi), Value::Int(shift)) => {
                 let bb = bi << shift;
                 self.stack.push(Value::BigInt(bb));
-                return 1;
+                1
             }
             (Value::Int(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_lsft_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_lsft_inner(v1, &Value::Int(n));
                 }
-                return 0;
+                0
             }
             (Value::BigInt(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_lsft_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_lsft_inner(v1, &Value::Int(n));
                 }
-                return 0;
+                0
             }
             (_, _) => {
                 let n_opt = v1.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_lsft_inner(&Value::Int(n), v2);
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_lsft_inner(&Value::Int(n), v2);
                 }
                 let bi_opt = v1.to_bigint();
-                match bi_opt {
-                    Some(bi) => {
-                        return self.core_lsft_inner(&Value::BigInt(bi), v2);
-                    }
-                    _ => {}
+                if let Some(bi) = bi_opt {
+                    return self.core_lsft_inner(&Value::BigInt(bi), v2);
                 }
-                return 0;
+                0
             }
         }
     }
@@ -1221,12 +1129,12 @@ impl VM {
             return 0;
         }
 
-        return 1;
+        1
     }
 
     /// Helper function for right shift.
     fn core_rsft_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::Int(n), Value::Int(shift)) => {
                 if *n < 0 {
                     return 0;
@@ -1234,49 +1142,37 @@ impl VM {
                 let un: u32 = (*n).try_into().unwrap();
                 let nn = un >> shift;
                 self.stack.push(Value::Int(nn.try_into().unwrap()));
-                return 1;
+                1
             }
             (Value::BigInt(bi), Value::Int(shift)) => {
                 let bb = bi >> shift;
                 self.stack.push(Value::BigInt(bb));
-                return 1;
+                1
             }
             (Value::Int(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_rsft_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_rsft_inner(v1, &Value::Int(n));
                 }
-                return 0;
+                0
             }
             (Value::BigInt(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_rsft_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_rsft_inner(v1, &Value::Int(n));
                 }
-                return 0;
+                0
             }
             (_, _) => {
                 let n_opt = v1.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_rsft_inner(&Value::Int(n), v2);
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_rsft_inner(&Value::Int(n), v2);
                 }
                 let bi_opt = v1.to_bigint();
-                match bi_opt {
-                    Some(bi) => {
-                        return self.core_rsft_inner(&Value::BigInt(bi), v2);
-                    }
-                    _ => {}
+                if let Some(bi) = bi_opt {
+                    return self.core_rsft_inner(&Value::BigInt(bi), v2);
                 }
-                return 0;
+                0
             }
         }
     }
@@ -1297,12 +1193,12 @@ impl VM {
             return 0;
         }
 
-        return 1;
+        1
     }
 
     /// Helper function for bitwise xor.
     fn core_xor_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::Int(left), Value::Int(right)) => {
                 if *left < 0 {
                     return 0;
@@ -1323,61 +1219,46 @@ impl VM {
                             .push(Value::BigInt(BigInt::from_u32(result).unwrap()));
                     }
                 }
-                return 1;
+                1
             }
             (Value::BigInt(left), Value::Int(right)) => {
                 let result = left ^ BigInt::from_i32(*right).unwrap();
                 self.stack.push(Value::BigInt(result));
-                return 1;
+                1
             }
             (Value::BigInt(left), Value::BigInt(right)) => {
                 let result = left ^ right;
                 self.stack.push(Value::BigInt(result));
-                return 1;
+                1
             }
             (Value::Int(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_xor_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_xor_inner(v1, &Value::Int(n));
                 }
-                return 0;
+                0
             }
             (Value::BigInt(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_xor_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_xor_inner(v1, &Value::Int(n));
                 }
                 let bi_opt = v2.to_bigint();
-                match bi_opt {
-                    Some(bi) => {
-                        return self.core_xor_inner(v1, &Value::BigInt(bi));
-                    }
-                    _ => {}
+                if let Some(bi) = bi_opt {
+                    return self.core_xor_inner(v1, &Value::BigInt(bi));
                 }
-                return 0;
+                0
             }
             (_, _) => {
                 let n_opt = v1.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_xor_inner(&Value::Int(n), v2);
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_xor_inner(&Value::Int(n), v2);
                 }
                 let bi_opt = v1.to_bigint();
-                match bi_opt {
-                    Some(bi) => {
-                        return self.core_xor_inner(&Value::BigInt(bi), v2);
-                    }
-                    _ => {}
+                if let Some(bi) = bi_opt {
+                    return self.core_xor_inner(&Value::BigInt(bi), v2);
                 }
-                return 0;
+                0
             }
         }
     }
@@ -1398,12 +1279,12 @@ impl VM {
             return 0;
         }
 
-        return 1;
+        1
     }
 
     /// Helper function for bitwise or.
     fn core_or_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::Int(left), Value::Int(right)) => {
                 if *left < 0 {
                     return 0;
@@ -1424,61 +1305,46 @@ impl VM {
                             .push(Value::BigInt(BigInt::from_u32(result).unwrap()));
                     }
                 }
-                return 1;
+                1
             }
             (Value::BigInt(left), Value::Int(right)) => {
                 let result = left | BigInt::from_i32(*right).unwrap();
                 self.stack.push(Value::BigInt(result));
-                return 1;
+                1
             }
             (Value::BigInt(left), Value::BigInt(right)) => {
                 let result = left | right;
                 self.stack.push(Value::BigInt(result));
-                return 1;
+                1
             }
             (Value::Int(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_or_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_or_inner(v1, &Value::Int(n));
                 }
-                return 0;
+                0
             }
             (Value::BigInt(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_or_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_or_inner(v1, &Value::Int(n));
                 }
                 let bi_opt = v2.to_bigint();
-                match bi_opt {
-                    Some(bi) => {
-                        return self.core_or_inner(v1, &Value::BigInt(bi));
-                    }
-                    _ => {}
+                if let Some(bi) = bi_opt {
+                    return self.core_or_inner(v1, &Value::BigInt(bi));
                 }
-                return 0;
+                0
             }
             (_, _) => {
                 let n_opt = v1.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_or_inner(&Value::Int(n), v2);
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_or_inner(&Value::Int(n), v2);
                 }
                 let bi_opt = v1.to_bigint();
-                match bi_opt {
-                    Some(bi) => {
-                        return self.core_or_inner(&Value::BigInt(bi), v2);
-                    }
-                    _ => {}
+                if let Some(bi) = bi_opt {
+                    return self.core_or_inner(&Value::BigInt(bi), v2);
                 }
-                return 0;
+                0
             }
         }
     }
@@ -1499,12 +1365,12 @@ impl VM {
             return 0;
         }
 
-        return 1;
+        1
     }
 
     /// Helper function for bitwise and.
     fn core_and_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::Int(left), Value::Int(right)) => {
                 if *left < 0 {
                     return 0;
@@ -1525,61 +1391,46 @@ impl VM {
                             .push(Value::BigInt(BigInt::from_u32(result).unwrap()));
                     }
                 }
-                return 1;
+                1
             }
             (Value::BigInt(left), Value::Int(right)) => {
                 let result = left & BigInt::from_i32(*right).unwrap();
                 self.stack.push(Value::BigInt(result));
-                return 1;
+                1
             }
             (Value::BigInt(left), Value::BigInt(right)) => {
                 let result = left & right;
                 self.stack.push(Value::BigInt(result));
-                return 1;
+                1
             }
             (Value::Int(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_and_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_and_inner(v1, &Value::Int(n));
                 }
-                return 0;
+                0
             }
             (Value::BigInt(_), _) => {
                 let n_opt = v2.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_and_inner(v1, &Value::Int(n));
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_and_inner(v1, &Value::Int(n));
                 }
                 let bi_opt = v2.to_bigint();
-                match bi_opt {
-                    Some(bi) => {
-                        return self.core_and_inner(v1, &Value::BigInt(bi));
-                    }
-                    _ => {}
+                if let Some(bi) = bi_opt {
+                    return self.core_and_inner(v1, &Value::BigInt(bi));
                 }
-                return 0;
+                0
             }
             (_, _) => {
                 let n_opt = v1.to_int();
-                match n_opt {
-                    Some(n) => {
-                        return self.core_and_inner(&Value::Int(n), v2);
-                    }
-                    _ => {}
+                if let Some(n) = n_opt {
+                    return self.core_and_inner(&Value::Int(n), v2);
                 }
                 let bi_opt = v1.to_bigint();
-                match bi_opt {
-                    Some(bi) => {
-                        return self.core_and_inner(&Value::BigInt(bi), v2);
-                    }
-                    _ => {}
+                if let Some(bi) = bi_opt {
+                    return self.core_and_inner(&Value::BigInt(bi), v2);
                 }
-                return 0;
+                0
             }
         }
     }
@@ -1600,6 +1451,6 @@ impl VM {
             return 0;
         }
 
-        return 1;
+        1
     }
 }

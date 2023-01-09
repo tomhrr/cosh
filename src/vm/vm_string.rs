@@ -344,7 +344,7 @@ impl VM {
     }
 
     pub fn core_fmt(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("fmt requires one argument");
             return 0;
         }
@@ -403,7 +403,7 @@ impl VM {
                 }
 
                 while CAPTURE_WITHOUT_NUM.is_match(&final_s) {
-                    if self.stack.len() < 1 {
+                    if self.stack.is_empty() {
                         self.print_error("fmt string has exhausted stack");
                         return 0;
                     }

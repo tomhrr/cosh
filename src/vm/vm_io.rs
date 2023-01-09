@@ -112,7 +112,7 @@ impl VM {
     /// line from that object and places it onto the stack (including
     /// the ending newline).
     pub fn opcode_readline(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("readline requires one argument");
             return 0;
         }
@@ -195,7 +195,7 @@ impl VM {
     /// Takes a FileReader or FileWriter object as its single
     /// argument.  Closes the object, if required.
     pub fn core_close(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("close requires one argument");
             return 0;
         }
@@ -231,7 +231,7 @@ impl VM {
     /// directory and places a DirectoryHandle object for the
     /// directory onto the stack.
     pub fn core_opendir(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("opendir requires one argument");
             return 0;
         }
@@ -268,7 +268,7 @@ impl VM {
     /// the next entry from the corresponding handle and places it
     /// onto the stack.
     pub fn core_readdir(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("readdir requires one argument");
             return 0;
         }
@@ -302,7 +302,7 @@ impl VM {
     /// Takes a path as its single argument.  Places a boolean onto
     /// the stack indicating whether the path maps to a directory.
     pub fn core_is_dir(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-dir requires one argument");
             return 0;
         }

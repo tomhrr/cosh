@@ -1,3 +1,8 @@
+#![allow(
+    clippy::needless_late_init,
+    clippy::comparison_chain,
+)]
+
 extern crate ansi_term;
 extern crate chrono;
 extern crate chrono_tz;

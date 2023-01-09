@@ -206,7 +206,7 @@ impl VM {
     /// Takes a list as its single argument.  Pops a value from the
     /// end of the list and places that value onto the stack.
     pub fn opcode_pop(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("pop requires one argument");
             return 0;
         }
@@ -517,7 +517,7 @@ impl VM {
     /// Takes a shiftable object as its single argument.  Shifts an
     /// element from that object and puts it onto the stack.
     pub fn opcode_shift<'a>(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("shift requires one argument");
             return 0;
         }
@@ -530,7 +530,7 @@ impl VM {
     /// boolean onto the stack indicating whether the argument can be
     /// shifted.
     pub fn opcode_isshiftable(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("is-shiftable requires one argument");
             return 0;
         }

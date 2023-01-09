@@ -161,7 +161,7 @@ impl VM {
     /// Takes a hash value and returns a generator over the keys of
     /// the hash.
     pub fn core_keys(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("keys requires one argument");
             return 0;
         }
@@ -190,7 +190,7 @@ impl VM {
     /// Takes a hash value and returns a generator over the values of
     /// the hash.
     pub fn core_values(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("values requires one argument");
             return 0;
         }
@@ -219,7 +219,7 @@ impl VM {
     /// Takes a hash value and returns a generator over the key-value
     /// pairs from that hash.
     pub fn core_each(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("each requires one argument");
             return 0;
         }

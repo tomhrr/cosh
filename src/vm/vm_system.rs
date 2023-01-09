@@ -24,7 +24,7 @@ impl VM {
     /// Takes a value that can be stringified as its single argument.
     /// Removes the file corresponding to that path.
     pub fn core_rm(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("rm requires one argument");
             return 0;
         }
@@ -310,7 +310,7 @@ impl VM {
     /// modification timestamp to the current time if it does exist,
     /// similarly to touch(1).
     pub fn core_touch(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("touch requires one argument");
             return 0;
         }
@@ -380,7 +380,7 @@ impl VM {
     /// modification times, "blksize" is the block size, and "blocks"
     /// is the number of blocks allocated to the file.
     fn stat_inner(&mut self, use_symlink: bool) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("stat requires one argument");
             return 0;
         }
@@ -705,7 +705,7 @@ impl VM {
     /// Takes a path as its single argument, and attempts to make a
     /// directory at that path.
     pub fn core_mkdir(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("mkdir requires one argument");
             return 0;
         }
@@ -738,7 +738,7 @@ impl VM {
     /// Takes a path as its single argument, and attempts to remove
     /// the directory at that path.
     pub fn core_rmdir(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("rmdir requires one argument");
             return 0;
         }

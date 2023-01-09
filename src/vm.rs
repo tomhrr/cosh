@@ -385,7 +385,7 @@ impl VM {
     }
 
     pub fn opcode_tofunction(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("to-function requires one argument");
             return 0;
         }
@@ -415,7 +415,7 @@ impl VM {
     }
 
     pub fn opcode_import(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("import requires one argument");
             return 0;
         }
@@ -1342,7 +1342,7 @@ impl VM {
                     };
                 }
                 OpCode::Call | OpCode::CallImplicit => {
-                    if self.stack.len() < 1 {
+                    if self.stack.is_empty() {
                         self.print_error("call requires one argument");
                         return 0;
                     }
@@ -1370,7 +1370,7 @@ impl VM {
                     }
                 }
                 OpCode::SetLocalVar => {
-                    if self.stack.len() < 1 {
+                    if self.stack.is_empty() {
                         self.print_error("! requires one argument");
                         return 0;
                     }
@@ -1425,7 +1425,7 @@ impl VM {
                     self.local_var_stack.borrow_mut().pop();
                 }
                 OpCode::Var => {
-                    if self.stack.len() < 1 {
+                    if self.stack.is_empty() {
                         self.print_error("var requires one argument");
                         return 0;
                     }
@@ -1484,7 +1484,7 @@ impl VM {
                     }
                 }
                 OpCode::GetVar => {
-                    if self.stack.len() < 1 {
+                    if self.stack.is_empty() {
                         self.print_error("@ requires one argument");
                         return 0;
                     }
@@ -1514,7 +1514,7 @@ impl VM {
                     }
                 }
                 OpCode::JumpNe => {
-                    if self.stack.len() < 1 {
+                    if self.stack.is_empty() {
                         self.print_error("conditional requires one argument");
                         return 0;
                     }
@@ -1533,7 +1533,7 @@ impl VM {
                     }
                 }
                 OpCode::JumpNeR => {
-                    if self.stack.len() < 1 {
+                    if self.stack.is_empty() {
                         self.print_error("conditional requires one argument");
                         return 0;
                     }
@@ -1552,7 +1552,7 @@ impl VM {
                     }
                 }
                 OpCode::JumpNeREqC => {
-                    if self.stack.len() < 1 {
+                    if self.stack.is_empty() {
                         self.print_error("conditional requires one argument");
                         return 0;
                     }
@@ -1618,7 +1618,7 @@ impl VM {
                     i = i - jmp_len;
                 }
                 OpCode::Error => {
-                    if self.stack.len() < 1 {
+                    if self.stack.is_empty() {
                         self.print_error("error requires one argument");
                         return 0;
                     }

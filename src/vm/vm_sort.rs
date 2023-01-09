@@ -33,7 +33,7 @@ impl VM {
     }
 
     pub fn core_sort(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("sort requires one argument");
             return 0;
         }
@@ -144,7 +144,7 @@ impl VM {
                         success = false;
                         return Ordering::Equal;
                     }
-                    if self.stack.len() < 1 {
+                    if self.stack.is_empty() {
                         self.print_error("sortp predicate should return a value");
                         success = false;
                         return Ordering::Equal;

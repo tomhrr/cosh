@@ -127,7 +127,7 @@ fn ipv6range_to_nets(ipv6range: Ipv6Range) -> VecDeque<Ipv6Net> {
 impl VM {
     /// Parses an IP address or range and returns an IP object.
     pub fn core_ip(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ip requires one argument");
             return 0;
         }
@@ -358,7 +358,7 @@ impl VM {
 
     /// Returns the first address of an IP object.
     pub fn core_ip_addr(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ip.addr requires one argument");
             return 0;
         }
@@ -393,7 +393,7 @@ impl VM {
 
     /// Returns the prefix length of an IP object.
     pub fn core_ip_len(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ip.len requires one argument");
             return 0;
         }
@@ -471,7 +471,7 @@ impl VM {
 
     /// Returns the first address of the IP object as an integer.
     pub fn core_ip_addr_int(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ip.addr-int requires one argument");
             return 0;
         }
@@ -511,7 +511,7 @@ impl VM {
 
     /// Returns the last address of the IP object.
     pub fn core_ip_last_addr(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ip.last-addr requires one argument");
             return 0;
         }
@@ -572,7 +572,7 @@ impl VM {
 
     /// Returns the last address of the IP object as an integer.
     pub fn core_ip_last_addr_int(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ip.last-addr-int requires one argument");
             return 0;
         }
@@ -619,7 +619,7 @@ impl VM {
 
     /// Returns the number of hosts covered by this IP object.
     pub fn core_ip_size(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ip.size requires one argument");
             return 0;
         }
@@ -684,7 +684,7 @@ impl VM {
 
     /// Returns the IP object version.
     pub fn core_ip_version(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ip.version requires one argument");
             return 0;
         }
@@ -716,7 +716,7 @@ impl VM {
 
     /// Returns the IP object as a set of IP prefixes.
     pub fn core_ip_prefixes(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ip.prefixes requires one argument");
             return 0;
         }
@@ -871,7 +871,7 @@ impl VM {
 
     /// Parses an arbitrary argument into an IP set object.
     pub fn core_ips(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("ips requires one argument");
             return 0;
         }

@@ -9,7 +9,7 @@ use vm::*;
 
 impl VM {
     pub fn core_md5(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("md5 requires one argument");
             return 0;
         }
@@ -33,7 +33,7 @@ impl VM {
     }
 
     pub fn core_sha1(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("sha1 requires one argument");
             return 0;
         }
@@ -59,7 +59,7 @@ impl VM {
     }
 
     pub fn core_sha256(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("sha256 requires one argument");
             return 0;
         }
@@ -85,7 +85,7 @@ impl VM {
     }
 
     pub fn core_sha512(&mut self) -> i32 {
-        if self.stack.len() < 1 {
+        if self.stack.is_empty() {
             self.print_error("sha512 requires one argument");
             return 0;
         }

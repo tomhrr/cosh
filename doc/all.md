@@ -2,6 +2,34 @@
 
 cosh is a concatenative command-line shell.
 
+ * [Types](#types)
+ * [Basic usage](#basic-usage)
+ * [Scoping](#scoping)
+ * [Anonymous functions](#anonymous-functions)
+ * [Compiling and importing libraries](#compiling-and-importing-libraries)
+ * [Stack operators](#stack-operators)
+ * [Boolean operators](#boolean-operators)
+ * [Arithmetic and relations](#arithmetic-and-relations)
+ * [Generators](#generators)
+ * [String-handling functions](#string-handling-functions)
+ * [Regular expressions](#regular-expressions)
+ * [List operators](#list-operators)
+ * [Set operators](#set-operators)
+ * [Hash operators](#hash-operators)
+ * [map, grep, for, foldl](#map-grep-for-foldl)
+    * [Miscellaneous list functions](#miscellaneous-list-functions)
+ * [sort, sortp](#sort-sortp)
+ * [Filesystem operations](#filesystem-operations)
+ * [External program execution](#external-program-execution)
+ * [Environment variables](#environment-variables)
+ * [JSON/XML Parsing](#jsonxml-parsing)
+ * [Datetimes](#datetimes)
+ * [IP addresses](#ip-addresses)
+ * [Miscellaneous functions](#miscellaneous-functions)
+ * [Miscellaneous](#miscellaneous)
+    * [Caveats and pitfalls](#caveats-and-pitfalls)
+    * [Development](#development)
+
 ### Types
 
 The shell language is dynamically-typed.  The basic primitive types
@@ -44,6 +72,22 @@ The forms `bool`, `str`, `int`, `bigint`, and `flt` can be used to
 convert primitive values of one type to another type.  If the
 conversion is not supported, then the null value will be returned.
 `int` will convert a value to a `BigInt` if required.
+
+There are type predicates for each of the basic types, as well as the
+null value:
+
+  * `is-bool`
+  * `is-int`
+  * `is-bigint`
+  * `is-float`
+  * `is-str`
+  * `is-list`
+  * `is-set`
+  * `is-hash`
+  * `is-null`
+
+`is-callable` returns a boolean indicating whether the argument can be
+called like a function.
 
 ### Basic usage
 
@@ -128,7 +172,38 @@ be switched using `toggle-mode`:
     $ .s
     3
 
-### Compiling and importing a library
+### Scoping
+
+Scoping is lexical.  Variable definitions within functions may shadow
+global definitions:
+
+    $ x var; 10 x !; x @;
+    10
+    $ : mf1 x var; 20 x !; x @; .s; drop; ,, mf1 ;
+    20
+    $ x @;
+    10
+    $ : mf2 20 x !; x @; .s; drop; ,, mf2 ;
+    20
+    $ x @;
+    20
+
+Function definitions may be nested.  Nested functions have access to
+the surrounding environment when they are executed, but they do not
+close over that environment.
+
+### Anonymous functions
+
+An anonymous function is defined by way of a list that contains the
+function's tokens.  It is executed using `funcall`:
+
+    $ [1 2 +] funcall ;
+    3
+
+The last token in the list is treated as a function implicitly, if it is
+not followed by a semicolon.
+
+### Compiling and importing libraries
 
 To compile a library:
 
@@ -183,35 +258,14 @@ Some of the more commonly-used stack operators from Forth are defined:
     1
     2
 
-### Type predicates
-
-There are type predicates for each of the basic types, as well as the
-null value:
-
-  * `is-bool`
-  * `is-int`
-  * `is-bigint`
-  * `is-float`
-  * `is-str`
-  * `is-list`
-  * `is-set`
-  * `is-hash`
-  * `is-null`
-
-`is-callable` returns a boolean indicating whether the argument can be
-called like a function.  `is-shiftable` returns a boolean indicating
-whether `shift` can be called on the argument.
-
 ### Boolean operators
 
-`and` is the conjunction function, taking two values and returning a
-boolean indicating whether both values evaluate to true.
-
-`or` is the disjunction function, taking two values and returning a
-boolean indicating whether at least one value evaluates to true.
-
-`not` is the negation function, taking a value and returning a boolean
-indicating whether that value evaluates to false.
+ - `and`: the conjunction function, taking two values and returning a
+   boolean indicating whether both values evaluate to true.
+ - `or`: the disjunction function, taking two values and returning a
+   boolean indicating whether at least one value evaluates to true.
+ - `not`: the negation function, taking a value and returning a
+   boolean indicating whether that value evaluates to false.
 
 Both `and` and `or` evaluate each of their expressions.  `if` can be
 used to avoid this behaviour, if necessary.
@@ -236,37 +290,6 @@ bit positions.
 
 `&` (bitwise and), `||` (bitwise or), and `^` (bitwise xor) are
 defined over the integral types.
-
-### Anonymous functions
-
-An anonymous function is defined by way of a list that contains the
-function's tokens.  It is executed using `funcall`:
-
-    $ [1 2 +] funcall ;
-    3
-
-The last token in the list is treated as a function implicitly, if it is
-not followed by a semicolon.
-
-### Scoping
-
-Scoping is lexical.  Variable definitions within functions may shadow
-global definitions:
-
-    $ x var; 10 x !; x @;
-    10
-    $ : mf1 x var; 20 x !; x @; .s; drop; ,, mf1 ;
-    20
-    $ x @;
-    10
-    $ : mf2 20 x !; x @; .s; drop; ,, mf2 ;
-    20
-    $ x @;
-    20
-
-Function definitions may be nested.  Nested functions have access
-to the surrounding environment when they are executed, but they do not
-close over that environment.
 
 ### Generators
 
@@ -303,18 +326,22 @@ generator object:
 
     $ gen; 2 take;
     (
-        0
-        1
+        0: 0
+        1: 1
     )
+
+(When lists are printed in the shell, each entry in the list includes
+the list index.)
 
 `take-all` can be used to return all the elements from a generator
 object:
 
     $ gen; take-all;
     (
-        0
-        1
-        2
+        0: 0
+        1: 1
+        2: 2
+        3: 3
     )
 
 In 'immediate' mode, each generator object that remains on the stack
@@ -322,424 +349,57 @@ after command execution is finished will be replaced with the result
 of calling `take-all` on that object before the stack is printed:
 
     $ gen;
-    0
-    1
-    2
-    3
+    v[gen(
+        0: 0
+        1: 1
+        2: 2
+        3: 3
+    )]
+
+The output in this case is slightly different, because `take` and
+`take-all` convert the generator into a list, whereas in the above the
+generator is being printed as-is, which is why it is wrapped in
+`v[gen(...)]`.  In general, built-in composite types other than lists,
+sets, and hashes will be displayed using this syntax.
 
 `shift`, `take`, and `take-all` also work in the same way on lists and
 sets.  In general, any built-in form that works on a list will also
 work on a generator, and if it operates as a transformation, then its
-result will also be a generator.
+result will also be a generator.  `is-shiftable` is an addtional type
+predicate that returns a boolean indicating whether `shift` can be
+called on the argument.
 
-### List operators
+### String-handling functions
 
-`shift` removes one element from the beginning of the list and places
-it on the stack:
+`++` appends one string to another:
 
-    $ (1 2 3) shift;
-    1
+    $ asdf qwer append
+    "asdfqwer"
 
-`unshift` takes a list and an element and places it at the beginning
-of the list:
+`++` also works for lists and hashes.  It can also be used to make a
+single generator using two other generators as input.
 
-    $ (2 3 4) 1 unshift;
-    (
-        1
-        2
-        3
-        4
-    )
+`chomp` removes the final newline from the end of a string, if the
+string ends in a newline:
 
-`pop` removes one element from the end of the list and places it on
-the stack:
+    $ "asdf\n" chomp
+    "asdf"
+    $ "asdf" chomp
+    "asdf"
 
-    $ (1 2 3) pop;
-    3
+`chr` takes an integer or a bigint and returns the character
+associated with that integer.  `ord` takes a character and returns the
+integer or bigint associated with that character.
 
-`push` takes a list and an element and places it at the end of the
-list:
+`hex` takes a number as a hexadecimal string and returns the number as
+an integer or bigint.  `oct` does the same for octal strings.
 
-    $ (1 2 3) 4 push;
-    (
-        1
-        2
-        3
-        4
-    )
+`lc` takes a string, converts all characters to lowercase, and returns
+the updated string.  `lcfirst` takes a string, converts the first
+character to lowercase, and returns the updated string.  `uc` and
+`ucfirst` operate similarly, except they convert to uppercase.
 
-`nth` returns a specific element from a list:
-
-    $ (1 2 3) 1 nth
-    2
-
-`nth!` updates a specific element in a list:
-
-    $ (1 2 3 4) 2 10 nth!;
-    (
-	1
-	2
-	10
-	4
-    )
-
-`split` splits a string based on a delimiter string:
-
-    $ asdf,asdf , split
-    (
-        asdf
-        asdf
-    )
-
-`join` joins a list of strings together using a delimiter string:
-
-    $ asdf,asdf , split; , join
-    "asdf,asdf"
-
-Both `split` and `join` handle quoting of values that contain either
-the delimiter, or a quotation mark.
-
-`splitr` splits a string based on a delimiter regex.  It does not
-handle quoting of values, though.
-
-`len` returns the length of a string.  This function also works for
-sets, hashes, strings, and generators.
-
-`empty` returns a boolean indicating whether the length of the string
-is zero.  This function also works for sets, hashes, strings, and
-generators.  In the case of a generator, it will exhaust the generator
-even though that's not strictly necessary for determining whether the
-generator is empty, because having it shift a single element from the
-generator each time it is called could be confusing.
-
-### Set operators
-
-`shift` removes one element from the beginning of the set and places
-it on the stack:
-
-    $ s(1 2 3) shift;
-    1
-
-`union` combines two sets:
-
-    $ s(1 2 3) s(2 3 4) union;
-    s(
-        1
-        2
-        3
-        4
-    )
-
-`isect` returns the intersection of two sets:
-
-    $ s(1 2 3) s(2 3 4) isect;
-    s(
-        2
-        3
-    )
-
-`diff` subtracts one set from another:
-
-    $ s(1 2 3) s(2 3 4) diff;
-    s(
-        1
-    )
-
-`symdiff` returns the symmetric difference of two sets:
-
-    $ s(1 2 3) s(2 3 4) symdiff;
-    s(
-        1
-        4
-    )
-
-### Hash operators
-
-`get` returns a value from a hash:
-
-    $ h(a 1 b 2) dup; a get; swap; b get;
-    1
-    2
-
-`set` is used to update a value in a hash:
-
-    $ h(a 1 b 2) c 3 set; c get;
-    3
-
-`delete` removes a key-value pair from a hash:
-
-    $ h(a 1 b 2) dup; a delete;
-    h(
-        "b": 2
-    )
-
-`exists` checks whether a key is present in a hash:
-
-    $ h(a 1 b 2) a exists;
-    .t
-
-`keys` returns a generator over the hash's keys:
-
-    $ h(a 1 b 2) c 3 set; keys; take-all;
-    (
-        b
-        a
-        c
-    )
-
-`values` returns a generator over the hash's values:
-
-    $ h(a 1 b 2) c 3 set; values; take-all;
-    (
-        2
-        1
-        3
-    )
-
-`each` returns a generator over the key-value pairs from the hash:
-
-    $ h(a 1 b 2) c 3 set; each; take-all;
-    (
-	(
-	    b
-	    2
-	)
-	(
-	    a
-	    1
-	)
-	(
-	    c
-	    3
-	)
-    )
-
-### map, grep, for, foldl
-
-`map` iterates over a list, applying a function to each
-element and collecting the results into a new list:
-
-    $ : add-1 1 + ; ,,
-    $ (1 2 3 4) add-1 map
-    (
-        2
-        3
-        4
-        5
-    )
-
-`grep` iterates over a list, applying a predicate to each element and
-collecting the values for which the predicate is true into a new list:
-
-    $ : <4 4 < ; ,,
-    $ (1 2 3 4) add-1 map; <4 grep;
-    (
-        2
-        3
-    )
-
-`for` is the same as map, except that it does not collect the results
-into a new list (i.e. the function is executed only for its
-side effects).
-
-`foldl` takes a list, a seed, and a function, applies the function to
-the seed and the first element from the list to produce a value, and
-then continues applying the function to the resulting value and the
-next element from the list until the list is exhausted:
-
-    $ (1 2 3) 0 + foldl
-    6
-
-Each of the above functions can accept a generator instead of a list,
-and if the function results in a list when called with a list, it will
-result in a generator when called with a generator.  Similarly, they
-can also accept sets as arguments.
-
-Anonymous functions can be used inline in these calls:
-
-    $ (1 2 3 4) [1 +] map
-    (
-	2
-	3
-	4
-	5
-    )
-
-Anonymous functions do not close over their environment.  If an
-anonymous function is returned by a function call, then attempting to
-call that anonymous function will cause an error to occur.
-
-#### Miscellaneous list functions
-
-`any` takes a list and a function, and returns a boolean indicating
-whether the function returns true for any element of the list.
-
-`all` takes a list and a function, and returns a boolean indicating whether
-the function returns true for all of the elements of the list.
-
-`none` is like `all`, except it returns a boolean indicating whether
-the function returns false for all of the elements of the list.
-Similarly, `notall` is like `any`, except it returns a boolean
-indicating whether the function returns false for any of the elements
-of the list.
-
-`first` takes a list and a function, and returns the first
-element for which the function returns true.
-
-`uniq` takes a list, and returns a generator over the unique elements
-from that list (uniqueness is determined by converting each value to a
-string and comparing the strings).
-
-`min` takes a list and returns the smallest element of that list, and
-`max` takes a list and returns the largest element of that list.
-
-`shuffle` takes a list and moves each element to a random location in
-the list.
-
-`product` multiplies all of the elements of the list together and
-returns the result.
-
-`pairwise` takes two lists and a function, and on each iteration,
-shifts one element from each of the lists and calls the function on
-those elements.  The result is a generator over the results from the
-function calls.
-
-`slide` takes a list and a function, and calls the function for
-sliding pairs from the list.  For example, the first call is for
-elements 0 and 1, the next call is for elements 1 and 2, and so on.
-The result is a generator over the results from the function calls.
-
-`before` takes a list and a function, and calls the function on each
-element from the list, returning elements up until the function call
-returns a value that evaluates to true, at which point it returns no
-more elements.  `after` works similarly, save that it returns the
-elements from after the point where the function returns a true value.
-
-Each of the above can also accept a set or generator in place of a
-list argument.
-
-### sort, sortp
-
-`sort` sorts a list or generator, where the values in the list are of
-primitive types:
-
-    $ (1 3 5 4 2 1) sort
-    (
-	1
-	1
-	2
-	3
-	4
-	5
-    )
-
-`sortp` accepts an additional predicate argument, being a function
-that operates like `<=>` (i.e. -1 for less-than, 0 for equal, 1 for
-greater-than):
-
-    $ (1 3 5 4 2 1) <=> sortp
-    (
-	1
-	1
-	2
-	3
-	4
-	5
-    )
-
-### Input/output operations
-
- - `print`: takes a value and prints it to standard output.
- - `println`: takes a value and prints it to standard output, followed
-   by a newline.
- - `open`: takes a file path and a mode string (either 'r' or 'w'),
-   and puts a file reader or a file writer object onto the stack.
- - `readline`: read a line from a file reader object.
- - `writeline`: write a line to a file writer object.
- - `close`: close a file reader or file writer object.
- - `opendir`: takes a directory path, and put a directory handle
-   object onto the stack.
- - `readdir`: reads the next entry for a directory handle object.
- - `no-upwards`: takes a directory name as its argument and returns a
-   boolean indicating whether that name is not either "." or "..".
-
-### Filesystem operations
-
-`ls` takes a directory name as its argument and returns a generator
-object over the files in that directory:
-
-    $ . ls
-    (
-        ./Cargo.toml
-        ...
-    )
-
-`lsr` does the same thing, but includes all files within nested
-directories as well.  If the stack is empty when either of these
-functions is called, then they will act as if they were called on the
-current working directory.
-
-`lsh` and `lshr` operate in the same way as `ls` and `lsr`, except
-that hidden files/directories are included in the output.
-
-`f<` takes a filename as its argument and returns a generator over the
-lines in that file:
-
-    $ README.md f<; 3 take;
-    (
-	"## cosh\n"
-	"\n"
-	"cosh is a concatenative command-line shell.\n"
-    )
-
-`f>` takes a list of strings (or a single string) and a filename as
-its arguments and writes the strings (or string) to that file:
-
-    $ ("asdf\n" "qwer\n" "zxcv\n") asdf f>;
-    $ asdf f<;
-    (
-	"asdf\n"
-	"qwer\n"
-	"zxcv\n"
-    )
-
-Other operations:
-
- - `cd`: changes the current working directory;
- - `pwd`: returns the current working directory;
- - `is-dir`: returns a boolean indicating whether the argument is a
-   directory;
- - `rm`: removes the argument file;
- - `touch`: if the argument file doesn't exist, creates an empty file
-   with the given name, otherwise updates the modification time of the
-   existing file to be the current time;
- - `cp`: copies the file at the first path to the second path;
- - `mv`: moves the file at the first path to the second path;
- - `rename`: rename the file at the first path such that its path is
-   the second path;
- - `stat`: returns a hash containing metadata about the argument file;
- - `lstat`: like stat, but if the argument is a symbolic link, returns
-   metadata about the link itself, instead of its target;
- - `ps`: returns a list containing details on the currently-running
-   processes, where each current process has a separate hash
-   containing the PID, UID, and the process name; and
- - `kill`: takes a PID and a signal name (e.g. "term", "kill"), and
-   sends the specified signal to the process.
- - `chmod`: takes a path and a numeric mode, and updates the path's
-   mode accordingly.  (`oct` may be useful for mode conversions.)
- - `chown`: takes a path, a user name, and a group name, and updates
-   the path's ownership accordingly.
- - `mkdir`: takes a path and creates a directory at that path.
- - `rmdir`: takes a path and removes the directory at that path
-   (directory must be empty).
- - `link`: takes two paths, and creates a symbolic link at the second
-   path that targets the first path.
- - `tempfile`: returns a file writer and a path string for a new
-   temporary file.  This file is not cleaned up automatically on
-   program exit or similar.
- - `tempdir`: returns a path string for a new temporary directory.
-   This directory is not cleaned up automatically on program exit or
-   similar.
+`reverse` reverses a string.  It also works on lists.
 
 ### Regular expressions
 
@@ -788,37 +448,410 @@ Because flags are separated from the regular expression by a forward
 slash, other forward slash characters that appear within the
 expression must be escaped with a backslash.
 
-### String-handling functions
+### List operators
 
-`++` appends one string to another:
+When called with a list argument, `shift` removes one element from the
+beginning of the list and places it on the stack:
 
-    $ asdf qwer append
-    "asdfqwer"
+    $ (1 2 3) shift;
+    1
 
-`++` also works for lists and hashes.  It can also be used to make a
-single generator using two other generators as input.
+`unshift` takes a list and an element and places it at the beginning
+of the list:
 
-`chomp` removes the final newline from the end of a string, if the
-string ends in a newline:
+    $ (2 3 4) 1 unshift;
+    (
+        0: 1
+        1: 2
+        2: 3
+        3: 4
+    )
 
-    $ "asdf\n" chomp
-    "asdf"
-    $ "asdf" chomp
-    "asdf"
+`pop` removes one element from the end of the list and places it on
+the stack:
 
-`chr` takes an integer or a bigint and returns the character
-associated with that integer.  `ord` takes a character and returns the
-integer or bigint associated with that character.
+    $ (1 2 3) pop;
+    3
 
-`hex` takes a number as a hexadecimal string and returns the number as
-an integer or bigint.  `oct` does the same for octal strings.
+`push` takes a list and an element and places it at the end of the
+list:
 
-`lc` takes a string, converts all characters to lowercase, and returns
-the updated string.  `lcfirst` takes a string, converts the first
-character to lowercase, and returns the updated string.  `uc` and
-`ucfirst` operate similarly, except they convert to uppercase.
+    $ (1 2 3) 4 push;
+    (
+        0: 1
+        1: 2
+        2: 3
+        3: 4
+    )
 
-`reverse` reverses a string.  It also works on lists.
+`nth` returns a specific element from a list:
+
+    $ (1 2 3) 1 nth
+    2
+
+`nth!` updates a specific element in a list:
+
+    $ (1 2 3 4) 2 10 nth!;
+    (
+        0: 1
+        1: 2
+        2: 10
+        3: 4
+    )
+
+`split` splits a string based on a delimiter string:
+
+    $ asdf,asdf , split
+    (
+        0: asdf
+        1: asdf
+    )
+
+`join` joins a list of strings together using a delimiter string:
+
+    $ asdf,asdf , split; , join
+    asdf,asdf
+
+Both `split` and `join` handle quoting of values that contain either
+the delimiter, or a quotation mark.
+
+`splitr` splits a string based on a delimiter regex.  It does not
+handle quoting of values, though.
+
+`len` returns the length of a string.  This function also works for
+sets, hashes, strings, and generators.
+
+`empty` returns a boolean indicating whether the length of the string
+is zero.  This function also works for sets, hashes, strings, and
+generators.  In the case of a generator, it will exhaust the generator
+even though that's not strictly necessary for determining whether the
+generator is empty, because having it shift a single element from the
+generator each time it is called could be confusing.
+
+### Set operators
+
+When called with a set argument, `shift` removes one element from the
+beginning of the set and places it on the stack:
+
+    $ s(1 2 3) shift;
+    1
+
+`union` combines two sets:
+
+    $ s(1 2 3) s(2 3 4) union;
+    s(
+        1
+        2
+        3
+        4
+    )
+
+`isect` returns the intersection of two sets:
+
+    $ s(1 2 3) s(2 3 4) isect;
+    s(
+        2
+        3
+    )
+
+`diff` subtracts one set from another:
+
+    $ s(1 2 3) s(2 3 4) diff;
+    s(
+        1
+    )
+
+`symdiff` returns the symmetric difference of two sets:
+
+    $ s(1 2 3) s(2 3 4) symdiff;
+    s(
+        1
+        4
+    )
+
+### Hash operators
+
+`get` returns a value from a hash:
+
+    $ h(a 1 b 2) b get;
+    1
+
+`set` is used to update a value in a hash:
+
+    $ h(a 1 b 2) c 3 set; c get;
+    3
+
+`delete` removes a key-value pair from a hash:
+
+    $ h(a 1 b 2) dup; a delete;
+    h(
+        "b": 2
+    )
+
+`exists` checks whether a key is present in a hash:
+
+    $ h(a 1 b 2) a exists;
+    .t
+
+`keys` returns a generator over the hash's keys:
+
+    $ h(a 1 b 2) c 3 set; keys;
+    v[keys-gen (
+        0: b
+        1: a
+        2: c
+    )]
+
+`values` returns a generator over the hash's values:
+
+    $ h(a 1 b 2) c 3 set; values;
+    v[values-gen (
+        0: 2
+        1: 1
+        2: 3
+    )]
+
+`each` returns a generator over the key-value pairs from the hash:
+
+    $ h(a 1 b 2) c 3 set; each; take-all;
+    v[each-gen (
+        0: (
+            0: b
+            1: 2
+        )
+        1: (
+            0: a
+            1: 1
+        )
+        2: (
+            0: c
+            1: 3
+        )
+    )]
+
+### map, grep, for, foldl
+
+`map` iterates over a list, applying a function to each
+element and collecting the results into a new list:
+
+    $ : add-1 1 + ; ,,
+    $ (1 2 3 4) add-1 map
+    (
+        0: 2
+        1: 3
+        2: 4
+        3: 5
+    )
+
+`grep` iterates over a list, applying a predicate to each element and
+collecting the values for which the predicate is true into a new list:
+
+    $ : <4 4 < ; ,,
+    $ (1 2 3 4) add-1 map; <4 grep;
+    (
+        0: 2
+        1: 3
+    )
+
+`for` is the same as map, except that it does not collect the results
+into a new list (i.e. the function is executed only for its
+side effects).
+
+`foldl` takes a list, a seed, and a function, applies the function to
+the seed and the first element from the list to produce a value, and
+then continues applying the function to the resulting value and the
+next element from the list until the list is exhausted:
+
+    $ (1 2 3) 0 + foldl
+    6
+
+Each of the above functions can accept a generator instead of a list,
+and if the function results in a list when called with a list, it will
+result in a generator when called with a generator.  Similarly, they
+can also accept sets as arguments.
+
+Anonymous functions can be used inline in these calls:
+
+    $ (1 2 3 4) [1 +] map
+    (
+        0: 2
+        1: 3
+        2: 4
+        3: 5
+    )
+
+Anonymous functions do not close over their environment.  If an
+anonymous function is returned by a function call, and it depends on
+variables that were only available within the environment of that
+function call, then calling that anonymous function will result in an
+error.
+
+#### Miscellaneous list functions
+
+ - `any`: takes a list and a function, and returns a boolean
+   indicating whether the function returns true for any element of the
+   list.
+ - `all`: takes a list and a function, and returns a boolean indicating
+   whether the function returns true for all of the elements of the
+   list.
+ - `none`: like `all`, except it returns a boolean indicating
+   whether the function returns false for all of the elements of the
+   list.
+ - `notall`: like `any`, except it returns a boolean indicating
+   whether the function returns false for any of the elements of the
+   list.
+ - `first`: takes a list and a function, and returns the first element
+   for which the function returns true.
+ - `uniq`: takes a list, and returns a generator over the unique
+   elements from that list (uniqueness is determined by converting
+   each value to a string and comparing the strings).
+ - `min`: takes a list and returns the smallest element of that list.
+ - `max`: takes a list and returns the largest element of that list.
+ - `shuffle`: takes a list and moves each element to a random location
+   in the list.
+ - `product`: multiplies all of the elements of the list together and
+   returns the result.
+ - `pairwise`: takes two lists and a function, and on each iteration,
+   shifts one element from each of the lists and calls the function on
+   those elements.  The result is a generator over the results from
+   the function calls.
+ - `slide`: takes a list and a function, and calls the function for
+   sliding pairs from the list.  For example, the first call is for
+   elements 0 and 1, the next call is for elements 1 and 2, and so on.
+   The result is a generator over the results from the function calls.
+ - `before`: takes a list and a function, and calls the function on
+   each element from the list, returning elements up until the
+   function call returns a value that evaluates to true, at which
+   point it returns no more elements.
+ - `after`: works similarly to `before`, save that it returns the
+   elements from after the point where the function returns a true
+   value.
+
+Each of the above can also accept a set or generator in place of a
+list argument.
+
+### sort, sortp
+
+`sort` sorts a list or generator, where the values in the list are of
+primitive types:
+
+    $ (1 3 5 4 2 1) sort
+    (
+        0: 1
+        1: 1
+        2: 2
+        3: 3
+        4: 4
+        5: 5
+    )
+
+`sortp` accepts an additional predicate argument, being a function
+that operates like `<=>` (i.e. -1 for less-than, 0 for equal, 1 for
+greater-than):
+
+    $ (1 3 5 4 2 1) [<=>; -1 *] sortp
+    (
+        0: 5
+        1: 4
+        2: 3
+        3: 2
+        4: 1
+        5: 1
+    )
+
+### Filesystem operations
+
+`ls` takes a directory name as its argument and returns a generator
+object over the files in that directory:
+
+    $ . ls
+    (
+        ./Cargo.toml
+        ...
+    )
+
+`lsr` does the same thing, but includes all files within nested
+directories as well.  If the stack is empty when either of these
+functions is called, then they will act as if they were called on the
+current working directory.
+
+`lsh` and `lshr` operate in the same way as `ls` and `lsr`, except
+that hidden files/directories are included in the output.
+
+`f<` takes a filename as its argument and returns a generator over the
+lines in that file:
+
+    $ README.md f<; 3 take;
+    (
+        "## cosh\n"
+        "\n"
+        "cosh is a concatenative command-line shell.\n"
+    )
+
+`f>` takes a list of strings (or a single string) and a filename as
+its arguments and writes the strings (or string) to that file:
+
+    $ ("asdf\n" "qwer\n" "zxcv\n") asdf f>;
+    $ asdf f<;
+    (
+        "asdf\n"
+        "qwer\n"
+        "zxcv\n"
+    )
+
+Other operations:
+
+ - `cd`: changes the current working directory;
+ - `pwd`: returns the current working directory;
+ - `is-dir`: returns a boolean indicating whether the argument is a
+   directory;
+ - `rm`: removes the argument file;
+ - `touch`: if the argument file doesn't exist, creates an empty file
+   with the given name, otherwise updates the modification time of the
+   existing file to be the current time;
+ - `cp`: copies the file at the first path to the second path;
+ - `mv`: moves the file at the first path to the second path;
+ - `rename`: rename the file at the first path such that its path is
+   the second path;
+ - `stat`: returns a hash containing metadata about the argument file;
+ - `lstat`: like stat, but if the argument is a symbolic link, returns
+   metadata about the link itself, instead of its target;
+ - `ps`: returns a list containing details on the currently-running
+   processes, where each current process has a separate hash
+   containing the PID, UID, and the process name; and
+ - `kill`: takes a PID and a signal name (e.g. "term", "kill"), and
+   sends the specified signal to the process.
+ - `chmod`: takes a path and a numeric mode, and updates the path's
+   mode accordingly.  (`oct` may be useful for mode conversions.)
+ - `chown`: takes a path, a user name, and a group name, and updates
+   the path's ownership accordingly.
+ - `mkdir`: takes a path and creates a directory at that path.
+ - `rmdir`: takes a path and removes the directory at that path
+   (directory must be empty).
+ - `link`: takes two paths, and creates a symbolic link at the second
+   path that targets the first path.
+ - `tempfile`: returns a file writer and a path string for a new
+   temporary file.  This file is not cleaned up automatically on
+   program exit or similar.
+ - `tempdir`: returns a path string for a new temporary directory.
+   This directory is not cleaned up automatically on program exit or
+   similar.
+ - `opendir`: takes a directory path, and put a directory handle
+   object onto the stack.
+ - `readdir`: reads the next entry for a directory handle object.
+ - `no-upwards`: takes a directory name as its argument and returns a
+   boolean indicating whether that name is not either "." or "..".
+
+Core input/output operations:
+
+ - `print`: takes a value and prints it to standard output.
+ - `println`: takes a value and prints it to standard output, followed
+   by a newline.
+ - `open`: takes a file path and a mode string (either 'r' or 'w'),
+   and puts a file reader or a file writer object onto the stack.
+ - `readline`: read a line from a file reader object.
+ - `writeline`: write a line to a file writer object.
+ - `close`: close a file reader or file writer object.
 
 ### External program execution
 
@@ -827,8 +860,11 @@ A command that begins with `$` will be treated as an external call:
     $ $ls
     bin     eg      LICENSE     ...
 
-When using the REPL, a line that begins with a space character will
-also be treated as an external call.
+When using the shell interactively, a line that begins with a space
+character will also be treated as an external call:
+
+    $  ls
+    bin     eg      LICENSE     ...
 
 A form wrapped in braces operates in the same way, except that
 the result is a generator:
@@ -845,8 +881,8 @@ element most recently pushed onto the stack):
 
     $ {ls}; [{stat -c "%s" {}}; shift; chomp] map;
     (
-	4096
-	4096
+        4096
+        4096
         ...
     )
 
@@ -881,15 +917,15 @@ order to get the generator to return the standard error stream:
 
     $ {ls asdf}/e;
     (
-	"ls: cannot access \'asdf\': No such file or directory\n"
+        "ls: cannot access \'asdf\': No such file or directory\n"
     )
 
 or both combined:
 
     $ {ls Cargo.toml asdf}/oe;
     (
-	"ls: cannot access \'asdf\': No such file or directory\n"
-	"Cargo.toml\n"
+        "ls: cannot access \'asdf\': No such file or directory\n"
+        "Cargo.toml\n"
     )
 
 or both combined, with a number indicating the stream for the line (1
@@ -897,90 +933,15 @@ for standard output, and 2 for standard error):
 
     $ {ls Cargo.toml asdf}/c;
     (
-	(
-	    2
-	    "ls: cannot access \'asdf\': No such file or directory\n"
-	)
-	(
-	    1
-	    "Cargo.toml\n"
-	)
+        (
+            2
+            "ls: cannot access \'asdf\': No such file or directory\n"
+        )
+        (
+            1
+            "Cargo.toml\n"
+        )
     )
-
-### Parsing
-
-JSON and XML can be serialised and deserialised using the
-`from-json`, `to-json`, `from-xml` and `to-xml` functions.
-
-### Datetimes
-
- - `now`: Returns the current time as a DateTime object, offset at
-   UTC.
- - `lcnow`: Returns the current time as a DateTime object, offset at
-   the local time zone.
- - `from-epoch`: Takes the epoch time (i.e. the number of seconds that
-   have elapsed since 1970-01-01 00:00:00 UTC) and returns a DateTime
-   object (offset at UTC) that corresponds to that time.
- - `to-epoch`: Takes a DateTime object and returns the epoch time that
-   corresponds to that object.
- - `set-tz`: Takes a DateTime object and a named timezone (per the tz
-   database) and returns a new DateTime object offset at that
-   timezone.
- - `+time`: Takes a DateTime object, a period (one of years, months,
-   days, minutes, hours, or seconds) and a count as its arguments.
-   Adds the specified number of periods to the DateTime object and
-   returns the result as a new DateTime object.
- - `-time`: The reverse of `+time`.
- - `strftime`: Takes a DateTime object and a strftime pattern as its
-   arguments.  Returns the stringification of the date per the
-   pattern.
- - `strptime`: Takes a datetime string and a strftime pattern as its
-   arguments.  Returns the parsed datetime string as a DateTime
-   object.
- - `strptimez`: Takes a datetime string, a strftime pattern, and a
-   named timezone (per the tz database) as its arguments.  Returns the
-   parsed datetime string as a DateTime object.
-
-The `strptime` and `strptimez` functions do not require that any
-particular specifiers be used in the pattern.  By default, the
-DateTime object result is `1970-01-01 00:00:00 +0000`, with values
-parsed by way of the pattern being applied on top of that initial
-result.
-
-### IP addresses
-
- - `ip`: Takes a single IP address or range as a string, and returns
-   an IP object for that address or range.
- - `ip.from-int`: Takes an IP address as an integer and an IP version
-   (either 4 or 6) and returns an IP object for the address.
- - `ip.len`: Takes an IP object and returns the prefix length of the
-   range.
- - `ip.addr`: Takes an IP object and returns the first address from
-   the range as a string.
- - `ip.addr-int`: Takes an IP object and returns the first address
-   from the range as an integer.
- - `ip.last-addr`: Takes an IP object and returns the last address
-   from the range as a string.
- - `ip.last-addr-int`: Takes an IP object and returns the last address
-   from the range as an integer.
- - `ip.size`: Takes an IP object and returns the number of hosts it
-   covers.
- - `ip.version`: Takes an IP object and returns the version of that
-   object (either 4 or 6).
- - `ip.prefixes`: Takes an IP object and returns a list comprising the
-   prefixes (as IP objects) that make up the object.  (The main use of
-   this is for converting a range into a set of prefixes, if
-   necessary.)
-
-There is also a separate IP set object, for storing multiple IP
-address ranges in a single type.  The `ips` function takes a single IP
-address or range as a string or a list of IP address objects or IP
-address/range strings as its single argument, and returns an IP set
-object for those addresses/ranges.  This object supports all the same
-functions as a standard set, but it will additionally simplify the set
-after each call to the minimum set of prefixes required to cover the
-address space in the set.  Finally, `=` is also defined for IP sets,
-and `str` is defined for both IP objects and IP sets.
 
 ### Environment variables
 
@@ -998,8 +959,83 @@ for a standard shell:
 
     $ {TZ=Europe/London date};
     (
-	"Mon 26 Dec 2022 11:43:19 GMT\n"
+        "Mon 26 Dec 2022 11:43:19 GMT\n"
     )
+
+### JSON/XML Parsing
+
+JSON and XML can be serialised and deserialised using the
+`from-json`, `to-json`, `from-xml` and `to-xml` functions.
+
+### Datetimes
+
+ - `now`: returns the current time as a DateTime object, offset at
+   UTC.
+ - `lcnow`: returns the current time as a DateTime object, offset at
+   the local time zone.
+ - `from-epoch`: takes the epoch time (i.e. the number of seconds that
+   have elapsed since 1970-01-01 00:00:00 UTC) and returns a DateTime
+   object (offset at UTC) that corresponds to that time.
+ - `to-epoch`: takes a DateTime object and returns the epoch time that
+   corresponds to that object.
+ - `set-tz`: takes a DateTime object and a named timezone (per the tz
+   database) and returns a new DateTime object offset at that
+   timezone.
+ - `+time`: takes a DateTime object, a period (one of years, months,
+   days, minutes, hours, or seconds) and a count as its arguments.
+   Adds the specified number of periods to the DateTime object and
+   returns the result as a new DateTime object.
+ - `-time`: the reverse of `+time`.
+ - `strftime`: takes a DateTime object and a strftime pattern as its
+   arguments.  Returns the stringification of the date per the
+   pattern.
+ - `strptime`: takes a datetime string and a strftime pattern as its
+   arguments.  Returns the parsed datetime string as a DateTime
+   object.
+ - `strptimez`: takes a datetime string, a strftime pattern, and a
+   named timezone (per the tz database) as its arguments.  Returns the
+   parsed datetime string as a DateTime object.
+
+The `strptime` and `strptimez` functions do not require that any
+particular specifiers be used in the pattern.  By default, the
+DateTime object result is `1970-01-01 00:00:00 +0000`, with values
+parsed by way of the pattern being applied on top of that initial
+result.
+
+### IP addresses
+
+ - `ip`: takes a single IP address or range as a string, and returns
+   an IP object for that address or range.
+ - `ip.from-int`: takes an IP address as an integer and an IP version
+   (either 4 or 6) and returns an IP object for the address.
+ - `ip.len`: takes an IP object and returns the prefix length of the
+   range.
+ - `ip.addr`: takes an IP object and returns the first address from
+   the range as a string.
+ - `ip.addr-int`: takes an IP object and returns the first address
+   from the range as an integer.
+ - `ip.last-addr`: takes an IP object and returns the last address
+   from the range as a string.
+ - `ip.last-addr-int`: takes an IP object and returns the last address
+   from the range as an integer.
+ - `ip.size`: takes an IP object and returns the number of hosts it
+   covers.
+ - `ip.version`: takes an IP object and returns the version of that
+   object (either 4 or 6).
+ - `ip.prefixes`: takes an IP object and returns a list comprising the
+   prefixes (as IP objects) that make up the object.  (The main use of
+   this is for converting a range into a set of prefixes, if
+   necessary.)
+
+There is also a separate IP set object, for storing multiple IP
+address ranges in a single type.  The `ips` function takes a single IP
+address or range as a string or a list of IP address objects or IP
+address/range strings as its single argument, and returns an IP set
+object for those addresses/ranges.  This object supports all the same
+functions as a standard set, but it will additionally simplify the set
+after each call to the minimum set of prefixes required to cover the
+address space in the set.  Finally, `=` is also defined for IP sets,
+and `str` is defined for both IP objects and IP sets.
 
 ### Miscellaneous functions
 
@@ -1036,6 +1072,19 @@ all other value types, `clone` has the same effect as `dup`: this is
 fine in most cases, but it's important to be aware that `dup` for
 file/directory read/write generators is a shallow copy, and
 reads/writes against one value will affect cloned values as well.
+
+#### Caveats and pitfalls
+
+Opening a file and using regular expression matching to find a
+particular line will be considerably slower than relying on `grep(1)`,
+because that executable typically implements various optimisations
+past simple line-based matching.  There are likely to be other cases
+where calling out to an executable will lead to faster processing when
+compared with relying on the shell language alone.
+
+There are likely to be many bugs and problems with the implementation
+here, and the performance isn't spectacular, even taking the previous
+paragraph into account.
 
 #### Development
 

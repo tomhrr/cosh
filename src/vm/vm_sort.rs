@@ -137,7 +137,8 @@ impl VM {
             if res == 0 {
                 return 0;
             }
-            return self.core_sort();
+            self.stack.push(fn_rr);
+            return self.core_sortp();
         }
 
         match value_rr {

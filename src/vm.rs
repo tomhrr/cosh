@@ -281,6 +281,10 @@ lazy_static! {
         set.insert("for");
         set.insert("ls");
         set.insert("or");
+        set.insert("after");
+        set.insert("before");
+        set.insert("pairwise");
+        set.insert("slide");
         set
     };
 

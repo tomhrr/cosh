@@ -169,10 +169,8 @@ impl VM {
                                     if new_str.chars().next().unwrap() == '"' {
                                         new_str.remove(0);
                                     }
-                                    if new_str.len() > 0 {
-                                        if new_str.chars().last().unwrap() == '"' {
-                                            new_str.remove(new_str.len() - 1);
-                                        }
+                                    if new_str.len() > 0 && new_str.chars().last().unwrap() == '"' {
+                                        new_str.remove(new_str.len() - 1);
                                     }
                                 }
                                 final_elements.push(new_str.to_string());
@@ -191,10 +189,8 @@ impl VM {
                             if e_str.chars().next().unwrap() == '"' {
                                 e_str.remove(0);
                             }
-                            if e_str.len() > 0 {
-                                if e_str.chars().last().unwrap() == '"' {
-                                    e_str.remove(e_str.len() - 1);
-                                }
+                            if e_str.len() > 0 && e_str.chars().last().unwrap() == '"' {
+                                e_str.remove(e_str.len() - 1);
                             }
                         }
                         final_elements.push(e_str);

@@ -335,10 +335,10 @@ impl VM {
     ) -> VM {
         let ltz = iana_time_zone::get_timezone().unwrap();
         VM {
-            debug: debug,
+            debug,
             stack: Vec::new(),
             local_var_stack: Rc::new(RefCell::new(Vec::new())),
-            print_stack: print_stack,
+            print_stack,
             printing_stack: false,
             scopes: vec![global_vars.clone()],
             global_functions: HashMap::new(),

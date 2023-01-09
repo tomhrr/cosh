@@ -200,7 +200,7 @@ impl VM {
                                     return 0;
                                 }
                                 if !(prefix_len == 0 && addr_int == 0) {
-                                    let addr_check = addr_int & (1 << (32 - prefix_len)) - 1;
+                                    let addr_check = addr_int & ((1 << (32 - prefix_len)) - 1);
                                     if addr_check != 0 {
                                         self.print_error(
                                             "ip argument must be valid IP address string",
@@ -221,89 +221,87 @@ impl VM {
                             }
                         }
                     }
-                } else {
-                    if s.contains("-") {
-                        let mut iter = s.split("-");
-                        let fst = iter.next();
-                        if fst.is_none() {
-                            self.print_error("ip argument must be valid IP address string");
-                            return 0;
-                        }
-                        let snd = iter.next();
-                        if snd.is_none() {
-                            self.print_error("ip argument must be valid IP address string");
-                            return 0;
-                        }
-                        if !iter.next().is_none() {
-                            self.print_error("ip argument must be valid IP address string");
-                            return 0;
-                        }
+                } else if s.contains("-") {
+                    let mut iter = s.split("-");
+                    let fst = iter.next();
+                    if fst.is_none() {
+                        self.print_error("ip argument must be valid IP address string");
+                        return 0;
+                    }
+                    let snd = iter.next();
+                    if snd.is_none() {
+                        self.print_error("ip argument must be valid IP address string");
+                        return 0;
+                    }
+                    if !iter.next().is_none() {
+                        self.print_error("ip argument must be valid IP address string");
+                        return 0;
+                    }
 
-                        let fst_str = fst.unwrap().trim();
-                        let snd_str = snd.unwrap().trim();
+                    let fst_str = fst.unwrap().trim();
+                    let snd_str = snd.unwrap().trim();
 
-                        let fst_str_wp = format!("{}/128", fst_str);
-                        let snd_str_wp = format!("{}/128", snd_str);
+                    let fst_str_wp = format!("{}/128", fst_str);
+                    let snd_str_wp = format!("{}/128", snd_str);
 
-                        let ipv6_fst = Ipv6Net::from_str(&fst_str_wp);
-                        let ipv6_snd = Ipv6Net::from_str(&snd_str_wp);
+                    let ipv6_fst = Ipv6Net::from_str(&fst_str_wp);
+                    let ipv6_snd = Ipv6Net::from_str(&snd_str_wp);
 
-                        match (ipv6_fst, ipv6_snd) {
-                            (Ok(ipv6_fst_obj), Ok(ipv6_snd_obj)) => {
-                                if !(ipv6_fst_obj < ipv6_snd_obj) {
-                                    self.print_error("ip argument must be valid IP address string");
-                                    return 0;
-                                }
-                                self.stack.push(Value::Ipv6Range(Ipv6Range::new(
-                                    ipv6_fst_obj.network(),
-                                    ipv6_snd_obj.network(),
-                                )));
-                                return 1;
-                            }
-                            (_, _) => {
+                    match (ipv6_fst, ipv6_snd) {
+                        (Ok(ipv6_fst_obj), Ok(ipv6_snd_obj)) => {
+                            if !(ipv6_fst_obj < ipv6_snd_obj) {
                                 self.print_error("ip argument must be valid IP address string");
                                 return 0;
                             }
+                            self.stack.push(Value::Ipv6Range(Ipv6Range::new(
+                                ipv6_fst_obj.network(),
+                                ipv6_snd_obj.network(),
+                            )));
+                            return 1;
                         }
+                        (_, _) => {
+                            self.print_error("ip argument must be valid IP address string");
+                            return 0;
+                        }
+                    }
+                } else {
+                    let ipv6_res;
+                    if !s.contains("/") {
+                        let s2 = format!("{}/128", s);
+                        ipv6_res = Ipv6Net::from_str(&s2);
                     } else {
-                        let ipv6_res;
-                        if !s.contains("/") {
-                            let s2 = format!("{}/128", s);
-                            ipv6_res = Ipv6Net::from_str(&s2);
-                        } else {
-                            ipv6_res = Ipv6Net::from_str(s);
-                        }
-                        match ipv6_res {
-                            Ok(ipv6) => {
-                                let addr = ipv6.addr();
-                                let addr_int = ipv6_addr_to_int(addr);
-                                let prefix_len = ipv6.prefix_len();
-                                if prefix_len == 0 && !addr_int.is_zero() {
-                                    self.print_error("ip argument must be valid IP address string");
-                                    return 0;
-                                }
-                                if !(prefix_len == 0 && addr_int == BigUint::from(0u8)) {
-                                    let prefix_mask = (BigUint::from(1u8) << (128 - prefix_len))
-                                        - BigUint::from(1u8);
-                                    let addr_check: BigUint = addr_int & prefix_mask;
-                                    if !addr_check.is_zero() {
-                                        self.print_error(
-                                            "ip argument must be valid IP address string",
-                                        );
-                                        return 0;
-                                    }
-                                }
-                                self.stack.push(Value::Ipv6(ipv6));
-                                return 1;
-                            }
-                            Err(e) => {
-                                let err_str = format!(
-                                    "ip argument must be valid IP address string: {}",
-                                    e.to_string()
-                                );
-                                self.print_error(&err_str);
+                        ipv6_res = Ipv6Net::from_str(s);
+                    }
+                    match ipv6_res {
+                        Ok(ipv6) => {
+                            let addr = ipv6.addr();
+                            let addr_int = ipv6_addr_to_int(addr);
+                            let prefix_len = ipv6.prefix_len();
+                            if prefix_len == 0 && !addr_int.is_zero() {
+                                self.print_error("ip argument must be valid IP address string");
                                 return 0;
                             }
+                            if !(prefix_len == 0 && addr_int == BigUint::from(0u8)) {
+                                let prefix_mask = (BigUint::from(1u8) << (128 - prefix_len))
+                                    - BigUint::from(1u8);
+                                let addr_check: BigUint = addr_int & prefix_mask;
+                                if !addr_check.is_zero() {
+                                    self.print_error(
+                                        "ip argument must be valid IP address string",
+                                    );
+                                    return 0;
+                                }
+                            }
+                            self.stack.push(Value::Ipv6(ipv6));
+                            return 1;
+                        }
+                        Err(e) => {
+                            let err_str = format!(
+                                "ip argument must be valid IP address string: {}",
+                                e.to_string()
+                            );
+                            self.print_error(&err_str);
+                            return 0;
                         }
                     }
                 }

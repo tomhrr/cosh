@@ -507,10 +507,8 @@ impl VM {
                 return 0;
             }
         }
-        if repush {
-            if new_stack_len == stack_len {
-                self.stack.push(Value::Null);
-            }
+        if repush && new_stack_len == stack_len {
+            self.stack.push(Value::Null);
         }
 
         return 1;

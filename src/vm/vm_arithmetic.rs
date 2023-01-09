@@ -74,67 +74,58 @@ impl VM {
     /// result onto the stack.  Returns an integer indicating whether
     /// the values were able to be added together.
     fn opcode_add_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n1 + n2);
                 self.stack.push(n3);
-                return 1;
+                1
             }
             (Value::BigInt(_), Value::Int(n2)) => {
-                return self.opcode_add_inner(v1, &int_to_bigint(*n2));
+                self.opcode_add_inner(v1, &int_to_bigint(*n2))
             }
             (Value::Int(n1), Value::BigInt(_)) => {
-                return self.opcode_add_inner(&int_to_bigint(*n1), v2);
+                self.opcode_add_inner(&int_to_bigint(*n1), v2)
             }
             (Value::Int(n1), Value::Int(n2)) => {
                 self.stack.push(add_ints(*n1, *n2));
-                return 1;
+                1
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 self.stack.push(Value::Float(n1 + n2));
-                return 1;
+                1
             }
             (Value::BigInt(n1), Value::Float(_)) => {
-                return self.opcode_add_inner(&bigint_to_float(n1), v2);
+                self.opcode_add_inner(&bigint_to_float(n1), v2)
             }
             (Value::Float(_), Value::BigInt(n2)) => {
-                return self.opcode_add_inner(v1, &bigint_to_float(n2));
+                self.opcode_add_inner(v1, &bigint_to_float(n2))
             }
             (Value::Int(n1), Value::Float(_)) => {
-                return self.opcode_add_inner(&int_to_float(*n1), v2);
+                self.opcode_add_inner(&int_to_float(*n1), v2)
             }
             (Value::Float(_), Value::Int(n2)) => {
-                return self.opcode_add_inner(v1, &int_to_float(*n2));
+                self.opcode_add_inner(v1, &int_to_float(*n2))
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(add_ints(n1, n2));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(add_ints(n1, n2));
+                    return 1;
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(Value::BigInt(n1 + n2));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(Value::BigInt(n1 + n2));
+                    return 1;
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(Value::Float(n1 + n2));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(Value::Float(n1 + n2));
+                    return 1;
                 }
-                return 0;
+                0
             }
         }
     }
@@ -150,13 +141,10 @@ impl VM {
 
         let v1_rr = self.stack.pop().unwrap();
         let mut done = false;
-        match (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
-            (Value::Int(n1), Value::Int(ref mut n2)) => {
-                *n2 = *n2 + n1;
-                done = true;
-            }
-            (_, _) => {}
-        };
+        if let (Value::Int(n1), Value::Int(ref mut n2)) = (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
+            *n2 += n1;
+            done = true;
+        }
 
         if !done {
             let v2_rr = self.stack.pop().unwrap();
@@ -168,74 +156,65 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 
     /// Helper function for subtracting two values and placing the
     /// result onto the stack.  Returns an integer indicating whether
     /// the values were able to be subtracted.
     fn opcode_subtract_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
-        match (&*v1, &*v2) {
+        match (v1, v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n2 - n1);
                 self.stack.push(n3);
-                return 1;
+                1
             }
             (Value::BigInt(_), Value::Int(n2)) => {
-                return self.opcode_subtract_inner(v1, &int_to_bigint(*n2));
+                self.opcode_subtract_inner(v1, &int_to_bigint(*n2))
             }
             (Value::Int(n1), Value::BigInt(_)) => {
-                return self.opcode_subtract_inner(&int_to_bigint(*n1), v2);
+                self.opcode_subtract_inner(&int_to_bigint(*n1), v2)
             }
             (Value::Int(n1), Value::Int(n2)) => {
                 self.stack.push(subtract_ints(*n1, *n2));
-                return 1;
+                1
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 self.stack.push(Value::Float(n2 - n1));
-                return 1;
+                1
             }
             (Value::BigInt(n1), Value::Float(_)) => {
-                return self.opcode_subtract_inner(&bigint_to_float(n1), v2);
+                self.opcode_subtract_inner(&bigint_to_float(n1), v2)
             }
             (Value::Float(_), Value::BigInt(n2)) => {
-                return self.opcode_subtract_inner(v1, &bigint_to_float(n2));
+                self.opcode_subtract_inner(v1, &bigint_to_float(n2))
             }
             (Value::Int(n1), Value::Float(_)) => {
-                return self.opcode_subtract_inner(&int_to_float(*n1), v2);
+                self.opcode_subtract_inner(&int_to_float(*n1), v2)
             }
             (Value::Float(_), Value::Int(n2)) => {
-                return self.opcode_subtract_inner(v1, &int_to_float(*n2));
+                self.opcode_subtract_inner(v1, &int_to_float(*n2))
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(subtract_ints(n1, n2));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(subtract_ints(n1, n2));
+                    return 1;
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(Value::BigInt(n2 - n1));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(Value::BigInt(n2 - n1));
+                    return 1;
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(Value::Float(n2 - n1));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(Value::Float(n2 - n1));
+                    return 1;
                 }
-                return 0;
+                0
             }
         }
     }
@@ -269,7 +248,7 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 
     /// Helper function for multiplying two values together and
@@ -281,63 +260,54 @@ impl VM {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n1 * n2);
                 self.stack.push(n3);
-                return 1;
+                1
             }
             (Value::BigInt(_), Value::Int(n2)) => {
-                return self.opcode_multiply_inner(v1, &int_to_bigint(*n2));
+                self.opcode_multiply_inner(v1, &int_to_bigint(*n2))
             }
             (Value::Int(n1), Value::BigInt(_)) => {
-                return self.opcode_multiply_inner(&int_to_bigint(*n1), v2);
+                self.opcode_multiply_inner(&int_to_bigint(*n1), v2)
             }
             (Value::Int(n1), Value::Int(n2)) => {
                 self.stack.push(multiply_ints(*n1, *n2));
-                return 1;
+                1
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 self.stack.push(Value::Float(n1 * n2));
-                return 1;
+                1
             }
             (Value::BigInt(n1), Value::Float(_)) => {
-                return self.opcode_multiply_inner(&bigint_to_float(n1), v2);
+                self.opcode_multiply_inner(&bigint_to_float(n1), v2)
             }
             (Value::Float(_), Value::BigInt(n2)) => {
-                return self.opcode_multiply_inner(v1, &bigint_to_float(n2));
+                self.opcode_multiply_inner(v1, &bigint_to_float(n2))
             }
             (Value::Int(n1), Value::Float(_)) => {
-                return self.opcode_multiply_inner(&int_to_float(*n1), v2);
+                self.opcode_multiply_inner(&int_to_float(*n1), v2)
             }
             (Value::Float(_), Value::Int(n2)) => {
-                return self.opcode_multiply_inner(v1, &int_to_float(*n2));
+                self.opcode_multiply_inner(v1, &int_to_float(*n2))
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(multiply_ints(n1, n2));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(multiply_ints(n1, n2));
+                    return 1;
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(Value::BigInt(n1 * n2));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(Value::BigInt(n1 * n2));
+                    return 1;
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(Value::Float(n1 * n2));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(Value::Float(n1 * n2));
+                    return 1;
                 }
-                return 0;
+                0
             }
         }
     }
@@ -382,63 +352,54 @@ impl VM {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
                 let n3 = Value::BigInt(n2 / n1);
                 self.stack.push(n3);
-                return 1;
+                1
             }
             (Value::BigInt(_), Value::Int(n2)) => {
-                return self.opcode_divide_inner(v1, &int_to_bigint(*n2));
+                self.opcode_divide_inner(v1, &int_to_bigint(*n2))
             }
             (Value::Int(n1), Value::BigInt(_)) => {
-                return self.opcode_divide_inner(&int_to_bigint(*n1), v2);
+                self.opcode_divide_inner(&int_to_bigint(*n1), v2)
             }
             (Value::Int(n1), Value::Int(n2)) => {
                 self.stack.push(divide_ints(*n1, *n2));
-                return 1;
+                1
             }
             (Value::Float(n1), Value::Float(n2)) => {
                 self.stack.push(Value::Float(n2 / n1));
-                return 1;
+                1
             }
             (Value::BigInt(n1), Value::Float(_)) => {
-                return self.opcode_divide_inner(&bigint_to_float(n1), v2);
+                self.opcode_divide_inner(&bigint_to_float(n1), v2)
             }
             (Value::Float(_), Value::BigInt(n2)) => {
-                return self.opcode_divide_inner(v1, &bigint_to_float(n2));
+                self.opcode_divide_inner(v1, &bigint_to_float(n2))
             }
             (Value::Int(n1), Value::Float(_)) => {
-                return self.opcode_divide_inner(&int_to_float(*n1), v2);
+                self.opcode_divide_inner(&int_to_float(*n1), v2)
             }
             (Value::Float(_), Value::Int(n2)) => {
-                return self.opcode_divide_inner(v1, &int_to_float(*n2));
+                self.opcode_divide_inner(v1, &int_to_float(*n2))
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(divide_ints(n1, n2));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(divide_ints(n1, n2));
+                    return 1;
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(Value::BigInt(n2 / n1));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(Value::BigInt(n2 / n1));
+                    return 1;
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        self.stack.push(Value::Float(n2 / n1));
-                        return 1;
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(Value::Float(n2 / n1));
+                    return 1;
                 }
-                return 0;
+                0
             }
         }
     }
@@ -481,71 +442,62 @@ impl VM {
     pub fn opcode_eq_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (&*v1, &*v2) {
             (Value::IpSet(s1), Value::IpSet(s2)) => {
-                return if *s1.borrow() == *s2.borrow() { 1 } else { 0 };
+                if *s1.borrow() == *s2.borrow() { 1 } else { 0 }
             }
             (Value::BigInt(n1), Value::BigInt(n2)) => {
-                return if n1 == n2 { 1 } else { 0 };
+                if n1 == n2 { 1 } else { 0 }
             }
             (Value::BigInt(_), Value::Int(n2)) => {
-                return self.opcode_eq_inner(v1, &int_to_bigint(*n2));
+                self.opcode_eq_inner(v1, &int_to_bigint(*n2))
             }
             (Value::Int(n1), Value::BigInt(_)) => {
-                return self.opcode_eq_inner(&int_to_bigint(*n1), v2);
+                self.opcode_eq_inner(&int_to_bigint(*n1), v2)
             }
             (Value::Int(n1), Value::Int(n2)) => {
-                return if n1 == n2 { 1 } else { 0 };
+                if n1 == n2 { 1 } else { 0 }
             }
             (Value::BigInt(n1), Value::Float(_)) => {
-                return self.opcode_eq_inner(&bigint_to_float(n1), v2);
+                self.opcode_eq_inner(&bigint_to_float(n1), v2)
             }
             (Value::Float(_), Value::BigInt(n2)) => {
-                return self.opcode_eq_inner(v1, &bigint_to_float(n2));
+                self.opcode_eq_inner(v1, &bigint_to_float(n2))
             }
             (Value::Int(n1), Value::Float(_)) => {
-                return self.opcode_eq_inner(&int_to_float(*n1), v2);
+                self.opcode_eq_inner(&int_to_float(*n1), v2)
             }
             (Value::Float(_), Value::Int(n2)) => {
-                return self.opcode_eq_inner(v1, &int_to_float(*n2));
+                self.opcode_eq_inner(v1, &int_to_float(*n2))
             }
             (Value::Float(n1), Value::Float(n2)) => {
-                return if n1 == n2 { 1 } else { 0 };
+                if n1 == n2 { 1 } else { 0 }
             }
             (Value::DateTimeNT(d1), Value::DateTimeNT(d2)) => {
-                return if d1 == d2 { 1 } else { 0 };
+                if d1 == d2 { 1 } else { 0 }
             }
             (Value::DateTimeOT(d1), Value::DateTimeOT(d2)) => {
-                return if d1 == d2 { 1 } else { 0 };
+                if d1 == d2 { 1 } else { 0 }
             }
             (Value::DateTimeOT(d1), Value::DateTimeNT(d2)) => {
-                return if d1 == d2 { 1 } else { 0 };
+                if d1 == d2 { 1 } else { 0 }
             }
             (Value::DateTimeNT(d1), Value::DateTimeOT(d2)) => {
-                return if d1 == d2 { 1 } else { 0 };
+                if d1 == d2 { 1 } else { 0 }
             }
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n1 == n2 { 1 } else { 0 };
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return if n1 == n2 { 1 } else { 0 };
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n1 == n2 { 1 } else { 0 };
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return if n1 == n2 { 1 } else { 0 };
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-                match (n1_opt, n2_opt) {
-                    (Some(n1), Some(n2)) => {
-                        return if n1 == n2 { 1 } else { 0 };
-                    }
-                    _ => {}
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return if n1 == n2 { 1 } else { 0 };
                 }
 
                 let i1_str_opt: Option<&str>;
@@ -560,7 +512,7 @@ impl VM {
                     }
                     _ => {}
                 }
-                return -1;
+                -1
             }
         }
     }

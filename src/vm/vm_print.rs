@@ -26,47 +26,45 @@ fn psv_helper(
     mut lines_to_print: i32,
     index: Option<i32>,
 ) -> i32 {
-    if window_height != 0 {
-        if lines_to_print == 0 {
-            let mut stdout = io::stdout().into_raw_mode().unwrap();
-            let stdin = std::io::stdin();
-            for c in stdin.keys() {
-                match c.unwrap() {
-                    termion::event::Key::Char('q') => {
-                        stdout.suspend_raw_mode().unwrap();
-                        return -1;
-                    }
-                    termion::event::Key::Ctrl('c') => {
-                        stdout.suspend_raw_mode().unwrap();
-                        return -1;
-                    }
-                    termion::event::Key::PageDown => {
-                        lines_to_print = lines_to_print + window_height;
-                    }
-                    termion::event::Key::End => {
-                        /* todo: a bit of a hack.  It would be better
-                         * if there were some way of indicating that
-                         * there's no need to wait on input if End is
-                         * pressed. */
-                        lines_to_print = i32::MAX;
-                    }
-                    /* The default behaviour for these two might be
-                     * confusing, so make them no-ops. */
-                    termion::event::Key::Home => {
-                        continue;
-                    }
-                    termion::event::Key::PageUp => {
-                        continue;
-                    }
-                    _ => {
-                        lines_to_print = lines_to_print + 1;
-                    }
+    if window_height != 0 && lines_to_print == 0 {
+        let mut stdout = io::stdout().into_raw_mode().unwrap();
+        let stdin = std::io::stdin();
+        for c in stdin.keys() {
+            match c.unwrap() {
+                termion::event::Key::Char('q') => {
+                    stdout.suspend_raw_mode().unwrap();
+                    return -1;
                 }
-                stdout.flush().unwrap();
-                break;
+                termion::event::Key::Ctrl('c') => {
+                    stdout.suspend_raw_mode().unwrap();
+                    return -1;
+                }
+                termion::event::Key::PageDown => {
+                    lines_to_print = lines_to_print + window_height;
+                }
+                termion::event::Key::End => {
+                    /* todo: a bit of a hack.  It would be better
+                        * if there were some way of indicating that
+                        * there's no need to wait on input if End is
+                        * pressed. */
+                    lines_to_print = i32::MAX;
+                }
+                /* The default behaviour for these two might be
+                    * confusing, so make them no-ops. */
+                termion::event::Key::Home => {
+                    continue;
+                }
+                termion::event::Key::PageUp => {
+                    continue;
+                }
+                _ => {
+                    lines_to_print = lines_to_print + 1;
+                }
             }
-            stdout.suspend_raw_mode().unwrap();
+            stdout.flush().unwrap();
+            break;
         }
+        stdout.suspend_raw_mode().unwrap();
     }
     if !no_first_indent {
         for _ in 0..indent {

@@ -68,9 +68,9 @@ pub struct Token {
 impl Token {
     fn new(token_type: TokenType, line_number: u32, column_number: u32) -> Token {
         Token {
-            token_type: token_type,
-            line_number: line_number,
-            column_number: column_number,
+            token_type,
+            line_number,
+            column_number,
         }
     }
 }
@@ -86,8 +86,8 @@ pub struct Local {
 impl Local {
     pub fn new(name: String, depth: u32) -> Local {
         Local {
-            name: name,
-            depth: depth,
+            name,
+            depth,
         }
     }
 }
@@ -113,7 +113,7 @@ lazy_static! {
 impl<'a> Scanner<'a> {
     pub fn new(fh: &mut Box<dyn BufRead>) -> Scanner {
         Scanner {
-            fh: fh,
+            fh,
             line_number: 1,
             column_number: 1,
             token_line_number: 1,
@@ -153,7 +153,7 @@ impl<'a> Scanner<'a> {
         match buffer[0] as char {
             '/' => {
                 /* Has parameters. */
-                self.column_number = self.column_number + 1;
+                self.column_number += 1;
                 while !done {
                     self.fh.read_exact(&mut buffer).unwrap_or_else(|e| {
                         if e.kind() == ErrorKind::UnexpectedEof {
@@ -167,21 +167,21 @@ impl<'a> Scanner<'a> {
                         self.next_is_eof = true;
                         return Some(parameters);
                     }
-                    if char::is_whitespace(buffer[0] as char) || buffer[0] == ';' as u8 {
+                    if char::is_whitespace(buffer[0] as char) || buffer[0] == b';' {
                         self.lookahead = buffer[0];
                         self.has_lookahead = true;
                         done = true;
                     } else {
                         parameters.insert(buffer[0] as char);
-                        self.column_number = self.column_number + 1;
+                        self.column_number += 1;
                     }
                 }
-                return Some(parameters);
+                Some(parameters)
             }
             _ => {
                 self.lookahead = buffer[0];
                 self.has_lookahead = true;
-                return None;
+                None
             }
         }
     }
@@ -198,7 +198,7 @@ impl<'a> Scanner<'a> {
             if self.has_lookahead {
                 buffer[0] = self.lookahead;
                 self.has_lookahead = false;
-                self.column_number = self.column_number + 1;
+                self.column_number += 1;
                 if self.token_line_number == 0 {
                     self.token_line_number = self.line_number;
                     self.token_column_number = self.column_number;
@@ -218,11 +218,11 @@ impl<'a> Scanner<'a> {
             }
             match buffer[0] as char {
                 '\n' => {
-                    self.line_number = self.line_number + 1;
+                    self.line_number += 1;
                     self.column_number = 1;
                 }
                 ' ' => {
-                    self.column_number = self.column_number + 1;
+                    self.column_number += 1;
                 }
                 '\t' => {
                     self.column_number = self.column_number + (self.column_number % 4);
@@ -230,7 +230,7 @@ impl<'a> Scanner<'a> {
                 _ => {
                     self.has_lookahead = true;
                     self.lookahead = buffer[0] as u8;
-                    self.column_number = self.column_number - 1;
+                    self.column_number -= 1;
                     return true;
                 }
             }
@@ -239,7 +239,7 @@ impl<'a> Scanner<'a> {
 
     /// Returns a new token object for the given token type.
     pub fn get_token(&self, token_type: TokenType) -> Token {
-        return Token::new(token_type, self.token_line_number, self.token_column_number);
+        Token::new(token_type, self.token_line_number, self.token_column_number)
     }
 
     /// Scans the BufRead for the next token, and returns it.
@@ -272,18 +272,18 @@ impl<'a> Scanner<'a> {
          * token. */
 
         let res = self.skip_whitespace();
-        if res == false {
+        if !res {
             return self.get_token(TokenType::Eof);
         }
 
         buffer[0] = self.lookahead;
         self.has_lookahead = false;
-        self.column_number = self.column_number + 1;
+        self.column_number += 1;
 
         self.token_line_number = self.line_number;
         self.token_column_number = self.column_number;
 
-        self.column_number = self.column_number + 1;
+        self.column_number += 1;
 
         if (buffer[0] as char == '"')
             || (buffer[0] as char == '\'')
@@ -295,7 +295,7 @@ impl<'a> Scanner<'a> {
             is_string = true;
         } else {
             result[result_index] = buffer[0];
-            result_index = result_index + 1;
+            result_index += 1;
 
             match buffer[0] as char {
                 '#' => {
@@ -305,7 +305,7 @@ impl<'a> Scanner<'a> {
                     if at_start_of_line {
                         let mut ignored = String::new();
                         self.fh.read_line(&mut ignored).unwrap();
-                        self.line_number = self.line_number + 1;
+                        self.line_number += 1;
                         self.column_number = 1;
                         return self.get_token(TokenType::Retry);
                     }
@@ -351,17 +351,17 @@ impl<'a> Scanner<'a> {
             }
             match buffer[0] as char {
                 '\n' => {
-                    self.line_number = self.line_number + 1;
+                    self.line_number += 1;
                     self.column_number = 1;
                 }
                 ' ' => {
-                    self.column_number = self.column_number + 1;
+                    self.column_number += 1;
                 }
                 '\t' => {
                     self.column_number = self.column_number + (self.column_number % 4);
                 }
                 '(' => {
-                    self.column_number = self.column_number + 1;
+                    self.column_number += 1;
                     if result_index == 1 {
                         match result[0] as char {
                             'h' => return self.get_token(TokenType::StartHash),
@@ -373,7 +373,7 @@ impl<'a> Scanner<'a> {
                     }
                 }
                 _ => {
-                    self.column_number = self.column_number + 1;
+                    self.column_number += 1;
                 }
             }
             if in_string {
@@ -383,26 +383,24 @@ impl<'a> Scanner<'a> {
                      * extra processing here.  Commands may also have
                      * parameters attached to the end of them. */
                     if buffer[0] as char == '{' {
-                        brace_count = brace_count + 1;
+                        brace_count += 1;
                     } else if buffer[0] as char == '}' {
-                        brace_count = brace_count - 1;
+                        brace_count -= 1;
                     }
                     if brace_count < 0 {
                         in_string = false;
                         done = true;
                         let params_opt = self.scan_parameters();
-                        if !params_opt.is_none() {
-                            params = params_opt.unwrap();
-                        }
+                        if let Some(po) = params_opt { params = po; }
                     } else {
                         result[result_index] = buffer[0];
-                        result_index = result_index + 1;
+                        result_index += 1;
                     }
                 } else if string_delimiter == '$' {
                     /* Uncaptured commands do not need to include a
                      * terminating delimiter. */
                     result[result_index] = buffer[0];
-                    result_index = result_index + 1;
+                    result_index += 1;
                 } else if buffer[0] as char == string_delimiter {
                     if result_index > 0 && result[result_index - 1] as char == '\\' {
                         result[result_index - 1] = buffer[0];
@@ -412,7 +410,7 @@ impl<'a> Scanner<'a> {
                     }
                 } else {
                     result[result_index] = buffer[0];
-                    result_index = result_index + 1;
+                    result_index += 1;
                 }
             } else {
                 match buffer[0] as char {
@@ -426,13 +424,13 @@ impl<'a> Scanner<'a> {
                     ')' => {
                         self.has_lookahead = true;
                         self.lookahead = buffer[0] as u8;
-                        self.column_number = self.column_number - 1;
+                        self.column_number -= 1;
                         done = true;
                     }
                     ']' => {
                         self.has_lookahead = true;
                         self.lookahead = buffer[0] as u8;
-                        self.column_number = self.column_number - 1;
+                        self.column_number -= 1;
                         done = true;
                     }
                     _ => {
@@ -441,7 +439,7 @@ impl<'a> Scanner<'a> {
                             return self.get_token(TokenType::Error);
                         }
                         result[result_index] = buffer[0];
-                        result_index = result_index + 1;
+                        result_index += 1;
                         let c = buffer[0] as char;
                         if result_index == 1 && (c == '{' || c == '}' || c == '[' || c == ']') {
                             done = true;
@@ -453,11 +451,11 @@ impl<'a> Scanner<'a> {
              * whitespace. */
             if done && (buffer[0] as char) != '\n' {
                 let res = self.skip_whitespace();
-                if res == true && self.lookahead == ';' as u8 {
-                    self.column_number = self.column_number + 1;
+                if res && self.lookahead == b';' {
+                    self.column_number += 1;
                     result[result_index] = self.lookahead;
                     self.has_lookahead = false;
-                    result_index = result_index + 1;
+                    result_index += 1;
                 }
             }
         }
@@ -488,11 +486,11 @@ impl<'a> Scanner<'a> {
         let mut is_implicit_word = false;
         if result_index > 1 && (result[result_index - 1] as char) == ';' {
             is_explicit_word = true;
-            result_index = result_index - 1;
+            result_index -= 1;
         }
         if (buffer[0] as char) == '\n'
             || self.next_is_eof
-            || (self.has_lookahead && self.lookahead == (']' as u8))
+            || (self.has_lookahead && self.lookahead == b']')
         {
             is_implicit_word = true;
         }
@@ -538,19 +536,17 @@ impl<'a> Scanner<'a> {
                     }
                 }
             }
-        } else {
-            if string_delimiter == '{' {
-                if is_explicit_word || is_implicit_word {
-                    TokenType::CommandExplicit(s.to_string(), params)
-                } else {
-                    TokenType::Command(s.to_string(), params)
-                }
+        } else if string_delimiter == '{' {
+            if is_explicit_word || is_implicit_word {
+                TokenType::CommandExplicit(s.to_string(), params)
             } else {
-                TokenType::String(s.to_string())
+                TokenType::Command(s.to_string(), params)
             }
+        } else {
+            TokenType::String(s.to_string())
         };
 
-        return self.get_token(token_type);
+        self.get_token(token_type)
     }
 }
 
@@ -601,7 +597,7 @@ pub fn unescape_string(s: &str) -> String {
             }
         }
     }
-    return s2;
+    s2
 }
 
 impl Compiler {
@@ -615,14 +611,14 @@ impl Compiler {
     /// Increases the scope depth.  Used when a new function is
     /// defined (whether a named function or an anonymous one).
     fn increase_scope_depth(&mut self) {
-        self.scope_depth = self.scope_depth + 1;
+        self.scope_depth += 1;
     }
 
     /// Decreases the scope depth.  This adds appropriate pop opcodes
     /// for dealing with local variables that will no longer be in use
     /// after the scope depth is decreased.
     fn decrease_scope_depth(&mut self, chunk: &mut Chunk) {
-        while self.locals.len() > 0 && (self.locals.last().unwrap().depth == self.scope_depth) {
+        while !self.locals.is_empty() && (self.locals.last().unwrap().depth == self.scope_depth) {
             chunk.add_opcode(OpCode::PopLocalVar);
             self.locals.pop();
         }
@@ -630,7 +626,7 @@ impl Compiler {
             eprintln!("scope depth is already zero!");
             std::process::abort();
         }
-        self.scope_depth = self.scope_depth - 1;
+        self.scope_depth -= 1;
     }
 
     /// Takes a scanner and a chunk as its arguments.  Reads tokens by
@@ -659,11 +655,8 @@ impl Compiler {
             chunk.set_next_point(token.line_number, token.column_number);
             let mut is_implicit = false;
             let token_type = token.token_type;
-            match token_type {
-                TokenType::WordImplicit(_) => {
-                    is_implicit = true;
-                }
-                _ => {}
+            if let TokenType::WordImplicit(_) = token_type {
+                is_implicit = true;
             }
             match token_type {
                 TokenType::Retry => {
@@ -689,17 +682,10 @@ impl Compiler {
                 }
                 TokenType::StartGenerator => {
                     let name_token = scanner.scan();
-                    let name_str: String;
-                    match name_token.token_type {
-                        TokenType::Word(s) => {
-                            name_str = s;
-                        }
-                        TokenType::WordImplicit(s) => {
-                            name_str = s;
-                        }
-                        TokenType::String(s) => {
-                            name_str = s;
-                        }
+                    let name_str = match name_token.token_type {
+                        TokenType::Word(s) => s,
+                        TokenType::WordImplicit(s) => s,
+                        TokenType::String(s) => s,
                         _ => {
                             eprintln!(
                                 "{}:{}: expected name token",
@@ -707,14 +693,11 @@ impl Compiler {
                             );
                             return false;
                         }
-                    }
+                    };
 
                     let arg_count_token = scanner.scan();
-                    let arg_count: i32;
-                    match arg_count_token.token_type {
-                        TokenType::Int(n) => {
-                            arg_count = n;
-                        }
+                    let arg_count = match arg_count_token.token_type {
+                        TokenType::Int(n) => n,
                         _ => {
                             eprintln!(
                                 "{}:{}: expected argument count token",
@@ -722,14 +705,11 @@ impl Compiler {
                             );
                             return false;
                         }
-                    }
+                    };
 
                     let req_arg_count_token = scanner.scan();
-                    let req_arg_count: i32;
-                    match req_arg_count_token.token_type {
-                        TokenType::Int(n) => {
-                            req_arg_count = n;
-                        }
+                    let req_arg_count = match req_arg_count_token.token_type {
+                        TokenType::Int(n) => n,
                         _ => {
                             eprintln!(
                                 "{}:{}: expected required argument count token",
@@ -737,7 +717,7 @@ impl Compiler {
                             );
                             return false;
                         }
-                    }
+                    };
 
                     let mut generator_chunk =
                         Chunk::new_generator(chunk.name.to_string(), arg_count, req_arg_count);
@@ -754,17 +734,10 @@ impl Compiler {
                 TokenType::StartFunction => {
                     let mut function_chunk = Chunk::new_standard(chunk.name.to_string());
                     let name_token = scanner.scan();
-                    let name_str: String;
-                    match name_token.token_type {
-                        TokenType::Word(s) => {
-                            name_str = s;
-                        }
-                        TokenType::WordImplicit(s) => {
-                            name_str = s;
-                        }
-                        TokenType::String(s) => {
-                            name_str = s;
-                        }
+                    let name_str = match name_token.token_type {
+                        TokenType::Word(s) => s,
+                        TokenType::WordImplicit(s) => s,
+                        TokenType::String(s) => s,
                         _ => {
                             eprintln!(
                                 "{}:{}: expected name token",
@@ -772,7 +745,7 @@ impl Compiler {
                             );
                             return false;
                         }
-                    }
+                    };
                     self.increase_scope_depth();
                     if self.scope_depth > 1 {
                         function_chunk.nested = true;
@@ -801,7 +774,7 @@ impl Compiler {
                         function_chunk.scope_depth = self.scope_depth;
                     }
                     let name_str = format!("anon{}", anon_index);
-                    anon_index = anon_index + 1;
+                    anon_index += 1;
                     self.increase_scope_depth();
                     let res = self.compile_inner(scanner, &mut function_chunk);
                     if !res {
@@ -822,15 +795,14 @@ impl Compiler {
                         .insert(name_str, Rc::new(RefCell::new(function_chunk)));
                 }
                 TokenType::RightBracket => {
-                    match chunk.get_second_last_opcode() {
-                        OpCode::Constant => match chunk.get_last_opcode() {
+		    if let OpCode::Constant = chunk.get_second_last_opcode() {
+                        match chunk.get_last_opcode() {
                             OpCode::Call => {}
                             OpCode::CallImplicit => {}
                             _ => {
                                 chunk.add_opcode(OpCode::CallImplicit);
                             }
-                        },
-                        _ => {}
+                        }
                     }
                     self.decrease_scope_depth(chunk);
                     chunk.add_opcode(OpCode::EndFn);
@@ -969,15 +941,7 @@ impl Compiler {
                             chunk.pop_byte();
                             chunk.pop_byte();
                             let last_opcode = chunk.get_last_opcode();
-                            let not_constant;
-                            match last_opcode {
-                                OpCode::Constant => {
-                                    not_constant = false;
-                                }
-                                _ => {
-                                    not_constant = true;
-                                }
-                            }
+                            let not_constant = !matches!(last_opcode, OpCode::Constant);
                             if not_constant {
                                 eprintln!(
                                     "{}:{}: variable name must precede var",
@@ -990,7 +954,7 @@ impl Compiler {
                                 Value::String(st) => {
                                     let local = Local::new(
                                         st.borrow().string.to_string(),
-                                        self.scope_depth.into(),
+                                        self.scope_depth,
                                     );
                                     self.locals.push(local);
                                 }
@@ -1017,15 +981,7 @@ impl Compiler {
                         chunk.pop_byte();
                         chunk.pop_byte();
                         let last_opcode = chunk.get_last_opcode();
-                        let not_constant;
-                        match last_opcode {
-                            OpCode::Constant => {
-                                not_constant = false;
-                            }
-                            _ => {
-                                not_constant = true;
-                            }
-                        }
+                        let not_constant = !matches!(last_opcode, OpCode::Constant);
                         if not_constant {
                             eprintln!(
                                 "{}:{}: variable name must precede !",
@@ -1038,7 +994,7 @@ impl Compiler {
                         {
                             match last_constant_rr {
                                 Value::String(ref st) => {
-                                    if self.locals.len() != 0 {
+                                    if !self.locals.is_empty() {
                                         let mut i = self.locals.len() - 1;
                                         loop {
                                             let local = &self.locals[i];
@@ -1051,7 +1007,7 @@ impl Compiler {
                                             if i == 0 {
                                                 break;
                                             }
-                                            i = i - 1;
+                                            i -= 1;
                                         }
                                     }
                                 }
@@ -1079,15 +1035,7 @@ impl Compiler {
                         chunk.pop_byte();
                         let last_opcode = chunk.get_last_opcode();
                         chunk.pop_byte();
-                        let not_constant;
-                        match last_opcode {
-                            OpCode::Constant => {
-                                not_constant = false;
-                            }
-                            _ => {
-                                not_constant = true;
-                            }
-                        }
+                        let not_constant = !matches!(last_opcode, OpCode::Constant);
                         if not_constant {
                             eprintln!(
                                 "{}:{}: variable name must precede @",
@@ -1099,7 +1047,7 @@ impl Compiler {
                         {
                             match last_constant_rr {
                                 Value::String(ref st) => {
-                                    if self.locals.len() != 0 {
+                                    if !self.locals.is_empty() {
                                         let mut i = self.locals.len() - 1;
                                         loop {
                                             let local = &self.locals[i];
@@ -1112,7 +1060,7 @@ impl Compiler {
                                             if i == 0 {
                                                 break;
                                             }
-                                            i = i - 1;
+                                            i -= 1;
                                         }
                                     }
                                 }
@@ -1144,24 +1092,18 @@ impl Compiler {
                         chunk.add_opcode(OpCode::Drop);
                     } else if s == "funcall" {
                         let mut done = false;
-                        match chunk.get_second_last_opcode() {
-                            OpCode::GetLocalVar => {
-                                chunk.set_second_last_opcode(OpCode::GLVCall);
-                                done = true;
-                            }
-                            _ => {}
+			if let OpCode::GetLocalVar = chunk.get_second_last_opcode() {
+                            chunk.set_second_last_opcode(OpCode::GLVCall);
+                            done = true;
                         }
                         if !done {
                             chunk.add_opcode(OpCode::Call);
                         }
                     } else if s == "shift" {
                         let mut done = false;
-                        match chunk.get_second_last_opcode() {
-                            OpCode::GetLocalVar => {
-                                chunk.set_second_last_opcode(OpCode::GLVShift);
-                                done = true;
-                            }
-                            _ => {}
+			if let OpCode::GetLocalVar = chunk.get_second_last_opcode() {
+                            chunk.set_second_last_opcode(OpCode::GLVShift);
+                            done = true;
                         }
                         if !done {
                             chunk.add_opcode(OpCode::Shift);
@@ -1217,11 +1159,8 @@ impl Compiler {
                         chunk.add_opcode(OpCode::Pop);
                     } else if s == "if" {
                         chunk.add_opcode(OpCode::JumpNe);
-                        match if_index {
-                            Some(_) => {
-                                if_indexes.push((if_index, else_index));
-                            }
-                            _ => {}
+                        if if_index.is_some() {
+                            if_indexes.push((if_index, else_index));
                         }
                         if_index = Some(chunk.data.len());
                         else_index = None;
@@ -1229,15 +1168,12 @@ impl Compiler {
                         chunk.add_byte(0);
                     } else if s == "then" {
                         let mut has_else = false;
-                        match else_index {
-                            Some(n) => {
-                                let jmp_len = chunk.data.len() - n - 2;
-                                chunk.data[n] = ((jmp_len >> 8) & 0xff).try_into().unwrap();
-                                chunk.data[n + 1] = (jmp_len & 0xff).try_into().unwrap();
-                                has_else = true;
-                                else_index = None;
-                            }
-                            _ => {}
+                        if let Some(n) = else_index {
+                            let jmp_len = chunk.data.len() - n - 2;
+                            chunk.data[n] = ((jmp_len >> 8) & 0xff).try_into().unwrap();
+                            chunk.data[n + 1] = (jmp_len & 0xff).try_into().unwrap();
+                            has_else = true;
+                            else_index = None;
                         }
                         if !has_else {
                             match if_index {
@@ -1256,22 +1192,19 @@ impl Compiler {
                                 }
                             }
                         }
-                        if if_indexes.len() >= 1 {
+                        if !if_indexes.is_empty() {
                             let (prev_if_index, prev_else_index) = if_indexes.pop().unwrap();
                             if_index = prev_if_index;
                             else_index = prev_else_index;
                         }
                     } else if s == "else" {
                         chunk.add_opcode(OpCode::Jump);
-                        match else_index {
-                            Some(_) => {
-                                eprintln!(
-                                    "{}:{}: multiple 'else'",
-                                    token.line_number, token.column_number
-                                );
-                                return false;
-                            }
-                            _ => {}
+                        if else_index.is_some() {
+                            eprintln!(
+                                "{}:{}: multiple 'else'",
+                                token.line_number, token.column_number
+                            );
+                            return false;
                         }
                         else_index = Some(chunk.data.len());
                         chunk.add_byte(0);
@@ -1291,12 +1224,9 @@ impl Compiler {
                             }
                         }
                     } else if s == "begin" {
-                        match begin_index {
-                            Some(_) => {
-                                begin_indexes.push((begin_index, leave_indexes));
-                                leave_indexes = Vec::new();
-                            }
-                            _ => {}
+                        if begin_index.is_some() {
+                            begin_indexes.push((begin_index, leave_indexes));
+                            leave_indexes = Vec::new();
                         }
                         begin_index = Some(chunk.data.len());
                     } else if s == "leave" {
@@ -1319,57 +1249,48 @@ impl Compiler {
                         match begin_index {
                             Some(n) => {
                                 let mut done = false;
-                                match (
+                                if let (OpCode::EqConstant, OpCode::Dup) = (
                                     chunk.get_third_last_opcode(),
                                     chunk.get_fourth_last_opcode(),
                                 ) {
-                                    (OpCode::EqConstant, OpCode::Dup) => {
-                                        chunk.set_fourth_last_opcode(OpCode::JumpNeREqC);
-                                        let cb1 = chunk.get_second_last_byte();
-                                        let cb2 = chunk.get_last_byte();
-                                        let i3 =
-                                            (((cb1 as u16) << 8) & 0xFF00) | ((cb2 & 0xFF) as u16);
-                                        if chunk.has_constant_int(i3 as i32) {
-                                            let jmp_len = chunk.data.len() - n + 1;
-                                            chunk.set_third_last_byte(
-                                                ((jmp_len >> 8) & 0xff).try_into().unwrap(),
-                                            );
-                                            chunk.set_second_last_byte(
-                                                (jmp_len & 0xff).try_into().unwrap(),
-                                            );
-                                            chunk.set_last_byte(cb1);
-                                            chunk.add_byte(cb2);
-                                            done = true;
-                                        }
-                                    }
-                                    _ => {}
+				    chunk.set_fourth_last_opcode(OpCode::JumpNeREqC);
+				    let cb1 = chunk.get_second_last_byte();
+				    let cb2 = chunk.get_last_byte();
+				    let i3 =
+					(((cb1 as u16) << 8) & 0xFF00) | (cb2 as u16);
+				    if chunk.has_constant_int(i3 as i32) {
+					let jmp_len = chunk.data.len() - n + 1;
+					chunk.set_third_last_byte(
+					    ((jmp_len >> 8) & 0xff).try_into().unwrap(),
+					);
+					chunk.set_second_last_byte(
+					    (jmp_len & 0xff).try_into().unwrap(),
+					);
+					chunk.set_last_byte(cb1);
+					chunk.add_byte(cb2);
+					done = true;
+				    }
                                 };
                                 if !done {
                                     let mut done2 = false;
-                                    match chunk.get_third_last_opcode() {
-                                        OpCode::Constant => {
-                                            let i_upper = chunk.get_second_last_byte();
-                                            let i_lower = chunk.get_last_byte();
-                                            let constant_i = (((i_upper as u16) << 8) & 0xFF00)
-                                                | ((i_lower & 0xFF) as u16);
-                                            let v = chunk.get_constant(constant_i.into());
-                                            match v {
-                                                Value::Int(0) => {
-                                                    chunk.set_third_last_opcode(OpCode::JumpR);
-                                                    let jmp_len = chunk.data.len() - n;
-                                                    chunk.set_second_last_byte(
-                                                        ((jmp_len >> 8) & 0xff).try_into().unwrap(),
-                                                    );
-                                                    chunk.set_last_byte(
-                                                        (jmp_len & 0xff).try_into().unwrap(),
-                                                    );
-                                                    done2 = true;
-                                                }
-                                                _ => {}
-                                            }
-                                        }
-                                        _ => {}
-                                    };
+                                    if let OpCode::Constant = chunk.get_third_last_opcode() {
+					let i_upper = chunk.get_second_last_byte();
+					let i_lower = chunk.get_last_byte();
+					let constant_i = (((i_upper as u16) << 8) & 0xFF00)
+					    | (i_lower as u16);
+					let v = chunk.get_constant(constant_i.into());
+					if let Value::Int(0) = v {
+					    chunk.set_third_last_opcode(OpCode::JumpR);
+					    let jmp_len = chunk.data.len() - n;
+					    chunk.set_second_last_byte(
+						((jmp_len >> 8) & 0xff).try_into().unwrap(),
+					    );
+					    chunk.set_last_byte(
+						(jmp_len & 0xff).try_into().unwrap(),
+					    );
+					    done2 = true;
+					}
+                                    }
                                     if !done2 {
                                         chunk.add_opcode(OpCode::JumpNeR);
                                         let jmp_len = chunk.data.len() - n + 2;
@@ -1391,7 +1312,7 @@ impl Compiler {
                             chunk.data[*leave_index] = ((jmp_len >> 8) & 0xff).try_into().unwrap();
                             chunk.data[*leave_index + 1] = (jmp_len & 0xff).try_into().unwrap();
                         }
-                        if begin_indexes.len() > 0 {
+                        if !begin_indexes.is_empty() {
                             let (prev_begin_index, prev_leave_indexes) =
                                 begin_indexes.pop().unwrap();
                             begin_index = prev_begin_index;
@@ -1497,7 +1418,7 @@ impl Compiler {
             chunk.has_vars = false;
         }
 
-        return true;
+        true
     }
 
     /// Takes a BufRead and a chunk name as its arguments.  Compiles
@@ -1508,9 +1429,9 @@ impl Compiler {
         let mut chunk = Chunk::new_standard(name.to_string());
         let res = self.compile_inner(&mut scanner, &mut chunk);
         if !res {
-            return None;
+            None
         } else {
-            return Some(chunk);
+            Some(chunk)
         }
     }
 
@@ -1523,17 +1444,17 @@ impl Compiler {
                 let res = file.write_all(&encoded);
                 match res {
                     Ok(_) => {
-                        return true;
+                        true
                     }
                     Err(e) => {
                         eprintln!("unable to write compiled file: {}", e);
-                        return false;
+                        false
                     }
                 }
             }
             Err(e) => {
                 eprintln!("unable to serialise compiled file: {}", e);
-                return false;
+                false
             }
         }
     }
@@ -1544,20 +1465,26 @@ impl Compiler {
         let data_res = fs::read(file);
         match data_res {
             Ok(data) => {
-                let data_chars: &[u8] = &&data;
+                let data_chars: &[u8] = &data;
                 let decoded_res = bincode::deserialize(data_chars);
                 match decoded_res {
                     Ok(decoded) => {
-                        return Some(decoded);
+                        Some(decoded)
                     }
                     Err(_) => {
-                        return None;
+                        None
                     }
                 }
             }
             Err(_) => {
-                return None;
+                None
             }
         }
+    }
+}
+
+impl Default for Compiler {
+    fn default() -> Self {
+        Self::new()
     }
 }

@@ -123,14 +123,14 @@ fn escape_string(s: &str) -> String {
             }
         }
     }
-    return s2;
+    s2
 }
 
 impl StringTriple {
     pub fn new(s: String, r: Option<(Rc<Regex>, bool)>) -> StringTriple {
         let e = escape_string(&s);
         StringTriple {
-            string: s.clone(),
+            string: s,
             escaped_string: e,
             regex: r,
         }
@@ -171,11 +171,11 @@ impl GeneratorObject {
         gen_args: Vec<Value>,
     ) -> GeneratorObject {
         GeneratorObject {
-            local_vars_stack: local_vars_stack,
-            index: index,
-            chunk: chunk,
-            call_stack_chunks: call_stack_chunks,
-            gen_args: gen_args,
+            local_vars_stack,
+            index,
+            chunk,
+            call_stack_chunks,
+            gen_args,
         }
     }
 }
@@ -190,7 +190,7 @@ pub struct HashWithIndex {
 
 impl HashWithIndex {
     pub fn new(i: usize, h: Value) -> HashWithIndex {
-        HashWithIndex { i: i, h: h }
+        HashWithIndex { i, h }
     }
 }
 
@@ -202,7 +202,7 @@ pub struct Ipv4Range {
 
 impl Ipv4Range {
     pub fn new(s: Ipv4Addr, e: Ipv4Addr) -> Ipv4Range {
-        Ipv4Range { s: s, e: e }
+        Ipv4Range { s, e }
     }
 }
 
@@ -214,11 +214,11 @@ pub struct Ipv6Range {
 
 impl Ipv6Range {
     pub fn new(s: Ipv6Addr, e: Ipv6Addr) -> Ipv6Range {
-        Ipv6Range { s: s, e: e }
+        Ipv6Range { s, e }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IpSet {
     pub ipv4: IpRange<Ipv4Net>,
     pub ipv6: IpRange<Ipv6Net>,
@@ -227,8 +227,8 @@ pub struct IpSet {
 impl IpSet {
     pub fn new(ipv4: IpRange<Ipv4Net>, ipv6: IpRange<Ipv6Net>) -> IpSet {
         IpSet {
-            ipv4: ipv4,
-            ipv6: ipv6,
+            ipv4,
+            ipv6,
         }
     }
 }
@@ -252,55 +252,61 @@ impl CommandGenerator {
         get_combined: bool,
     ) -> CommandGenerator {
         CommandGenerator {
-            stdout: stdout,
-            stderr: stderr,
+            stdout,
+            stderr,
             stdout_buffer: Vec::new(),
             stderr_buffer: Vec::new(),
-            get_stdout: get_stdout,
-            get_stderr: get_stderr,
-            get_combined: get_combined,
+            get_stdout,
+            get_stderr,
+            get_combined,
         }
     }
 
     fn stdout_read_line_nb(&mut self) -> Option<String> {
-        let mut index = self.stdout_buffer.iter().position(|&r| r == '\n' as u8);
+        let mut index = self.stdout_buffer.iter().position(|&r| r == b'\n');
 
         if index.is_none() && !self.stdout.is_eof() {
             let _res = self.stdout.read_available(&mut self.stdout_buffer);
-            index = self.stdout_buffer.iter().position(|&r| r == '\n' as u8);
+            index = self.stdout_buffer.iter().position(|&r| r == b'\n');
         }
-        if !index.is_none() {
-            /* todo: may not work if newline falls within
-             * a multibyte Unicode character?  Not sure if this
-             * is possible, though. */
-            let new_buf: Vec<u8> = (&mut self.stdout_buffer)
-                .drain(0..(index.unwrap() + 1))
-                .collect();
-            let new_str = std::str::from_utf8(&new_buf).unwrap();
-            return Some(new_str.to_string());
-        } else {
-            return None;
+        match index {
+            Some(n) => {
+                /* todo: may not work if newline falls within
+                 * a multibyte Unicode character?  Not sure if this
+                 * is possible, though. */
+                let new_buf: Vec<u8> = (&mut self.stdout_buffer)
+                    .drain(0..(n + 1))
+                    .collect();
+                let new_str = std::str::from_utf8(&new_buf).unwrap();
+                Some(new_str.to_string())
+            }
+            _ => {
+                None
+            }
         }
     }
 
     fn stderr_read_line_nb(&mut self) -> Option<String> {
-        let mut index = self.stderr_buffer.iter().position(|&r| r == '\n' as u8);
+        let mut index = self.stderr_buffer.iter().position(|&r| r == b'\n');
 
         if index.is_none() && !self.stderr.is_eof() {
             let _res = self.stderr.read_available(&mut self.stderr_buffer);
-            index = self.stderr_buffer.iter().position(|&r| r == '\n' as u8);
+            index = self.stderr_buffer.iter().position(|&r| r == b'\n');
         }
-        if !index.is_none() {
-            /* todo: may not work if newline falls within
-             * a multibyte Unicode character?  Not sure if this
-             * is possible, though. */
-            let new_buf: Vec<u8> = (&mut self.stderr_buffer)
-                .drain(0..(index.unwrap() + 1))
-                .collect();
-            let new_str = std::str::from_utf8(&new_buf).unwrap();
-            return Some(new_str.to_string());
-        } else {
-            return None;
+        match index {
+            Some(n) => {
+                /* todo: may not work if newline falls within
+                 * a multibyte Unicode character?  Not sure if this
+                 * is possible, though. */
+                let new_buf: Vec<u8> = (&mut self.stderr_buffer)
+                    .drain(0..(n + 1))
+                    .collect();
+                let new_str = std::str::from_utf8(&new_buf).unwrap();
+                Some(new_str.to_string())
+            }
+            _ => {
+                None
+            }
         }
     }
 
@@ -309,7 +315,7 @@ impl CommandGenerator {
         while s.is_none() {
             if self.get_stdout {
                 s = self.stdout_read_line_nb();
-                if !s.is_none() {
+                if s.is_some() {
                     return s;
                 } else if self.stdout.is_eof() && (!self.get_stderr || self.stderr.is_eof()) {
                     return None;
@@ -317,33 +323,44 @@ impl CommandGenerator {
             }
             if self.get_stderr {
                 s = self.stderr_read_line_nb();
-                if !s.is_none() {
+                if s.is_some() {
                     return s;
                 } else if self.stderr.is_eof() && (!self.get_stdout || self.stdout.is_eof()) {
                     return None;
                 }
             }
         }
-        return None;
+        None
     }
 
     pub fn read_line_combined(&mut self) -> Option<(i32, String)> {
         let mut s = None;
         while s.is_none() {
             s = self.stdout_read_line_nb();
-            if !s.is_none() {
-                return Some((1, s.unwrap()));
-            } else if self.stdout.is_eof() && self.stderr.is_eof() {
-                return None;
+            match s {
+                Some(ss) => {
+                    return Some((1, ss));
+                }
+                _ => {
+                    if self.stdout.is_eof() && self.stderr.is_eof() {
+                        return None;
+                    }
+                }
             }
+
             s = self.stderr_read_line_nb();
-            if !s.is_none() {
-                return Some((2, s.unwrap()));
-            } else if self.stderr.is_eof() && self.stdout.is_eof() {
-                return None;
+            match s {
+                Some(ss) => {
+                    return Some((2, ss));
+                }
+                _ => {
+                    if self.stderr.is_eof() && self.stdout.is_eof() {
+                        return None;
+                    }
+                }
             }
         }
-        return None;
+        None
     }
 }
 
@@ -540,7 +557,7 @@ pub fn print_error(chunk: Rc<RefCell<Chunk>>, i: usize, error: &str) {
     let point = chunk.borrow().get_point(i);
     let name = &chunk.borrow().name;
     let error_start = if name == "(main)" {
-        format!("")
+        String::new()
     } else {
         format!("{}:", name)
     };
@@ -558,7 +575,7 @@ impl Chunk {
     /// Construct a standard (non-generator) chunk.
     pub fn new_standard(name: String) -> Chunk {
         Chunk {
-            name: name,
+            name,
             data: Vec::new(),
             points: Vec::new(),
             constants: Vec::new(),
@@ -576,15 +593,15 @@ impl Chunk {
     /// Construct a generator chunk.
     pub fn new_generator(name: String, arg_count: i32, req_arg_count: i32) -> Chunk {
         Chunk {
-            name: name,
+            name,
             data: Vec::new(),
             points: Vec::new(),
             constants: Vec::new(),
             functions: HashMap::new(),
             is_generator: true,
             has_vars: true,
-            arg_count: arg_count,
-            req_arg_count: req_arg_count,
+            arg_count,
+            req_arg_count,
             nested: false,
             scope_depth: 0,
             constant_values: Vec::new(),
@@ -614,13 +631,13 @@ impl Chunk {
             }
         };
         self.constants.push(value_sd);
-        return (self.constants.len() - 1) as i32;
+        (self.constants.len() - 1) as i32
     }
 
     /// Get a constant from the current chunk.
     pub fn get_constant(&self, i: i32) -> Value {
         let value_sd = &self.constants[i as usize];
-        let value = match value_sd {
+        match value_sd {
             ValueSD::Null => Value::Null,
             ValueSD::Bool(b) => Value::Bool(*b),
             ValueSD::Int(n) => Value::Int(*n),
@@ -637,18 +654,17 @@ impl Chunk {
                 Value::Command(Rc::new(s.to_string()), Rc::new((*params).clone()))
             }
             ValueSD::CommandUncaptured(s) => Value::CommandUncaptured(Rc::new(s.to_string())),
-        };
-        return value;
+        }
     }
 
     pub fn get_constant_value(&self, i: i32) -> Value {
         let value = self.constant_values.get(i as usize);
         match value {
             Some(v) => {
-                return v.clone();
+                v.clone()
             }
             _ => {
-                return Value::Null;
+                Value::Null
             }
         }
     }
@@ -656,21 +672,17 @@ impl Chunk {
     /// Get a constant int value from the current chunk.
     pub fn get_constant_int(&self, i: i32) -> i32 {
         let value_sd = &self.constants[i as usize];
-        let value = match *value_sd {
+        match *value_sd {
             ValueSD::Int(n) => n,
             _ => 0,
-        };
-        return value;
+        }
     }
 
     /// Check whether the chunk has a constant int value at the
     /// specified index.
     pub fn has_constant_int(&self, i: i32) -> bool {
         let value_sd = &self.constants[i as usize];
-        return match *value_sd {
-            ValueSD::Int(_) => true,
-            _ => false,
-        };
+        matches!(*value_sd, ValueSD::Int(_))
     }
 
     /// Add an opcode to the current chunk's data.
@@ -799,7 +811,7 @@ impl Chunk {
 
     /// Get the chunk's most recently-added constant.
     pub fn get_last_constant(&mut self) -> Value {
-        return self.get_constant((self.constants.len() - 1).try_into().unwrap());
+        self.get_constant((self.constants.len() - 1).try_into().unwrap())
     }
 
     /// Set the line and column number data for the most
@@ -864,56 +876,56 @@ impl Chunk {
                     println!("OP_CLONE");
                 }
                 OpCode::Constant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = self.data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = self.data[i];
-                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_CONSTANT {:?}", value);
                 }
                 OpCode::AddConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = self.data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = self.data[i];
-                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_ADDCONSTANT {:?}", value);
                 }
                 OpCode::SubtractConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = self.data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = self.data[i];
-                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_SUBTRACTCONSTANT {:?}", value);
                 }
                 OpCode::DivideConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = self.data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = self.data[i];
-                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_DIVIDECONSTANT {:?}", value);
                 }
                 OpCode::MultiplyConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = self.data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = self.data[i];
-                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_MULTIPLYCONSTANT {:?}", value);
                 }
                 OpCode::EqConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = self.data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = self.data[i];
-                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_EQCONSTANT {:?}", value);
                 }
@@ -951,22 +963,22 @@ impl Chunk {
                     println!("OP_GETVAR");
                 }
                 OpCode::SetLocalVar => {
-                    i = i + 1;
+                    i += 1;
                     let var_i = self.data[i];
                     println!("OP_SETLOCALVAR {}", var_i);
                 }
                 OpCode::GetLocalVar => {
-                    i = i + 1;
+                    i += 1;
                     let var_i = self.data[i];
                     println!("OP_GETLOCALVAR {}", var_i);
                 }
                 OpCode::GLVShift => {
-                    i = i + 1;
+                    i += 1;
                     let var_i = self.data[i];
                     println!("OP_GLVSHIFT {}", var_i);
                 }
                 OpCode::GLVCall => {
-                    i = i + 1;
+                    i += 1;
                     let var_i = self.data[i];
                     println!("OP_GLVCALL {}", var_i);
                 }
@@ -974,49 +986,49 @@ impl Chunk {
                     println!("OP_POPLOCALVAR");
                 }
                 OpCode::Jump => {
-                    i = i + 1;
+                    i += 1;
                     let i1: usize = self.data[i].try_into().unwrap();
-                    i = i + 1;
+                    i += 1;
                     let i2: usize = self.data[i].try_into().unwrap();
                     let jump_i: usize = (i1 << 8) | i2;
                     println!("OP_JUMP {:?}", jump_i);
                 }
                 OpCode::JumpR => {
-                    i = i + 1;
+                    i += 1;
                     let i1: usize = self.data[i].try_into().unwrap();
-                    i = i + 1;
+                    i += 1;
                     let i2: usize = self.data[i].try_into().unwrap();
                     let jump_i: usize = (i1 << 8) | i2;
                     println!("OP_JUMPR {:?}", jump_i);
                 }
                 OpCode::JumpNe => {
-                    i = i + 1;
+                    i += 1;
                     let i1: usize = self.data[i].try_into().unwrap();
-                    i = i + 1;
+                    i += 1;
                     let i2: usize = self.data[i].try_into().unwrap();
                     let jump_i: usize = (i1 << 8) | i2;
                     println!("OP_JUMPNE {:?}", jump_i);
                 }
                 OpCode::JumpNeR => {
-                    i = i + 1;
+                    i += 1;
                     let i1: usize = self.data[i].try_into().unwrap();
-                    i = i + 1;
+                    i += 1;
                     let i2: usize = self.data[i].try_into().unwrap();
                     let jump_i: usize = (i1 << 8) | i2;
                     println!("OP_JUMPNER {:?}", jump_i);
                 }
                 OpCode::JumpNeREqC => {
-                    i = i + 1;
+                    i += 1;
                     let i1: usize = self.data[i].try_into().unwrap();
-                    i = i + 1;
+                    i += 1;
                     let i2: usize = self.data[i].try_into().unwrap();
                     let jump_i: usize = (i1 << 8) | i2;
 
-                    i = i + 1;
+                    i += 1;
                     let i_upper = self.data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = self.data[i];
-                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value = self.get_constant(constant_i as i32);
 
                     println!("OP_JUMPNEREQC {:?} {:?}", jump_i, value);
@@ -1133,20 +1145,20 @@ impl Chunk {
                     println!("OP_IMPORT")
                 }
                 OpCode::CallConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = self.data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = self.data[i];
-                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_CALLCONSTANT {:?}", value);
                 }
                 OpCode::CallImplicitConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = self.data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = self.data[i];
-                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let constant_i = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value = self.get_constant(constant_i as i32);
                     println!("OP_CALLIMPLICITCONSTANT {:?}", value);
                 }
@@ -1175,7 +1187,7 @@ impl Chunk {
                     println!("(Unknown)");
                 }
             }
-            i = i + 1;
+            i += 1;
         }
 
         for (k, v) in self.functions.iter() {
@@ -1238,8 +1250,7 @@ impl Value {
                     let ip_str = format!("{}", ipv4net);
                     let ip_str_no_len =
                         ip_str.chars().take_while(|&c| c != '/').collect::<String>();
-                    let s = ip_str_no_len.to_string();
-                    Some(s)
+                    Some(ip_str_no_len)
                 } else {
                     let s = format!("{}", ipv4net);
                     Some(s)
@@ -1268,7 +1279,7 @@ impl Value {
                 let ipv6range = &ipset.borrow().ipv6;
                 let mut lst = Vec::new();
                 let mut ipv4lst = ipv4range.iter().collect::<Vec<Ipv4Net>>();
-                ipv4lst.sort_by(|a, b| a.network().cmp(&b.network()));
+                ipv4lst.sort_by_key(|a| a.network());
                 for ipv4net in ipv4lst.iter() {
                     let prefix_len = ipv4net.prefix_len();
                     if prefix_len == 32 {
@@ -1282,7 +1293,7 @@ impl Value {
                     }
                 }
                 let mut ipv6lst = ipv6range.iter().collect::<Vec<Ipv6Net>>();
-                ipv6lst.sort_by(|a, b| a.network().cmp(&b.network()));
+                ipv6lst.sort_by_key(|a| a.network());
                 for ipv6net in ipv6lst.iter() {
                     let prefix_len = ipv6net.prefix_len();
                     if prefix_len == 128 {
@@ -1313,10 +1324,10 @@ impl Value {
                 let n_r = s.parse::<i32>();
                 match n_r {
                     Ok(n) => {
-                        return Some(n);
+                        Some(n)
                     }
                     _ => {
-                        return None;
+                        None
                     }
                 }
             }
@@ -1337,10 +1348,10 @@ impl Value {
                 let n_r = s.to_string().parse::<num_bigint::BigInt>();
                 match n_r {
                     Ok(n) => {
-                        return Some(n);
+                        Some(n)
                     }
                     _ => {
-                        return None;
+                        None
                     }
                 }
             }
@@ -1362,10 +1373,10 @@ impl Value {
                 let n_r = s.parse::<f64>();
                 match n_r {
                     Ok(n) => {
-                        return Some(n);
+                        Some(n)
                     }
                     _ => {
-                        return None;
+                        None
                     }
                 }
             }
@@ -1381,7 +1392,7 @@ impl Value {
             Value::Float(n) => *n != 0.0,
             Value::String(st) => {
                 let ss = &st.borrow().string;
-                ss != "" && ss != "0" && ss != "0.0"
+                !ss.is_empty() && ss != "0" && ss != "0.0"
             }
             Value::BigInt(n) => *n == Zero::zero(),
             Value::Null => false,
@@ -1497,17 +1508,15 @@ impl Value {
     }
 
     pub fn is_generator(&self) -> bool {
-        match self {
-            Value::Generator(..) => true,
-            Value::KeysGenerator(..) => true,
-            Value::ValuesGenerator(..) => true,
-            Value::EachGenerator(..) => true,
-            Value::FileReader(..) => true,
-            Value::DirectoryHandle(..) => true,
-            Value::IpSet(..) => true,
-            Value::MultiGenerator(..) => true,
-            _ => false,
-        }
+        matches!(self,
+                 Value::Generator(..)
+                    | Value::KeysGenerator(..)
+                    | Value::ValuesGenerator(..)
+                    | Value::EachGenerator(..)
+                    | Value::FileReader(..)
+                    | Value::DirectoryHandle(..)
+                    | Value::IpSet(..)
+                    | Value::MultiGenerator(..))
     }
 
     pub fn type_string(&self) -> String {
@@ -1543,6 +1552,6 @@ impl Value {
             Value::IpSet(..) => "ips",
             Value::MultiGenerator(..) => "multi-gen",
         };
-        return s.to_string();
+        s.to_string()
     }
 }

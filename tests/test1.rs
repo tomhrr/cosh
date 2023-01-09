@@ -707,13 +707,13 @@ fn eq_test() {
 #[test]
 fn nth_bounds_test1() {
     basic_error_test("10 range; take-all; 15 nth",
-                     "1:24: nth index is out of bounds");
+                     "1:24: second nth argument must fall within list bounds");
 }
 
 #[test]
 fn nth_bounds_test2() {
     basic_error_test("10 range; take-all; 10 15 nth!",
-                     "1:27: nth! index is out of bounds");
+                     "1:27: second nth! argument must fall within list bounds");
 }
 
 #[test]
@@ -952,14 +952,14 @@ fn chr_test() {
     basic_test("100 chr;", "d");
     basic_test("100 bigint; chr;", "d");
     basic_error_test("-100 bigint; chr",
-                     "1:14: unable to convert argument to non-negative u32 integer");
+                     "1:14: chr argument must be u32 integer");
 }
 
 #[test]
 fn ord_test() {
     basic_test("d ord;", "100");
     basic_test("千 ord;", "21315");
-    basic_error_test("asdf ord;", "1:6: argument must be one character in length");
+    basic_error_test("asdf ord;", "1:6: ord argument must be one character in length");
 }
 
 #[test]
@@ -967,7 +967,7 @@ fn hex_test() {
     basic_test("5353 hex;", "21331");
     basic_test("0x5353 hex;", "21331");
     basic_test("0x5353535353535353 hex;", "6004234345560363859");
-    basic_error_test("asdf hex;", "1:6: unable to convert hex string to integer");
+    basic_error_test("asdf hex;", "1:6: hex argument must be hexadecimal string");
 }
 
 #[test]
@@ -978,27 +978,27 @@ fn oct_test() {
 #[test]
 fn lc_test() {
     basic_test("AsDf lc;", "asdf");
-    basic_error_test("[] lc;", "1:4: unable to convert argument to string");
+    basic_error_test("[] lc;", "1:4: lc argument must be string");
 }
 
 #[test]
 fn lcfirst_test() {
     basic_test("'' lcfirst;", "\"\"");
     basic_test("AsDf lcfirst;", "asDf");
-    basic_error_test("[] lcfirst;", "1:4: unable to convert argument to string");
+    basic_error_test("[] lcfirst;", "1:4: lcfirst argument must be string");
 }
 
 #[test]
 fn uc_test() {
     basic_test("AsDf uc;", "ASDF");
-    basic_error_test("[] uc;", "1:4: unable to convert argument to string");
+    basic_error_test("[] uc;", "1:4: uc argument must be string");
 }
 
 #[test]
 fn ucfirst_test() {
     basic_test("'' ucfirst;", "\"\"");
     basic_test("asDf ucfirst;", "AsDf");
-    basic_error_test("[] ucfirst;", "1:4: unable to convert argument to string");
+    basic_error_test("[] ucfirst;", "1:4: ucfirst argument must be string");
 }
 
 #[test]

@@ -97,7 +97,7 @@ impl VM {
     /// resulting list onto the stack.
     pub fn core_splitr(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            self.print_error("split requires two arguments");
+            self.print_error("splitr requires two arguments");
             return 0;
         }
 
@@ -206,7 +206,7 @@ impl VM {
                     }
                 }
                 if buffer.len() > 0 {
-                    self.print_error("error in string syntax in split");
+                    self.print_error("first split argument has syntax error");
                     return 0;
                 }
 
@@ -320,7 +320,7 @@ impl VM {
                                         }
                                     }
                                     _ => {
-                                        self.print_error("cannot join non-string");
+                                        self.print_error("first join argument must be a generator over strings");
                                         return 0;
                                     }
                                 }
@@ -328,7 +328,7 @@ impl VM {
                         }
                     },
                     Err(_) => {
-                        self.print_error("invalid separator regular expression");
+                        self.print_error("second join argument must be valid separator regular expression");
                         return 0;
                     }
                 }
@@ -372,13 +372,13 @@ impl VM {
 		    let capture_num = match capture_num_res {
 			Ok(n) => n,
 			Err(_) => {
-			    self.print_error("invalid stack element");
+			    self.print_error("fmt string contains invalid stack element reference");
 			    return 0;
 			}
 		    };
 
                     if capture_num >= self.stack.len() {
-                        self.print_error("invalid stack element");
+                        self.print_error("fmt string contains invalid stack element reference");
                         return 0;
                     }
 
@@ -395,14 +395,13 @@ impl VM {
 				    final_s = cswb_regex.replace_all(&final_s, capture_el_str).to_string();
 				}
 				_ => {
-				    self.print_error("unable to parse fmt string");
+                                    self.print_error("fmt string is not able to be parsed");
 				    return 0;
 				}
 			    }
 			}
 			None => {
-			    let err_str = format!("stack element {} not present", capture_num);
-			    self.print_error(&err_str);
+                            self.print_error("fmt string contains invalid stack element reference");
 			    return 0;
 			}
 		    }
@@ -410,7 +409,7 @@ impl VM {
 
 		while CAPTURE_WITHOUT_NUM.is_match(&final_s) {
 		    if self.stack.len() < 1 {
-			self.print_error("no more elements to pop from stack");
+			self.print_error("fmt string has exhausted stack");
 			return 0;
 		    }
 
@@ -423,7 +422,7 @@ impl VM {
 			    final_s = CAPTURE_WITHOUT_NUM.replace(&final_s, s).to_string();
 			}
 			_ => {
-			    self.print_error("unable to parse fmt string");
+                            self.print_error("fmt string is not able to be parsed");
 			    return 0;
 			}
 		    }
@@ -434,7 +433,7 @@ impl VM {
                 return 1;
             }
             _ => {
-                self.print_error("fmt argument must be string");
+                self.print_error("fmt argument must be a string");
                 return 0;
             }
         }

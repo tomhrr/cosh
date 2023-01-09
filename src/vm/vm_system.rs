@@ -82,8 +82,12 @@ impl VM {
                     }
                 }
             }
+            (Some(_), _) => {
+                self.print_error("second cp argument must be string");
+                return 0;
+            }
             _ => {
-                self.print_error("source and destination must be strings");
+                self.print_error("first cp argument must be string");
                 return 0;
             }
         }
@@ -137,8 +141,12 @@ impl VM {
                     }
                 }
             }
+            (Some(_), _) => {
+                self.print_error("second mv argument must be string");
+                return 0;
+            }
             _ => {
-                self.print_error("source and destination must be strings");
+                self.print_error("first mv argument must be string");
                 return 0;
             }
         }
@@ -150,7 +158,7 @@ impl VM {
     /// for this to work correctly.  If they aren't, see core_mv.)
     pub fn core_rename(&mut self) -> i32 {
         if self.stack.len() < 2 {
-            self.print_error("mv requires two arguments");
+            self.print_error("rename requires two arguments");
             return 0;
         }
 
@@ -179,8 +187,12 @@ impl VM {
                     }
                 }
             }
+            (Some(_), _) => {
+                self.print_error("second rename argument must be string");
+                return 0;
+            }
             _ => {
-                self.print_error("source and destination must be strings");
+                self.print_error("first rename argument must be string");
                 return 0;
             }
         }
@@ -218,8 +230,12 @@ impl VM {
                     }
                 }
             }
+            (Some(_), _) => {
+                self.print_error("second link argument must be string");
+                return 0;
+            }
             _ => {
-                self.print_error("source and destination must be strings");
+                self.print_error("first link argument must be string");
                 return 0;
             }
         }
@@ -565,12 +581,12 @@ impl VM {
                 }
                 return 1;
             }
-            (_, Some(_)) => {
-                self.print_error("first kill argument must be process");
+            (Some(_), _) => {
+                self.print_error("second kill argument must be signal");
                 return 0;
             }
             (_, _) => {
-                self.print_error("second kill argument must be signal");
+                self.print_error("first kill argument must be process");
                 return 0;
             }
         }
@@ -648,24 +664,24 @@ impl VM {
             (Some(path), Some(user), Some(group)) => {
                 let user_opt_res = User::from_name(user);
                 if user_opt_res.is_err() {
-                    self.print_error("user not found");
+                    self.print_error("second chown argument must be valid user");
                     return 0;
                 }
                 let user_opt = user_opt_res.unwrap();
                 if user_opt.is_none() {
-                    self.print_error("user not found");
+                    self.print_error("second chown argument must be valid user");
                     return 0;
                 }
                 let user_obj = user_opt.unwrap();
 
                 let group_opt_res = Group::from_name(group);
                 if group_opt_res.is_err() {
-                    self.print_error("group not found");
+                    self.print_error("third chown argument must be valid group");
                     return 0;
                 }
                 let group_opt = group_opt_res.unwrap();
                 if group_opt.is_none() {
-                    self.print_error("group not found");
+                    self.print_error("third chown argument must be valid group");
                     return 0;
                 }
                 let group_obj = group_opt.unwrap();
@@ -726,7 +742,7 @@ impl VM {
                 }
             }
             None => {
-                self.print_error("first mkdir argument must be path");
+                self.print_error("first mkdir argument must be string");
                 return 0;
             }
         }
@@ -759,7 +775,7 @@ impl VM {
                 }
             }
             None => {
-                self.print_error("first rmdir argument must be path");
+                self.print_error("first rmdir argument must be string");
                 return 0;
             }
         }

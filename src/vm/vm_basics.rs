@@ -572,7 +572,7 @@ impl VM {
                 self.stack.push(Value::Float(rand_value));
             }
             _ => {
-                self.print_error("unable to convert argument to float");
+                self.print_error("rand argument must be float");
                 return 0;
             }
         }
@@ -605,13 +605,13 @@ impl VM {
                 let n_u32_opt: Result<u32, _> = n.try_into();
                 if n_u32_opt.is_err() {
                     self.print_error(
-                        "unable to convert argument to non-negative u32 integer"
+                        "chr argument must be u32 integer"
                     );
                     return 0;
                 }
                 let c_opt = char::from_u32(n_u32_opt.unwrap());
                 if c_opt.is_none() {
-                    self.print_error("unable to convert integer to character");
+                    self.print_error("chr argument must be character");
                     return 0;
                 }
                 let c = c_opt.unwrap().to_string();
@@ -622,21 +622,21 @@ impl VM {
             _ => {
                 let value_bi_opt = value_rr.to_bigint();
                 if value_bi_opt.is_none() {
-                    self.print_error("unable to convert argument to integer");
+                    self.print_error("chr argument must be integer");
                     return 0;
                 }
                 let value_bi = value_bi_opt.unwrap();
                 let value_bi_u32_opt = value_bi.to_u32();
                 if value_bi_u32_opt.is_none() {
                     self.print_error(
-                        "unable to convert argument to non-negative u32 integer"
+                        "chr argument must be u32 integer"
                     );
                     return 0;
                 }
                 let n_u32 = value_bi_u32_opt.unwrap();
                 let c_opt = char::from_u32(n_u32);
                 if c_opt.is_none() {
-                    self.print_error("unable to convert integer to character");
+                    self.print_error("chr argument must be integer");
                     return 0;
                 }
                 let c = c_opt.unwrap().to_string();
@@ -657,12 +657,12 @@ impl VM {
         let value_opt: Option<&str>;
         to_str!(value_rr, value_opt);
         if value_opt.is_none() {
-            self.print_error("unable to convert argument to string");
+            self.print_error("ord argument must be string");
             return 0;
         }
         let value_str = value_opt.unwrap();
         if value_str.chars().count() != 1 {
-            self.print_error("argument must be one character in length");
+            self.print_error("ord argument must be one character in length");
             return 0;
         }
         let c = value_str.chars().next().unwrap();
@@ -686,7 +686,7 @@ impl VM {
         let value_opt: Option<&str>;
         to_str!(value_rr, value_opt);
         if value_opt.is_none() {
-            self.print_error("unable to convert argument to string");
+            self.print_error("hex argument must be string");
             return 0;
         }
         let value_str = value_opt.unwrap().replace("0x", "");
@@ -701,7 +701,7 @@ impl VM {
             self.stack.push(Value::BigInt(n_bi.unwrap()));
             return 1;
         }
-        self.print_error("unable to convert hex string to integer");
+        self.print_error("hex argument must be hexadecimal string");
         return 0;
     }
 
@@ -715,7 +715,7 @@ impl VM {
         let value_opt: Option<&str>;
         to_str!(value_rr, value_opt);
         if value_opt.is_none() {
-            self.print_error("unable to convert argument to string");
+            self.print_error("oct argument must be string");
             return 0;
         }
         let value_str = value_opt.unwrap();
@@ -730,7 +730,7 @@ impl VM {
             self.stack.push(Value::BigInt(n_bi.unwrap()));
             return 1;
         }
-        self.print_error("unable to convert octal string to integer");
+        self.print_error("oct argument must be string");
         return 0;
     }
 
@@ -744,7 +744,7 @@ impl VM {
         let value_opt: Option<&str>;
         to_str!(value_rr, value_opt);
         if value_opt.is_none() {
-            self.print_error("unable to convert argument to string");
+            self.print_error("lc argument must be string");
             return 0;
         }
         let lc_str = value_opt.unwrap().to_lowercase();
@@ -763,7 +763,7 @@ impl VM {
         let value_opt: Option<&str>;
         to_str!(value_rr, value_opt);
         if value_opt.is_none() {
-            self.print_error("unable to convert argument to string");
+            self.print_error("lcfirst argument must be string");
             return 0;
         }
         let vst = value_opt.unwrap();
@@ -794,7 +794,7 @@ impl VM {
         let value_opt: Option<&str>;
         to_str!(value_rr, value_opt);
         if value_opt.is_none() {
-            self.print_error("unable to convert argument to string");
+            self.print_error("uc argument must be string");
             return 0;
         }
         let uc_str = value_opt.unwrap().to_uppercase();
@@ -813,7 +813,7 @@ impl VM {
         let value_opt: Option<&str>;
         to_str!(value_rr, value_opt);
         if value_opt.is_none() {
-            self.print_error("unable to convert argument to string");
+            self.print_error("ucfirst argument must be string");
             return 0;
         }
         let vst = value_opt.unwrap();
@@ -837,7 +837,7 @@ impl VM {
     /// Reverses a list or a string.
     pub fn core_reverse(&mut self) -> i32 {
         if self.stack.len() < 1 {
-            self.print_error("ucfirst requires one argument");
+            self.print_error("reverse requires one argument");
             return 0;
         }
         let value_rr = self.stack.pop().unwrap();
@@ -855,7 +855,7 @@ impl VM {
                 let value_opt: Option<&str>;
                 to_str!(value_rr, value_opt);
                 if value_opt.is_none() {
-                    self.print_error("unable to convert argument to string");
+                    self.print_error("reverse argument must be list or string");
                     return 0;
                 }
                 let vst = value_opt.unwrap();
@@ -882,7 +882,7 @@ impl VM {
                 return 1;
             }
             _ => {
-                self.print_error("unable to convert argument to float");
+                self.print_error("sleep argument must be float");
                 return 0;
             }
         }

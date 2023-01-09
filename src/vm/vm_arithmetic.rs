@@ -938,7 +938,7 @@ impl VM {
                 return 1;
             }
             None => {
-                self.print_error("cannot convert argument to float");
+                self.print_error("sqrt argument must be float");
                 return 0;
             }
         }
@@ -949,7 +949,7 @@ impl VM {
         match (&*v1, &*v2) {
             (Value::Int(n), Value::Int(exp)) => {
                 if *exp < 0 {
-                    self.print_error("exponent cannot be negative");
+                    self.print_error("second exp argument cannot be negative");
                     return 0;
                 }
                 let nn = (*n).checked_pow((*exp).try_into().unwrap());
@@ -968,7 +968,7 @@ impl VM {
             }
             (Value::Float(f), Value::Int(exp)) => {
                 if *exp < 0 {
-                    self.print_error("exponent cannot be negative");
+                    self.print_error("second exp argument cannot be negative");
                     return 0;
                 }
                 let ff = (*f).powf((*exp).try_into().unwrap());
@@ -977,7 +977,7 @@ impl VM {
             }
             (Value::BigInt(bi), Value::Int(exp)) => {
                 if *exp < 0 {
-                    self.print_error("exponent cannot be negative");
+                    self.print_error("second exp argument cannot be negative");
                     return 0;
                 }
                 let bb = (*bi).pow((*exp).try_into().unwrap());
@@ -986,7 +986,7 @@ impl VM {
             }
             (Value::Int(n), Value::Float(exp)) => {
                 if *exp < 0.0 {
-                    self.print_error("exponent cannot be negative");
+                    self.print_error("second exp argument cannot be negative");
                     return 0;
                 }
                 let f = *n as f64;
@@ -996,7 +996,7 @@ impl VM {
             }
             (Value::Float(f), Value::Float(exp)) => {
                 if *exp < 0.0 {
-                    self.print_error("exponent cannot be negative");
+                    self.print_error("second exp argument cannot be negative");
                     return 0;
                 }
                 let ff = (*f).powf((*exp).try_into().unwrap());
@@ -1005,7 +1005,7 @@ impl VM {
             }
             (Value::BigInt(bi), Value::Float(exp)) => {
                 if *exp < 0.0 {
-                    self.print_error("exponent cannot be negative");
+                    self.print_error("second exp argument cannot be negative");
                     return 0;
                 }
                 let ff = (*bi).to_f64().unwrap().powf((*exp).try_into().unwrap());
@@ -1111,7 +1111,7 @@ impl VM {
 
         let res = self.core_exp_inner(&base_rr, &exp_rr);
         if res == 0 {
-            self.print_error("unhandled exp arguments");
+            self.print_error("exp arguments unable to be handled");
             return 0;
         }
 
@@ -1175,7 +1175,7 @@ impl VM {
             _ => {}
         }
 
-        self.print_error("unhandled abs argument");
+        self.print_error("abs argument unable to be handled");
         return 0;
     }
 
@@ -1257,7 +1257,7 @@ impl VM {
 
         let res = self.core_lsft_inner(&value_rr, &shift_rr);
         if res == 0 {
-            self.print_error("unhandled << arguments");
+            self.print_error("<< arguments unable to be handled");
             return 0;
         }
 
@@ -1333,7 +1333,7 @@ impl VM {
 
         let res = self.core_rsft_inner(&value_rr, &shift_rr);
         if res == 0 {
-            self.print_error("unhandled >> arguments");
+            self.print_error(">> arguments unable to be handled");
             return 0;
         }
 
@@ -1437,7 +1437,7 @@ impl VM {
 
         let res = self.core_xor_inner(&left_rr, &right_rr);
         if res == 0 {
-            self.print_error("unhandled ^ arguments");
+            self.print_error("^ arguments unable to be handled");
             return 0;
         }
 
@@ -1541,7 +1541,7 @@ impl VM {
 
         let res = self.core_or_inner(&left_rr, &right_rr);
         if res == 0 {
-            self.print_error("unhandled || arguments");
+            self.print_error("|| arguments unable to be handled");
             return 0;
         }
 
@@ -1645,7 +1645,7 @@ impl VM {
 
         let res = self.core_and_inner(&left_rr, &right_rr);
         if res == 0 {
-            self.print_error("unhandled & arguments");
+            self.print_error("& arguments unable to be handled");
             return 0;
         }
 

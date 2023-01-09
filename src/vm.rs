@@ -537,7 +537,7 @@ impl VM {
                                         }
                                     }
                                     None => {
-                                        self.print_error("unable to load import");
+                                        self.print_error("unable to load import path");
                                         return 0;
                                     }
                                 }
@@ -1404,9 +1404,6 @@ impl VM {
                             }
                             Some(_) => {
                                 let value_rr = iv.unwrap().clone();
-                                if self.debug {
-                                    eprintln!("got cached value: {:?}", value_rr);
-                                }
                                 self.stack.push(value_rr);
                             }
                             _ => {
@@ -1731,7 +1728,7 @@ impl VM {
                 }
                 OpCode::Yield => {
                     if !chunk.borrow().is_generator {
-                        eprintln!("error: yield without generator");
+                        eprintln!("yield can only be called within generator");
                         return 0;
                     }
                     return i + 1;

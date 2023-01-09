@@ -1200,8 +1200,8 @@ impl Value {
     pub fn to_string(&self) -> Option<String> {
         match self {
             Value::String(_) => {
-                eprintln!("to_string should not be called with Value::String");
-                std::process::exit(1);
+                eprintln!("to_string should not be called with Value::String!");
+                std::process::abort();
             }
             Value::Int(n) => {
                 let s = format!("{}", n);

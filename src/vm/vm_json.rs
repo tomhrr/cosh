@@ -103,7 +103,7 @@ impl VM {
                     let doc;
                     match doc_res {
                         Err(e) => {
-                            let err_str = format!("unable to parse JSON: {}", e.to_string());
+                            let err_str = format!("from-json argument is not valid JSON: {}", e.to_string());
                             self.print_error(&err_str);
                             return 0;
                         }

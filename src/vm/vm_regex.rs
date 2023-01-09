@@ -61,7 +61,7 @@ impl VM {
         let repl_rr = self.stack.pop().unwrap();
         let repl_str_rr_opt = VM::to_string_value(repl_rr);
         if repl_str_rr_opt.is_none() {
-            self.print_error("replacement must be a string");
+            self.print_error("third s argument must be a string");
             return 0;
         }
         let repl_str_rr = repl_str_rr_opt.unwrap();
@@ -95,16 +95,16 @@ impl VM {
                         None,
                     )))));
             }
-            (_, _, Some(_)) => {
-                self.print_error("first s argument must be string");
+            (_, Some(_), Some(_)) => {
+                self.print_error("third s argument must be string");
                 return 0;
             }
-            (_, Some(_), _) => {
+            (_, _, Some(_)) => {
                 self.print_error("second s argument must be string");
                 return 0;
             }
             (_, _, _) => {
-                self.print_error("third s argument must be string");
+                self.print_error("first s argument must be string");
                 return 0;
             }
         }
@@ -157,7 +157,7 @@ impl VM {
                     self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                 }
             }
-            (_, Some(_)) => {
+            (Some(_), _) => {
                 self.print_error("first c argument must be string");
                 return 0;
             }

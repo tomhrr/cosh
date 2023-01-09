@@ -72,17 +72,17 @@ impl VM {
         match (key_opt, value_opt) {
             (Some(key_s), Some(value_s)) => {
                 if key_s.len() == 0 {
-                    self.print_error("environment variable name must be set");
+                    self.print_error("setenv first argument must be a variable name");
                     return 0;
                 }
                 env::set_var(key_s, value_s);
             }
             (_, Some(_)) => {
-                self.print_error("environment variable value must be string");
+                self.print_error("setenv first argument must be a variable name");
                 return 0;
             }
             (_, _) => {
-                self.print_error("environment variable name must be string");
+                self.print_error("setenv second argument must be a variable value");
                 return 0;
             }
         }

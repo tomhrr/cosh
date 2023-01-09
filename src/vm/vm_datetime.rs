@@ -10,7 +10,7 @@ use chronoutil::RelativeDuration;
 use vm::*;
 
 impl VM {
-    /// Returns the current time as a DateTime object, offset at UTC.
+    /// Returns the current time as a date-time object, offset at UTC.
     pub fn core_now(&mut self) -> i32 {
         let date = chrono::offset::Utc::now();
         let newdate = date.with_timezone(&self.utc_tz);
@@ -18,7 +18,7 @@ impl VM {
         return 1;
     }
 
-    /// Returns the current time as a DateTime object, offset at the
+    /// Returns the current time as a date-time object, offset at the
     /// local time zone.
     pub fn core_lcnow(&mut self) -> i32 {
         let date = chrono::offset::Utc::now();
@@ -27,7 +27,7 @@ impl VM {
         return 1;
     }
 
-    /// Takes a DateTime object and returns the epoch time that
+    /// Takes a date-time object and returns the epoch time that
     /// corresponds to that object.
     pub fn core_to_epoch(&mut self) -> i32 {
 	if self.stack.len() < 1 {
@@ -50,7 +50,7 @@ impl VM {
                 return 1;
             },
             _ => {
-                self.print_error("unexpected argument");
+                self.print_error("to-epoch argument must be date-time object");
                 return 0;
             }
         }
@@ -78,14 +78,14 @@ impl VM {
                 return 1;
             }
             _ => {
-                self.print_error("unexpected argument");
+                self.print_error("from-epoch argument must be integer");
                 return 0;
             }
         }
     }
 
-    /// Takes a DateTime object and a named timezone (per the tz
-    /// database) and returns a new DateTime object offset at that
+    /// Takes a date-time object and a named timezone (per the tz
+    /// database) and returns a new date-time object offset at that
     /// timezone.
     pub fn core_set_tz(&mut self) -> i32 {
 	if self.stack.len() < 2 {
@@ -109,7 +109,7 @@ impl VM {
                         return 1;
                     },
                     _ => {
-                        self.print_error("unknown timezone");
+                        self.print_error("second set-tz argument must be valid timezone");
                         return 0;
                     }
                 }
@@ -123,25 +123,22 @@ impl VM {
                         return 1;
                     },
                     _ => {
-                        self.print_error("unknown timezone");
+                        self.print_error("second set-tz argument must be valid timezone");
                         return 0;
                     }
                 }
             },
             (_, _) => {
-		self.print_error("unexpected arguments");
+                self.print_error("first set-tz argument must be date-time object");
                 return 0;
             }
         }
     }
 
-    /// Takes a DateTime object, a period (one of years, months, days,
-    /// minutes, hours, or seconds) and a count as its arguments.
-    /// Adds the specified number of periods to the DateTime object
-    /// and returns the result as a new DateTime object.
-    pub fn core_addtime(&mut self) -> i32 {
+    fn addtime(&mut self, fn_name: &str) -> i32 {
 	if self.stack.len() < 3 {
-            self.print_error("+time requires three arguments");
+            let err_str = format!("{} requires three arguments", fn_name);
+            self.print_error(&err_str);
             return 0;
         }
 
@@ -175,8 +172,19 @@ impl VM {
             (Some("seconds"), Some(n)) => {
                 dur = Some(Duration::seconds(i64::try_from(n).unwrap()));
             },
-            (_, _) => {
-		self.print_error("unexpected arguments");
+            (Some("years")
+                    | Some("months")
+                    | Some("days")
+                    | Some("hours")
+                    | Some("minutes")
+                    | Some("seconds"), _) => {
+                let err_str = format!("third {} argument must be integer", fn_name);
+                self.print_error(&err_str);
+                return 0;
+            },
+            (..) => {
+                let err_str = format!("second {} argument must be time unit", fn_name);
+                self.print_error(&err_str);
                 return 0;
             }
         }
@@ -202,17 +210,37 @@ impl VM {
                 self.stack.push(Value::DateTimeOT(ndt));
                 return 1;
             },
-            _ => {
-                self.print_error("unexpected arguments");
+            (Value::DateTimeNT(_)
+                    | Value::DateTimeOT(_), _, _) => {
+                let err_str = format!("second {} argument must be time unit", fn_name);
+                self.print_error(&err_str);
+                return 0;
+            },
+            (..) => {
+                let err_str = format!("second {} argument must be date-time object", fn_name);
+                self.print_error(&err_str);
                 return 0;
             }
         }
     }
 
-    /// Takes a DateTime object, a period (one of years, months, days,
+    /// Takes a date-time object, a period (one of years, months, days,
+    /// minutes, hours, or seconds) and a count as its arguments.
+    /// Adds the specified number of periods to the date-time object
+    /// and returns the result as a new date-time object.
+    pub fn core_addtime(&mut self) -> i32 {
+	if self.stack.len() < 3 {
+            self.print_error("+time requires three arguments");
+            return 0;
+        }
+
+        return self.addtime("+time");
+    }
+
+    /// Takes a date-time object, a period (one of years, months, days,
     /// minutes, hours, or seconds) and a count as its arguments.
     /// Subtracts the specified number of periods to the DateTime
-    /// object and returns the result as a new DateTime object.
+    /// object and returns the result as a new date-time object.
     pub fn core_subtime(&mut self) -> i32 {
 	if self.stack.len() < 3 {
             self.print_error("-time requires three arguments");
@@ -226,16 +254,16 @@ impl VM {
             Some(n) => {
                 let n2 = n * -1;
                 self.stack.push(Value::Int(n2));
-                return self.core_addtime();
+                return self.addtime("-time");
             },
             _ => {
-                self.print_error("unexpected arguments");
+                self.print_error("third -time argument must be integer");
                 return 0;
             }
         }
     }
 
-    /// Takes a DateTime object and a strftime pattern as its
+    /// Takes a date-time object and a strftime pattern as its
     /// arguments.  Returns the stringification of the date per the
     /// pattern.
     pub fn core_strftime(&mut self) -> i32 {
@@ -261,8 +289,12 @@ impl VM {
                 self.stack.push(Value::String(Rc::new(RefCell::new(StringTriple::new(ss.to_string(), None)))));
                 return 1;
             },
-            (_, _) => {
-		self.print_error("unexpected arguments");
+            (_, Some(_)) => {
+		self.print_error("first strftime argument must be date-time object");
+                return 0;
+            },
+            (..) => {
+		self.print_error("second strftime argument must be string");
                 return 0;
             }
         }
@@ -301,7 +333,7 @@ impl VM {
                 return Some(parsed);
             },
             Err(e) => {
-                let err_str = format!("unable to parse datetime: {}",
+                let err_str = format!("unable to parse date-time string: {}",
                                       e.to_string());
                 self.print_error(&err_str);
                 return None;
@@ -342,8 +374,12 @@ impl VM {
                     }
                 }
             }
-            (_, _) => {
-		self.print_error("unexpected arguments");
+            (Some(_), _) => {
+                self.print_error("second strptime argument must be a string");
+                return 0;
+            }
+            (..) => {
+		self.print_error("first strptime argument must be a string");
                 return 0;
             }
         }
@@ -351,7 +387,7 @@ impl VM {
 
     /// Takes a datetime string, a strftime pattern, and a named
     /// timezone (per the tz database) as its arguments.  Returns the
-    /// parsed datetime string as a DateTime object.  The parsed
+    /// parsed datetime string as a date-time object.  The parsed
     /// datetime defaults to 1970-01-01 00:00:00, with components got
     /// via the strftime pattern applied on top of the default.
     pub fn core_strptimez(&mut self) -> i32 {
@@ -394,13 +430,21 @@ impl VM {
                         }
                     }
                     _ => {
-                        self.print_error("unknown timezone");
+                        self.print_error("third strptimez argument must be valid timezone");
                         return 0;
                     }
                 }
             }
-            (_, _, _) => {
-		self.print_error("unexpected arguments");
+            (Some(_), Some(_), _) => {
+		self.print_error("third strptimez argument must be string");
+                return 0;
+            }
+            (Some(_), _, _) => {
+		self.print_error("second strptimez argument must be string");
+                return 0;
+            }
+            (..) => {
+		self.print_error("first strptimez argument must be string");
                 return 0;
             }
         }

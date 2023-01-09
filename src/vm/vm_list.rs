@@ -27,7 +27,7 @@ impl VM {
         match (index_int_opt, &lst_rr) {
             (Some(index), Value::List(lst)) => {
                 if lst.borrow().len() <= (index as usize) {
-                    self.print_error("nth index is out of bounds");
+                    self.print_error("second nth argument must fall within list bounds");
                     return 0;
                 }
                 let element = lst.borrow()[index as usize].clone();
@@ -85,7 +85,7 @@ impl VM {
             match (index_int_opt, &mut lst_rr) {
                 (Some(index), Value::List(lst)) => {
                     if lst.borrow().len() <= (index as usize) {
-                        self.print_error("nth! index is out of bounds");
+                        self.print_error("second nth! argument must fall within list bounds");
                         return 0;
                     }
                     lst.borrow_mut()[index as usize] = val_rr;
@@ -127,7 +127,7 @@ impl VM {
                         if !mb.is_empty() {
                             let (_, val) = mb.iter().next().unwrap().clone();
                             if !val.variants_equal(&element_rr) {
-                                self.print_error("set values must have the same type");
+                                self.print_error("second push argument type does not match first argument set");
                                 return 0;
                             }
                         }
@@ -142,7 +142,7 @@ impl VM {
                                 | Value::Ipv6(_)
                                 | Value::Ipv4Range(_)
                                 | Value::Ipv6Range(_) => {
-                            self.print_error("cannot create sets over IP address objects (see ips)");
+                            self.print_error("second push argument cannot be an IP address object (see ips)");
                             return 0;
                         }
                         _ => {}
@@ -152,7 +152,7 @@ impl VM {
 		    to_str!(element_rr.clone(), element_str_opt);
                     match element_str_opt {
                         None => {
-			    self.print_error("value cannot be added to set");
+			    self.print_error("second push argument cannot be added to set");
 			    return 0;
 			},
                         Some(s) => {
@@ -161,7 +161,7 @@ impl VM {
                     }
                 }
                 _ => {
-                    self.print_error("first push argument must be list");
+                    self.print_error("first push argument must be list/set");
                     return 0;
                 }
             }
@@ -503,7 +503,7 @@ impl VM {
                 }
             }
             _ => {
-                self.print_error("argument cannot be shifted");
+                self.print_error("shift argument does not support shift");
                 return 0;
             }
         }

@@ -91,13 +91,13 @@ impl VM {
                         }
                     });
                     if !success {
-                        eprintln!("unable to sort elements");
+                        self.print_error("unable to sort elements");
                         return 0;
                     }
                 }
             }
             _ => {
-                eprintln!("unable to sort value");
+                self.print_error("unable to sort value");
                 return 0;
             }
         }
@@ -176,7 +176,7 @@ impl VM {
                 }
             }
             _ => {
-                eprintln!("unable to sort value");
+                self.print_error("unable to sort value");
                 return 0;
             }
         }

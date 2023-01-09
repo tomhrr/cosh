@@ -145,16 +145,16 @@ impl VM {
                         let mut iter = s.split("-");
                         let fst = iter.next();
                         if fst.is_none() {
-                            self.print_error("unable to parse IP address");
+                            self.print_error("ip argument must be valid IP address string");
                             return 0;
                         }
                         let snd = iter.next();
                         if snd.is_none() {
-                            self.print_error("unable to parse IP address");
+                            self.print_error("ip argument must be valid IP address string");
                             return 0;
                         }
                         if !iter.next().is_none() {
-                            self.print_error("unable to parse IP address");
+                            self.print_error("ip argument must be valid IP address string");
                             return 0;
                         }
 
@@ -170,7 +170,7 @@ impl VM {
                         match (ipv4_fst, ipv4_snd) {
                             (Ok(ipv4_fst_obj), Ok(ipv4_snd_obj)) => {
                                 if !(ipv4_fst_obj < ipv4_snd_obj) {
-                                    self.print_error("unable to parse IP address");
+                                    self.print_error("ip argument must be valid IP address string");
                                     return 0;
                                 }
                                 self.stack.push(
@@ -182,7 +182,7 @@ impl VM {
                                 return 1;
                             }
                             (_, _) => {
-                                self.print_error("unable to parse IP address");
+                                self.print_error("ip argument must be valid IP address string");
                                 return 0;
                             }
                         }
@@ -200,14 +200,14 @@ impl VM {
                                 let addr_int = ipv4_addr_to_int(addr);
                                 let prefix_len = ipv4.prefix_len();
                                 if prefix_len == 0 && addr_int != 0 {
-                                    self.print_error("invalid prefix length");
+                                    self.print_error("ip argument must be valid IP address string");
                                     return 0;
                                 }
                                 if !(prefix_len == 0 && addr_int == 0) {
                                     let addr_check =
                                         addr_int & (1 << (32 - prefix_len)) - 1;
                                     if addr_check != 0 {
-                                        self.print_error("invalid prefix length");
+                                        self.print_error("ip argument must be valid IP address string");
                                         return 0;
                                     }
                                 }
@@ -216,7 +216,7 @@ impl VM {
                             }
                             Err(e) => {
                                 let err_str =
-                                    format!("unable to parse IP address: {}",
+                                    format!("ip argument must be valid IP address string: {}",
                                             e.to_string());
                                 self.print_error(&err_str);
                                 return 0;
@@ -228,16 +228,16 @@ impl VM {
                         let mut iter = s.split("-");
                         let fst = iter.next();
                         if fst.is_none() {
-                            self.print_error("unable to parse IP address");
+                            self.print_error("ip argument must be valid IP address string");
                             return 0;
                         }
                         let snd = iter.next();
                         if snd.is_none() {
-                            self.print_error("unable to parse IP address");
+                            self.print_error("ip argument must be valid IP address string");
                             return 0;
                         }
                         if !iter.next().is_none() {
-                            self.print_error("unable to parse IP address");
+                            self.print_error("ip argument must be valid IP address string");
                             return 0;
                         }
 
@@ -253,7 +253,7 @@ impl VM {
                         match (ipv6_fst, ipv6_snd) {
                             (Ok(ipv6_fst_obj), Ok(ipv6_snd_obj)) => {
                                 if !(ipv6_fst_obj < ipv6_snd_obj) {
-                                    self.print_error("unable to parse IP address");
+                                    self.print_error("ip argument must be valid IP address string");
                                     return 0;
                                 }
                                 self.stack.push(
@@ -265,7 +265,7 @@ impl VM {
                                 return 1;
                             }
                             (_, _) => {
-                                self.print_error("unable to parse IP address");
+                                self.print_error("ip argument must be valid IP address string");
                                 return 0;
                             }
                         }
@@ -283,7 +283,7 @@ impl VM {
                                 let addr_int = ipv6_addr_to_int(addr);
                                 let prefix_len = ipv6.prefix_len();
                                 if prefix_len == 0 && !addr_int.is_zero() {
-                                    self.print_error("invalid prefix length");
+                                    self.print_error("ip argument must be valid IP address string");
                                     return 0;
                                 }
                                 if !(prefix_len == 0
@@ -295,7 +295,7 @@ impl VM {
                                     let addr_check: BigUint =
                                         addr_int & prefix_mask;
                                     if !addr_check.is_zero() {
-                                        self.print_error("invalid prefix length");
+                                        self.print_error("ip argument must be valid IP address string");
                                         return 0;
                                     }
                                 }
@@ -304,7 +304,7 @@ impl VM {
                             }
                             Err(e) => {
                                 let err_str =
-                                    format!("unable to parse IP address: {}",
+                                    format!("ip argument must be valid IP address string: {}",
                                             e.to_string());
                                 self.print_error(&err_str);
                                 return 0;
@@ -314,7 +314,7 @@ impl VM {
                 }
             }
             _ => {
-                self.print_error("unable to parse IP address");
+                self.print_error("ip argument must be valid IP address string");
                 return 0;
             }
         }
@@ -336,7 +336,7 @@ impl VM {
         match (version_opt, value_opt) {
             (Some(4), Some(value)) => {
                 if value > BigInt::from_u32(0xFFFFFFFF).unwrap() {
-                    self.print_error("IPv4 address is outside 32-bit bound");
+                    self.print_error("first ip.from-int argument must be u32 integer");
                     return 0;
                 }
                 let uvalue =
@@ -350,11 +350,11 @@ impl VM {
                 self.stack.push(Value::Ipv6(Ipv6Net::new(ipv6, 128).unwrap()));
             }
             (Some(_), _) => {
-                self.print_error("invalid IP address version");
+                self.print_error("second ip.from-int argument must be IP address version");
                 return 0;
             }
             _ => {
-                self.print_error("invalid IP integer");
+                self.print_error("first ip.from-int argument must be integer");
                 return 0;
             }
         }
@@ -385,7 +385,7 @@ impl VM {
                 ip_str = format!("{}", ipv6range.s);
             }
             _ => {
-                self.print_error("expected IP object argument");
+                self.print_error("ip.addr argument must be ip object");
                 return 0;
             }
         }
@@ -435,7 +435,7 @@ impl VM {
                     self.stack.push(Value::Int(len));
                     return 1;
                 } else {
-                    self.print_error("IP range has no length");
+                    self.print_error("ip.len argument has no length");
                     return 0;
                 }
             }
@@ -465,12 +465,12 @@ impl VM {
                     self.stack.push(Value::Int(len));
                     return 1;
                 } else {
-                    self.print_error("IP range has no length");
+                    self.print_error("ip.len argument has no length");
                     return 0;
                 }
             }
             _ => {
-                self.print_error("expected IP object argument");
+                self.print_error("ip.len argument must be ip object");
                 return 0;
             }
         }
@@ -514,7 +514,7 @@ impl VM {
                 return 1;
             }
             _ => {
-                self.print_error("expected IP object argument");
+                self.print_error("ip.addr-int argument must be ip object");
                 return 0;
             }
         }
@@ -577,7 +577,7 @@ impl VM {
                 self.stack.push(st);
             }
             _ => {
-                self.print_error("expected IP object argument");
+                self.print_error("ip.last-addr argument must be ip object");
                 return 0;
             }
         }
@@ -633,7 +633,7 @@ impl VM {
                 self.stack.push(lastaddr_val);
             }
             _ => {
-                self.print_error("expected IP object argument");
+                self.print_error("ip.last-addr-int argument must be ip object");
                 return 0;
             }
         }
@@ -704,7 +704,7 @@ impl VM {
                 return 1;
             }
             _ => {
-                self.print_error("expected IP object argument");
+                self.print_error("ip.size argument must be ip object");
                 return 0;
             }
         }
@@ -738,7 +738,7 @@ impl VM {
                 return 1;
             }
             _ => {
-                self.print_error("expected IP object argument");
+                self.print_error("ip.version argument must be ip object");
                 return 0;
             }
         }
@@ -774,7 +774,7 @@ impl VM {
                 }
             }
             _ => {
-                self.print_error("expected IP object argument");
+                self.print_error("ip.prefixes argument must be ip object");
                 return 0;
             }
         }

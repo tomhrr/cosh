@@ -29,7 +29,7 @@ impl VM {
             }
         }
         self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
-        return 1;
+        1
     }
 
     pub fn core_sort(&mut self) -> i32 {
@@ -68,7 +68,7 @@ impl VM {
                             (Value::String(sp1), Value::String(sp2)) => {
                                 let s1 = &(sp1.borrow().string);
                                 let s2 = &(sp2.borrow().string);
-                                return s1.cmp(&s2);
+                                s1.cmp(s2)
                             }
                             _ => {
                                 eprintln!("expected string in sort!");
@@ -81,13 +81,13 @@ impl VM {
                         let res = self.opcode_cmp_inner(b, a);
                         if res == -2 {
                             success = false;
-                            return Ordering::Equal;
+                            Ordering::Equal
                         } else if res == 1 {
-                            return Ordering::Greater;
+                            Ordering::Greater
                         } else if res == 0 {
-                            return Ordering::Equal;
+                            Ordering::Equal
                         } else {
-                            return Ordering::Less;
+                            Ordering::Less
                         }
                     });
                     if !success {
@@ -104,7 +104,7 @@ impl VM {
 
         self.stack.push(value_rr);
 
-        return 1;
+        1
     }
 
     pub fn core_sortp(&mut self) -> i32 {
@@ -153,21 +153,21 @@ impl VM {
                     match ret {
                         Value::Int(n) => {
                             if n == -1 {
-                                return Ordering::Less;
+                                Ordering::Less
                             } else if n == 0 {
-                                return Ordering::Equal;
+                                Ordering::Equal
                             } else if n == 1 {
-                                return Ordering::Greater;
+                                Ordering::Greater
                             } else {
                                 self.print_error("sortp predicate should return an int");
                                 success = false;
-                                return Ordering::Equal;
+                                Ordering::Equal
                             }
                         }
                         _ => {
                             self.print_error("sortp predicate should return an int");
                             success = false;
-                            return Ordering::Equal;
+                            Ordering::Equal
                         }
                     }
                 });
@@ -183,6 +183,6 @@ impl VM {
 
         self.stack.push(value_rr);
 
-        return 1;
+        1
     }
 }

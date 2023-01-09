@@ -24,17 +24,14 @@ impl VM {
 
         let lst_rr = self.stack.pop().unwrap();
 
-        match (index_int_opt, &lst_rr) {
-            (Some(index), Value::List(lst)) => {
-                if lst.borrow().len() <= (index as usize) {
-                    self.print_error("second nth argument must fall within list bounds");
-                    return 0;
-                }
-                let element = lst.borrow()[index as usize].clone();
-                self.stack.push(element);
-                return 1;
+        if let (Some(index), Value::List(lst)) = (index_int_opt, &lst_rr) {
+            if lst.borrow().len() <= (index as usize) {
+                self.print_error("second nth argument must fall within list bounds");
+                return 0;
             }
-            (_, _) => {}
+            let element = lst.borrow()[index as usize].clone();
+            self.stack.push(element);
+            return 1;
         }
 
         self.stack.push(lst_rr);
@@ -54,14 +51,14 @@ impl VM {
                         break;
                     } else {
                         self.stack.pop();
-                        index = index - 1;
+                        index -= 1;
                     }
                 }
-                return 1;
+                1
             }
             _ => {
                 self.print_error("second nth argument must be integer");
-                return 0;
+                0
             }
         }
     }
@@ -101,12 +98,13 @@ impl VM {
             }
         }
         self.stack.push(lst_rr);
-        return 1;
+        1
     }
 
     /// Takes a list or a set and a value as its arguments.  Pushes
     /// the value onto the list/set and places the updated list/set
     /// onto the stack.
+    #[allow(clippy::redundant_clone)]
     pub fn opcode_push(&mut self) -> i32 {
         if self.stack.len() < 2 {
             self.print_error("push requires two arguments");
@@ -125,7 +123,7 @@ impl VM {
                     {
                         let mb = map.borrow();
                         if !mb.is_empty() {
-                            let (_, val) = mb.iter().next().unwrap().clone();
+                            let (_, val) = mb.iter().next().unwrap();
                             if !val.variants_equal(&element_rr) {
                                 self.print_error(
                                     "second push argument type does not match first argument set",
@@ -172,7 +170,7 @@ impl VM {
         }
 
         self.stack.push(lst_rr);
-        return 1;
+        1
     }
 
     /// Takes a list and a value as its arguments.  Pushes the value
@@ -200,7 +198,7 @@ impl VM {
         }
 
         self.stack.push(lst_rr);
-        return 1;
+        1
     }
 
     /// Takes a list as its single argument.  Pops a value from the
@@ -227,10 +225,10 @@ impl VM {
         };
 
         self.stack.push(element_rr);
-        return 1;
+        1
     }
 
-    pub fn opcode_shift_inner<'a>(&mut self, shiftable_rr: &mut Value) -> i32 {
+    pub fn opcode_shift_inner(&mut self, shiftable_rr: &mut Value) -> i32 {
         let mut repush = false;
         let mut stack_len = 0;
         let mut new_stack_len = 0;
@@ -264,7 +262,7 @@ impl VM {
                         } else {
                             let gen_args_len = gen_args.len();
                             if gen_args_len > 0 {
-                                while gen_args.len() > 0 {
+                                while !gen_args.is_empty() {
                                     self.stack.push(gen_args.pop().unwrap());
                                 }
                                 self.stack.push(Value::Int(gen_args_len as i32));
@@ -287,7 +285,7 @@ impl VM {
                         let plvs_stack = self.local_var_stack.clone();
                         self.local_var_stack = local_vars_stack;
                         let backup_chunk = self.chunk.clone();
-                        self.chunk = chunk.clone();
+                        self.chunk = chunk;
                         let i = self.i;
                         self.i = index;
                         let res = self.run_inner();
@@ -337,10 +335,9 @@ impl VM {
                  * but that might make other operations less
                  * efficient. */
                 let mut ipranges = ipset.borrow().ipv4.iter().collect::<Vec<Ipv4Net>>();
-                ipranges.sort_by(|a, b| a.network().cmp(&b.network()));
-                let next = ipranges.iter().next();
-                if !next.is_none() {
-                    let next_value = next.unwrap();
+                ipranges.sort_by_key(|a| a.network());
+                let next = ipranges.first();
+                if let Some(next_value) = next {
                     let mut next_range = IpRange::new();
                     next_range.add(*next_value);
                     let new_set = ipset.borrow().ipv4.exclude(&next_range);
@@ -349,10 +346,9 @@ impl VM {
                     return 1;
                 }
                 let mut ipranges2 = ipset.borrow().ipv6.iter().collect::<Vec<Ipv6Net>>();
-                ipranges2.sort_by(|a, b| a.network().cmp(&b.network()));
-                let next2 = ipranges2.iter().next();
-                if !next2.is_none() {
-                    let next2_value = next2.unwrap();
+                ipranges2.sort_by_key(|a| a.network());
+                let next2 = ipranges2.first();
+                if let Some(next2_value) = next2 {
                     let mut next2_range = IpRange::new();
                     next2_range.add(*next2_value);
                     let new_set = ipset.borrow().ipv6.exclude(&next2_range);
@@ -484,9 +480,9 @@ impl VM {
                         self.stack.push(Value::Null);
                         break;
                     } else {
-                        let mut next = genlist.front_mut().unwrap();
-                        self.opcode_shift_inner(&mut next);
-                        if self.stack.len() == 0 {
+                        let next = genlist.front_mut().unwrap();
+                        self.opcode_shift_inner(next);
+                        if self.stack.is_empty() {
                             return 0;
                         }
                         match self.stack[self.stack.len() - 1] {
@@ -511,19 +507,19 @@ impl VM {
             self.stack.push(Value::Null);
         }
 
-        return 1;
+        1
     }
 
     /// Takes a shiftable object as its single argument.  Shifts an
     /// element from that object and puts it onto the stack.
-    pub fn opcode_shift<'a>(&mut self) -> i32 {
+    pub fn opcode_shift(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("shift requires one argument");
             return 0;
         }
 
         let mut shiftable_rr = self.stack.pop().unwrap();
-        return self.opcode_shift_inner(&mut shiftable_rr);
+        self.opcode_shift_inner(&mut shiftable_rr)
     }
 
     /// Takes an arbitrary value as its single argument.  Places a
@@ -536,19 +532,17 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let res = match value_rr {
-            Value::List(_) => true,
-            Value::Set(_) => true,
-            Value::IpSet(_) => true,
-            Value::Generator(_) => true,
-            Value::CommandGenerator(_) => true,
-            Value::KeysGenerator(_) => true,
-            Value::ValuesGenerator(_) => true,
-            Value::EachGenerator(_) => true,
-            _ => false,
-        };
+        let res =
+            matches!(value_rr, Value::List(_)
+                                | Value::Set(_)
+                                | Value::IpSet(_)
+                                | Value::Generator(_)
+                                | Value::CommandGenerator(_)
+                                | Value::KeysGenerator(_)
+                                | Value::ValuesGenerator(_)
+                                | Value::EachGenerator(_));
         self.stack.push(Value::Bool(res));
-        return 1;
+        1
     }
 
     /// Takes two sets as its arguments and returns their union.
@@ -578,8 +572,8 @@ impl VM {
                 let ipset1_ipv6 = &ipset1.borrow().ipv6;
                 let ipset2_ipv4 = &ipset2.borrow().ipv4;
                 let ipset2_ipv6 = &ipset2.borrow().ipv6;
-                let new_ipv4 = ipset1_ipv4.merge(&ipset2_ipv4);
-                let new_ipv6 = ipset1_ipv6.merge(&ipset2_ipv6);
+                let new_ipv4 = ipset1_ipv4.merge(ipset2_ipv4);
+                let new_ipv6 = ipset1_ipv6.merge(ipset2_ipv6);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
                 self.stack
                     .push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
@@ -594,7 +588,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes two sets as its arguments and returns their
@@ -612,7 +606,7 @@ impl VM {
             (Value::Set(s1), Value::Set(s2)) => {
                 let mut new_hsh = IndexMap::new();
                 for (k, v) in s1.borrow().iter() {
-                    if !s2.borrow().get(k).is_none() {
+                    if s2.borrow().get(k).is_some() {
                         new_hsh.insert(k.clone(), v.value_clone());
                     }
                 }
@@ -624,8 +618,8 @@ impl VM {
                 let ipset1_ipv6 = &ipset1.borrow().ipv6;
                 let ipset2_ipv4 = &ipset2.borrow().ipv4;
                 let ipset2_ipv6 = &ipset2.borrow().ipv6;
-                let new_ipv4 = ipset1_ipv4.intersect(&ipset2_ipv4);
-                let new_ipv6 = ipset1_ipv6.intersect(&ipset2_ipv6);
+                let new_ipv4 = ipset1_ipv4.intersect(ipset2_ipv4);
+                let new_ipv6 = ipset1_ipv6.intersect(ipset2_ipv6);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
                 self.stack
                     .push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
@@ -640,7 +634,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes two sets as its arguments and returns their
@@ -670,8 +664,8 @@ impl VM {
                 let ipset1_ipv6 = &ipset1.borrow().ipv6;
                 let ipset2_ipv4 = &ipset2.borrow().ipv4;
                 let ipset2_ipv6 = &ipset2.borrow().ipv6;
-                let new_ipv4 = ipset1_ipv4.exclude(&ipset2_ipv4);
-                let new_ipv6 = ipset1_ipv6.exclude(&ipset2_ipv6);
+                let new_ipv4 = ipset1_ipv4.exclude(ipset2_ipv4);
+                let new_ipv6 = ipset1_ipv6.exclude(ipset2_ipv6);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
                 self.stack
                     .push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
@@ -686,7 +680,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes two sets as its arguments and returns their
@@ -721,10 +715,10 @@ impl VM {
                 let ipset1_ipv6 = &ipset1.borrow().ipv6;
                 let ipset2_ipv4 = &ipset2.borrow().ipv4;
                 let ipset2_ipv6 = &ipset2.borrow().ipv6;
-                let ipv4_is = ipset1_ipv4.intersect(&ipset2_ipv4);
-                let ipv6_is = ipset1_ipv6.intersect(&ipset2_ipv6);
-                let new_ipv4 = ipset1_ipv4.merge(&ipset2_ipv4).exclude(&ipv4_is);
-                let new_ipv6 = ipset1_ipv6.merge(&ipset2_ipv6).exclude(&ipv6_is);
+                let ipv4_is = ipset1_ipv4.intersect(ipset2_ipv4);
+                let ipv6_is = ipset1_ipv6.intersect(ipset2_ipv6);
+                let new_ipv4 = ipset1_ipv4.merge(ipset2_ipv4).exclude(&ipv4_is);
+                let new_ipv6 = ipset1_ipv6.merge(ipset2_ipv6).exclude(&ipv6_is);
                 let new_ipset = IpSet::new(new_ipv4, new_ipv6);
                 self.stack
                     .push(Value::IpSet(Rc::new(RefCell::new(new_ipset))));
@@ -739,6 +733,6 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 }

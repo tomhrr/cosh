@@ -2,6 +2,7 @@
     clippy::needless_late_init,
     clippy::comparison_chain,
     clippy::question_mark,
+    clippy::type_complexity,
 )]
 
 extern crate ansi_term;

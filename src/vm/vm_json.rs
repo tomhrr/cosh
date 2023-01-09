@@ -11,7 +11,7 @@ use vm::*;
 
 /// Converts a serde_json object into a value.
 fn convert_from_json(v: &serde_json::value::Value) -> Value {
-    match &*v {
+    match v {
         serde_json::value::Value::Null => Value::Null,
         serde_json::value::Value::Bool(true) => Value::Bool(true),
         serde_json::value::Value::Bool(false) => Value::Bool(false),
@@ -39,7 +39,7 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
         ))),
         serde_json::value::Value::Array(lst) => Value::List(Rc::new(RefCell::new(
             lst.iter()
-                .map(|v| convert_from_json(v))
+                .map(convert_from_json)
                 .collect::<VecDeque<_>>(),
         ))),
         serde_json::value::Value::Object(map) => Value::Hash(Rc::new(RefCell::new(
@@ -52,7 +52,7 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
 
 /// Convert a value into a JSON string.
 fn convert_to_json(v: &Value) -> String {
-    match &*v {
+    match v {
         Value::Null => "null".to_string(),
         Value::Bool(true) => "true".to_string(),
         Value::Bool(false) => "false".to_string(),
@@ -65,7 +65,7 @@ fn convert_to_json(v: &Value) -> String {
             let s = lst
                 .borrow()
                 .iter()
-                .map(|v_rr| convert_to_json(&v_rr))
+                .map(convert_to_json)
                 .collect::<Vec<_>>()
                 .join(",");
             format!("[{}]", s)
@@ -74,7 +74,7 @@ fn convert_to_json(v: &Value) -> String {
             let s = vm
                 .borrow()
                 .iter()
-                .map(|(k, v_rr)| format!("\"{}\":{}", k, convert_to_json(&v_rr)))
+                .map(|(k, v_rr)| format!("\"{}\":{}", k, convert_to_json(v_rr)))
                 .collect::<Vec<_>>()
                 .join(",");
             format!("{{{}}}", s)
@@ -104,7 +104,7 @@ impl VM {
                     match doc_res {
                         Err(e) => {
                             let err_str =
-                                format!("from-json argument is not valid JSON: {}", e.to_string());
+                                format!("from-json argument is not valid JSON: {}", e);
                             self.print_error(&err_str);
                             return 0;
                         }
@@ -114,11 +114,11 @@ impl VM {
                     }
                     let json_rr = convert_from_json(&doc);
                     self.stack.push(json_rr);
-                    return 1;
+                    1
                 }
                 _ => {
                     self.print_error("from-json argument must be string or generator");
-                    return 0;
+                    0
                 }
             }
         } else {
@@ -133,7 +133,7 @@ impl VM {
             if !res {
                 return 0;
             }
-            return self.core_from_json();
+            self.core_from_json()
         }
     }
 
@@ -152,6 +152,6 @@ impl VM {
                 None,
             )))));
 
-        return 1;
+        1
     }
 }

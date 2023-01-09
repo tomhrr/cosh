@@ -39,7 +39,7 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str = format!("unable to remove file: {}", e.to_string());
+                        let err_str = format!("unable to remove file: {}", e);
                         self.print_error(&err_str);
                         return 0;
                     }
@@ -50,7 +50,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes two values that can be stringified as its arguments.
@@ -76,7 +76,7 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str = format!("unable to copy file: {}", e.to_string());
+                        let err_str = format!("unable to copy file: {}", e);
                         self.print_error(&err_str);
                         return 0;
                     }
@@ -91,7 +91,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes two values that can be stringified as its arguments.
@@ -119,31 +119,31 @@ impl VM {
                         let res = std::fs::remove_file(src);
                         match res {
                             Ok(_) => {
-                                return 1;
+                                1
                             }
                             Err(e) => {
                                 let err_str =
-                                    format!("unable to remove original file: {}", e.to_string());
+                                    format!("unable to remove original file: {}", e);
                                 self.print_error(&err_str);
-                                return 0;
+                                0
                             }
                         }
                     }
                     Err(e) => {
                         let err_str =
-                            format!("unable to copy file to destination: {}", e.to_string());
+                            format!("unable to copy file to destination: {}", e);
                         self.print_error(&err_str);
-                        return 0;
+                        0
                     }
                 }
             }
             (Some(_), _) => {
                 self.print_error("second mv argument must be string");
-                return 0;
+                0
             }
             _ => {
                 self.print_error("first mv argument must be string");
-                return 0;
+                0
             }
         }
     }
@@ -171,22 +171,22 @@ impl VM {
                 let res = std::fs::rename(src, dst);
                 match res {
                     Ok(_) => {
-                        return 1;
+                        1
                     }
                     Err(e) => {
-                        let err_str = format!("unable to rename file: {}", e.to_string());
+                        let err_str = format!("unable to rename file: {}", e);
                         self.print_error(&err_str);
-                        return 0;
+                        0
                     }
                 }
             }
             (Some(_), _) => {
                 self.print_error("second rename argument must be string");
-                return 0;
+                0
             }
             _ => {
                 self.print_error("first rename argument must be string");
-                return 0;
+                0
             }
         }
     }
@@ -214,7 +214,7 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str = format!("unable to create symbolic link: {}", e.to_string());
+                        let err_str = format!("unable to create symbolic link: {}", e);
                         self.print_error(&err_str);
                         return 0;
                     }
@@ -229,7 +229,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a value that can be stringified as its single argument.
@@ -237,7 +237,7 @@ impl VM {
     /// no arguments are provided, then this changes the current
     /// working directory to the user's home directory.
     pub fn core_cd(&mut self) -> i32 {
-        if self.stack.len() == 0 {
+        if self.stack.is_empty() {
             let home_res = std::env::var("HOME");
             match home_res {
                 Ok(home) => {
@@ -245,14 +245,14 @@ impl VM {
                     match res {
                         Ok(_) => {}
                         Err(e) => {
-                            let err_str = format!("unable to cd to home: {}", e.to_string());
+                            let err_str = format!("unable to cd to home: {}", e);
                             self.print_error(&err_str);
                             return 0;
                         }
                     }
                 }
                 Err(e) => {
-                    let err_str = format!("unable to cd to home: {}", e.to_string());
+                    let err_str = format!("unable to cd to home: {}", e);
                     self.print_error(&err_str);
                     return 0;
                 }
@@ -269,7 +269,7 @@ impl VM {
                     match res {
                         Ok(_) => {}
                         Err(e) => {
-                            let err_str = format!("unable to cd: {}", e.to_string());
+                            let err_str = format!("unable to cd: {}", e);
                             self.print_error(&err_str);
                             return 0;
                         }
@@ -281,7 +281,7 @@ impl VM {
                 }
             }
         }
-        return 1;
+        1
     }
 
     /// Puts the string representation of the current working
@@ -297,12 +297,12 @@ impl VM {
                     )))));
             }
             Err(e) => {
-                let err_str = format!("unable to pwd: {}", e.to_string());
+                let err_str = format!("unable to pwd: {}", e);
                 self.print_error(&err_str);
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a value that can be stringified as its single argument.
@@ -327,7 +327,7 @@ impl VM {
                     match res {
                         Ok(_) => {}
                         Err(e) => {
-                            let err_str = format!("unable to write file: {}", e.to_string());
+                            let err_str = format!("unable to write file: {}", e);
                             self.print_error(&err_str);
                             return 0;
                         }
@@ -345,14 +345,14 @@ impl VM {
                                 Ok(_) => {}
                                 Err(e) => {
                                     let err_str =
-                                        format!("unable to write file: {}", e.to_string());
+                                        format!("unable to write file: {}", e);
                                     self.print_error(&err_str);
                                     return 0;
                                 }
                             }
                         }
                         Err(e) => {
-                            let err_str = format!("unable to write file: {}", e.to_string());
+                            let err_str = format!("unable to write file: {}", e);
                             self.print_error(&err_str);
                             return 0;
                         }
@@ -364,7 +364,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a value that can be stringified and a boolean indicating
@@ -454,7 +454,7 @@ impl VM {
                         self.stack.push(Value::Hash(Rc::new(RefCell::new(map))));
                     }
                     Err(e) => {
-                        let err_str = format!("unable to stat file: {}", e.to_string());
+                        let err_str = format!("unable to stat file: {}", e);
                         self.print_error(&err_str);
                         return 0;
                     }
@@ -465,17 +465,17 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// See stat_inner.
     pub fn core_stat(&mut self) -> i32 {
-        return self.stat_inner(false);
+        self.stat_inner(false)
     }
 
     /// See stat_inner.
     pub fn core_lstat(&mut self) -> i32 {
-        return self.stat_inner(true);
+        self.stat_inner(true)
     }
 
     /// Puts current process information onto the stack, in the form
@@ -490,7 +490,7 @@ impl VM {
          * since completed, which is why these extra steps are
          * necessary. */
         let mut pids = Vec::new();
-        for (pid, _) in self.sys.processes() {
+        for pid in self.sys.processes().keys() {
             pids.push(*pid);
         }
         let mut actual_pids = HashSet::new();
@@ -524,7 +524,7 @@ impl VM {
             lst.push_back(Value::Hash(Rc::new(RefCell::new(map))))
         }
         self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
-        return 1;
+        1
     }
 
     /// Takes a process identifier and a signal name as its arguments.
@@ -563,20 +563,20 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str = format!("unable to kill process: {}", e.to_string());
+                        let err_str = format!("unable to kill process: {}", e);
                         self.print_error(&err_str);
                         return 0;
                     }
                 }
-                return 1;
+                1
             }
             (Some(_), _) => {
                 self.print_error("second kill argument must be signal");
-                return 0;
+                0
             }
             (_, _) => {
                 self.print_error("first kill argument must be process");
-                return 0;
+                0
             }
         }
     }
@@ -609,22 +609,22 @@ impl VM {
                 let res = fs::set_permissions(&path, perms);
                 match res {
                     Ok(_) => {
-                        return 1;
+                        1
                     }
                     Err(e) => {
                         let s = format!("unable to chmod: {}", e);
                         self.print_error(&s);
-                        return 0;
+                        0
                     }
                 }
             }
             (Some(_), _) => {
                 self.print_error("second chmod argument must be mode");
-                return 0;
+                0
             }
             (_, _) => {
                 self.print_error("first chmod argument must be path");
-                return 0;
+                0
             }
         }
     }
@@ -678,26 +678,26 @@ impl VM {
                 let chown_res = nix::unistd::chown(path, Some(user_obj.uid), Some(group_obj.gid));
                 match chown_res {
                     Ok(_) => {
-                        return 1;
+                        1
                     }
                     Err(e) => {
                         let s = format!("unable to chown path: {}", e);
                         self.print_error(&s);
-                        return 0;
+                        0
                     }
                 }
             }
             (Some(_), Some(_), _) => {
                 self.print_error("third chown argument must be group");
-                return 0;
+                0
             }
             (Some(_), _, _) => {
                 self.print_error("second chown argument must be user");
-                return 0;
+                0
             }
             (_, _, _) => {
                 self.print_error("first chown argument must be path");
-                return 0;
+                0
             }
         }
     }
@@ -719,18 +719,18 @@ impl VM {
                 let res = std::fs::create_dir(dir);
                 match res {
                     Ok(_) => {
-                        return 1;
+                        1
                     }
                     Err(e) => {
                         let s = format!("unable to make directory: {}", e);
                         self.print_error(&s);
-                        return 0;
+                        0
                     }
                 }
             }
             None => {
                 self.print_error("first mkdir argument must be string");
-                return 0;
+                0
             }
         }
     }
@@ -752,18 +752,18 @@ impl VM {
                 let res = std::fs::remove_dir(dir);
                 match res {
                     Ok(_) => {
-                        return 1;
+                        1
                     }
                     Err(e) => {
                         let s = format!("unable to remove directory: {}", e);
                         self.print_error(&s);
-                        return 0;
+                        0
                     }
                 }
             }
             None => {
                 self.print_error("first rmdir argument must be string");
-                return 0;
+                0
             }
         }
     }

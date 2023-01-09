@@ -340,7 +340,7 @@ impl VM {
             local_var_stack: Rc::new(RefCell::new(Vec::new())),
             print_stack,
             printing_stack: false,
-            scopes: vec![global_vars.clone()],
+            scopes: vec![global_vars],
             global_functions: HashMap::new(),
             call_stack_chunks: Vec::new(),
             running: Arc::new(AtomicBool::new(true)),
@@ -360,7 +360,7 @@ impl VM {
         let point = self.chunk.borrow().get_point(self.i);
         let name = &self.chunk.borrow().name;
         let error_start = if name == "(main)" {
-            format!("")
+            String::new()
         } else {
             format!("{}:", name)
         };
@@ -376,12 +376,12 @@ impl VM {
 
     pub fn opcode_togglemode(&mut self) -> i32 {
         self.print_stack = !self.print_stack;
-        return 1;
+        1
     }
 
     pub fn opcode_printstack(&mut self) -> i32 {
         let res = self.print_stack(self.chunk.clone(), self.i, true);
-        return if res { 1 } else { 0 };
+        if res { 1 } else { 0 }
     }
 
     pub fn opcode_tofunction(&mut self) -> i32 {
@@ -395,23 +395,17 @@ impl VM {
         to_str!(fn_rr, fn_opt);
 
         let mut pushed = false;
-        match fn_opt {
-            Some(s) => {
-                let sv = self.string_to_callable(s);
-                match sv {
-                    Some(v) => {
-                        self.stack.push(v);
-                        pushed = true;
-                    }
-                    _ => {}
-                }
+        if let Some(s) = fn_opt {
+            let sv = self.string_to_callable(s);
+            if let Some(v) = sv {
+                self.stack.push(v);
+                pushed = true;
             }
-            _ => {}
         }
         if !pushed {
             self.stack.push(backup_rr);
         }
-        return 1;
+        1
     }
 
     pub fn opcode_import(&mut self) -> i32 {
@@ -470,7 +464,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a wrapped value as its single argument, and returns a
@@ -488,18 +482,17 @@ impl VM {
             }
         }
         if is_string {
-            return Some(value_rr);
+            Some(value_rr)
         } else {
             let value_opt: Option<&str>;
             to_str!(value_rr, value_opt);
 
-            match value_opt {
-                Some(s) => Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
+            value_opt.map(|s|
+                Value::String(Rc::new(RefCell::new(StringTriple::new(
                     s.to_string(),
                     None,
-                ))))),
-                _ => None,
-            }
+                ))))
+            )
         }
     }
 
@@ -513,13 +506,16 @@ impl VM {
          * are not flags. */
         if !RE_NOT_PARAMS.is_match(s) {
             let params_res = RE_CAPTURE_PARAMS.captures(s);
-            params = if !params_res.is_none() {
-                s_replacement = RE_CAPTURE_PARAMS.replace_all(s, "").to_string();
-                s = &s_replacement;
-                let param_str = params_res.unwrap().get(1).unwrap().as_str();
-                param_str.chars().collect()
-            } else {
-                HashSet::new()
+            params = match params_res {
+                Some(params) => {
+                    s_replacement = RE_CAPTURE_PARAMS.replace_all(s, "").to_string();
+                    s = &s_replacement;
+                    let param_str = params.get(1).unwrap().as_str();
+                    param_str.chars().collect()
+                }
+                _ => {
+                    HashSet::new()
+                }
             };
         }
 
@@ -546,7 +542,7 @@ impl VM {
         let regex_res = rb.build();
         match regex_res {
             Ok(regex) => {
-                return Some((regex, global));
+                Some((regex, global))
             }
             Err(e) => {
                 let mut err_str = format!("{}", e);
@@ -554,33 +550,27 @@ impl VM {
                 err_str = RE_ERROR_PART.replace(&err_str, "").to_string();
                 err_str = format!("invalid regex: {}", err_str);
                 self.print_error(&err_str);
-                return None;
+                None
             }
         }
     }
 
     pub fn gen_regex(&mut self, value_rr: Value) -> Option<(Rc<Regex>, bool)> {
-        match value_rr {
-            Value::String(st) => {
-                match &st.borrow().regex {
-                    Some(r) => {
-                        return Some(r.clone());
-                    }
-                    _ => {}
+        if let Value::String(st) = value_rr {
+            if let Some(r) = &st.borrow().regex {
+                return Some(r.clone());
+            }
+            let regex_res = self.str_to_regex(&st.borrow().escaped_string);
+            match regex_res {
+                Some((regex, global)) => {
+                    let rc = Rc::new(regex);
+                    st.borrow_mut().regex = Some((rc.clone(), global));
+                    return Some((rc, global));
                 }
-                let regex_res = self.str_to_regex(&st.borrow().escaped_string);
-                match regex_res {
-                    Some((regex, global)) => {
-                        let rc = Rc::new(regex);
-                        st.borrow_mut().regex = Some((rc.clone(), global));
-                        return Some((rc.clone(), global));
-                    }
-                    _ => {
-                        return None;
-                    }
+                _ => {
+                    return None;
                 }
             }
-            _ => {}
         }
 
         let value_opt: Option<&str>;
@@ -591,7 +581,7 @@ impl VM {
                 let rr = self.regexes.get(s);
                 match rr {
                     Some(r) => {
-                        return Some(r.clone());
+                        Some(r.clone())
                     }
                     _ => {
                         let regex_res = self.str_to_regex(s);
@@ -599,10 +589,10 @@ impl VM {
                             Some((regex, global)) => {
                                 let rc = Rc::new(regex);
                                 self.regexes.insert(s.to_string(), (rc.clone(), global));
-                                return Some((rc, global));
+                                Some((rc, global))
                             }
                             _ => {
-                                return None;
+                                None
                             }
                         }
                     }
@@ -610,7 +600,7 @@ impl VM {
             }
             _ => {
                 self.print_error("regex must be a string");
-                return None;
+                None
             }
         }
     }
@@ -629,12 +619,12 @@ impl VM {
         }
         let mut arg_count = call_chunk.borrow().arg_count;
         if arg_count != 0 {
-            while arg_count > 0 && self.stack.len() > 0 {
+            while arg_count > 0 && !self.stack.is_empty() {
                 gen_args.push(self.stack.pop().unwrap());
-                arg_count = arg_count - 1;
+                arg_count -= 1;
             }
         }
-        if gen_args.len() == 0 {
+        if gen_args.is_empty() {
             gen_args.push(Value::Null);
         }
         let mut gen_call_stack_chunks = Vec::new();
@@ -654,7 +644,7 @@ impl VM {
             gen_args,
         ))));
         self.stack.push(gen_rr);
-        return true;
+        true
     }
 
     pub fn call_non_generator(
@@ -667,11 +657,18 @@ impl VM {
         }
 
         let mut prev_stack = None;
-        let has_plvs_stack = !plvs_stack.is_none();
-        if has_plvs_stack {
-            prev_stack = Some(self.local_var_stack.clone());
-            self.local_var_stack = plvs_stack.unwrap();
-        } else if !call_chunk.borrow().nested {
+
+        let has_plvs_stack = match plvs_stack {
+            Some(plvs) => {
+                prev_stack = Some(self.local_var_stack.clone());
+                self.local_var_stack = plvs;
+                true
+            }
+            None => {
+                false
+            }
+        };
+        if !has_plvs_stack && !call_chunk.borrow().nested {
             prev_stack = Some(self.local_var_stack.clone());
             self.local_var_stack = Rc::new(RefCell::new(vec![]));
         }
@@ -682,10 +679,7 @@ impl VM {
             self.local_var_stack = prev_stack.unwrap();
         }
 
-        if res == 0 {
-            return false;
-        }
-        return true;
+        res != 0
     }
 
     pub fn call_named_function(
@@ -694,16 +688,15 @@ impl VM {
         call_chunk: Rc<RefCell<Chunk>>,
     ) -> bool {
         if call_chunk.borrow().is_generator {
-            return self.call_generator(call_chunk);
+            self.call_generator(call_chunk)
         } else {
-            return self.call_non_generator(plvs_stack, call_chunk);
+            self.call_non_generator(plvs_stack, call_chunk)
         }
     }
 
     pub fn string_to_callable(&mut self, s: &str) -> Option<Value> {
         let sf_fn_opt = SIMPLE_FORMS.get(s);
-        if !sf_fn_opt.is_none() {
-            let sf_fn = sf_fn_opt.unwrap();
+        if let Some(sf_fn) = sf_fn_opt {
             let nv = Value::CoreFunction(*sf_fn);
             return Some(nv);
         }
@@ -728,17 +721,14 @@ impl VM {
         }
         if call_chunk_opt.is_none() && self.global_functions.contains_key(s) {
             global_function = self.global_functions.get(s).unwrap().clone();
-            call_chunk_opt = Some(global_function.clone());
+            call_chunk_opt = Some(global_function);
         }
-        match call_chunk_opt {
-            Some(call_chunk) => {
-                let nv = Value::NamedFunction(call_chunk.clone());
-                return Some(nv);
-            }
-            _ => {}
+        if let Some(call_chunk) = call_chunk_opt {
+            let nv = Value::NamedFunction(call_chunk);
+            return Some(nv);
         }
 
-        return None;
+        None
     }
 
     pub fn call_string(&mut self, is_implicit: bool, s: &str) -> bool {
@@ -752,7 +742,7 @@ impl VM {
                 return true;
             }
             Some(Value::NamedFunction(named_fn)) => {
-                let res = self.call_named_function(None, named_fn.clone());
+                let res = self.call_named_function(None, named_fn);
                 return res;
             }
             _ => {}
@@ -769,7 +759,7 @@ impl VM {
             return false;
         }
 
-        return true;
+        true
     }
 
     pub fn populate_constant_value(&mut self, function_str: &str, function_str_index: i32) {
@@ -788,18 +778,15 @@ impl VM {
         }
         if not_present {
             let sv = self.string_to_callable(function_str);
-            match sv {
-                Some(v) => {
-                    self.chunk
-                        .borrow_mut()
-                        .constant_values
-                        .resize(function_str_index as usize, Value::Null);
-                    self.chunk
-                        .borrow_mut()
-                        .constant_values
-                        .insert(function_str_index as usize, v);
-                }
-                _ => {}
+            if let Some(v) = sv {
+                self.chunk
+                    .borrow_mut()
+                    .constant_values
+                    .resize(function_str_index as usize, Value::Null);
+                self.chunk
+                    .borrow_mut()
+                    .constant_values
+                    .insert(function_str_index as usize, v);
             }
         }
     }
@@ -854,11 +841,11 @@ impl VM {
                 return self.call_named_function(None, call_chunk_rc);
             }
             Value::AnonymousFunction(call_chunk_rc, lvs) => {
-                return self.call_named_function(Some(lvs), call_chunk_rc.clone());
+                return self.call_named_function(Some(lvs), call_chunk_rc);
             }
             Value::String(st) => {
                 let s = &st.borrow().string;
-                return self.call_string(is_implicit, &s);
+                return self.call_string(is_implicit, s);
             }
             _ => {
                 if is_implicit {
@@ -870,7 +857,7 @@ impl VM {
             }
         }
 
-        return true;
+        true
     }
 
     pub fn run(&mut self, chunk: Rc<RefCell<Chunk>>) -> usize {
@@ -885,7 +872,7 @@ impl VM {
         let (c, i) = mp;
         self.chunk = c;
         self.i = i;
-        return res;
+        res
     }
 
     /// Takes the global functions, the call stack chunks, the current
@@ -918,34 +905,30 @@ impl VM {
                 eprintln!(" > Index:  {:?}", i);
             }
             let op_fn_opt = SIMPLE_OPS[op as usize];
-            if !op_fn_opt.is_none() {
-                let op_fn = op_fn_opt.unwrap();
+            if let Some(op_fn) = op_fn_opt {
                 let res = op_fn(self);
                 if res == 0 {
                     return 0;
                 } else {
-                    i = i + 1;
+                    i += 1;
                     continue;
                 }
             }
             match op {
                 OpCode::AddConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = chunk.borrow().data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = chunk.borrow().data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let mut done = false;
                     if chunk.borrow().has_constant_int(i2 as i32) {
                         let n = chunk.borrow().get_constant_int(i2 as i32);
                         let len = self.stack.len();
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
-                        match v1_rr {
-                            Value::Int(ref mut n1) => {
-                                *n1 = *n1 + n;
-                                done = true;
-                            }
-                            _ => {}
+                        if let Value::Int(ref mut n1) = v1_rr {
+                            *n1 += n;
+                            done = true;
                         };
                     }
                     if !done {
@@ -957,29 +940,26 @@ impl VM {
                         if res == 0 {
                             return 0;
                         } else {
-                            i = i + 1;
+                            i += 1;
                             continue;
                         }
                     }
                 }
                 OpCode::SubtractConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = chunk.borrow().data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = chunk.borrow().data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let mut done = false;
                     if chunk.borrow().has_constant_int(i2 as i32) {
                         let n = chunk.borrow().get_constant_int(i2 as i32);
                         let len = self.stack.len();
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
-                        match v1_rr {
-                            Value::Int(ref mut n1) => {
-                                *n1 = *n1 - n;
-                                done = true;
-                            }
-                            _ => {}
-                        };
+                        if let Value::Int(ref mut n1) = v1_rr {
+                            *n1 -= n;
+                            done = true;
+                        }
                     }
                     if !done {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Subtract as usize];
@@ -990,29 +970,26 @@ impl VM {
                         if res == 0 {
                             return 0;
                         } else {
-                            i = i + 1;
+                            i += 1;
                             continue;
                         }
                     }
                 }
                 OpCode::MultiplyConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = chunk.borrow().data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = chunk.borrow().data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let mut done = false;
                     if chunk.borrow().has_constant_int(i2 as i32) {
                         let n = chunk.borrow().get_constant_int(i2 as i32);
                         let len = self.stack.len();
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
-                        match v1_rr {
-                            Value::Int(ref mut n1) => {
-                                *n1 = *n1 * n;
-                                done = true;
-                            }
-                            _ => {}
-                        };
+                        if let Value::Int(ref mut n1) = v1_rr {
+                            *n1 *= n;
+                            done = true;
+                        }
                     }
                     if !done {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Multiply as usize];
@@ -1023,29 +1000,26 @@ impl VM {
                         if res == 0 {
                             return 0;
                         } else {
-                            i = i + 1;
+                            i += 1;
                             continue;
                         }
                     }
                 }
                 OpCode::DivideConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = chunk.borrow().data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = chunk.borrow().data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let mut done = false;
                     if chunk.borrow().has_constant_int(i2 as i32) {
                         let n = chunk.borrow().get_constant_int(i2 as i32);
                         let len = self.stack.len();
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
-                        match v1_rr {
-                            Value::Int(ref mut n1) => {
-                                *n1 = *n1 / n;
-                                done = true;
-                            }
-                            _ => {}
-                        };
+                        if let Value::Int(ref mut n1) = v1_rr {
+                            *n1 /= n;
+                            done = true;
+                        }
                     }
                     if !done {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Divide as usize];
@@ -1056,32 +1030,25 @@ impl VM {
                         if res == 0 {
                             return 0;
                         } else {
-                            i = i + 1;
+                            i += 1;
                             continue;
                         }
                     }
                 }
                 OpCode::EqConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = chunk.borrow().data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = chunk.borrow().data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let n = chunk.borrow().get_constant_int(i2 as i32);
 
                     let len = self.stack.len();
                     let v1_rr = self.stack.get_mut(len - 1).unwrap();
                     let mut done = false;
-                    match v1_rr {
-                        Value::Int(ref n1) => {
-                            if *n1 == n {
-                                self.stack[len - 1] = Value::Bool(true);
-                            } else {
-                                self.stack[len - 1] = Value::Bool(false);
-                            }
-                            done = true;
-                        }
-                        _ => {}
+                    if let Value::Int(ref n1) = v1_rr {
+                        self.stack[len - 1] = Value::Bool(*n1 == n);
+                        done = true;
                     };
                     if !done {
                         let op_fn_opt = SIMPLE_OPS[OpCode::Eq as usize];
@@ -1097,17 +1064,17 @@ impl VM {
                 OpCode::StartList => {
                     list_indexes.push(self.stack.len());
                     list_types.push(ListType::List);
-                    list_count = list_count + 1;
+                    list_count += 1;
                 }
                 OpCode::StartHash => {
                     list_indexes.push(self.stack.len());
                     list_types.push(ListType::Hash);
-                    list_count = list_count + 1;
+                    list_count += 1;
                 }
                 OpCode::StartSet => {
                     list_indexes.push(self.stack.len());
                     list_types.push(ListType::Set);
-                    list_count = list_count + 1;
+                    list_count += 1;
                 }
                 OpCode::EndList => {
                     if list_count == 0 {
@@ -1116,7 +1083,7 @@ impl VM {
                     }
                     let list_index = list_indexes.pop().unwrap();
                     let list_type = list_types.pop().unwrap();
-                    list_count = list_count - 1;
+                    list_count -= 1;
 
                     match list_type {
                         ListType::List => {
@@ -1171,16 +1138,13 @@ impl VM {
                                         return 0;
                                     }
                                     Some(s) => {
-                                        match value {
-                                            Some(ref vv) => {
-                                                if !value_rr.variants_equal(&vv) {
-                                                    self.print_error(
-                                                        "set values must have the same type",
-                                                    );
-                                                    return 0;
-                                                }
+                                        if let Some(ref vv) = value {
+                                            if !value_rr.variants_equal(vv) {
+                                                self.print_error(
+                                                    "set values must have the same type",
+                                                );
+                                                return 0;
                                             }
-                                            _ => {}
                                         }
                                         map.insert(s.to_string(), value_rr);
                                     }
@@ -1194,11 +1158,11 @@ impl VM {
                 OpCode::Function => {
                     // todo: The logic here is awkward, and needs
                     // reviewing.
-                    i = i + 1;
+                    i += 1;
                     let i_upper = chunk.borrow().data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = chunk.borrow().data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value_rr = chunk.borrow().get_constant(i2 as i32);
                     let mut copy = false;
 
@@ -1256,11 +1220,11 @@ impl VM {
                     }
                 }
                 OpCode::Constant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = chunk.borrow().data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = chunk.borrow().data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let mut inst = false;
 
                     {
@@ -1296,11 +1260,11 @@ impl VM {
                     }
                 }
                 OpCode::CallConstant | OpCode::CallImplicitConstant => {
-                    i = i + 1;
+                    i += 1;
                     let i_upper = chunk.borrow().data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = chunk.borrow().data[i];
-                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
 
                     let value_sd = chunk.borrow().constants[i2 as usize].clone();
                     match value_sd {
@@ -1312,22 +1276,21 @@ impl VM {
                             let fsi = (i2 as u32).try_into().unwrap();
                             self.populate_constant_value(&st, fsi);
                             let cv = self.chunk.borrow().get_constant_value(fsi);
-                            match cv {
-                                Value::Null => match op {
+                            if let Value::Null = cv {
+                                match op {
                                     OpCode::CallImplicitConstant => {
                                         let value_rr = Value::String(Rc::new(RefCell::new(
                                             StringTriple::new(st.to_string(), None),
                                         )));
                                         self.stack.push(value_rr);
-                                        i = i + 1;
+                                        i += 1;
                                         continue;
                                     }
                                     _ => {
                                         self.print_error("function not found");
                                         return 0;
                                     }
-                                },
-                                _ => {}
+                                }
                             }
 
                             let res = self.call(op, cv);
@@ -1355,8 +1318,8 @@ impl VM {
                     }
                 }
                 OpCode::GLVCall => {
-                    i = i + 1;
-                    let var_index: u8 = chunk.borrow().data[i].try_into().unwrap();
+                    i += 1;
+                    let var_index: u8 = chunk.borrow().data[i];
 
                     let function_rr = self
                         .local_var_stack
@@ -1375,8 +1338,8 @@ impl VM {
                         return 0;
                     }
 
-                    i = i + 1;
-                    let var_index: u8 = chunk.borrow().data[i].try_into().unwrap();
+                    i += 1;
+                    let var_index: u8 = chunk.borrow().data[i];
                     let value_rr = self.stack.pop().unwrap();
 
                     if var_index == (self.local_var_stack.borrow().len() as u8) {
@@ -1388,8 +1351,8 @@ impl VM {
                     }
                 }
                 OpCode::GetLocalVar => {
-                    i = i + 1;
-                    let var_index: u8 = chunk.borrow().data[i].try_into().unwrap();
+                    i += 1;
+                    let var_index: u8 = chunk.borrow().data[i];
 
                     if usize::from(var_index + 1) > self.local_var_stack.borrow().len() {
                         /* It's not impossible this is due to some
@@ -1407,9 +1370,9 @@ impl VM {
                     self.stack.push(value_rr);
                 }
                 OpCode::GLVShift => {
-                    i = i + 1;
+                    i += 1;
                     self.i = i;
-                    let var_index: u8 = chunk.borrow().data[i].try_into().unwrap();
+                    let var_index: u8 = chunk.borrow().data[i];
 
                     let mut pt = self
                         .local_var_stack
@@ -1521,15 +1484,15 @@ impl VM {
 
                     let value_rr = self.stack.pop().unwrap();
 
-                    i = i + 1;
+                    i += 1;
                     let i1: usize = chunk.borrow().data[i].try_into().unwrap();
-                    i = i + 1;
+                    i += 1;
                     let i2: usize = chunk.borrow().data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
 
                     let b = value_rr.to_bool();
                     if !b {
-                        i = i + jmp_len;
+                        i += jmp_len;
                     }
                 }
                 OpCode::JumpNeR => {
@@ -1540,15 +1503,15 @@ impl VM {
 
                     let value_rr = self.stack.pop().unwrap();
 
-                    i = i + 1;
+                    i += 1;
                     let i1: usize = chunk.borrow().data[i].try_into().unwrap();
-                    i = i + 1;
+                    i += 1;
                     let i2: usize = chunk.borrow().data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
 
                     let b = value_rr.to_bool();
                     if !b {
-                        i = i - jmp_len;
+                        i -= jmp_len;
                     }
                 }
                 OpCode::JumpNeREqC => {
@@ -1557,25 +1520,25 @@ impl VM {
                         return 0;
                     }
 
-                    i = i + 1;
+                    i += 1;
                     let i1: usize = chunk.borrow().data[i].try_into().unwrap();
-                    i = i + 1;
+                    i += 1;
                     let i2: usize = chunk.borrow().data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
 
-                    i = i + 1;
+                    i += 1;
                     let i_upper = chunk.borrow().data[i];
-                    i = i + 1;
+                    i += 1;
                     let i_lower = chunk.borrow().data[i];
-                    let i3 = (((i_upper as u16) << 8) & 0xFF00) | ((i_lower & 0xFF) as u16);
+                    let i3 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let value_rr = self.stack.last().unwrap();
                     if chunk.borrow().has_constant_int(i3 as i32) {
                         let cmp_rr = chunk.borrow().get_constant_int(i3 as i32);
 
-                        match &*value_rr {
+                        match value_rr {
                             Value::Int(n2) => {
                                 if cmp_rr != *n2 {
-                                    i = i - jmp_len;
+                                    i -= jmp_len;
                                 };
                             }
                             _ => {
@@ -1602,20 +1565,20 @@ impl VM {
                     return i + 1;
                 }
                 OpCode::Jump => {
-                    i = i + 1;
+                    i += 1;
                     let i1: usize = chunk.borrow().data[i].try_into().unwrap();
-                    i = i + 1;
+                    i += 1;
                     let i2: usize = chunk.borrow().data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
-                    i = i + jmp_len;
+                    i += jmp_len;
                 }
                 OpCode::JumpR => {
-                    i = i + 1;
+                    i += 1;
                     let i1: usize = chunk.borrow().data[i].try_into().unwrap();
-                    i = i + 1;
+                    i += 1;
                     let i2: usize = chunk.borrow().data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
-                    i = i - jmp_len;
+                    i -= jmp_len;
                 }
                 OpCode::Error => {
                     if self.stack.is_empty() {
@@ -1671,23 +1634,23 @@ impl VM {
                     std::process::abort();
                 }
             }
-            i = i + 1;
+            i += 1;
         }
 
         if list_count > 0 {
-            print_error(chunk.clone(), i, "unterminated list start");
+            print_error(chunk, i, "unterminated list start");
             return 0;
         }
 
         if self.print_stack {
-            let res = self.print_stack(chunk.clone(), i, false);
+            let res = self.print_stack(chunk, i, false);
             self.stack.clear();
             if !res {
                 return 0;
             }
         }
 
-        return i + 1;
+        i + 1
     }
 
     /// Takes the global functions and the file to read the program
@@ -1705,9 +1668,8 @@ impl VM {
 
         let mut compiler = Compiler::new();
         let chunk_opt = compiler.compile(fh, name);
-        match chunk_opt {
-            None => return None,
-            _ => {}
+        if chunk_opt.is_none() {
+            return None;
         }
         let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
 
@@ -1715,6 +1677,6 @@ impl VM {
         if self.print_stack {
             self.stack.clear();
         }
-        return Some(chunk);
+        Some(chunk)
     }
 }

@@ -555,33 +555,30 @@ fn main() {
                 let name = re_post.replace_all(&path1, "");
 
                 let res = compiler.compile(&mut bufread, &name);
-                match res {
-                    Some(chunk) => {
-                        let output_path_opt = matches.opt_str("o");
-                        if output_path_opt.is_none() {
-                            eprintln!("output path is required for compilation");
-                            std::process::exit(1);
-                        }
-                        let output_path = output_path_opt.unwrap();
-                        let mut res = true;
-                        let mut err_str = "".to_owned();
-                        {
-                            let file_res = fs::File::create(output_path.clone());
-                            match file_res {
-                                Ok(mut file) => {
-                                    compiler.serialise(&chunk, &mut file);
-                                }
-                                Err(e) => {
-                                    res = false;
-                                    err_str = e.to_string();
-                                }
+                if let Some(chunk) = res {
+                    let output_path_opt = matches.opt_str("o");
+                    if output_path_opt.is_none() {
+                        eprintln!("output path is required for compilation");
+                        std::process::exit(1);
+                    }
+                    let output_path = output_path_opt.unwrap();
+                    let mut res = true;
+                    let mut err_str = "".to_owned();
+                    {
+                        let file_res = fs::File::create(output_path.clone());
+                        match file_res {
+                            Ok(mut file) => {
+                                compiler.serialise(&chunk, &mut file);
+                            }
+                            Err(e) => {
+                                res = false;
+                                err_str = e.to_string();
                             }
                         }
-                        if !res {
-                            eprintln!("unable to write to path {}: {}", output_path, err_str);
-                        }
                     }
-                    _ => {}
+                    if !res {
+                        eprintln!("unable to write to path {}: {}", output_path, err_str);
+                    }
                 }
             } else {
                 let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())));
@@ -638,23 +635,17 @@ fn main() {
             let coshrc_path = format!("{}/.coshrc", home.into_os_string().into_string().unwrap());
             if Path::new(&coshrc_path).exists() {
                 let file_res = fs::File::open(coshrc_path);
-                match file_res {
-                    Ok(file) => {
-                        let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                        let chunk_opt =
-                            vm.interpret(global_functions.clone(), &mut bufread, ".coshrc");
-                        match chunk_opt {
-                            Some(chunk) => {
-                                for (k, v) in chunk.borrow().functions.iter() {
-                                    if !k.starts_with("anon") {
-                                        global_functions.borrow_mut().insert(k.clone(), v.clone());
-                                    }
-                                }
+                if let Ok(file) = file_res {
+                    let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
+                    let chunk_opt =
+                        vm.interpret(global_functions.clone(), &mut bufread, ".coshrc");
+                    if let Some(chunk) = chunk_opt {
+                        for (k, v) in chunk.borrow().functions.iter() {
+                            if !k.starts_with("anon") {
+                                global_functions.borrow_mut().insert(k.clone(), v.clone());
                             }
-                            None => {}
                         }
                     }
-                    Err(_) => {}
                 }
             }
         }
@@ -749,11 +740,8 @@ fn main() {
             }
         }
         let res = rl.save_history(".cosh_history");
-        match res {
-            Err(e) => {
-                eprintln!("unable to save REPL history: {}", e);
-            }
-            _ => {}
+        if let Err(e) = res {
+            eprintln!("unable to save REPL history: {}", e);
         }
     }
 }

@@ -16,59 +16,50 @@ fn convert_to_xml(v: &Value) -> Option<String> {
     let mut text = String::new();
     let child_nodes;
     let mut end_element = String::new();
-    match &*v {
+    match v {
         Value::Hash(vm) => {
             let vmm = vm.borrow();
             let key_opt = vmm.get("key");
-            match key_opt {
-                Some(value_rr) => match value_rr {
-                    Value::String(st) => {
-                        let s = &st.borrow().string;
-                        if s != "" {
-                            begin_open_element = format!("<{}", s);
-                            begin_close_element = ">".to_string();
-                            end_element = format!("</{}>", s);
-                        }
-                    }
-                    _ => {}
-                },
-                None => {}
+            if let Some(Value::String(st)) = key_opt {
+                let s = &st.borrow().string;
+                if !s.is_empty() {
+                    begin_open_element = format!("<{}", s);
+                    begin_close_element = ">".to_string();
+                    end_element = format!("</{}>", s);
+                }
             }
 
             let attributes_opt = vmm.get("attributes");
             let attributes_str = match attributes_opt {
-                Some(attributes_rr) => match attributes_rr {
-                    Value::Hash(map) => {
-                        let mut has_none = false;
-                        let attributes_str_lst = map
-                            .borrow()
-                            .iter()
-                            .map(|(key, value_rr)| {
-                                let value_str_opt: Option<&str>;
-                                to_str!(value_rr, value_str_opt);
+                Some(Value::Hash(map)) => {
+                    let mut has_none = false;
+                    let attributes_str_lst = map
+                        .borrow()
+                        .iter()
+                        .map(|(key, value_rr)| {
+                            let value_str_opt: Option<&str>;
+                            to_str!(value_rr, value_str_opt);
 
-                                match value_str_opt {
-                                    Some(s) => {
-                                        format!("{}=\"{}\"", key, s)
-                                    }
-                                    None => {
-                                        has_none = true;
-                                        "".to_string()
-                                    }
+                            match value_str_opt {
+                                Some(s) => {
+                                    format!("{}=\"{}\"", key, s)
                                 }
-                            })
-                            .collect::<Vec<_>>();
-                        if has_none {
-                            return None;
-                        } else {
-                            attributes_str_lst.join(" ")
-                        }
+                                None => {
+                                    has_none = true;
+                                    "".to_string()
+                                }
+                            }
+                        })
+                        .collect::<Vec<_>>();
+                    if has_none {
+                        return None;
+                    } else {
+                        attributes_str_lst.join(" ")
                     }
-                    _ => "".to_string(),
-                },
+                }
                 _ => "".to_string(),
             };
-            attributes = if attributes_str != "" {
+            attributes = if !attributes_str.is_empty() {
                 format!(" {}", attributes_str)
             } else {
                 "".to_owned()
@@ -76,43 +67,40 @@ fn convert_to_xml(v: &Value) -> Option<String> {
 
             let namespaces_opt = vmm.get("namespaces");
             let namespaces_str = match namespaces_opt {
-                Some(namespaces_rr) => match namespaces_rr {
-                    Value::List(lst) => {
-                        let namespaces_lst = lst
-                            .borrow()
-                            .iter()
-                            .map(|el| match el {
-                                Value::Hash(hsh) => {
-                                    let hb = hsh.borrow();
-                                    let uri_opt = hb.get("uri").unwrap();
-                                    let name_opt = hb.get("name").unwrap();
+                Some(Value::List(lst)) => {
+                    let namespaces_lst = lst
+                        .borrow()
+                        .iter()
+                        .map(|el| match el {
+                            Value::Hash(hsh) => {
+                                let hb = hsh.borrow();
+                                let uri_opt = hb.get("uri").unwrap();
+                                let name_opt = hb.get("name").unwrap();
 
-                                    let uri_str_opt: Option<&str>;
-                                    to_str!(uri_opt, uri_str_opt);
-                                    let name_str_opt: Option<&str>;
-                                    to_str!(name_opt, name_str_opt);
+                                let uri_str_opt: Option<&str>;
+                                to_str!(uri_opt, uri_str_opt);
+                                let name_str_opt: Option<&str>;
+                                to_str!(name_opt, name_str_opt);
 
-                                    match (name_str_opt, uri_str_opt) {
-                                        (Some(name), Some(uri)) => {
-                                            if name.eq("") {
-                                                format!("xmlns=\"{}\"", uri)
-                                            } else {
-                                                format!("xmlns:{}=\"{}\"", name, uri)
-                                            }
+                                match (name_str_opt, uri_str_opt) {
+                                    (Some(name), Some(uri)) => {
+                                        if name.eq("") {
+                                            format!("xmlns=\"{}\"", uri)
+                                        } else {
+                                            format!("xmlns:{}=\"{}\"", name, uri)
                                         }
-                                        _ => "".to_string(),
                                     }
+                                    _ => "".to_string(),
                                 }
-                                _ => "".to_string(),
-                            })
-                            .collect::<Vec<_>>();
-                        namespaces_lst.join(" ")
-                    }
-                    _ => "".to_string(),
-                },
+                            }
+                            _ => "".to_string(),
+                        })
+                        .collect::<Vec<_>>();
+                    namespaces_lst.join(" ")
+                }
                 _ => "".to_string(),
             };
-            namespaces = if namespaces_str != "" {
+            namespaces = if !namespaces_str.is_empty() {
                 format!(" {}", namespaces_str)
             } else {
                 "".to_owned()
@@ -121,40 +109,34 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             let value_opt = vmm.get("value");
             let mut has_none = false;
             child_nodes = match value_opt {
-                Some(value_rr) => match value_rr {
-                    Value::List(lst) => lst
-                        .borrow()
-                        .iter()
-                        .map(|lst_value_rr| {
-                            let lst_value_rrb = convert_to_xml(&lst_value_rr);
-                            if lst_value_rrb.is_none() {
+                Some(Value::List(lst)) => {
+                    lst
+                    .borrow()
+                    .iter()
+                    .map(|lst_value_rr| {
+                        let lst_value_rrb = convert_to_xml(lst_value_rr);
+                        match lst_value_rrb {
+                            Some(lst_value) => lst_value,
+                            None => {
                                 has_none = true;
                                 "".to_string()
-                            } else {
-                                lst_value_rrb.unwrap()
                             }
-                        })
-                        .collect::<Vec<_>>()
-                        .join(""),
-                    _ => "".to_string(),
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join("")
                 },
-                _ => "".to_string(),
+                _ => "".to_string()
             };
             if has_none {
                 return None;
             }
 
             let text_opt = vmm.get("text");
-            match text_opt {
-                Some(value_rr) => match value_rr {
-                    Value::String(st) => {
-                        text = st.borrow().string.to_string();
-                    }
-                    _ => {}
-                },
-                _ => {}
+            if let Some(Value::String(st)) = text_opt {
+                text = st.borrow().string.to_string();
             };
-            return Some(format!(
+            Some(format!(
                 "{}{}{}{}{}{}{}",
                 begin_open_element,
                 namespaces,
@@ -163,7 +145,7 @@ fn convert_to_xml(v: &Value) -> Option<String> {
                 text,
                 child_nodes,
                 end_element
-            ));
+            ))
         }
         _ => Some("".to_string()),
     }
@@ -182,20 +164,16 @@ impl VM {
         let mut changed_namespaces = false;
         for ns in node.namespaces() {
             let uri = ns.uri();
-            let ns_name = ns.name();
-            let name = if ns_name.is_none() {
-                "".to_string()
-            } else {
-                ns_name.unwrap().to_string()
+            let ns_name_opt = ns.name();
+            let name = match ns_name_opt {
+                Some(ns_name) => ns_name.to_string(),
+                None => "".to_string()
             };
 
-            match current_namespaces.get(uri) {
-                Some(prev_name) => {
-                    if name.eq(prev_name) {
-                        continue;
-                    }
+            if let Some(prev_name) = current_namespaces.get(uri) {
+                if name.eq(prev_name) {
+                    continue;
                 }
-                _ => {}
             }
 
             changed_namespaces = true;
@@ -209,20 +187,16 @@ impl VM {
 
             for ns in node.namespaces() {
                 let uri = ns.uri();
-                let ns_name = ns.name();
-                let name = if ns_name.is_none() {
-                    "".to_string()
-                } else {
-                    ns_name.unwrap().to_string()
+                let ns_name_opt = ns.name();
+                let name = match ns_name_opt {
+                    Some(ns_name) => ns_name.to_string(),
+                    None => "".to_string()
                 };
 
-                match current_namespaces.get(uri) {
-                    Some(prev_name) => {
-                        if name.eq(prev_name) {
-                            continue;
-                        }
+                if let Some(prev_name) = current_namespaces.get(uri) {
+                    if name.eq(prev_name) {
+                        continue;
                     }
-                    _ => {}
                 }
 
                 let mut ns_map = IndexMap::new();
@@ -253,21 +227,22 @@ impl VM {
         let tag_name = node.tag_name();
         let tag_name_str = tag_name.name().to_string();
         let tag_name_ns = tag_name.namespace();
-        let key = if tag_name_ns.is_none() {
-            tag_name_str
-        } else {
-            let tag_ns = tag_name_ns.unwrap();
-            let ns_prefix_opt = current_namespaces.get(tag_ns);
-            if ns_prefix_opt.is_none() {
-                self.print_error("invalid XML namespace");
-                return Value::Null;
+
+        let key = match tag_name_ns {
+            Some(tag_ns) => {
+                let ns_prefix_opt = current_namespaces.get(tag_ns);
+                if ns_prefix_opt.is_none() {
+                    self.print_error("invalid XML namespace");
+                    return Value::Null;
+                }
+                let ns_prefix = ns_prefix_opt.unwrap();
+                if !ns_prefix.eq("") {
+                    format!("{}:{}", ns_prefix, tag_name_str)
+                } else {
+                    tag_name_str
+                }
             }
-            let ns_prefix = ns_prefix_opt.unwrap();
-            if !ns_prefix.eq("") {
-                format!("{}:{}", ns_prefix, tag_name_str)
-            } else {
-                format!("{}", tag_name_str)
-            }
+            None => tag_name_str
         };
 
         map.insert(
@@ -315,7 +290,7 @@ impl VM {
             "value".to_string(),
             Value::List(Rc::new(RefCell::new(child_nodes))),
         );
-        return Value::Hash(Rc::new(RefCell::new(map)));
+        Value::Hash(Rc::new(RefCell::new(map)))
     }
 
     /// Takes an XML string, converts it into a hash, and puts the
@@ -337,7 +312,7 @@ impl VM {
                     let doc;
                     match doc_res {
                         Err(e) => {
-                            let err_str = format!("unable to parse XML: {}", e.to_string());
+                            let err_str = format!("unable to parse XML: {}", e);
                             self.print_error(&err_str);
                             return 0;
                         }
@@ -348,11 +323,11 @@ impl VM {
                     let namespaces = HashMap::new();
                     let xml_rr = self.convert_from_xml(&doc.root_element(), &namespaces);
                     self.stack.push(xml_rr);
-                    return 1;
+                    1
                 }
                 _ => {
                     self.print_error("from-xml argument must be string or generator");
-                    return 0;
+                    0
                 }
             }
         } else {
@@ -367,7 +342,7 @@ impl VM {
             if !res {
                 return 0;
             }
-            return self.core_from_xml();
+            self.core_from_xml()
         }
     }
 
@@ -391,6 +366,6 @@ impl VM {
                 doc_opt.unwrap(),
                 None,
             )))));
-        return 1;
+        1
     }
 }

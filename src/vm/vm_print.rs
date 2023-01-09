@@ -40,7 +40,7 @@ fn psv_helper(
                     return -1;
                 }
                 termion::event::Key::PageDown => {
-                    lines_to_print = lines_to_print + window_height;
+                    lines_to_print += window_height;
                 }
                 termion::event::Key::End => {
                     /* todo: a bit of a hack.  It would be better
@@ -58,7 +58,7 @@ fn psv_helper(
                     continue;
                 }
                 _ => {
-                    lines_to_print = lines_to_print + 1;
+                    lines_to_print += 1;
                 }
             }
             stdout.flush().unwrap();
@@ -71,14 +71,11 @@ fn psv_helper(
             print!(" ");
         }
     }
-    match index {
-        Some(n) => {
-            print!("{}: ", n);
-        }
-        _ => {}
+    if let Some(n) = index {
+        print!("{}: ", n);
     }
     println!("{}", s);
-    return lines_to_print - 1;
+    lines_to_print - 1
 }
 
 impl VM {
@@ -97,11 +94,11 @@ impl VM {
         match value_opt {
             Some(s) => {
                 print!("{}", s);
-                return 1;
+                1
             }
             _ => {
                 self.print_error("print argument must be a string");
-                return 0;
+                0
             }
         }
     }
@@ -121,11 +118,11 @@ impl VM {
         match value_opt {
             Some(s) => {
                 println!("{}", s);
-                return 1;
+                1
             }
             _ => {
                 self.print_error("println argument must be a string");
-                return 0;
+                0
             }
         }
     }
@@ -138,7 +135,8 @@ impl VM {
     /// Prints the stack value to standard output, returning the new
     /// number of lines that can be printed without waiting for user
     /// input.
-    fn print_stack_value<'a>(
+    #[allow(clippy::too_many_arguments)]
+    fn print_stack_value(
         &mut self,
         value_rr: &Value,
         chunk: Rc<RefCell<Chunk>>,
@@ -214,7 +212,7 @@ impl VM {
                 Value::Bool(b) => {
                     let s = if *b { ".t" } else { ".f" };
                     lines_to_print = psv_helper(
-                        &s,
+                        s,
                         indent,
                         no_first_indent,
                         window_height,
@@ -259,14 +257,12 @@ impl VM {
                     let mut ss = st.borrow().escaped_string.clone();
                     if st.borrow().string.contains(char::is_whitespace) {
                         ss = format!("\"{}\"", ss);
-                    } else if ss.len() == 0 {
-                        ss = format!("\"\"");
+                    } else if ss.is_empty() {
+                        ss = "\"\"".to_string();
                     } else if ss == ".t" {
-                        ss = format!("\".t\"");
+                        ss = "\".t\"".to_string();
                     } else if ss == ".f" {
-                        ss = format!("\".f\"");
-                    } else {
-                        ss = format!("{}", ss);
+                        ss = "\".f\"".to_string();
                     }
                     lines_to_print = psv_helper(
                         &ss,
@@ -344,8 +340,7 @@ impl VM {
                             return lines_to_print;
                         }
                         let new_indent = indent + 4;
-                        let mut index = 0;
-                        for element in list.borrow().iter() {
+                        for (index, element) in list.borrow().iter().enumerate() {
                             lines_to_print = self.print_stack_value(
                                 element,
                                 chunk.clone(),
@@ -354,12 +349,11 @@ impl VM {
                                 false,
                                 window_height,
                                 lines_to_print,
-                                Some(index),
+                                Some(index.try_into().unwrap()),
                             );
                             if lines_to_print == -1 {
                                 return lines_to_print;
                             }
-                            index = index + 1;
                         }
                         lines_to_print =
                             psv_helper(")", indent, false, window_height, lines_to_print, None);
@@ -493,7 +487,7 @@ impl VM {
                     self.stack.pop();
                     return -1;
                 }
-                if self.stack.len() == 0 {
+                if self.stack.is_empty() {
                     break;
                 }
                 let is_null;
@@ -534,7 +528,7 @@ impl VM {
                         lines_to_print,
                         Some(element_index),
                     );
-                    element_index = element_index + 1;
+                    element_index += 1;
                     if lines_to_print == -1 {
                         return lines_to_print;
                     }
@@ -562,14 +556,14 @@ impl VM {
             return lines_to_print;
         }
 
-        return lines_to_print;
+        lines_to_print
     }
 
     /// Takes the current chunk, the instruction index, the map of
     /// global functions, and a boolean indicating whether the stack
     /// needs to be cleared after the stack is printed.  Prints the
     /// stack to standard output.
-    pub fn print_stack<'a>(
+    pub fn print_stack(
         &mut self,
         chunk: Rc<RefCell<Chunk>>,
         i: usize,
@@ -583,16 +577,13 @@ impl VM {
 
         let mut window_height: i32 = 0;
         let dim_opt = term_size::dimensions();
-        match dim_opt {
-            Some((_, h)) => {
-                window_height = h.try_into().unwrap();
-            }
-            _ => {}
+        if let Some((_, h)) = dim_opt {
+            window_height = h.try_into().unwrap();
         }
         let mut lines_to_print = window_height - 1;
 
         let mut stack_backup = Vec::new();
-        while self.stack.len() > 0 {
+        while !self.stack.is_empty() {
             let value_rr = self.stack.remove(0);
             lines_to_print = self.print_stack_value(
                 &value_rr,
@@ -617,6 +608,6 @@ impl VM {
             self.stack = stack_backup;
         }
         self.printing_stack = false;
-        return true;
+        true
     }
 }

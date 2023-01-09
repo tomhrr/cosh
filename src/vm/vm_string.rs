@@ -85,7 +85,7 @@ impl VM {
                 }
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a string and a separator as its arguments.  Splits the
@@ -128,7 +128,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a string and a separator as its arguments.  Splits the
@@ -160,16 +160,16 @@ impl VM {
                 let mut buffer = Vec::new();
                 for e in elements {
                     let mut e_str = e.to_string();
-                    if buffer.len() > 0 {
-                        if e_str.len() > 0 {
-                            if e_str.chars().last().unwrap() == '"' {
+                    if !buffer.is_empty() {
+                        if !e_str.is_empty() {
+                            if e_str.ends_with('\"') {
                                 buffer.push(e_str);
                                 let mut new_str = buffer.join(separator);
-                                if new_str.len() > 0 {
-                                    if new_str.chars().next().unwrap() == '"' {
+                                if !new_str.is_empty() {
+                                    if new_str.starts_with('\"') {
                                         new_str.remove(0);
                                     }
-                                    if new_str.len() > 0 && new_str.chars().last().unwrap() == '"' {
+                                    if !new_str.is_empty() && new_str.ends_with('\"') {
                                         new_str.remove(new_str.len() - 1);
                                     }
                                 }
@@ -179,24 +179,24 @@ impl VM {
                                 buffer.push(e_str);
                             }
                         }
-                    } else if (e_str.len() > 0)
-                        && (e_str.chars().next().unwrap() == '"')
-                        && (e_str.chars().last().unwrap() != '"')
+                    } else if !e_str.is_empty()
+                        && e_str.starts_with('\"')
+                        && !e_str.ends_with('\"')
                     {
                         buffer.push(e_str);
                     } else {
-                        if e_str.len() > 0 {
-                            if e_str.chars().next().unwrap() == '"' {
+                        if !e_str.is_empty() {
+                            if e_str.starts_with('\"') {
                                 e_str.remove(0);
                             }
-                            if e_str.len() > 0 && e_str.chars().last().unwrap() == '"' {
+                            if !e_str.is_empty() && e_str.ends_with('\"') {
                                 e_str.remove(e_str.len() - 1);
                             }
                         }
                         final_elements.push(e_str);
                     }
                 }
-                if buffer.len() > 0 {
+                if !buffer.is_empty() {
                     self.print_error("first split argument has syntax error");
                     return 0;
                 }
@@ -219,7 +219,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a shiftable object and a separator as its arguments.
@@ -243,7 +243,7 @@ impl VM {
                 // If the separator is an empty string, then matching
                 // it against the values to determine whether they
                 // need quoting won't work, so skip that in that case.
-                let separator_is_empty_string = separator.len() == 0;
+                let separator_is_empty_string = separator.is_empty();
                 let separator_regex_res = Regex::new(separator);
                 let mut final_elements = Vec::new();
                 match separator_regex_res {
@@ -300,8 +300,8 @@ impl VM {
                                     match element_opt {
                                         Some(s) => {
                                             if !separator_is_empty_string
-                                                && (separator_regex.is_match(&s)
-                                                    || esc_quotes.is_match(&s))
+                                                && (separator_regex.is_match(s)
+                                                    || esc_quotes.is_match(s))
                                             {
                                                 let s2 = esc_quotes.replace_all(s, "\\\"");
                                                 final_elements.push(format!("\"{}\"", s2));
@@ -340,7 +340,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     pub fn core_fmt(&mut self) -> i32 {
@@ -355,7 +355,7 @@ impl VM {
 
         match str_opt {
             Some(s) => {
-                let captures = CAPTURE_NUM.captures_iter(&s);
+                let captures = CAPTURE_NUM.captures_iter(s);
                 let mut final_s = s.to_string();
                 for capture in captures {
                     let capture_str = capture.get(1).unwrap().as_str();
@@ -423,13 +423,13 @@ impl VM {
                     }
                 }
 
-                let st = StringTriple::new(final_s.to_string(), None);
+                let st = StringTriple::new(final_s, None);
                 self.stack.push(Value::String(Rc::new(RefCell::new(st))));
-                return 1;
+                1
             }
             _ => {
                 self.print_error("fmt argument must be a string");
-                return 0;
+                0
             }
         }
     }

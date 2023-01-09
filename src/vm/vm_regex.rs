@@ -45,7 +45,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a value that can be stringified, a regex string, and a
@@ -107,7 +107,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a value that can be stringified and a regex string as
@@ -144,14 +144,11 @@ impl VM {
                 } else {
                     let captures = regex.captures(s);
                     let mut lst = VecDeque::new();
-                    match captures {
-                        Some(capture) => {
-                            lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                capture.get(0).unwrap().as_str().to_string(),
-                                None,
-                            )))));
-                        }
-                        _ => {}
+                    if let Some(capture) = captures {
+                        lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                            capture.get(0).unwrap().as_str().to_string(),
+                            None,
+                        )))));
                     }
                     self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                 }
@@ -165,6 +162,6 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 }

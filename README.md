@@ -7,10 +7,10 @@ cosh is a concatenative command-line shell.
 
 ### Why?
 
- - Basic shell operations like `ls`, `ps`, and so on are implemented
-   as functions that return first-class values, as opposed to relying
-   on executables that return text streams.  This makes working with
-   the results simpler:
+Basic shell operations like `ls`, `ps`, and so on are implemented as
+functions that return first-class values, as opposed to relying on
+executables that return text streams.  This makes working with the
+results simpler:
 
 ```
 /test$ ls;
@@ -25,9 +25,9 @@ file-0
 1024
 ```
 
- - A small set of versatile primitives means that less needs to be
-   remembered when compared with typical shells (see e.g. the various
-   flags for `cut(1)`):
+A small set of versatile primitives means that less needs to be
+remembered when compared with typical shells (see e.g. the various
+flags for `cut(1)`):
 
 ```
 /test$ file-0 f<;
@@ -52,9 +52,9 @@ v[gen (
 9
 ```
 
- - Arithmetical operators and XML/JSON/CSV encoding/decoding
-   functions reduce the number of times that it becomes
-   necessary to use a more full-featured programming language:
+Arithmetical operators and XML/JSON/CSV encoding/decoding functions
+reduce the number of times that it becomes necessary to use a more
+full-featured programming language:
 
 ```
 /test$ file-1 f<; print for;

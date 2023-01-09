@@ -795,7 +795,7 @@ impl Compiler {
                         .insert(name_str, Rc::new(RefCell::new(function_chunk)));
                 }
                 TokenType::RightBracket => {
-		    if let OpCode::Constant = chunk.get_second_last_opcode() {
+                    if let OpCode::Constant = chunk.get_second_last_opcode() {
                         match chunk.get_last_opcode() {
                             OpCode::Call => {}
                             OpCode::CallImplicit => {}
@@ -1092,7 +1092,7 @@ impl Compiler {
                         chunk.add_opcode(OpCode::Drop);
                     } else if s == "funcall" {
                         let mut done = false;
-			if let OpCode::GetLocalVar = chunk.get_second_last_opcode() {
+                        if let OpCode::GetLocalVar = chunk.get_second_last_opcode() {
                             chunk.set_second_last_opcode(OpCode::GLVCall);
                             done = true;
                         }
@@ -1101,7 +1101,7 @@ impl Compiler {
                         }
                     } else if s == "shift" {
                         let mut done = false;
-			if let OpCode::GetLocalVar = chunk.get_second_last_opcode() {
+                        if let OpCode::GetLocalVar = chunk.get_second_last_opcode() {
                             chunk.set_second_last_opcode(OpCode::GLVShift);
                             done = true;
                         }
@@ -1253,43 +1253,43 @@ impl Compiler {
                                     chunk.get_third_last_opcode(),
                                     chunk.get_fourth_last_opcode(),
                                 ) {
-				    chunk.set_fourth_last_opcode(OpCode::JumpNeREqC);
-				    let cb1 = chunk.get_second_last_byte();
-				    let cb2 = chunk.get_last_byte();
-				    let i3 =
-					(((cb1 as u16) << 8) & 0xFF00) | (cb2 as u16);
-				    if chunk.has_constant_int(i3 as i32) {
-					let jmp_len = chunk.data.len() - n + 1;
-					chunk.set_third_last_byte(
-					    ((jmp_len >> 8) & 0xff).try_into().unwrap(),
-					);
-					chunk.set_second_last_byte(
-					    (jmp_len & 0xff).try_into().unwrap(),
-					);
-					chunk.set_last_byte(cb1);
-					chunk.add_byte(cb2);
-					done = true;
-				    }
+                                    chunk.set_fourth_last_opcode(OpCode::JumpNeREqC);
+                                    let cb1 = chunk.get_second_last_byte();
+                                    let cb2 = chunk.get_last_byte();
+                                    let i3 =
+                                        (((cb1 as u16) << 8) & 0xFF00) | (cb2 as u16);
+                                    if chunk.has_constant_int(i3 as i32) {
+                                        let jmp_len = chunk.data.len() - n + 1;
+                                        chunk.set_third_last_byte(
+                                            ((jmp_len >> 8) & 0xff).try_into().unwrap(),
+                                        );
+                                        chunk.set_second_last_byte(
+                                            (jmp_len & 0xff).try_into().unwrap(),
+                                        );
+                                        chunk.set_last_byte(cb1);
+                                        chunk.add_byte(cb2);
+                                        done = true;
+                                    }
                                 };
                                 if !done {
                                     let mut done2 = false;
                                     if let OpCode::Constant = chunk.get_third_last_opcode() {
-					let i_upper = chunk.get_second_last_byte();
-					let i_lower = chunk.get_last_byte();
-					let constant_i = (((i_upper as u16) << 8) & 0xFF00)
-					    | (i_lower as u16);
-					let v = chunk.get_constant(constant_i.into());
-					if let Value::Int(0) = v {
-					    chunk.set_third_last_opcode(OpCode::JumpR);
-					    let jmp_len = chunk.data.len() - n;
-					    chunk.set_second_last_byte(
-						((jmp_len >> 8) & 0xff).try_into().unwrap(),
-					    );
-					    chunk.set_last_byte(
-						(jmp_len & 0xff).try_into().unwrap(),
-					    );
-					    done2 = true;
-					}
+                                        let i_upper = chunk.get_second_last_byte();
+                                        let i_lower = chunk.get_last_byte();
+                                        let constant_i = (((i_upper as u16) << 8) & 0xFF00)
+                                            | (i_lower as u16);
+                                        let v = chunk.get_constant(constant_i.into());
+                                        if let Value::Int(0) = v {
+                                            chunk.set_third_last_opcode(OpCode::JumpR);
+                                            let jmp_len = chunk.data.len() - n;
+                                            chunk.set_second_last_byte(
+                                                ((jmp_len >> 8) & 0xff).try_into().unwrap(),
+                                            );
+                                            chunk.set_last_byte(
+                                                (jmp_len & 0xff).try_into().unwrap(),
+                                            );
+                                            done2 = true;
+                                        }
                                     }
                                     if !done2 {
                                         chunk.add_opcode(OpCode::JumpNeR);

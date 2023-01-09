@@ -230,7 +230,7 @@ impl VM {
 
         let v1_rr = self.stack.pop().unwrap();
         let mut done = false;
-	if let (Value::Int(n1), Value::Int(ref mut n2)) =
+        if let (Value::Int(n1), Value::Int(ref mut n2)) =
                 (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
             *n2 -= n1;
             done = true;
@@ -321,7 +321,7 @@ impl VM {
 
         let v1_rr = self.stack.pop().unwrap();
         let mut done = false;
-	if let (Value::Int(n1), Value::Int(ref mut n2)) =
+        if let (Value::Int(n1), Value::Int(ref mut n2)) =
                 (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
             *n2 *= n1;
             done = true;
@@ -412,7 +412,7 @@ impl VM {
         let v1_rr = self.stack.pop().unwrap();
         let mut done = false;
 
-	if let (Value::Int(n1), Value::Int(ref mut n2)) =
+        if let (Value::Int(n1), Value::Int(ref mut n2)) =
                 (&v1_rr, self.stack.get_mut(len - 2).unwrap()) {
             *n2 /= n1;
             done = true;
@@ -501,8 +501,8 @@ impl VM {
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
-		if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
-		    return if n1 == n2 { 1 } else { 0 };
+                if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
+                    return if n1 == n2 { 1 } else { 0 };
                 }
                 -1
             }
@@ -579,18 +579,18 @@ impl VM {
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
-		    return if n2 > n1 { 1 } else { 0 };
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return if n2 > n1 { 1 } else { 0 };
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
-		    return if n2 > n1 { 1 } else { 0 };
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return if n2 > n1 { 1 } else { 0 };
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
-		    return if n2 > n1 { 1 } else { 0 };
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return if n2 > n1 { 1 } else { 0 };
                 }
 
                 let i1_str_opt: Option<&str>;
@@ -599,8 +599,8 @@ impl VM {
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
-		if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
-		    return if n2 > n1 { 1 } else { 0 };
+                if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
+                    return if n2 > n1 { 1 } else { 0 };
                 }
                 0
             }
@@ -677,18 +677,18 @@ impl VM {
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
-		    return if n2 < n1 { 1 } else { 0 };
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return if n2 < n1 { 1 } else { 0 };
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
-		    return if n2 < n1 { 1 } else { 0 };
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return if n2 < n1 { 1 } else { 0 };
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
-		    return if n2 < n1 { 1 } else { 0 };
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return if n2 < n1 { 1 } else { 0 };
                 }
 
                 let i1_str_opt: Option<&str>;
@@ -697,8 +697,8 @@ impl VM {
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
-		if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
-		    return if n2 < n1 { 1 } else { 0 };
+                if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
+                    return if n2 < n1 { 1 } else { 0 };
                 }
                 -1
             }
@@ -788,18 +788,18 @@ impl VM {
             (_, _) => {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
-		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
-		    return n2.cmp(&n1) as i32;
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return n2.cmp(&n1) as i32;
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
-		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
-		    return n2.cmp(&n1) as i32;
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return n2.cmp(&n1) as i32;
                 }
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
-		if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
-		    return n2.partial_cmp(&n1).unwrap() as i32;
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    return n2.partial_cmp(&n1).unwrap() as i32;
                 }
 
                 let i1_str_opt: Option<&str>;
@@ -808,8 +808,8 @@ impl VM {
                 let i2_str_opt: Option<&str>;
                 to_str!(v2, i2_str_opt);
 
-		if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
-		    return n2.cmp(n1) as i32;
+                if let (Some(n1), Some(n2)) = (i1_str_opt, i2_str_opt) {
+                    return n2.cmp(n1) as i32;
                 }
                 -2
             }

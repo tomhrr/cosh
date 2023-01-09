@@ -235,7 +235,6 @@ impl VM {
 
         match *shiftable_rr {
             Value::Generator(ref mut generator_object_) => {
-                // todo: set to none, error later if still none.
                 let mut new_i = 0;
                 {
                     let mut generator_object = generator_object_.borrow_mut();

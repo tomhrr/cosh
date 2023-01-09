@@ -1156,8 +1156,6 @@ impl VM {
                     }
                 }
                 OpCode::Function => {
-                    // todo: The logic here is awkward, and needs
-                    // reviewing.
                     i += 1;
                     let i_upper = chunk.borrow().data[i];
                     i += 1;

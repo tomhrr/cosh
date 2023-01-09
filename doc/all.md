@@ -47,6 +47,15 @@ conversion is not supported, then the null value will be returned.
 
 ### Basic usage
 
+The `cosh` executable will start an interactive shell when it is run
+without arguments:
+
+    user@host:/$ cosh
+    /$
+
+(The remaining examples will omit the directory from the beginning of
+the prompt.)
+
 All `String`s are quoted by default.  The semicolon character will
 cause the definition associated with the last string on the stack to be
 executed:
@@ -54,7 +63,7 @@ executed:
     $ 1 2 + ;
     3
 
-A semicolon may instead be appended to the `String`:
+A semicolon may be appended to the `String`:
 
     $ 1 2 +;
     3
@@ -118,6 +127,22 @@ be switched using `toggle-mode`:
     3
     $ .s
     3
+
+### Compiling and importing a library
+
+To compile a library:
+
+    user@host:/$ cat test.ch
+    : test-fn hello println; ,,
+    user@host:/$ cosh -c test.ch -o test.chc
+    user@host:/$
+
+To import and use a library:
+
+    $ test.chc import
+    $ test-fn
+    hello
+    $
 
 ### Stack operators
 

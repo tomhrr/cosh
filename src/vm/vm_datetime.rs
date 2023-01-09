@@ -57,7 +57,7 @@ impl VM {
     }
 
     /// Takes the epoch time (i.e. the number of seconds that have
-    /// elapsed since 1970-01-01 00:00:00 UTC) and returns a DateTime
+    /// elapsed since 1970-01-01 00:00:00 UTC) and returns a date-time
     /// object (offset at UTC) that corresponds to that time.
     pub fn core_from_epoch(&mut self) -> i32 {
 	if self.stack.len() < 1 {
@@ -239,7 +239,7 @@ impl VM {
 
     /// Takes a date-time object, a period (one of years, months, days,
     /// minutes, hours, or seconds) and a count as its arguments.
-    /// Subtracts the specified number of periods to the DateTime
+    /// Subtracts the specified number of periods to the date-time
     /// object and returns the result as a new date-time object.
     pub fn core_subtime(&mut self) -> i32 {
 	if self.stack.len() < 3 {
@@ -342,7 +342,7 @@ impl VM {
     }
 
     /// Takes a datetime string and a strftime pattern as its
-    /// arguments.  Returns the parsed datetime string as a DateTime
+    /// arguments.  Returns the parsed datetime string as a date-time
     /// object.  The parsed datetime defaults to 1970-01-01 00:00:00,
     /// with components got via the strftime pattern applied on top of
     /// the default.

@@ -15,7 +15,7 @@ impl VM {
         let date = chrono::offset::Utc::now();
         let newdate = date.with_timezone(&self.utc_tz);
         self.stack.push(Value::DateTimeNT(newdate));
-        return 1;
+        1
     }
 
     /// Returns the current time as a date-time object, offset at the
@@ -24,7 +24,7 @@ impl VM {
         let date = chrono::offset::Utc::now();
         let newdate = date.with_timezone(&self.local_tz);
         self.stack.push(Value::DateTimeNT(newdate));
-        return 1;
+        1
     }
 
     /// Takes a date-time object and returns the epoch time that
@@ -41,17 +41,17 @@ impl VM {
                 let epoch = dt.timestamp();
                 let epoch32 = i32::try_from(epoch).unwrap();
                 self.stack.push(Value::Int(epoch32));
-                return 1;
+                1
             }
             Value::DateTimeOT(dt) => {
                 let epoch = dt.timestamp();
                 let epoch32 = i32::try_from(epoch).unwrap();
                 self.stack.push(Value::Int(epoch32));
-                return 1;
+                1
             }
             _ => {
                 self.print_error("to-epoch argument must be date-time object");
-                return 0;
+                0
             }
         }
     }
@@ -74,11 +74,11 @@ impl VM {
                 let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
                 let newdate = datetime.with_timezone(&self.utc_tz);
                 self.stack.push(Value::DateTimeNT(newdate));
-                return 1;
+                1
             }
             _ => {
                 self.print_error("from-epoch argument must be integer");
-                return 0;
+                0
             }
         }
     }
@@ -100,36 +100,36 @@ impl VM {
 
         match (dt_rr, tz_opt) {
             (Value::DateTimeNT(dt), Some(s)) => {
-                let tzr = chrono_tz::Tz::from_str(&s);
+                let tzr = chrono_tz::Tz::from_str(s);
                 match tzr {
                     Ok(tz) => {
                         let newdate = dt.with_timezone(&tz);
                         self.stack.push(Value::DateTimeNT(newdate));
-                        return 1;
+                        1
                     }
                     _ => {
                         self.print_error("second set-tz argument must be valid timezone");
-                        return 0;
+                        0
                     }
                 }
             }
             (Value::DateTimeOT(dt), Some(s)) => {
-                let tzr = chrono_tz::Tz::from_str(&s);
+                let tzr = chrono_tz::Tz::from_str(s);
                 match tzr {
                     Ok(tz) => {
                         let newdate = dt.with_timezone(&tz);
                         self.stack.push(Value::DateTimeNT(newdate));
-                        return 1;
+                        1
                     }
                     _ => {
                         self.print_error("second set-tz argument must be valid timezone");
-                        return 0;
+                        0
                     }
                 }
             }
             (_, _) => {
                 self.print_error("first set-tz argument must be date-time object");
-                return 0;
+                0
             }
         }
     }
@@ -191,32 +191,32 @@ impl VM {
             (Value::DateTimeNT(dt), Some(d), _) => {
                 let ndt = dt + d;
                 self.stack.push(Value::DateTimeNT(ndt));
-                return 1;
+                1
             }
             (Value::DateTimeNT(dt), _, Some(d)) => {
                 let ndt = dt + d;
                 self.stack.push(Value::DateTimeNT(ndt));
-                return 1;
+                1
             }
             (Value::DateTimeOT(dt), Some(d), _) => {
                 let ndt = dt + d;
                 self.stack.push(Value::DateTimeOT(ndt));
-                return 1;
+                1
             }
             (Value::DateTimeOT(dt), _, Some(d)) => {
                 let ndt = dt + d;
                 self.stack.push(Value::DateTimeOT(ndt));
-                return 1;
+                1
             }
             (Value::DateTimeNT(_) | Value::DateTimeOT(_), _, _) => {
                 let err_str = format!("second {} argument must be time unit", fn_name);
                 self.print_error(&err_str);
-                return 0;
+                0
             }
             (..) => {
                 let err_str = format!("second {} argument must be date-time object", fn_name);
                 self.print_error(&err_str);
-                return 0;
+                0
             }
         }
     }
@@ -231,7 +231,7 @@ impl VM {
             return 0;
         }
 
-        return self.addtime("+time");
+        self.addtime("+time")
     }
 
     /// Takes a date-time object, a period (one of years, months, days,
@@ -249,13 +249,12 @@ impl VM {
 
         match num_int_opt {
             Some(n) => {
-                let n2 = n * -1;
-                self.stack.push(Value::Int(n2));
-                return self.addtime("-time");
+                self.stack.push(Value::Int(-n));
+                self.addtime("-time")
             }
             _ => {
                 self.print_error("third -time argument must be integer");
-                return 0;
+                0
             }
         }
     }
@@ -283,7 +282,7 @@ impl VM {
                         ss.to_string(),
                         None,
                     )))));
-                return 1;
+                1
             }
             (Value::DateTimeOT(dt), Some(s)) => {
                 let ss = dt.format(s);
@@ -292,15 +291,15 @@ impl VM {
                         ss.to_string(),
                         None,
                     )))));
-                return 1;
+                1
             }
             (_, Some(_)) => {
                 self.print_error("first strftime argument must be date-time object");
-                return 0;
+                0
             }
             (..) => {
                 self.print_error("second strftime argument must be string");
-                return 0;
+                0
             }
         }
     }
@@ -311,36 +310,36 @@ impl VM {
         let res = parse(&mut parsed, value, si);
         match res {
             Ok(_) => {
-                if !parsed.year.is_some() {
+                if parsed.year.is_none() {
                     parsed.set_year(1970).unwrap();
                 }
-                if !parsed.month.is_some() {
+                if parsed.month.is_none() {
                     parsed.set_month(1).unwrap();
                 }
-                if !parsed.day.is_some() {
+                if parsed.day.is_none() {
                     parsed.set_day(1).unwrap();
                 }
-                if !parsed.hour_div_12.is_some() {
+                if parsed.hour_div_12.is_none() {
                     parsed.set_hour(0).unwrap();
                 }
-                if !parsed.hour_mod_12.is_some() {
+                if parsed.hour_mod_12.is_none() {
                     parsed.set_hour(0).unwrap();
                 }
-                if !parsed.minute.is_some() {
+                if parsed.minute.is_none() {
                     parsed.set_minute(0).unwrap();
                 }
-                if !parsed.second.is_some() {
+                if parsed.second.is_none() {
                     parsed.set_second(0).unwrap();
                 }
-                if !parsed.offset.is_some() {
+                if parsed.offset.is_none() {
                     parsed.set_offset(0).unwrap();
                 }
-                return Some(parsed);
+                Some(parsed)
             }
             Err(e) => {
-                let err_str = format!("unable to parse date-time string: {}", e.to_string());
+                let err_str = format!("unable to parse date-time string: {}", e);
                 self.print_error(&err_str);
-                return None;
+                None
             }
         }
     }
@@ -366,25 +365,25 @@ impl VM {
 
         match (str_opt, pat_opt) {
             (Some(st), Some(pat)) => {
-                let parsed_opt = self.strptime(&pat, &st);
+                let parsed_opt = self.strptime(pat, st);
                 match parsed_opt {
                     Some(parsed) => {
                         let dt_res = parsed.to_datetime().unwrap();
                         self.stack.push(Value::DateTimeOT(dt_res));
-                        return 1;
+                        1
                     }
                     _ => {
-                        return 0;
+                        0
                     }
                 }
             }
             (Some(_), _) => {
                 self.print_error("second strptime argument must be a string");
-                return 0;
+                0
             }
             (..) => {
                 self.print_error("first strptime argument must be a string");
-                return 0;
+                0
             }
         }
     }
@@ -414,10 +413,10 @@ impl VM {
 
         match (str_opt, pat_opt, tz_opt) {
             (Some(st), Some(pat), Some(tzs)) => {
-                let tzr = chrono_tz::Tz::from_str(&tzs);
+                let tzr = chrono_tz::Tz::from_str(tzs);
                 match tzr {
                     Ok(tz) => {
-                        let parsed_opt = self.strptime(&pat, &st);
+                        let parsed_opt = self.strptime(pat, st);
                         match parsed_opt {
                             Some(parsed) => {
                                 let dt_res = parsed
@@ -427,30 +426,30 @@ impl VM {
                                 self.stack.push(Value::DateTimeNT(
                                     tz.from_local_datetime(&dt_res).unwrap(),
                                 ));
-                                return 1;
+                                1
                             }
                             _ => {
-                                return 0;
+                                0
                             }
                         }
                     }
                     _ => {
                         self.print_error("third strptimez argument must be valid timezone");
-                        return 0;
+                        0
                     }
                 }
             }
             (Some(_), Some(_), _) => {
                 self.print_error("third strptimez argument must be string");
-                return 0;
+                0
             }
             (Some(_), _, _) => {
                 self.print_error("second strptimez argument must be string");
-                return 0;
+                0
             }
             (..) => {
                 self.print_error("first strptimez argument must be string");
-                return 0;
+                0
             }
         }
     }

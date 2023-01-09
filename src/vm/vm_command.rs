@@ -38,8 +38,8 @@ fn split_command(s: &str) -> Option<VecDeque<String>> {
     let mut delimiter = '"';
     for e in elements {
         let e_str = e.to_string();
-        if buffer.len() > 0 {
-            if e_str.len() > 0 {
+        if !buffer.is_empty() {
+            if !e_str.is_empty() {
                 if e_str.chars().last().unwrap() == delimiter {
                     buffer.push(e_str);
                     let new_str = buffer.join(" ");
@@ -73,13 +73,13 @@ fn split_command(s: &str) -> Option<VecDeque<String>> {
             final_elements.push(new_str5.to_string());
         }
     }
-    if buffer.len() > 0 {
+    if !buffer.is_empty() {
         return None;
     }
 
     let mut lst = VecDeque::new();
     for e in final_elements.iter() {
-        if lst.len() == 0 {
+        if lst.is_empty() {
             lst.push_back(e.to_string());
         } else {
             let back = lst.back().unwrap();
@@ -93,7 +93,7 @@ fn split_command(s: &str) -> Option<VecDeque<String>> {
             }
         }
     }
-    return Some(lst);
+    Some(lst)
 }
 
 fn restore_env(env: HashMap<String, String>) {
@@ -123,14 +123,14 @@ impl VM {
                 match homedir_res {
                     Ok(homedir) => {
                         let s = " ".to_owned() + &homedir;
-                        final_s = HOME_DIR_TILDE.replace_all(&input_s, &*s).to_string();
+                        final_s = HOME_DIR_TILDE.replace_all(input_s, &*s).to_string();
                     }
                     _ => {
                         final_s = input_s.to_string();
                     }
                 }
 
-                return Some(final_s);
+                Some(final_s)
             }
             _ => {
                 eprintln!("expected string!");
@@ -154,26 +154,23 @@ impl VM {
             return None;
         }
         let mut elements = elements_opt.unwrap();
-        if elements.len() == 0 {
+        if elements.is_empty() {
             self.print_error("unable to execute empty command");
             return None;
         }
 
         let mut prev_env = HashMap::new();
-        while elements.len() != 0 {
+        while !elements.is_empty() {
             let element = elements.get(0).unwrap();
-            let captures = ENV_VAR.captures_iter(&element);
+            let captures = ENV_VAR.captures_iter(element);
             let mut has = false;
             for capture in captures {
                 has = true;
                 let key_str = capture.get(1).unwrap().as_str();
                 let value_str = capture.get(2).unwrap().as_str();
                 let current_str = env::var(key_str);
-                match current_str {
-                    Ok(s) => {
-                        prev_env.insert(key_str.to_string(), s);
-                    }
-                    _ => {}
+                if let Ok(s) = current_str {
+                    prev_env.insert(key_str.to_string(), s);
                 }
                 env::set_var(key_str, value_str);
             }
@@ -191,9 +188,9 @@ impl VM {
             return None;
         }
         let executable = executable_opt.unwrap();
-        let executable_final = LEADING_WS.replace_all(&executable, "").to_string();
+        let executable_final = LEADING_WS.replace_all(executable, "").to_string();
         let args = element_iter.map(|v| v.to_string()).collect::<Vec<_>>();
-        return Some((executable_final.to_string(), args, prev_env));
+        Some((executable_final, args, prev_env))
     }
 
     /// Takes a command string and a set of parameters as its
@@ -233,12 +230,12 @@ impl VM {
                 self.stack.push(cmd_generator);
             }
             Err(e) => {
-                let err_str = format!("unable to run command: {}", e.to_string());
+                let err_str = format!("unable to run command: {}", e);
                 self.print_error(&err_str);
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// As per `core_command`, except that the output isn't captured
@@ -258,19 +255,19 @@ impl VM {
                 match res {
                     Ok(_) => {}
                     Err(e) => {
-                        let err_str = format!("command execution failed: {}", e.to_string());
+                        let err_str = format!("command execution failed: {}", e);
                         self.print_error(&err_str);
                         return 0;
                     }
                 }
             }
             Err(e) => {
-                let err_str = format!("unable to execute command: {}", e.to_string());
+                let err_str = format!("unable to execute command: {}", e);
                 self.print_error(&err_str);
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a generator and a command as its arguments.  Takes
@@ -304,7 +301,7 @@ impl VM {
                     Ok(mut process) => {
                         let upstream_stdin_opt = process.stdin;
                         if upstream_stdin_opt.is_none() {
-                            let err_str = format!("unable to get stdin from parent");
+                            let err_str = "unable to get stdin from parent".to_string();
                             self.print_error(&err_str);
                             return 0;
                         }
@@ -314,7 +311,7 @@ impl VM {
                                 self.stack.pop();
                                 let upstream_stdout_opt = process.stdout.take();
                                 if upstream_stdout_opt.is_none() {
-                                    let err_str = format!("unable to get stdout from parent");
+                                    let err_str = "unable to get stdout from parent".to_string();
                                     self.print_error(&err_str);
                                     return 0;
                                 }
@@ -322,7 +319,7 @@ impl VM {
 
                                 let upstream_stderr_opt = process.stderr.take();
                                 if upstream_stderr_opt.is_none() {
-                                    let err_str = format!("unable to get stderr from parent");
+                                    let err_str = "unable to get stderr from parent".to_string();
                                     self.print_error(&err_str);
                                     return 0;
                                 }
@@ -350,11 +347,8 @@ impl VM {
                                         return 0;
                                     }
                                     let element_rr = self.stack.pop().unwrap();
-                                    match element_rr {
-                                        Value::Null => {
-                                            break;
-                                        }
-                                        _ => {}
+                                    if let Value::Null = element_rr {
+                                        break;
                                     }
                                     let element_str_opt: Option<&str>;
                                     to_str!(element_rr, element_str_opt);
@@ -384,7 +378,7 @@ impl VM {
                         }
                     }
                     Err(e) => {
-                        let err_str = format!("unable to run command: {}", e.to_string());
+                        let err_str = format!("unable to run command: {}", e);
                         self.print_error(&err_str);
                         return 0;
                     }
@@ -394,6 +388,6 @@ impl VM {
                 self.print_error("| argument must be a command");
             }
         }
-        return 1;
+        1
     }
 }

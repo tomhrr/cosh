@@ -1,6 +1,7 @@
 #![allow(
     clippy::needless_late_init,
     clippy::comparison_chain,
+    clippy::question_mark,
 )]
 
 extern crate ansi_term;

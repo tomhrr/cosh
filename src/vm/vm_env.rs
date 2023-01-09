@@ -16,7 +16,7 @@ impl VM {
         }
         let hsh_rr = Value::Hash(Rc::new(RefCell::new(hsh)));
         self.stack.push(hsh_rr);
-        return 1;
+        1
     }
 
     pub fn core_getenv(&mut self) -> i32 {
@@ -51,7 +51,7 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 
     pub fn core_setenv(&mut self) -> i32 {
@@ -70,7 +70,7 @@ impl VM {
 
         match (key_opt, value_opt) {
             (Some(key_s), Some(value_s)) => {
-                if key_s.len() == 0 {
+                if key_s.is_empty() {
                     self.print_error("setenv first argument must be a variable name");
                     return 0;
                 }
@@ -86,6 +86,6 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 }

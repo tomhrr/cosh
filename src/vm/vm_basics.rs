@@ -575,7 +575,7 @@ impl VM {
                 let c = c_opt.unwrap().to_string();
                 let st = Rc::new(RefCell::new(StringTriple::new(c, None)));
                 self.stack.push(Value::String(st));
-                return 1;
+                1
             }
             _ => {
                 let value_bi_opt = value_rr.to_bigint();
@@ -624,8 +624,8 @@ impl VM {
         let c = value_str.chars().next().unwrap();
         let n: u32 = c.try_into().unwrap();
         let n_i32: Result<i32, _> = n.try_into();
-        if !n_i32.is_err() {
-            self.stack.push(Value::Int(n_i32.unwrap()));
+        if let Ok(n) = n_i32 {
+            self.stack.push(Value::Int(n));
             return 1;
         }
         self.stack.push(Value::BigInt(BigInt::from_u32(n).unwrap()));
@@ -646,14 +646,14 @@ impl VM {
             return 0;
         }
         let value_str = value_opt.unwrap().replace("0x", "");
-        let n: Result<i32, _> = i32::from_str_radix(&value_str, 16);
-        if !n.is_err() {
-            self.stack.push(Value::Int(n.unwrap()));
+        let n_i32: Result<i32, _> = i32::from_str_radix(&value_str, 16);
+        if let Ok(n) = n_i32 {
+            self.stack.push(Value::Int(n));
             return 1;
         }
         let n_bi: Result<BigInt, _> = BigInt::from_str_radix(&value_str, 16);
-        if !n_bi.is_err() {
-            self.stack.push(Value::BigInt(n_bi.unwrap()));
+        if let Ok(bi) = n_bi {
+            self.stack.push(Value::BigInt(bi));
             return 1;
         }
         self.print_error("hex argument must be hexadecimal string");
@@ -674,14 +674,14 @@ impl VM {
             return 0;
         }
         let value_str = value_opt.unwrap();
-        let n: Result<i32, _> = i32::from_str_radix(&value_str, 8);
-        if !n.is_err() {
-            self.stack.push(Value::Int(n.unwrap()));
+        let n_i32: Result<i32, _> = i32::from_str_radix(value_str, 8);
+        if let Ok(n) = n_i32 {
+            self.stack.push(Value::Int(n));
             return 1;
         }
-        let n_bi: Result<BigInt, _> = BigInt::from_str_radix(&value_str, 8);
-        if !n_bi.is_err() {
-            self.stack.push(Value::BigInt(n_bi.unwrap()));
+        let n_bi: Result<BigInt, _> = BigInt::from_str_radix(value_str, 8);
+        if let Ok(bi) = n_bi {
+            self.stack.push(Value::BigInt(bi));
             return 1;
         }
         self.print_error("oct argument must be string");
@@ -721,7 +721,7 @@ impl VM {
             return 0;
         }
         let vst = value_opt.unwrap();
-        if vst.len() == 0 {
+        if vst.is_empty() {
             let st = Rc::new(RefCell::new(StringTriple::new(vst.to_string(), None)));
             self.stack.push(Value::String(st));
             return 1;
@@ -769,7 +769,7 @@ impl VM {
             return 0;
         }
         let vst = value_opt.unwrap();
-        if vst.len() == 0 {
+        if vst.is_empty() {
             let st = Rc::new(RefCell::new(StringTriple::new(vst.to_string(), None)));
             self.stack.push(Value::String(st));
             return 1;
@@ -799,7 +799,7 @@ impl VM {
                 }
                 let new_lst = Value::List(Rc::new(RefCell::new(rev_lst)));
                 self.stack.push(new_lst);
-                return 1;
+                1
             }
             _ => {
                 let value_opt: Option<&str>;
@@ -829,11 +829,11 @@ impl VM {
             Some(f) => {
                 let dur = time::Duration::from_secs_f64(f);
                 thread::sleep(dur);
-                return 1;
+                1
             }
             _ => {
                 self.print_error("sleep argument must be float");
-                return 0;
+                0
             }
         }
     }

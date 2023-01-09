@@ -24,14 +24,14 @@ fn tilde_expansion(input_s: &str) -> String {
     match homedir_res {
         Ok(homedir) => {
             let s = "".to_owned() + &homedir;
-            final_s = HOME_DIR_TILDE.replace_all(&input_s, &*s).to_string();
+            final_s = HOME_DIR_TILDE.replace_all(input_s, &*s).to_string();
         }
         _ => {
             final_s = input_s.to_string();
         }
     }
 
-    return final_s;
+    final_s
 }
 
 impl VM {
@@ -62,7 +62,7 @@ impl VM {
                                 ))));
                             }
                             Err(e) => {
-                                let err_str = format!("unable to open file: {}", e.to_string());
+                                let err_str = format!("unable to open file: {}", e);
                                 self.print_error(&err_str);
                                 return 0;
                             }
@@ -84,7 +84,7 @@ impl VM {
                                 ))));
                             }
                             Err(e) => {
-                                let err_str = format!("unable to open file: {}", e.to_string());
+                                let err_str = format!("unable to open file: {}", e);
                                 self.print_error(&err_str);
                                 return 0;
                             }
@@ -105,7 +105,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a FileReader object as its single argument.  Reads one
@@ -144,7 +144,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a FileWriter object and a line as its arguments.  Writes
@@ -161,7 +161,7 @@ impl VM {
 
         match line_str_opt {
             Some(s) => {
-                if s != "" {
+                if !s.is_empty() {
                     let mut file_writer = self.stack.pop().unwrap();
                     match file_writer {
                         Value::FileWriter(ref mut line_writer) => {
@@ -171,7 +171,7 @@ impl VM {
                                     return 1;
                                 }
                                 Err(e) => {
-                                    let err_str = format!("unable to open file: {}", e.to_string());
+                                    let err_str = format!("unable to open file: {}", e);
                                     self.print_error(&err_str);
                                     return 0;
                                 }
@@ -189,7 +189,7 @@ impl VM {
                 return 0;
             }
         };
-        return 1;
+        1
     }
 
     /// Takes a FileReader or FileWriter object as its single
@@ -205,24 +205,24 @@ impl VM {
         match file_rr {
             Value::FileReader(_) => {
                 // No action required.
-                return 1;
+                1
             }
             Value::FileWriter(ref mut line_writer) => {
                 let res = line_writer.borrow_mut().flush();
                 match res {
                     Ok(_) => {
-                        return 1;
+                        1
                     }
                     Err(e) => {
-                        let err_str = format!("unable to flush data: {}", e.to_string());
+                        let err_str = format!("unable to flush data: {}", e);
                         self.print_error(&err_str);
-                        return 0;
+                        0
                     }
                 }
             }
             _ => {
                 self.print_error("close argument must be a file reader or writer");
-                return 0;
+                0
             }
         }
     }
@@ -248,18 +248,18 @@ impl VM {
                     Ok(dir_handle) => {
                         self.stack
                             .push(Value::DirectoryHandle(Rc::new(RefCell::new(dir_handle))));
-                        return 1;
+                        1
                     }
                     Err(e) => {
-                        let err_str = format!("unable to open directory: {}", e.to_string());
+                        let err_str = format!("unable to open directory: {}", e);
                         self.print_error(&err_str);
-                        return 0;
+                        0
                     }
                 }
             }
             _ => {
                 self.print_error("opendir argument must be a string");
-                return 0;
+                0
             }
         }
     }
@@ -296,7 +296,7 @@ impl VM {
         };
 
         self.stack.push(entry_value);
-        return 1;
+        1
     }
 
     /// Takes a path as its single argument.  Places a boolean onto
@@ -329,7 +329,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Puts a path and a FileReader on the stack for a new temporary
@@ -349,18 +349,18 @@ impl VM {
                         .push(Value::FileWriter(Rc::new(RefCell::new(BufWriter::new(
                             file,
                         )))));
-                    return 1;
+                    1
                 }
                 Err(e) => {
-                    let err_str = format!("unable to open temporary file: {}", e.to_string());
+                    let err_str = format!("unable to open temporary file: {}", e);
                     self.print_error(&err_str);
-                    return 0;
+                    0
                 }
             },
             Err(e) => {
-                let err_str = format!("unable to open temporary file: {}", e.to_string());
+                let err_str = format!("unable to open temporary file: {}", e);
                 self.print_error(&err_str);
-                return 0;
+                0
             }
         }
     }
@@ -377,12 +377,12 @@ impl VM {
                         path.to_str().unwrap().to_string(),
                         None,
                     )))));
-                return 1;
+                1
             }
             Err(e) => {
-                let err_str = format!("unable to open temporary directory: {}", e.to_string());
+                let err_str = format!("unable to open temporary directory: {}", e);
                 self.print_error(&err_str);
-                return 0;
+                0
             }
         }
     }

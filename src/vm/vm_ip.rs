@@ -11,21 +11,21 @@ use vm::*;
 fn ipv4_addr_to_int(ipv4: Ipv4Addr) -> u32 {
     let octets = ipv4.octets();
     let mut n: u32 = 0;
-    for i in 0..4 {
-        let next = octets[i].to_u32().unwrap() << (32 - ((i + 1) * 8));
-        n = n | next;
+    for (i, item) in octets.iter().enumerate() {
+        let next = item.to_u32().unwrap() << (32 - ((i + 1) * 8));
+        n |= next;
     }
-    return n;
+    n
 }
 
 fn ipv6_addr_to_int(ipv6: Ipv6Addr) -> BigUint {
     let octets = ipv6.octets();
     let mut n = BigUint::zero();
-    for i in 0..16 {
-        let next = BigUint::from(octets[i]) << (128 - ((i + 1) * 8));
-        n = n | next;
+    for (i, item) in octets.iter().enumerate() {
+        let next = BigUint::from(*item) << (128 - ((i + 1) * 8));
+        n |= next;
     }
-    return n;
+    n
 }
 
 fn int_to_ipv4_addr(n: u32) -> Ipv4Addr {
@@ -33,8 +33,7 @@ fn int_to_ipv4_addr(n: u32) -> Ipv4Addr {
     let o2 = (n >> 16 & 0xFF).to_u8().unwrap();
     let o3 = (n >> 8 & 0xFF).to_u8().unwrap();
     let o4 = (n & 0xFF).to_u8().unwrap();
-    let ipv4 = Ipv4Addr::new(o1, o2, o3, o4);
-    return ipv4;
+    Ipv4Addr::new(o1, o2, o3, o4)
 }
 
 fn int_to_ipv6_addr(n: BigUint) -> Ipv6Addr {
@@ -46,9 +45,8 @@ fn int_to_ipv6_addr(n: BigUint) -> Ipv6Addr {
     let o5 = (n.clone() >> 48u16 & mask.clone()).to_u16().unwrap();
     let o6 = (n.clone() >> 32u16 & mask.clone()).to_u16().unwrap();
     let o7 = (n.clone() >> 16u16 & mask.clone()).to_u16().unwrap();
-    let o8 = (n.clone() & mask.clone()).to_u16().unwrap();
-    let ipv6 = Ipv6Addr::new(o1, o2, o3, o4, o5, o6, o7, o8);
-    return ipv6;
+    let o8 = (n & mask).to_u16().unwrap();
+    Ipv6Addr::new(o1, o2, o3, o4, o5, o6, o7, o8)
 }
 
 fn ipv4range_to_nets(ipv4range: Ipv4Range) -> VecDeque<Ipv4Net> {
@@ -67,25 +65,25 @@ fn ipv4range_to_nets(ipv4range: Ipv4Range) -> VecDeque<Ipv4Net> {
                 s_num & !(s_num - 1)
             };
             while s_num + (host_count - 1) > e_num {
-                host_count = host_count / 2;
+                host_count /= 2;
             }
             let fst = int_to_ipv4_addr(s_num);
             let mut len = 32;
             let prev_host_count = host_count;
             while (host_count & 1) != 1 {
-                host_count = host_count >> 1;
-                len = len - 1;
+                host_count >>= 1;
+                len -= 1;
             }
             let pfx = format!("{}/{}", fst, len);
             lst.push_back(Ipv4Net::from_str(&pfx).unwrap());
             if s_num.checked_add(prev_host_count).is_none() {
                 break;
             } else {
-                s_num = s_num + prev_host_count;
+                s_num += prev_host_count;
             }
         }
     }
-    return lst;
+    lst
 }
 
 fn ipv6range_to_nets(ipv6range: Ipv6Range) -> VecDeque<Ipv6Net> {
@@ -98,7 +96,7 @@ fn ipv6range_to_nets(ipv6range: Ipv6Range) -> VecDeque<Ipv6Net> {
     let zero = BigUint::from(0u8);
     let one = BigUint::from(1u8);
     let mut max: BigUint = BigUint::from(1u8) << 128;
-    max = max - 1u8;
+    max -= 1u8;
 
     while s_num <= e_num {
         let mut host_count = if s_num == zero {
@@ -116,12 +114,12 @@ fn ipv6range_to_nets(ipv6range: Ipv6Range) -> VecDeque<Ipv6Net> {
         let mut len = 128;
         while (host_count.clone() & one.clone()) != one {
             host_count = host_count.clone() >> 1u8;
-            len = len - 1;
+            len -= 1;
         }
         let pfx = format!("{}/{}", fst, len);
         lst.push_back(Ipv6Net::from_str(&pfx).unwrap());
     }
-    return lst;
+    lst
 }
 
 impl VM {
@@ -138,9 +136,9 @@ impl VM {
 
         match value_opt {
             Some(s) => {
-                if s.contains(".") {
-                    if s.contains("-") {
-                        let mut iter = s.split("-");
+                if s.contains('.') {
+                    if s.contains('-') {
+                        let mut iter = s.split('-');
                         let fst = iter.next();
                         if fst.is_none() {
                             self.print_error("ip argument must be valid IP address string");
@@ -151,7 +149,7 @@ impl VM {
                             self.print_error("ip argument must be valid IP address string");
                             return 0;
                         }
-                        if !iter.next().is_none() {
+                        if iter.next().is_some() {
                             self.print_error("ip argument must be valid IP address string");
                             return 0;
                         }
@@ -167,7 +165,7 @@ impl VM {
 
                         match (ipv4_fst, ipv4_snd) {
                             (Ok(ipv4_fst_obj), Ok(ipv4_snd_obj)) => {
-                                if !(ipv4_fst_obj < ipv4_snd_obj) {
+                                if ipv4_fst_obj >= ipv4_snd_obj {
                                     self.print_error("ip argument must be valid IP address string");
                                     return 0;
                                 }
@@ -175,16 +173,16 @@ impl VM {
                                     ipv4_fst_obj.network(),
                                     ipv4_snd_obj.network(),
                                 )));
-                                return 1;
+                                1
                             }
                             (_, _) => {
                                 self.print_error("ip argument must be valid IP address string");
-                                return 0;
+                                0
                             }
                         }
                     } else {
                         let ipv4_res;
-                        if !s.contains("/") {
+                        if !s.contains('/') {
                             let s2 = format!("{}/32", s);
                             ipv4_res = Ipv4Net::from_str(&s2);
                         } else {
@@ -209,20 +207,20 @@ impl VM {
                                     }
                                 }
                                 self.stack.push(Value::Ipv4(ipv4));
-                                return 1;
+                                1
                             }
                             Err(e) => {
                                 let err_str = format!(
                                     "ip argument must be valid IP address string: {}",
-                                    e.to_string()
+                                    e
                                 );
                                 self.print_error(&err_str);
-                                return 0;
+                                0
                             }
                         }
                     }
-                } else if s.contains("-") {
-                    let mut iter = s.split("-");
+                } else if s.contains('-') {
+                    let mut iter = s.split('-');
                     let fst = iter.next();
                     if fst.is_none() {
                         self.print_error("ip argument must be valid IP address string");
@@ -233,7 +231,7 @@ impl VM {
                         self.print_error("ip argument must be valid IP address string");
                         return 0;
                     }
-                    if !iter.next().is_none() {
+                    if iter.next().is_some() {
                         self.print_error("ip argument must be valid IP address string");
                         return 0;
                     }
@@ -249,7 +247,7 @@ impl VM {
 
                     match (ipv6_fst, ipv6_snd) {
                         (Ok(ipv6_fst_obj), Ok(ipv6_snd_obj)) => {
-                            if !(ipv6_fst_obj < ipv6_snd_obj) {
+                            if ipv6_fst_obj >= ipv6_snd_obj {
                                 self.print_error("ip argument must be valid IP address string");
                                 return 0;
                             }
@@ -257,16 +255,16 @@ impl VM {
                                 ipv6_fst_obj.network(),
                                 ipv6_snd_obj.network(),
                             )));
-                            return 1;
+                            1
                         }
                         (_, _) => {
                             self.print_error("ip argument must be valid IP address string");
-                            return 0;
+                            0
                         }
                     }
                 } else {
                     let ipv6_res;
-                    if !s.contains("/") {
+                    if !s.contains('/') {
                         let s2 = format!("{}/128", s);
                         ipv6_res = Ipv6Net::from_str(&s2);
                     } else {
@@ -293,22 +291,22 @@ impl VM {
                                 }
                             }
                             self.stack.push(Value::Ipv6(ipv6));
-                            return 1;
+                            1
                         }
                         Err(e) => {
                             let err_str = format!(
                                 "ip argument must be valid IP address string: {}",
-                                e.to_string()
+                                e
                             );
                             self.print_error(&err_str);
-                            return 0;
+                            0
                         }
                     }
                 }
             }
             _ => {
                 self.print_error("ip argument must be valid IP address string");
-                return 0;
+                0
             }
         }
     }
@@ -353,7 +351,7 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 
     /// Returns the first address of an IP object.
@@ -385,10 +383,10 @@ impl VM {
         }
 
         let ip_str_no_len = ip_str.chars().take_while(|&c| c != '/').collect::<String>();
-        let sp = StringTriple::new(ip_str_no_len.to_string(), None);
+        let sp = StringTriple::new(ip_str_no_len, None);
         let st = Value::String(Rc::new(RefCell::new(sp)));
         self.stack.push(st);
-        return 1;
+        1
     }
 
     /// Returns the prefix length of an IP object.
@@ -403,7 +401,7 @@ impl VM {
             Value::Ipv4(ipv4net) => {
                 let len = Value::Int(ipv4net.prefix_len().into());
                 self.stack.push(len);
-                return 1;
+                1
             }
             Value::Ipv4Range(ipv4range) => {
                 let s = ipv4range.s;
@@ -421,21 +419,21 @@ impl VM {
                         if host_count == 1 {
                             break;
                         } else {
-                            host_count = host_count >> 1;
-                            len = len - 1;
+                            host_count >>= 1;
+                            len -= 1;
                         }
                     }
                     self.stack.push(Value::Int(len));
-                    return 1;
+                    1
                 } else {
                     self.print_error("ip.len argument has no length");
-                    return 0;
+                    0
                 }
             }
             Value::Ipv6(ipv6net) => {
                 let len = Value::Int(ipv6net.prefix_len().into());
                 self.stack.push(len);
-                return 1;
+                1
             }
             Value::Ipv6Range(ipv6range) => {
                 let s = ipv6range.s;
@@ -451,20 +449,20 @@ impl VM {
                         if host_count == one {
                             break;
                         } else {
-                            host_count = host_count.clone() >> 1;
-                            len = len - 1;
+                            host_count >>= 1;
+                            len -= 1;
                         }
                     }
                     self.stack.push(Value::Int(len));
-                    return 1;
+                    1
                 } else {
                     self.print_error("ip.len argument has no length");
-                    return 0;
+                    0
                 }
             }
             _ => {
                 self.print_error("ip.len argument must be ip object");
-                return 0;
+                0
             }
         }
     }
@@ -482,29 +480,29 @@ impl VM {
                 let ipv4addr_int = ipv4_addr_to_int(ipv4net.network());
                 let ipv4addr_val = Value::BigInt(BigInt::from(ipv4addr_int));
                 self.stack.push(ipv4addr_val);
-                return 1;
+                1
             }
             Value::Ipv4Range(ipv4range) => {
                 let ipv4addr_int = ipv4_addr_to_int(ipv4range.s);
                 let ipv4addr_val = Value::BigInt(BigInt::from(ipv4addr_int));
                 self.stack.push(ipv4addr_val);
-                return 1;
+                1
             }
             Value::Ipv6(ipv6net) => {
                 let ipv6addr_int = ipv6_addr_to_int(ipv6net.network());
                 let ipv6addr_val = Value::BigInt(BigInt::from(ipv6addr_int));
                 self.stack.push(ipv6addr_val);
-                return 1;
+                1
             }
             Value::Ipv6Range(ipv6range) => {
                 let ipv6addr_int = ipv6_addr_to_int(ipv6range.s);
                 let ipv6addr_val = Value::BigInt(BigInt::from(ipv6addr_int));
                 self.stack.push(ipv6addr_val);
-                return 1;
+                1
             }
             _ => {
                 self.print_error("ip.addr-int argument must be ip object");
-                return 0;
+                0
             }
         }
     }
@@ -520,7 +518,7 @@ impl VM {
         match ip_rr {
             Value::Ipv4(ipv4net) => {
                 if ipv4_addr_to_int(ipv4net.network()) == 0 && ipv4net.prefix_len() == 0 {
-                    let lastaddr = format!("{}", "255.255.255.255");
+                    let lastaddr = "255.255.255.255".to_string();
                     let sp = StringTriple::new(lastaddr, None);
                     let st = Value::String(Rc::new(RefCell::new(sp)));
                     self.stack.push(st);
@@ -567,7 +565,7 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 
     /// Returns the last address of the IP object as an integer.
@@ -614,7 +612,7 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 
     /// Returns the number of hosts covered by this IP object.
@@ -679,7 +677,7 @@ impl VM {
             }
         }
 
-        return 1;
+        1
     }
 
     /// Returns the IP object version.
@@ -693,23 +691,23 @@ impl VM {
         match ip_rr {
             Value::Ipv4(_) => {
                 self.stack.push(Value::Int(4));
-                return 1;
+                1
             }
             Value::Ipv4Range(_) => {
                 self.stack.push(Value::Int(4));
-                return 1;
+                1
             }
             Value::Ipv6(_) => {
                 self.stack.push(Value::Int(6));
-                return 1;
+                1
             }
             Value::Ipv6Range(_) => {
                 self.stack.push(Value::Int(6));
-                return 1;
+                1
             }
             _ => {
                 self.print_error("ip.version argument must be ip object");
-                return 0;
+                0
             }
         }
     }
@@ -749,7 +747,7 @@ impl VM {
             }
         }
 
-        let rlst = if lst1.len() > 0 {
+        let rlst = if !lst1.is_empty() {
             lst1.iter().map(|e| Value::Ipv4(*e)).collect()
         } else {
             lst3.iter().map(|e| Value::Ipv6(*e)).collect()
@@ -758,7 +756,7 @@ impl VM {
         let vlst = Value::List(Rc::new(RefCell::new(rlst)));
         self.stack.push(vlst);
 
-        return 1;
+        1
     }
 
     /// Converts an arbitrary value into a list of IP net objects.
@@ -865,7 +863,7 @@ impl VM {
                     }
                 }
             }
-            return Some((ipv4_nets, ipv6_nets));
+            Some((ipv4_nets, ipv6_nets))
         }
     }
 
@@ -889,7 +887,7 @@ impl VM {
                 for r in ipv4_range.iter() {
                     v.push(r);
                 }
-                v.sort_by(|a, b| a.network().cmp(&b.network()));
+                v.sort_by_key(|a| a.network());
                 let mut new_ipv4_range = IpRange::new();
                 for el in v.iter() {
                     new_ipv4_range.add(*el);
@@ -903,10 +901,10 @@ impl VM {
                 let nv = IpSet::new(new_ipv4_range, ipv6_range);
                 let nvv = Value::IpSet(Rc::new(RefCell::new(nv)));
                 self.stack.push(nvv);
-                return 1;
+                1
             }
             None => {
-                return 0;
+                0
             }
         }
     }

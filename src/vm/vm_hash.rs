@@ -42,7 +42,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a set or hash value and a key string or element value as
@@ -80,7 +80,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a set or hash value and a key string or element value as
@@ -119,7 +119,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     /// Takes a hash value, a key string, and a value as its
@@ -155,7 +155,7 @@ impl VM {
             }
         }
         self.stack.push(hash_rr);
-        return 1;
+        1
     }
 
     /// Takes a hash value and returns a generator over the keys of
@@ -184,7 +184,7 @@ impl VM {
                 HashWithIndex::new(0, hash_rr),
             ))));
         }
-        return 1;
+        1
     }
 
     /// Takes a hash value and returns a generator over the values of
@@ -213,7 +213,7 @@ impl VM {
                 HashWithIndex::new(0, hash_rr),
             ))));
         }
-        return 1;
+        1
     }
 
     /// Takes a hash value and returns a generator over the key-value
@@ -242,6 +242,6 @@ impl VM {
                 HashWithIndex::new(0, hash_rr),
             ))));
         }
-        return 1;
+        1
     }
 }

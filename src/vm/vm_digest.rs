@@ -29,7 +29,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     pub fn core_sha1(&mut self) -> i32 {
@@ -55,7 +55,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     pub fn core_sha256(&mut self) -> i32 {
@@ -81,7 +81,7 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 
     pub fn core_sha512(&mut self) -> i32 {
@@ -107,6 +107,6 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
+        1
     }
 }

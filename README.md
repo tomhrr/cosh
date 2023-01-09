@@ -23,6 +23,9 @@ in the current directory:
         <td><code>ls; [stat; size get] map; sum</code></td>
     </tr>
 </table>
+&nbsp;
+&nbsp;
+&nbsp;
 
 A small set of versatile primitives means that less needs to be
 remembered when compared with typical shells (see e.g. the various
@@ -39,6 +42,9 @@ row of a CSV file:
         <td><code>test-data/csv f<; [chomp; , split; 1 nth] map;</code></td>
     </tr>
 </table>
+&nbsp;
+&nbsp;
+&nbsp;
 
 Arithmetical operators and XML/JSON/CSV encoding/decoding functions
 reduce the number of times that it becomes necessary to use a more
@@ -56,6 +62,9 @@ file:
         <td><code>test-data/json2 f<; from-json; zxcv get; 0 nth</code></td>
     </tr>
 </table>
+&nbsp;
+&nbsp;
+&nbsp;
 
 ### Install
 

@@ -561,18 +561,18 @@ impl VM {
 
     pub fn gen_regex(&mut self, value_rr: Value) -> Option<(Rc<Regex>, bool)> {
         match value_rr {
-            Value::String(sp) => {
-                match &sp.borrow().r {
+            Value::String(st) => {
+                match &st.borrow().regex {
                     Some(r) => {
                         return Some(r.clone());
                     }
                     _ => {}
                 }
-                let regex_res = self.str_to_regex(&sp.borrow().e);
+                let regex_res = self.str_to_regex(&st.borrow().escaped_string);
                 match regex_res {
                     Some((regex, global)) => {
                         let rc = Rc::new(regex);
-                        sp.borrow_mut().r = Some((rc.clone(), global));
+                        st.borrow_mut().regex = Some((rc.clone(), global));
                         return Some((rc.clone(), global));
                     }
                     _ => {
@@ -856,8 +856,8 @@ impl VM {
             Value::AnonymousFunction(call_chunk_rc, lvs) => {
                 return self.call_named_function(Some(lvs), call_chunk_rc.clone());
             }
-            Value::String(sp) => {
-                let s = &sp.borrow().s;
+            Value::String(st) => {
+                let s = &st.borrow().string;
                 return self.call_string(is_implicit, &s);
             }
             _ => {
@@ -1203,8 +1203,8 @@ impl VM {
                     let mut copy = false;
 
                     match value_rr {
-                        Value::String(ref sp) => {
-                            let s = &sp.borrow().s;
+                        Value::String(ref st) => {
+                            let s = &st.borrow().string;
                             let cfb = &chunk.borrow().constant_values;
                             match cfb.get(i2 as usize) {
                                 Some(Value::String(_)) => {
@@ -1239,11 +1239,11 @@ impl VM {
                         let cfb = &chunk.borrow().constant_values;
                         let cv_value_rr = cfb.get(i2 as usize).unwrap().clone();
                         match cv_value_rr {
-                            Value::String(ref sp) => self.stack.push(Value::AnonymousFunction(
+                            Value::String(ref st) => self.stack.push(Value::AnonymousFunction(
                                 chunk
                                     .borrow()
                                     .functions
-                                    .get(&sp.borrow().s.to_string())
+                                    .get(&st.borrow().string.to_string())
                                     .unwrap()
                                     .clone(),
                                 self.local_var_stack.clone(),
@@ -1304,19 +1304,19 @@ impl VM {
 
                     let value_sd = chunk.borrow().constants[i2 as usize].clone();
                     match value_sd {
-                        ValueSD::String(sp, _) => {
+                        ValueSD::String(st, _) => {
                             self.i = i;
 
                             /* todo: the two lookups here may be affecting
                              * performance. */
                             let fsi = (i2 as u32).try_into().unwrap();
-                            self.populate_constant_value(&sp, fsi);
+                            self.populate_constant_value(&st, fsi);
                             let cv = self.chunk.borrow().get_constant_value(fsi);
                             match cv {
                                 Value::Null => match op {
                                     OpCode::CallImplicitConstant => {
                                         let value_rr = Value::String(Rc::new(RefCell::new(
-                                            StringTriple::new(sp.to_string(), None),
+                                            StringTriple::new(st.to_string(), None),
                                         )));
                                         self.stack.push(value_rr);
                                         i = i + 1;
@@ -1434,8 +1434,8 @@ impl VM {
                     {
                         let var_name_rr = self.stack.pop().unwrap();
                         match var_name_rr {
-                            Value::String(sp) => {
-                                var_name = sp.borrow().s.clone().to_string();
+                            Value::String(st) => {
+                                var_name = st.borrow().string.clone().to_string();
                             }
                             _ => {
                                 self.print_error("variable name must be a string");
@@ -1460,9 +1460,9 @@ impl VM {
                     let value_rr = self.stack.pop().unwrap();
 
                     match var_name_rr {
-                        Value::String(sp) => {
+                        Value::String(st) => {
                             let mut done = false;
-                            let s = &sp.borrow().s;
+                            let s = &st.borrow().string;
 
                             for scope in self.scopes.iter_mut().rev() {
                                 if scope.borrow().contains_key(s) {
@@ -1491,9 +1491,9 @@ impl VM {
 
                     let var_name_rr = self.stack.pop().unwrap();
                     match var_name_rr {
-                        Value::String(sp) => {
+                        Value::String(st) => {
                             let mut done = false;
-                            let s = &sp.borrow().s;
+                            let s = &st.borrow().string;
 
                             for scope in self.scopes.iter().rev() {
                                 if scope.borrow().contains_key(s) {

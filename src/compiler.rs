@@ -987,9 +987,9 @@ impl Compiler {
                             }
                             chunk.pop_byte();
                             match last_constant_rr {
-                                Value::String(sp) => {
+                                Value::String(st) => {
                                     let local = Local::new(
-                                        sp.borrow().s.to_string(),
+                                        st.borrow().string.to_string(),
                                         self.scope_depth.into(),
                                     );
                                     self.locals.push(local);
@@ -1037,12 +1037,12 @@ impl Compiler {
                         let mut success = false;
                         {
                             match last_constant_rr {
-                                Value::String(ref sp) => {
+                                Value::String(ref st) => {
                                     if self.locals.len() != 0 {
                                         let mut i = self.locals.len() - 1;
                                         loop {
                                             let local = &self.locals[i];
-                                            if local.name.eq(&sp.borrow().s) {
+                                            if local.name.eq(&st.borrow().string) {
                                                 chunk.add_opcode(OpCode::SetLocalVar);
                                                 chunk.add_byte(i as u8);
                                                 success = true;
@@ -1098,12 +1098,12 @@ impl Compiler {
                         let mut success = false;
                         {
                             match last_constant_rr {
-                                Value::String(ref sp) => {
+                                Value::String(ref st) => {
                                     if self.locals.len() != 0 {
                                         let mut i = self.locals.len() - 1;
                                         loop {
                                             let local = &self.locals[i];
-                                            if local.name.eq(&sp.borrow().s) {
+                                            if local.name.eq(&st.borrow().string) {
                                                 chunk.add_opcode(OpCode::GetLocalVar);
                                                 chunk.add_byte(i as u8);
                                                 success = true;

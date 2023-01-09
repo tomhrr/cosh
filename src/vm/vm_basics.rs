@@ -112,8 +112,8 @@ impl VM {
                 self.stack.push(Value::Int(len as i32));
                 return 1;
             }
-            Value::String(sp) => {
-                let len = sp.borrow().s.len();
+            Value::String(st) => {
+                let len = st.borrow().string.len();
                 self.stack.push(Value::Int(len as i32));
                 return 1;
             }
@@ -169,8 +169,8 @@ impl VM {
                 self.stack.push(Value::Bool(len == 0));
                 return 1;
             }
-            Value::String(sp) => {
-                let len = sp.borrow().s.len();
+            Value::String(st) => {
+                let len = st.borrow().string.len();
                 self.stack.push(Value::Bool(len == 0));
                 return 1;
             }

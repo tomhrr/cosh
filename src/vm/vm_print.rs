@@ -79,7 +79,7 @@ fn psv_helper(
         }
         _ => {}
     }
-    print!("{}\n", s);
+    println!("{}", s);
     return lines_to_print - 1;
 }
 
@@ -257,9 +257,9 @@ impl VM {
                         index,
                     );
                 }
-                Value::String(sp) => {
-                    let mut ss = sp.borrow().e.clone();
-                    if sp.borrow().s.contains(char::is_whitespace) {
+                Value::String(st) => {
+                    let mut ss = st.borrow().escaped_string.clone();
+                    if st.borrow().string.contains(char::is_whitespace) {
                         ss = format!("\"{}\"", ss);
                     } else if ss.len() == 0 {
                         ss = format!("\"\"");

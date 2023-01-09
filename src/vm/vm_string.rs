@@ -266,16 +266,16 @@ impl VM {
                                 Value::Null => {
                                     break;
                                 }
-                                Value::String(sp) => {
+                                Value::String(st) => {
                                     if !separator_is_empty_string
-                                        && (separator_regex.is_match(&sp.borrow().s)
-                                            || esc_quotes.is_match(&sp.borrow().s))
+                                        && (separator_regex.is_match(&st.borrow().string)
+                                            || esc_quotes.is_match(&st.borrow().string))
                                     {
-                                        let s1 = &sp.borrow();
-                                        let s2 = esc_quotes.replace_all(&s1.s, "\\\"");
+                                        let s1 = &st.borrow();
+                                        let s2 = esc_quotes.replace_all(&s1.string, "\\\"");
                                         final_elements.push(format!("\"{}\"", s2));
                                     } else {
-                                        final_elements.push(sp.borrow().s.to_string());
+                                        final_elements.push(st.borrow().string.to_string());
                                     }
                                 }
                                 _ => {
@@ -284,10 +284,10 @@ impl VM {
                                     let element_str;
                                     let element_bk: Option<String>;
                                     let element_opt: Option<&str> = match element_rr {
-                                        Value::String(sp) => {
-                                            element_s = sp;
+                                        Value::String(st) => {
+                                            element_s = st;
                                             element_b = element_s.borrow();
-                                            Some(&element_b.s)
+                                            Some(&element_b.string)
                                         }
                                         _ => {
                                             element_bk = element_rr.to_string();

@@ -116,8 +116,8 @@ impl VM {
 
         let str_rr = self.stack.pop().unwrap();
         match str_rr {
-            Value::String(sp) => {
-                let input_s = &(sp.borrow().s);
+            Value::String(st) => {
+                let input_s = &(st.borrow().string);
                 let final_s: String;
                 let homedir_res = std::env::var("HOME");
                 match homedir_res {

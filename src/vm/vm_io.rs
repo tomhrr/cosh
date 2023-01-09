@@ -50,7 +50,7 @@ impl VM {
         to_str!(path_rr, path_str_opt);
 
         match rw_rr {
-            Value::String(sp) => match sp.borrow().s.as_ref() {
+            Value::String(st) => match st.borrow().string.as_ref() {
                 "r" => match path_str_opt {
                     Some(s) => {
                         let ss = tilde_expansion(s);

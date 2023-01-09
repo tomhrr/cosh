@@ -71,9 +71,9 @@ pub struct Chunk {
 /// for those characters.
 #[derive(Debug, Clone)]
 pub struct StringTriple {
-    pub s: String,
-    pub e: String,
-    pub r: Option<(Rc<Regex>, bool)>,
+    pub string: String,
+    pub escaped_string: String,
+    pub regex: Option<(Rc<Regex>, bool)>,
 }
 
 fn escape_string(s: &str) -> String {
@@ -130,13 +130,17 @@ impl StringTriple {
     pub fn new(s: String, r: Option<(Rc<Regex>, bool)>) -> StringTriple {
         let e = escape_string(&s);
         StringTriple {
-            s: s.clone(),
-            e: e,
-            r: r,
+            string: s.clone(),
+            escaped_string: e,
+            regex: r,
         }
     }
     pub fn new_with_escaped(s: String, e: String, r: Option<(Rc<Regex>, bool)>) -> StringTriple {
-        StringTriple { s: s, e: e, r: r }
+        StringTriple {
+            string: s,
+            escaped_string: e,
+            regex: r,
+        }
     }
 }
 
@@ -435,7 +439,7 @@ impl fmt::Debug for Value {
                 write!(f, "{}", b)
             }
             Value::String(s) => {
-                let ss = &s.borrow().s;
+                let ss = &s.borrow().string;
                 write!(f, "\"{}\"", ss)
             }
             Value::Command(s, _) => {
@@ -595,8 +599,11 @@ impl Chunk {
             Value::Int(n) => ValueSD::Int(n),
             Value::Float(n) => ValueSD::Float(n),
             Value::BigInt(n) => ValueSD::BigInt(n.to_str_radix(10)),
-            Value::String(sp) => {
-                ValueSD::String(sp.borrow().s.to_string(), sp.borrow().e.to_string())
+            Value::String(st) => {
+                ValueSD::String(
+                    st.borrow().string.to_string(),
+                    st.borrow().escaped_string.to_string()
+                )
             }
             Value::Command(s, params) => ValueSD::Command(s.to_string(), (*params).clone()),
             Value::CommandUncaptured(s) => ValueSD::CommandUncaptured(s.to_string()),
@@ -622,8 +629,8 @@ impl Chunk {
                 let nn = n.parse::<num_bigint::BigInt>().unwrap();
                 Value::BigInt(nn)
             }
-            ValueSD::String(sp1, sp2) => {
-                let st = StringTriple::new_with_escaped(sp1.to_string(), sp2.to_string(), None);
+            ValueSD::String(st1, st2) => {
+                let st = StringTriple::new_with_escaped(st1.to_string(), st2.to_string(), None);
                 Value::String(Rc::new(RefCell::new(st)))
             }
             ValueSD::Command(s, params) => {
@@ -1185,10 +1192,10 @@ macro_rules! to_str {
         let lib_str_str;
         let lib_str_bk: Option<String>;
         $var = match $val {
-            Value::String(sp) => {
-                lib_str_s = sp;
+            Value::String(st) => {
+                lib_str_s = st;
                 lib_str_b = lib_str_s.borrow();
-                Some(&lib_str_b.s)
+                Some(&lib_str_b.string)
             }
             _ => {
                 lib_str_bk = $val.to_string();
@@ -1301,8 +1308,8 @@ impl Value {
             Value::Int(n) => Some(*n),
             Value::BigInt(n) => n.to_i32(),
             Value::Float(f) => Some(*f as i32),
-            Value::String(sp) => {
-                let s = &sp.borrow().s;
+            Value::String(st) => {
+                let s = &st.borrow().string;
                 let n_r = s.parse::<i32>();
                 match n_r {
                     Ok(n) => {
@@ -1325,8 +1332,8 @@ impl Value {
             Value::Int(n) => Some(BigInt::from_i32(*n).unwrap()),
             Value::BigInt(n) => Some(n.clone()),
             Value::Float(f) => Some(BigInt::from_i32(*f as i32).unwrap()),
-            Value::String(sp) => {
-                let s = &sp.borrow().s;
+            Value::String(st) => {
+                let s = &st.borrow().string;
                 let n_r = s.to_string().parse::<num_bigint::BigInt>();
                 match n_r {
                     Ok(n) => {
@@ -1350,8 +1357,8 @@ impl Value {
             Value::Int(n) => Some(*n as f64),
             Value::BigInt(n) => Some(n.to_f64().unwrap()),
             Value::Float(f) => Some(*f),
-            Value::String(sp) => {
-                let s = &sp.borrow().s;
+            Value::String(st) => {
+                let s = &st.borrow().string;
                 let n_r = s.parse::<f64>();
                 match n_r {
                     Ok(n) => {
@@ -1372,8 +1379,8 @@ impl Value {
             Value::Bool(b) => *b,
             Value::Int(0) => false,
             Value::Float(n) => *n != 0.0,
-            Value::String(sp) => {
-                let ss = &sp.borrow().s;
+            Value::String(st) => {
+                let ss = &st.borrow().string;
                 ss != "" && ss != "0" && ss != "0.0"
             }
             Value::BigInt(n) => *n == Zero::zero(),

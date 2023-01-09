@@ -22,8 +22,8 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             let key_opt = vmm.get("key");
             match key_opt {
                 Some(value_rr) => match value_rr {
-                    Value::String(sp) => {
-                        let s = &sp.borrow().s;
+                    Value::String(st) => {
+                        let s = &st.borrow().string;
                         if s != "" {
                             begin_open_element = format!("<{}", s);
                             begin_close_element = ">".to_string();
@@ -147,8 +147,8 @@ fn convert_to_xml(v: &Value) -> Option<String> {
             let text_opt = vmm.get("text");
             match text_opt {
                 Some(value_rr) => match value_rr {
-                    Value::String(sp) => {
-                        text = sp.borrow().s.to_string();
+                    Value::String(st) => {
+                        text = st.borrow().string.to_string();
                     }
                     _ => {}
                 },

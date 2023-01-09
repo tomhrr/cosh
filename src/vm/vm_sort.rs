@@ -66,8 +66,8 @@ impl VM {
                         .make_contiguous()
                         .sort_by(|a, b| match (a, b) {
                             (Value::String(sp1), Value::String(sp2)) => {
-                                let s1 = &(sp1.borrow().s);
-                                let s2 = &(sp2.borrow().s);
+                                let s1 = &(sp1.borrow().string);
+                                let s2 = &(sp2.borrow().string);
                                 return s1.cmp(&s2);
                             }
                             _ => {

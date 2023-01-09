@@ -58,8 +58,8 @@ fn convert_to_json(v: &Value) -> String {
         Value::Bool(false) => "false".to_string(),
         Value::Int(n) => n.to_string(),
         Value::Float(f) => f.to_string(),
-        Value::String(sp) => {
-            format!("\"{}\"", &sp.borrow().s)
+        Value::String(st) => {
+            format!("\"{}\"", &st.borrow().string)
         }
         Value::List(lst) => {
             let s = lst

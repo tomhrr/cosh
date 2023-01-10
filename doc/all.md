@@ -65,6 +65,18 @@ To import and use a library:
     hello
     $
 
+To run a script:
+
+    user@host:/$ cat script.ch
+    1 1 +;
+    user@host:/$ cosh script.ch
+    2
+    user@host:/$ cat script2.ch
+    #!/usr/local/bin/cosh
+    1 1 +;
+    user@host:/$ ./script2.ch
+    2
+
 ### Core
 
 #### Types
@@ -125,6 +137,9 @@ null value:
 
 `is-callable` returns a boolean indicating whether the argument can be
 called like a function.
+
+The primitive types have value semantics, whereas the composite types
+have reference semantics.  Memory is handled via reference counting.
 
 #### Functions
 
@@ -299,6 +314,23 @@ work on a generator, and if it operates as a transformation, then its
 result will also be a generator.  `is-shiftable` is an additional type
 predicate that returns a boolean indicating whether `shift` can be
 called on the argument.
+
+#### Error handling
+
+Whenever an error occurs, an error message is displayed and control is
+returned to the user at the shell.  There are no facilities for
+catching errors or resuming processing at the point where an error
+occurred.  (This only affects internal calls, though: if a call to an
+external program fails, that will not of itself cause control to be
+returned to the user.)
+
+To cause an error to occur manually, use the `error` form:
+
+    $ "an error message" error
+    1:20: an error message
+
+The `lib/rt.ch` library contains various example uses of this
+function.
 
 ### Built-in functions
 
@@ -1115,6 +1147,15 @@ compared with relying on the shell language alone.
 There are likely to be many bugs and problems with the implementation
 here, and the performance isn't spectacular, even taking the previous
 paragraph into account.  The code could do with some tidying, too.
+
+There are not currently any guarantees around stability of the
+language, or of the underlying bytecode schema.
+
+#### Acknowledgments
+
+ - [Crafting Interpreters](https://craftinginterpreters.com)
+    - Much of the structure of the compiler, the operations it
+      supports, etc., is based on the text of this (very good) book.
 
 #### Development
 

@@ -68,6 +68,9 @@ Linux/macOS/BSD system where Rust can be built.
     make test
     sudo make install
 
+Apart from the core `cosh` executable, this will also install a
+compiled library of core functions (`rt.chc`).
+
 #### Running
 
     user@host:/$ cosh
@@ -76,7 +79,7 @@ Linux/macOS/BSD system where Rust can be built.
 
 ### Documentation
 
-[As single page](./doc/all.md)
+[Documentation](./doc/all.md)
 
 ### Licence
 

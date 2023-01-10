@@ -158,7 +158,7 @@ lazy_static! {
         map.insert("bool", VM::opcode_bool as fn(&mut VM) -> i32);
         map.insert("str", VM::opcode_str as fn(&mut VM) -> i32);
         map.insert("int", VM::opcode_int as fn(&mut VM) -> i32);
-        map.insert("flt", VM::opcode_flt as fn(&mut VM) -> i32);
+        map.insert("float", VM::opcode_flt as fn(&mut VM) -> i32);
         map.insert("rand", VM::opcode_rand as fn(&mut VM) -> i32);
         map.insert("shift", VM::opcode_shift as fn(&mut VM) -> i32);
         map.insert("join", VM::core_join as fn(&mut VM) -> i32);
@@ -196,7 +196,7 @@ lazy_static! {
         map.insert("is-int", VM::opcode_is_int as fn(&mut VM) -> i32);
         map.insert("is-bigint", VM::opcode_is_bigint as fn(&mut VM) -> i32);
         map.insert("is-str", VM::opcode_is_str as fn(&mut VM) -> i32);
-        map.insert("is-flt", VM::opcode_is_flt as fn(&mut VM) -> i32);
+        map.insert("is-float", VM::opcode_is_flt as fn(&mut VM) -> i32);
         map.insert("is-set", VM::opcode_is_set as fn(&mut VM) -> i32);
         map.insert("is-hash", VM::opcode_is_hash as fn(&mut VM) -> i32);
         map.insert("bigint", VM::opcode_bigint as fn(&mut VM) -> i32);

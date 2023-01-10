@@ -1323,7 +1323,7 @@ impl Compiler {
                         chunk.add_opcode(OpCode::Str);
                     } else if s == "int" {
                         chunk.add_opcode(OpCode::Int);
-                    } else if s == "flt" {
+                    } else if s == "float" {
                         chunk.add_opcode(OpCode::Flt);
                     } else if s == "bool" {
                         chunk.add_opcode(OpCode::Bool);

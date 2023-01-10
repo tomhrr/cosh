@@ -1517,7 +1517,7 @@ impl Value {
             Value::Bool(..) => "bool",
             Value::Int(..) => "int",
             Value::BigInt(..) => "bigint",
-            Value::Float(..) => "flt",
+            Value::Float(..) => "float",
             Value::String(..) => "str",
             Value::Command(..) => "command",
             Value::CommandUncaptured(..) => "command",

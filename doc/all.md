@@ -46,10 +46,10 @@ without arguments:
 the prompt.)
 
 Ctrl-R can be used to search through history, which is written to the
-`.cosh_history` file in the home directory.  Double-tabbing shows
-autocomplete options: red strings are built-in functions, blue strings
-are user-defined functions, and black strings are filenames.  Ctrl-D
-can be used to exit the shell.
+`.cosh_history` file in the user's home directory.  Double-tabbing
+shows autocomplete options: red strings are built-in functions, blue
+strings are user-defined functions, and black strings are filenames.
+Ctrl-D can be used to exit the shell.
 
 To compile a library:
 
@@ -84,17 +84,17 @@ To run a script:
 The shell language is dynamically-typed.  The basic primitive types
 are:
 
-  * `Bool`: boolean value
-  * `Int`: signed integer (32-bit)
-  * `BigInt`: arbitrary-precision integer
-  * `Float`: double-width floating-point number
-  * `String`: a string
+  * `bool`: boolean value
+  * `int`: signed integer (32-bit)
+  * `bigint`: arbitrary-precision integer
+  * `float`: double-width floating-point number
+  * `string`: a string
 
 The basic composite types are:
 
-  * `List`: a list of values
-  * `Set`: a set of values
-  * `Hash`: a hash map of values
+  * `list`: a list of values
+  * `set`: a set of values
+  * `hash`: a hash map of values
 
 There is also a `Null` type, with an associated null value.
 
@@ -103,24 +103,24 @@ Interpretation is like so:
   * The tokens `.t` and `.f` are interpreted as true and false boolean
     values respectively.
   * The token `null` is interpreted as the null value.
-  * A number with a fractional component is interpreted as a `Float`.
+  * A number with a fractional component is interpreted as a `float`.
   * A number without a fractional component is interpreted as an
-    `Int`, if it fits within a 32-bit signed integer, and as a
-    `BigInt` otherwise.
+    `int`, if it fits within a 32-bit signed integer, and as a
+    `bigint` otherwise.
   * A series of tokens enclosed within parentheses (`(...)`) is
-    interpreted as a `List`.
+    interpreted as a `list`.
   * A series of tokens enclosed within parentheses and preceded by an
-    `s` character (`s(...)`) is interpreted as a `Set`.
+    `s` character (`s(...)`) is interpreted as a `set`.
   * A series of tokens enclosed within parentheses and preceded by an
-    `h` character (`h(...)`) is interpreted as a `Hash`.
-  * All other tokens are interpreted as `Strings`s.  (To construct a
+    `h` character (`h(...)`) is interpreted as a `hash`.
+  * All other tokens are interpreted as `string`s.  (To construct a
     string that contains whitespace, use double-quote characters to
     delimit the string.)
 
-The forms `bool`, `str`, `int`, `bigint`, and `flt` can be used to
+The forms `bool`, `str`, `int`, `bigint`, and `float` can be used to
 convert primitive values of one type to another type.  If the
 conversion is not supported, then the null value will be returned.
-`int` will convert a value to a `BigInt` if required.
+`int` will convert a value to a `bigint` if required.
 
 There are type predicates for each of the basic types, as well as the
 null value:
@@ -143,25 +143,25 @@ have reference semantics.  Memory is handled via reference counting.
 
 #### Functions
 
-All `String`s are quoted by default.  The semicolon character will
+All `string`s are quoted by default.  The semicolon character will
 cause the definition associated with the last string on the stack to be
 executed:
 
     $ 1 2 + ;
     3
 
-A semicolon may be appended to the `String`:
+A semicolon may be appended to the `string`:
 
     $ 1 2 +;
     3
 
-A newline acts as an implicit semicolon, when the last `String` on the
+A newline acts as an implicit semicolon, when the last `string` on the
 stack has an associated definition:
 
     $ 1 2 + ; 1 2 + ; +
     6
 
-`Function`s are defined like so:
+Functions are defined like so:
 
     $ : add-1 1 + ; ,,
     $ 1 add-1
@@ -188,7 +188,7 @@ while all other values evaluate to true.
 
     $ 100 if; 1 else; 2 then;
     1
-    $ "0' if; 1 else; 2 then;
+    $ "0" if; 1 else; 2 then;
     2
 
 #### Loops
@@ -268,7 +268,7 @@ generator making use of those, with the function returning an instance
 of that generator when called.
 
 `take` can be used to return a certain number of elements from a
-generator object:
+generator object as a list:
 
     $ gen; 2 take;
     (
@@ -290,9 +290,9 @@ object:
         3: 3
     )
 
-In 'immediate' mode, each generator object that remains on the stack
-after command execution is finished will be replaced with the result
-of calling `take-all` on that object before the stack is printed:
+By default, each generator object that remains on the stack after
+command execution is finished will be iterated such that its results
+are displayed:
 
     $ gen;
     v[gen(
@@ -302,11 +302,11 @@ of calling `take-all` on that object before the stack is printed:
         3: 3
     )]
 
-The output in this case is slightly different, because `take` and
-`take-all` convert the generator into a list, whereas in the above the
-generator is being printed as-is, which is why it is wrapped in
-`v[gen(...)]`.  In general, built-in composite types other than lists,
-sets, and hashes will be displayed using this syntax.
+The output in this case is slightly different from previously, because
+`take` and `take-all` convert the generator into a list, whereas in
+the above the generator is being printed as-is, which is why it is
+wrapped in `v[gen(...)]`.  In general, built-in composite types other
+than lists, sets, and hashes will be displayed using this syntax.
 
 `shift`, `take`, and `take-all` also work in the same way on lists and
 sets.  In general, any built-in form that works on a list will also
@@ -333,6 +333,39 @@ The `lib/rt.ch` library contains various example uses of this
 function.
 
 ### Built-in functions
+
+#### Boolean functions
+
+ - `and`: the conjunction function, taking two values and returning a
+   boolean indicating whether both values evaluate to true.
+ - `or`: the disjunction function, taking two values and returning a
+   boolean indicating whether at least one value evaluates to true.
+ - `not`: the negation function, taking a value and returning a
+   boolean indicating whether that value evaluates to false.
+
+Both `and` and `or` evaluate each of their expressions.  `if` can be
+used to avoid this behaviour, if necessary.
+
+#### Arithmetic and relations
+
+`+`, `-`, `*`, `/`, `=`, `<`, and `>` are defined over the numeric
+types.  `=`, `<`, and `>` are also defined over `string`s.
+
+`<=>` returns -1 if the first argument is less than the second
+argument, 0 if the two arguments are equal, and 1 if the first
+argument is greater than the second argument.  It is defined over the
+numeric types, as well as `string`s.
+
+`sqrt` and `abs` are defined over the numeric types  `**`
+(exponentation) is defined over the numeric types for the base, and
+over `int` and `float` for the exponent.
+
+`<<` (logical left shift) and `>>` (logical right shift) are defined
+over the integral types for the operand and `int`s for the number of
+bit positions.
+
+`&` (bitwise and), `||` (bitwise or), and `^` (bitwise xor) are
+defined over the integral types.
 
 #### Stack functions
 
@@ -362,39 +395,6 @@ Some of the more commonly-used stack functions from Forth are defined:
     1
     2
 
-#### Boolean functions
-
- - `and`: the conjunction function, taking two values and returning a
-   boolean indicating whether both values evaluate to true.
- - `or`: the disjunction function, taking two values and returning a
-   boolean indicating whether at least one value evaluates to true.
- - `not`: the negation function, taking a value and returning a
-   boolean indicating whether that value evaluates to false.
-
-Both `and` and `or` evaluate each of their expressions.  `if` can be
-used to avoid this behaviour, if necessary.
-
-#### Arithmetic and relations
-
-`+`, `-`, `*`, `/`, `=`, `<`, and `>` are defined over the numeric
-types.  `=`, `<`, and `>` are also defined over `String`s.
-
-`<=>` returns -1 if the first argument is less than the second
-argument, 0 if the two arguments are equal, and 1 if the first
-argument is greater than the second argument.  It is defined over the
-numeric types, as well as `String`s.
-
-`sqrt` and `abs` are defined over the numeric types  `**`
-(exponentation) is defined over the numeric types for the base, and
-over `Int` and `Float` for the exponent.
-
-`<<` (logical left shift) and `>>` (logical right shift) are defined
-over the integral types for the operand and `Int`s for the number of
-bit positions.
-
-`&` (bitwise and), `||` (bitwise or), and `^` (bitwise xor) are
-defined over the integral types.
-
 #### String functions
 
 `++` appends one string to another:
@@ -402,8 +402,7 @@ defined over the integral types.
     $ asdf qwer append
     "asdfqwer"
 
-`++` also works for lists and hashes.  It can also be used to make a
-single generator out of two other input generators.
+`++` also works for lists and hashes, as well as generators.
 
 `chomp` removes the final newline from the end of a string, if the
 string ends in a newline:
@@ -414,7 +413,7 @@ string ends in a newline:
     "asdf"
 
 `chr` takes an integer or a bigint and returns the character
-associated with that integer.  `ord` takes a character and returns the
+associated with that input.  `ord` takes a character and returns the
 integer or bigint associated with that character.
 
 `hex` takes a number as a hexadecimal string and returns the number as
@@ -557,10 +556,10 @@ sets, hashes, strings, and generators.
 
 `empty` returns a boolean indicating whether the length of the string
 is zero.  This function also works for sets, hashes, strings, and
-generators.  In the case of a generator, it will exhaust the generator
+generators.  (In the case of a generator, it will exhaust the generator
 even though that's not strictly necessary for determining whether the
 generator is empty, because having it shift a single element from the
-generator each time it is called could be confusing.
+generator each time it is called could be confusing.)
 
 #### Set functions
 
@@ -569,6 +568,11 @@ beginning of the set and places it on the stack:
 
     $ s(1 2 3) shift;
     1
+
+`exists` checks whether a key is present in a set:
+
+    $ s(1 2 3) 2 exists;
+    .t
 
 `union` combines two sets:
 
@@ -670,6 +674,10 @@ beginning of the set and places it on the stack:
             1: 3
         )
     )]
+
+(There are separate generator types for the generators created by way
+of `keys`, `values`, and `each`, but their behaviour is as per
+the previous generator discussion in this document.)
 
 #### Higher-order functions (map, grep, for, etc.)
 
@@ -909,14 +917,6 @@ that variable, or null if the variable does not exist.
 `setenv` takes an environment variable name and a value, and set that
 environment variable as having that value.
 
-Environment variables can also be set for commands, in the same way as
-for a standard shell:
-
-    $ {TZ=Europe/London date};
-    (
-        "Mon 26 Dec 2022 11:43:19 GMT\n"
-    )
-
 #### JSON/XML Parsing
 
 JSON and XML can be serialised and deserialised using the
@@ -1104,10 +1104,17 @@ for standard output, and 2 for standard error):
         )
     )
 
+Environment variables can also be set for commands, in the same way as
+for a standard shell:
+
+    $ {TZ=Europe/London date};
+    (
+        "Mon 26 Dec 2022 11:43:19 GMT\n"
+    )
+
 ### Miscellaneous
 
-Comments can be added by prefixing the comment with `#`.  Any content
-from that point on will be ignored.
+Comments can be added by prefixing the comment line with `#`.
 
 On starting the shell for interactive use, the `.coshrc` file in the
 current user's home directory will be run.
@@ -1156,7 +1163,3 @@ language, or of the underlying bytecode schema.
  - [Crafting Interpreters](https://craftinginterpreters.com)
     - Much of the structure of the compiler, the operations it
       supports, etc., is based on the text of this (very good) book.
-
-#### Development
-
- * [Benchmarking](./benchmarking.md)

@@ -381,7 +381,7 @@ impl VM {
     /// Convert a value into a floating-point value.
     pub fn opcode_flt(&mut self) -> i32 {
         if self.stack.is_empty() {
-            self.print_error("flt requires one argument");
+            self.print_error("float requires one argument");
             return 0;
         }
 
@@ -481,7 +481,7 @@ impl VM {
     /// Check whether a value is of floating-point type.
     pub fn opcode_is_flt(&mut self) -> i32 {
         if self.stack.is_empty() {
-            self.print_error("is-flt requires one argument");
+            self.print_error("is-float requires one argument");
             return 0;
         }
 

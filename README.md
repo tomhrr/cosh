@@ -48,7 +48,7 @@ It also integrates with external executable calls, where that is
 necessary:
 
 - Print certificate data:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `for i in ``find . -iname '*.pem'``; do openssl x509 -in $i -text -noout; done`
+  - **bash**:&nbsp;&nbsp;&nbsp;&nbsp; `for i in ``find . -iname '*.pem'``; do openssl x509 -in $i -text -noout; done`
   - **cosh**: `lsr; [pem$ m] grep; [{openssl x509 -in {} -text -noout}] map;`
 
 ### Install

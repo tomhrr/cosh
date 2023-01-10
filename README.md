@@ -12,63 +12,43 @@ implemented as functions that return first-class values, as opposed to
 relying on executables that return text streams.  This makes working
 with the results simpler:
 
- - Find the total size of all files in the current directory
+ - Find the total size of all files in the current directory:
+    - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -`
+    - **cosh**: `ls; [stat; size get] map; sum`
 
-| Shell | Command |
-|-|-|
-| *sh* | `ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -` |
-| *cosh* | `ls; [stat; size get] map; sum` |
-
- - Find files matching a path, and search them for data
-
-| Shell | Command |
-|-|-|
-| *sh* | `find . -print0 | xargs -0 grep data` |
-| *cosh* | `lsr; [f<; [data m] grep] map` |
+ - Find files matching a path, and search them for data:
+    - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `find . -print0 | xargs -0 grep data`
+    - **cosh**: `lsr; [f<; [data m] grep] map`
 
 A small set of versatile primitives means that less needs to be
 remembered when compared with typical shells (see e.g. the various
 flags for `cut(1)`), though some commands may be longer as a result:
 
- - Get the second and third columns from each row of a CSV file
+ - Get the second and third columns from each row of a CSV file:
+    - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `cat test-data/csv | cut -d, -f2,3`
+    - **cosh**: `test-data/csv f<; [chomp; , split; (1 2) get] map`
 
-| Shell | Command |
-|-|-|
-| *sh* | `cat test-data/csv | cut -d, -f2,3` |
-| *cosh* | `test-data/csv f<; [chomp; , split; (1 2) get] map` |
-
- - Sort files by modification time
-
-| Shell | Command |
-|-|-|
-| *sh* | `ls -tr` |
-| *cosh* | `ls; [[stat; mtime get] 2 apply; <=>] sortp` |
+ - Sort files by modification time:
+    - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ls -tr`
+    - **cosh**: `ls; [[stat; mtime get] 2 apply; <=>] sortp`
 
 Arithmetical operators and XML/JSON/CSV encoding/decoding functions
 reduce the number of times that it becomes necessary to use a more
 full-featured programming language or a third-party executable:
 
- - Increment floating-point numbers in file
+ - Increment floating-point numbers in file:
+    - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `sed 's/$/+10/' nums | bc`
+    - **cosh**: `nums f<; [chomp; 10 +] map;`
 
-| Shell | Command |
-|-|-|
-| *sh* | `sed 's/$/+10/' nums | bc` |
-| *cosh* | `nums f<; [chomp; 10 +] map;` |
-
- - Get the first value from the "zxcv" array member of a JSON file
-
-| Shell | Command |
-|-|-|
-| *sh* | `cat test-data/json2 | jq .zxcv[0]` |
-| *cosh* | `test-data/json2 f<; from-json; zxcv get; 0 get` |
+ - Get the first value from the "zxcv" array member of a JSON file:
+    - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `cat test-data/json2 | jq .zxcv[0]`
+    - **cosh**: `test-data/json2 f<; from-json; zxcv get; 0 get`
 
 It also integrates with external executable calls, where that is
 necessary:
 
-| Shell | Command |
-|-|-|
-| *sh* | `for i in ``find . -iname '*.pem'``; do openssl x509 -in $i -text -noout; done` |
-| *cosh* | `lsr; [pem$ m] grep; [{openssl x509 -in {} -text -noout}] map;` |
+    - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `for i in ``find . -iname '*.pem'``; do openssl x509 -in $i -text -noout; done`
+    - **cosh**: `lsr; [pem$ m] grep; [{openssl x509 -in {} -text -noout}] map;`
 
 ### Install
 

@@ -2,35 +2,72 @@
 
 cosh is a concatenative command-line shell.
 
- * [Types](#types)
- * [Basic usage](#basic-usage)
- * [Scoping](#scoping)
- * [Anonymous functions](#anonymous-functions)
- * [Compiling and importing libraries](#compiling-and-importing-libraries)
- * [Stack operators](#stack-operators)
- * [Boolean operators](#boolean-operators)
- * [Arithmetic and relations](#arithmetic-and-relations)
- * [Generators](#generators)
- * [String-handling functions](#string-handling-functions)
- * [Regular expressions](#regular-expressions)
- * [List operators](#list-operators)
- * [Set operators](#set-operators)
- * [Hash operators](#hash-operators)
- * [map, grep, for, foldl](#map-grep-for-foldl)
-    * [Miscellaneous list functions](#miscellaneous-list-functions)
- * [sort, sortp](#sort-sortp)
- * [Filesystem operations](#filesystem-operations)
+ * [Usage](#usage)
+ * [Core](#core)
+    * [Types](#types)
+    * [Functions](#functions)
+    * [Variables](#variables)
+    * [Conditionals](#conditionals)
+    * [Loops](#loops)
+    * [Scoping](#scoping)
+    * [Anonymous functions](#anonymous-functions)
+    * [Generators](#generators)
+ * [Built-in functions](#built-in-functions)
+    * [Stack functions](#stack-functions)
+    * [Boolean functions](#boolean-functions)
+    * [Arithmetic and relations](#arithmetic-and-relations)
+    * [String functions](#string-functions)
+       * [Regular expressions](#regular-expressions)
+    * [List functions](#list-functions)
+    * [Set functions](#set-functions)
+    * [Hash functions](#hash-functions)
+    * [Higher-order functions (map, grep, for, etc.)](#higher-order-functions-map-grep-for-etc)
+    * [Sorting](#sorting)
+    * [Filesystem operations](#filesystem-operations)
+    * [Environment variables](#environment-variables)
+    * [JSON/XML Parsing](#jsonxml-parsing)
+    * [Datetimes](#datetimes)
+    * [IP addresses](#ip-addresses)
+    * [Miscellaneous functions](#miscellaneous-functions)
  * [External program execution](#external-program-execution)
- * [Environment variables](#environment-variables)
- * [JSON/XML Parsing](#jsonxml-parsing)
- * [Datetimes](#datetimes)
- * [IP addresses](#ip-addresses)
- * [Miscellaneous functions](#miscellaneous-functions)
  * [Miscellaneous](#miscellaneous)
     * [Caveats and pitfalls](#caveats-and-pitfalls)
     * [Development](#development)
 
-### Types
+### Usage
+
+The `cosh` executable will start an interactive shell when it is run
+without arguments:
+
+    user@host:/$ cosh
+    /$
+
+(The remaining examples will omit the directory from the beginning of
+the prompt.)
+
+Ctrl-R can be used to search through history, which is written to the
+`.cosh_history` file in the home directory.  Double-tabbing shows
+autocomplete options: red strings are built-in functions, blue strings
+are user-defined functions, and black strings are filenames.  Ctrl-D
+can be used to exit the shell.
+
+To compile a library:
+
+    user@host:/$ cat test.ch
+    : test-fn hello println; ,,
+    user@host:/$ cosh -c test.ch -o test.chc
+    user@host:/$
+
+To import and use a library:
+
+    $ test.chc import
+    $ test-fn
+    hello
+    $
+
+### Core
+
+#### Types
 
 The shell language is dynamically-typed.  The basic primitive types
 are:
@@ -89,16 +126,7 @@ null value:
 `is-callable` returns a boolean indicating whether the argument can be
 called like a function.
 
-### Basic usage
-
-The `cosh` executable will start an interactive shell when it is run
-without arguments:
-
-    user@host:/$ cosh
-    /$
-
-(The remaining examples will omit the directory from the beginning of
-the prompt.)
+#### Functions
 
 All `String`s are quoted by default.  The semicolon character will
 cause the definition associated with the last string on the stack to be
@@ -124,14 +152,7 @@ stack has an associated definition:
     $ 1 add-1
     2
 
-Conditional execution is handled by `if`.  False boolean values, zero
-numeric values and the strings "", "0", and "0.0" evaluate to false,
-while all other values evaluate to true.
-
-    $ 100 if; 1 else; 2 then;
-    1
-    $ "0' if; 1 else; 2 then;
-    2
+#### Variables
 
 Variable definition and load/store operations are like so:
 
@@ -143,6 +164,19 @@ Variable definition and load/store operations are like so:
     1
     $ x @; 1 +; x !; x @
     2
+
+#### Conditionals
+
+Conditional execution is handled by `if`.  False boolean values, zero
+numeric values and the strings "", "0", and "0.0" evaluate to false,
+while all other values evaluate to true.
+
+    $ 100 if; 1 else; 2 then;
+    1
+    $ "0' if; 1 else; 2 then;
+    2
+
+#### Loops
 
 Loops can be constructed using `begin` and `until` (`.s` prints the
 stack to standard output):
@@ -157,22 +191,7 @@ stack to standard output):
 
 `leave` can be used to exit a loop early.
 
-By default, the shell starts in 'transient' mode, unless it is being
-used to run a script, in which case it starts in 'persistent' mode.
-In 'transient' mode, after each command is submitted, each generator
-in the stack is converted into a list, and each element on the stack
-is printed.  In 'persistent' mode, this doesn't happen.  The mode can
-be switched using `toggle-mode`:
-
-    $ toggle-mode
-    $ 1 2
-    $ + ;
-    $ .s
-    3
-    $ .s
-    3
-
-### Scoping
+#### Scoping
 
 Scoping is lexical.  Variable definitions within functions may shadow
 global definitions:
@@ -192,7 +211,7 @@ Function definitions may be nested.  Nested functions have access to
 the surrounding environment when they are executed, but they do not
 close over that environment.
 
-### Anonymous functions
+#### Anonymous functions
 
 An anonymous function is defined by way of a list that contains the
 function's tokens.  It is executed using `funcall`:
@@ -203,84 +222,7 @@ function's tokens.  It is executed using `funcall`:
 The last token in the list is treated as a function implicitly, if it is
 not followed by a semicolon.
 
-### Compiling and importing libraries
-
-To compile a library:
-
-    user@host:/$ cat test.ch
-    : test-fn hello println; ,,
-    user@host:/$ cosh -c test.ch -o test.chc
-    user@host:/$
-
-To import and use a library:
-
-    $ test.chc import
-    $ test-fn
-    hello
-    $
-
-### Stack operators
-
-Some of the more commonly-used stack operators from Forth are defined:
-
-    $ 1 clear
-    $ 1 dup
-    1
-    1
-    $ 1 2 swap
-    2
-    1
-    $ 1 2 drop
-    1
-    $ 1 2 nip
-    2
-    $ 1 2 3 rot
-    2
-    3
-    1
-    $ 1 2 over
-    1
-    2
-    1
-    $ 1 1 depth
-    1
-    1
-    2
-
-### Boolean operators
-
- - `and`: the conjunction function, taking two values and returning a
-   boolean indicating whether both values evaluate to true.
- - `or`: the disjunction function, taking two values and returning a
-   boolean indicating whether at least one value evaluates to true.
- - `not`: the negation function, taking a value and returning a
-   boolean indicating whether that value evaluates to false.
-
-Both `and` and `or` evaluate each of their expressions.  `if` can be
-used to avoid this behaviour, if necessary.
-
-### Arithmetic and relations
-
-`+`, `-`, `*`, `/`, `=`, `<`, and `>` are defined over the numeric
-types.  `=`, `<`, and `>` are also defined over `String`s.
-
-`<=>` returns -1 if the first argument is less than the second
-argument, 0 if the two arguments are equal, and 1 if the first
-argument is greater than the second argument.  It is defined over the
-numeric types, as well as `String`s.
-
-`sqrt` and `abs` are defined over the numeric types  `**`
-(exponentation) is defined over the numeric types for the base, and
-over `Int` and `Float` for the exponent.
-
-`<<` (logical left shift) and `>>` (logical right shift) are defined
-over the integral types for the operand and `Int`s for the number of
-bit positions.
-
-`&` (bitwise and), `||` (bitwise or), and `^` (bitwise xor) are
-defined over the integral types.
-
-### Generators
+#### Generators
 
 A function may be defined as a generator function.  When such a
 function is called, it returns a generator object, which can be
@@ -354,11 +296,74 @@ sets, and hashes will be displayed using this syntax.
 `shift`, `take`, and `take-all` also work in the same way on lists and
 sets.  In general, any built-in form that works on a list will also
 work on a generator, and if it operates as a transformation, then its
-result will also be a generator.  `is-shiftable` is an addtional type
+result will also be a generator.  `is-shiftable` is an additional type
 predicate that returns a boolean indicating whether `shift` can be
 called on the argument.
 
-### String-handling functions
+### Built-in functions
+
+#### Stack functions
+
+Some of the more commonly-used stack functions from Forth are defined:
+
+    $ 1 clear
+    $ 1 dup
+    1
+    1
+    $ 1 2 swap
+    2
+    1
+    $ 1 2 drop
+    1
+    $ 1 2 nip
+    2
+    $ 1 2 3 rot
+    2
+    3
+    1
+    $ 1 2 over
+    1
+    2
+    1
+    $ 1 1 depth
+    1
+    1
+    2
+
+#### Boolean functions
+
+ - `and`: the conjunction function, taking two values and returning a
+   boolean indicating whether both values evaluate to true.
+ - `or`: the disjunction function, taking two values and returning a
+   boolean indicating whether at least one value evaluates to true.
+ - `not`: the negation function, taking a value and returning a
+   boolean indicating whether that value evaluates to false.
+
+Both `and` and `or` evaluate each of their expressions.  `if` can be
+used to avoid this behaviour, if necessary.
+
+#### Arithmetic and relations
+
+`+`, `-`, `*`, `/`, `=`, `<`, and `>` are defined over the numeric
+types.  `=`, `<`, and `>` are also defined over `String`s.
+
+`<=>` returns -1 if the first argument is less than the second
+argument, 0 if the two arguments are equal, and 1 if the first
+argument is greater than the second argument.  It is defined over the
+numeric types, as well as `String`s.
+
+`sqrt` and `abs` are defined over the numeric types  `**`
+(exponentation) is defined over the numeric types for the base, and
+over `Int` and `Float` for the exponent.
+
+`<<` (logical left shift) and `>>` (logical right shift) are defined
+over the integral types for the operand and `Int`s for the number of
+bit positions.
+
+`&` (bitwise and), `||` (bitwise or), and `^` (bitwise xor) are
+defined over the integral types.
+
+#### String functions
 
 `++` appends one string to another:
 
@@ -366,7 +371,7 @@ called on the argument.
     "asdfqwer"
 
 `++` also works for lists and hashes.  It can also be used to make a
-single generator using two other generators as input.
+single generator out of two other input generators.
 
 `chomp` removes the final newline from the end of a string, if the
 string ends in a newline:
@@ -390,7 +395,7 @@ character to lowercase, and returns the updated string.  `uc` and
 
 `reverse` reverses a string.  It also works on lists.
 
-### Regular expressions
+##### Regular expressions
 
 The two basic regular expression forms are `m` and `c`.  The `m` form
 returns a boolean indicating whether a string matches against a
@@ -437,7 +442,7 @@ Because flags are separated from the regular expression by a forward
 slash, other forward slash characters that appear within the
 expression must be escaped with a backslash.
 
-### List operators
+#### List functions
 
 When called with a list argument, `shift` removes one element from the
 beginning of the list and places it on the stack:
@@ -525,7 +530,7 @@ even though that's not strictly necessary for determining whether the
 generator is empty, because having it shift a single element from the
 generator each time it is called could be confusing.
 
-### Set operators
+#### Set functions
 
 When called with a set argument, `shift` removes one element from the
 beginning of the set and places it on the stack:
@@ -566,7 +571,7 @@ beginning of the set and places it on the stack:
         4
     )
 
-### Hash operators
+#### Hash functions
 
 `get` returns a value from a hash:
 
@@ -634,7 +639,7 @@ beginning of the set and places it on the stack:
         )
     )]
 
-### map, grep, for, foldl
+#### Higher-order functions (map, grep, for, etc.)
 
 `map` iterates over a list, applying a function to each
 element and collecting the results into a new list:
@@ -691,7 +696,7 @@ variables that were only available within the environment of that
 function call, then calling that anonymous function will result in an
 error.
 
-#### Miscellaneous list functions
+Other higher-order functions:
 
  - `any`: takes a list and a function, and returns a boolean
    indicating whether the function returns true for any element of the
@@ -735,10 +740,10 @@ error.
    list.  Takes a function and the number of stack elements to which
    the function should be applied.
 
-Each of the above can also accept a set or generator in place of a
-list argument.
+Each of the above, except for `apply`, can also accept a set or
+generator in place of a list argument.
 
-### sort, sortp
+#### Sorting
 
 `sort` sorts a list or generator, where the values in the list are of
 primitive types:
@@ -767,7 +772,7 @@ greater-than):
         5: 1
     )
 
-### Filesystem operations
+#### Filesystem operations
 
 `ls` takes a directory name as its argument and returns a generator
 object over the files in that directory:
@@ -861,6 +866,122 @@ Core input/output operations:
  - `writeline`: write a line to a file writer object.
  - `close`: close a file reader or file writer object.
 
+#### Environment variables
+
+`env` returns a hash containing the current set of environment
+variables.
+
+`getenv` takes an environment variable name and returns the value for
+that variable, or null if the variable does not exist.
+
+`setenv` takes an environment variable name and a value, and set that
+environment variable as having that value.
+
+Environment variables can also be set for commands, in the same way as
+for a standard shell:
+
+    $ {TZ=Europe/London date};
+    (
+        "Mon 26 Dec 2022 11:43:19 GMT\n"
+    )
+
+#### JSON/XML Parsing
+
+JSON and XML can be serialised and deserialised using the
+`from-json`, `to-json`, `from-xml` and `to-xml` functions.
+
+#### Datetimes
+
+ - `now`: returns the current time as a DateTime object, offset at
+   UTC.
+ - `lcnow`: returns the current time as a DateTime object, offset at
+   the local time zone.
+ - `from-epoch`: takes the epoch time (i.e. the number of seconds that
+   have elapsed since 1970-01-01 00:00:00 UTC) and returns a DateTime
+   object (offset at UTC) that corresponds to that time.
+ - `to-epoch`: takes a DateTime object and returns the epoch time that
+   corresponds to that object.
+ - `set-tz`: takes a DateTime object and a named timezone (per the tz
+   database) and returns a new DateTime object offset at that
+   timezone.
+ - `+time`: takes a DateTime object, a period (one of years, months,
+   days, minutes, hours, or seconds) and a count as its arguments.
+   Adds the specified number of periods to the DateTime object and
+   returns the result as a new DateTime object.
+ - `-time`: the reverse of `+time`.
+ - `strftime`: takes a DateTime object and a strftime pattern as its
+   arguments.  Returns the stringification of the date per the
+   pattern.
+ - `strptime`: takes a datetime string and a strftime pattern as its
+   arguments.  Returns the parsed datetime string as a DateTime
+   object.
+ - `strptimez`: takes a datetime string, a strftime pattern, and a
+   named timezone (per the tz database) as its arguments.  Returns the
+   parsed datetime string as a DateTime object.
+
+The `strptime` and `strptimez` functions do not require that any
+particular specifiers be used in the pattern.  By default, the
+DateTime object result is `1970-01-01 00:00:00 +0000`, with values
+parsed by way of the pattern being applied on top of that initial
+result.
+
+#### IP addresses
+
+ - `ip`: takes a single IP address or range as a string, and returns
+   an IP object for that address or range.
+ - `ip.from-int`: takes an IP address as an integer and an IP version
+   (either 4 or 6) and returns an IP object for the address.
+ - `ip.len`: takes an IP object and returns the prefix length of the
+   range.
+ - `ip.addr`: takes an IP object and returns the first address from
+   the range as a string.
+ - `ip.addr-int`: takes an IP object and returns the first address
+   from the range as an integer.
+ - `ip.last-addr`: takes an IP object and returns the last address
+   from the range as a string.
+ - `ip.last-addr-int`: takes an IP object and returns the last address
+   from the range as an integer.
+ - `ip.size`: takes an IP object and returns the number of hosts it
+   covers.
+ - `ip.version`: takes an IP object and returns the version of that
+   object (either 4 or 6).
+ - `ip.prefixes`: takes an IP object and returns a list comprising the
+   prefixes (as IP objects) that make up the object.  (The main use of
+   this is for converting a range into a set of prefixes, if
+   necessary.)
+
+There is also a separate IP set object, for storing multiple IP
+address ranges in a single type.  The `ips` function takes a single IP
+address or range as a string or a list of IP address objects or IP
+address/range strings as its single argument, and returns an IP set
+object for those addresses/ranges.  This object supports all the same
+functions as a standard set, but it will additionally simplify the set
+after each call to the minimum set of prefixes required to cover the
+address space in the set.  Finally, `=` is also defined for IP sets,
+and `str` is defined for both IP objects and IP sets.
+
+#### Miscellaneous functions
+
+`rand` takes a floating-point value and returns a random value between
+zero and that floating-point value (excluding the floating-point value
+itself).
+
+`sleep` takes a floating-point value and pauses execution for that
+number of seconds.
+
+`md5`, `sha1`, `sha256` and `sha512` each take a single string
+argument and return the corresponding cryptographic hash for that
+input.
+
+`range` takes an integer and returns a generator over the integers
+from zero to that integer, minus one.
+
+`to-function` takes a callable string (e.g. a function name) and
+converts it into a function object.  Using `funcall` on the function
+object will then be quicker than using it on the original string.
+
+`id` is a no-op function.
+
 ### External program execution
 
 A command that begins with `$` will be treated as an external call:
@@ -951,122 +1072,6 @@ for standard output, and 2 for standard error):
         )
     )
 
-### Environment variables
-
-`env` returns a hash containing the current set of environment
-variables.
-
-`getenv` takes an environment variable name and returns the value for
-that variable, or null if the variable does not exist.
-
-`setenv` takes an environment variable name and a value, and set that
-environment variable as having that value.
-
-Environment variables can also be set for commands, in the same way as
-for a standard shell:
-
-    $ {TZ=Europe/London date};
-    (
-        "Mon 26 Dec 2022 11:43:19 GMT\n"
-    )
-
-### JSON/XML Parsing
-
-JSON and XML can be serialised and deserialised using the
-`from-json`, `to-json`, `from-xml` and `to-xml` functions.
-
-### Datetimes
-
- - `now`: returns the current time as a DateTime object, offset at
-   UTC.
- - `lcnow`: returns the current time as a DateTime object, offset at
-   the local time zone.
- - `from-epoch`: takes the epoch time (i.e. the number of seconds that
-   have elapsed since 1970-01-01 00:00:00 UTC) and returns a DateTime
-   object (offset at UTC) that corresponds to that time.
- - `to-epoch`: takes a DateTime object and returns the epoch time that
-   corresponds to that object.
- - `set-tz`: takes a DateTime object and a named timezone (per the tz
-   database) and returns a new DateTime object offset at that
-   timezone.
- - `+time`: takes a DateTime object, a period (one of years, months,
-   days, minutes, hours, or seconds) and a count as its arguments.
-   Adds the specified number of periods to the DateTime object and
-   returns the result as a new DateTime object.
- - `-time`: the reverse of `+time`.
- - `strftime`: takes a DateTime object and a strftime pattern as its
-   arguments.  Returns the stringification of the date per the
-   pattern.
- - `strptime`: takes a datetime string and a strftime pattern as its
-   arguments.  Returns the parsed datetime string as a DateTime
-   object.
- - `strptimez`: takes a datetime string, a strftime pattern, and a
-   named timezone (per the tz database) as its arguments.  Returns the
-   parsed datetime string as a DateTime object.
-
-The `strptime` and `strptimez` functions do not require that any
-particular specifiers be used in the pattern.  By default, the
-DateTime object result is `1970-01-01 00:00:00 +0000`, with values
-parsed by way of the pattern being applied on top of that initial
-result.
-
-### IP addresses
-
- - `ip`: takes a single IP address or range as a string, and returns
-   an IP object for that address or range.
- - `ip.from-int`: takes an IP address as an integer and an IP version
-   (either 4 or 6) and returns an IP object for the address.
- - `ip.len`: takes an IP object and returns the prefix length of the
-   range.
- - `ip.addr`: takes an IP object and returns the first address from
-   the range as a string.
- - `ip.addr-int`: takes an IP object and returns the first address
-   from the range as an integer.
- - `ip.last-addr`: takes an IP object and returns the last address
-   from the range as a string.
- - `ip.last-addr-int`: takes an IP object and returns the last address
-   from the range as an integer.
- - `ip.size`: takes an IP object and returns the number of hosts it
-   covers.
- - `ip.version`: takes an IP object and returns the version of that
-   object (either 4 or 6).
- - `ip.prefixes`: takes an IP object and returns a list comprising the
-   prefixes (as IP objects) that make up the object.  (The main use of
-   this is for converting a range into a set of prefixes, if
-   necessary.)
-
-There is also a separate IP set object, for storing multiple IP
-address ranges in a single type.  The `ips` function takes a single IP
-address or range as a string or a list of IP address objects or IP
-address/range strings as its single argument, and returns an IP set
-object for those addresses/ranges.  This object supports all the same
-functions as a standard set, but it will additionally simplify the set
-after each call to the minimum set of prefixes required to cover the
-address space in the set.  Finally, `=` is also defined for IP sets,
-and `str` is defined for both IP objects and IP sets.
-
-### Miscellaneous functions
-
-`rand` takes a floating-point value and returns a random value between
-zero and that floating-point value (excluding the floating-point value
-itself).
-
-`sleep` takes a floating-point value and pauses execution for that
-number of seconds.
-
-`md5`, `sha1`, `sha256` and `sha512` each take a single string
-argument and return the corresponding cryptographic hash for that
-input.
-
-`range` takes an integer and returns a generator over the integers
-from zero to that integer, minus one.
-
-`to-function` takes a callable string (e.g. a function name) and
-converts it into a function object.  Using `funcall` on the function
-object will then be quicker than using it on the original string.
-
-`id` is a no-op function.
-
 ### Miscellaneous
 
 Comments can be added by prefixing the comment with `#`.  Any content
@@ -1082,6 +1087,21 @@ all other value types, `clone` has the same effect as `dup`: this is
 fine in most cases, but it's important to be aware that `dup` for
 file/directory read/write generators is a shallow copy, and
 reads/writes against one value will affect cloned values as well.
+
+By default, the shell starts in 'transient' mode, unless it is being
+used to run a script, in which case it starts in 'persistent' mode.
+In 'transient' mode, after each command is submitted, each generator
+in the stack is converted into a list, and each element on the stack
+is printed.  In 'persistent' mode, this doesn't happen.  The mode can
+be switched using `toggle-mode`:
+
+    $ toggle-mode
+    $ 1 2
+    $ + ;
+    $ .s
+    3
+    $ .s
+    3
 
 #### Caveats and pitfalls
 

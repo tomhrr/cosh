@@ -704,7 +704,7 @@ fn sort_test() {
 fn conv_test() {
     basic_test("5 int; \"10\" int;", "5\n10");
     basic_test("5 str; \"10\" str;", "5\n10");
-    basic_test("5 flt; \"10\" flt;", "5\n10");
+    basic_test("5 float; \"10\" float;", "5\n10");
 }
 
 #[test]
@@ -1018,10 +1018,10 @@ fn predicate_test() {
     basic_test("asdf is-str;", ".t");
     basic_test("s(1 2 3) is-str;", ".f");
 
-    basic_test("1 is-flt;", ".f");
-    basic_test("1.0 is-flt;", ".t");
-    basic_test("asdf is-flt;", ".f");
-    basic_test("\"1.0\" is-flt;", ".f");
+    basic_test("1 is-float;", ".f");
+    basic_test("1.0 is-float;", ".t");
+    basic_test("asdf is-float;", ".f");
+    basic_test("\"1.0\" is-float;", ".f");
 }
 
 #[test]

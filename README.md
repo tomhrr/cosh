@@ -12,13 +12,13 @@ implemented as functions that return first-class values, as opposed to
 relying on executables that return text streams.  This makes working
 with the results simpler:
 
-- Find the total size of all files in the current directory:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -`
-  - **cosh**: `ls; [stat; size get] map; sum`
-
 - Find files matching a path, and search them for data:
   - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `find . -print0 | xargs -0 grep data`
   - **cosh**: `lsr; [f<; [data m] grep] map`
+
+- Find the total size of all files in the current directory:
+  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -`
+  - **cosh**: `ls; [stat; size get] map; sum`
 
 A small set of versatile primitives means that less needs to be
 remembered when compared with typical shells (see e.g. the various

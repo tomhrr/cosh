@@ -17,8 +17,8 @@ with the results simpler:
   - **cosh**: `lsr; [f<; [data m] grep] map`
 
 - Find the total size of all files in the current directory:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -`
-  - **cosh**: `ls; [stat; size get] map; sum`
+  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -`
+  - **cosh**: `ls; [stat; size get] map; sum`
 
 A small set of versatile primitives means that less needs to be
 remembered when compared with typical shells (see e.g. the various

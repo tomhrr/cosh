@@ -409,7 +409,7 @@ impl VM {
                                 true,
                                 window_height,
                                 lines_to_print,
-                                index,
+                                None,
                             );
                             if lines_to_print == -1 {
                                 return lines_to_print;

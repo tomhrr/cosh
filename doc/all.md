@@ -230,31 +230,20 @@ Some of the more commonly-used stack operators from Forth are defined:
     $ 1 2 swap
     2
     1
-    $ 1 1 drop
+    $ 1 2 drop
     1
+    $ 1 2 nip
+    2
     $ 1 2 3 rot
     2
     3
     1
-    $ 1 2 3 depth
-    1
-    2
-    3
-    3
     $ 1 2 over
     1
     2
     1
-    $ 1 2 nip
-    2
-    $ 1 2 3 2over
+    $ 1 1 depth
     1
-    2
-    3
-    2
-    3
-    $ 1 2 3 2rot
-    3
     1
     2
 
@@ -742,6 +731,9 @@ error.
  - `after`: works similarly to `before`, save that it returns the
    elements from after the point where the function returns a true
    value.
+ - `apply`: like `map`, but it works on the stack, rather than on a
+   list.  Takes a function and the number of stack elements to which
+   the function should be applied.
 
 Each of the above can also accept a set or generator in place of a
 list argument.
@@ -1102,7 +1094,7 @@ compared with relying on the shell language alone.
 
 There are likely to be many bugs and problems with the implementation
 here, and the performance isn't spectacular, even taking the previous
-paragraph into account.
+paragraph into account.  The code could do with some tidying, too.
 
 #### Development
 

@@ -368,10 +368,9 @@ impl VM {
     /// mode, "nlink" is the number of hard links to the file, "uid"
     /// is the user ID of the owner, "gid" is the group ID of the
     /// owner, "rdev" is the device ID (for special files), "size" is
-    /// the total size in bytes,
-    /// "atime_nsec"/"ctime_nsec"/"mtime_nsec" are various file
-    /// modification times, "blksize" is the block size, and "blocks"
-    /// is the number of blocks allocated to the file.
+    /// the total size in bytes, "atime"/"ctime"/"mtime" are various
+    /// file modification times, "blksize" is the block size, and
+    /// "blocks" is the number of blocks allocated to the file.
     fn stat_inner(&mut self, use_symlink: bool) -> i32 {
         if self.stack.is_empty() {
             self.print_error("stat requires one argument");
@@ -425,16 +424,16 @@ impl VM {
                             Value::BigInt(BigInt::from_u64(meta.size()).unwrap()),
                         );
                         map.insert(
-                            "atime_nsec".to_string(),
-                            Value::BigInt(BigInt::from_i64(meta.atime_nsec()).unwrap()),
+                            "atime".to_string(),
+                            Value::BigInt(BigInt::from_i64(meta.atime()).unwrap()),
                         );
                         map.insert(
-                            "mtime_nsec".to_string(),
-                            Value::BigInt(BigInt::from_i64(meta.mtime_nsec()).unwrap()),
+                            "mtime".to_string(),
+                            Value::BigInt(BigInt::from_i64(meta.mtime()).unwrap()),
                         );
                         map.insert(
-                            "ctime_nsec".to_string(),
-                            Value::BigInt(BigInt::from_i64(meta.ctime_nsec()).unwrap()),
+                            "ctime".to_string(),
+                            Value::BigInt(BigInt::from_i64(meta.ctime()).unwrap()),
                         );
                         map.insert(
                             "blksize".to_string(),

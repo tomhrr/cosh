@@ -3,11 +3,9 @@
 : not if; .f else; .t then; ,,
 
 : nip   swap; drop; ,,
-: 2over over; over; ,,
-: 2rot  rot;  rot;  ,,
 
-: <= 2over; <; 2rot; =; or; ,,
-: >= 2over; >; 2rot; =; or; ,,
+: <= over; over; <; rot; rot; =; or; ,,
+: >= over; over; >; rot; rot; =; or; ,,
 
 : no-upwards dup; "." =; swap; ".." =; or; not; ,,
 
@@ -613,6 +611,31 @@
                 then;
                 yield;
                 .f until;
+            leave;
+        then;
+        .f until; ,,
+
+: apply
+    n var; n !;
+    fn var; fn !;
+    lst var; () lst !;
+
+    begin;
+        n @;
+        dup; 0 =; if;
+            drop;
+            leave;
+        then;
+        1 -; n !;
+        fn @; funcall;
+        lst @; swap; unshift; drop;
+        .f until;
+
+    begin;
+        lst @;
+        shift;
+        dup; is-null; if;
+            drop;
             leave;
         then;
         .f until; ,,

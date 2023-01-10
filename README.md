@@ -10,67 +10,76 @@ cosh is a concatenative command-line shell.
 Basic shell operations like `ls`, `ps`, `stat`, and so on are
 implemented as functions that return first-class values, as opposed to
 relying on executables that return text streams.  This makes working
-with the results simpler.  For example, to find the size of all files
-in the current directory:
+with the results simpler:
 
-<table>
-    <tr>
-        <th><b>sh</b></th>
-        <td><code>ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -</code></td>
-    </tr>
-    <tr>
-        <th><b>cosh</b></th>
-        <td><code>ls; [stat; size get] map; sum</code></td>
-    </tr>
-</table>
-&nbsp;
-&nbsp;
-&nbsp;
+ - Find the total size of all files in the current directory
+
+| Shell | Command |
+|-|-|
+| *sh* | `ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -` |
+| *cosh* | `ls; [stat; size get] map; sum` |
+
+ - Find files matching a path, and search them for data
+
+| Shell | Command |
+|-|-|
+| *sh* | `find . -print0 | xargs -0 grep data` |
+| *cosh* | `lsr; [f<; [data m] grep] map` |
 
 A small set of versatile primitives means that less needs to be
 remembered when compared with typical shells (see e.g. the various
-flags for `cut(1)`).  For example, to get the second column from each
-row of a CSV file:
+flags for `cut(1)`), though some commands may be longer as a result:
 
-<table>
-    <tr>
-        <th><b>sh</b></th>
-        <td><code>cat test-data/csv | cut -d, -f2</code></td>
-    </tr>
-    <tr>
-        <th><b>cosh</b></th>
-        <td><code>test-data/csv f<; [chomp; , split; 1 get] map;</code></td>
-    </tr>
-</table>
-&nbsp;
-&nbsp;
-&nbsp;
+ - Get the second and third columns from each row of a CSV file
+
+| Shell | Command |
+|-|-|
+| *sh* | `cat test-data/csv | cut -d, -f2,3` |
+| *cosh* | `test-data/csv f<; [chomp; , split; (1 2) get] map` |
+
+ - Sort files by modification time
+
+| Shell | Command |
+|-|-|
+| *sh* | `ls -tr` |
+| *cosh* | `ls; [[stat; mtime get] 2 apply; <=>] sortp` |
 
 Arithmetical operators and XML/JSON/CSV encoding/decoding functions
 reduce the number of times that it becomes necessary to use a more
-full-featured programming language or a third-party executable.  For
-example, to get the first value from the "zxcv" array member of a JSON
-file:
+full-featured programming language or a third-party executable:
 
-<table>
-    <tr>
-        <th><b>sh</b></th>
-        <td><code>cat test-data/json2 | jq .zxcv[0]</code></td>
-    </tr>
-    <tr>
-        <th><b>cosh</b></th>
-        <td><code>test-data/json2 f<; from-json; zxcv get; 0 get</code></td>
-    </tr>
-</table>
-&nbsp;
-&nbsp;
-&nbsp;
+ - Increment floating-point numbers in file
+
+| Shell | Command |
+|-|-|
+| *sh* | `sed 's/$/+10/' nums | bc` |
+| *cosh* | `nums f<; [chomp; 10 +] map;` |
+
+ - Get the first value from the "zxcv" array member of a JSON file
+
+| Shell | Command |
+|-|-|
+| *sh* | `cat test-data/json2 | jq .zxcv[0]` |
+| *cosh* | `test-data/json2 f<; from-json; zxcv get; 0 get` |
+
+It also integrates with external executable calls, where that is
+necessary:
+
+| Shell | Command |
+|-|-|
+| *sh* | `for i in ``find . -iname '*.pem'``; do openssl x509 -in $i -text -noout; done` |
+| *cosh* | `lsr; [pem$ m] grep; [{openssl x509 -in {} -text -noout}] map;` |
 
 ### Install
 
 #### Dependencies
 
  - [Rust](https://github.com/rust-lang/rust)
+
+### Supported systems
+
+This has been tested on Linux (Debian 12), but should work on any
+Linux/macOS/BSD system where Rust can be built.
 
 #### Building
 

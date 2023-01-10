@@ -283,6 +283,7 @@ lazy_static! {
         set.insert("before");
         set.insert("pairwise");
         set.insert("slide");
+        set.insert("id");
         set
     };
 

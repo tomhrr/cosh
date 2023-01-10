@@ -11,6 +11,8 @@
 
 : no-upwards dup; "." =; swap; ".." =; or; not; ,,
 
+: id ,,
+
 :~ lsh 1 0
     0 =; if; . then;
     opendir;

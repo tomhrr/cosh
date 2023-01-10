@@ -1073,6 +1073,8 @@ from zero to that integer, minus one.
 converts it into a function object.  Using `funcall` on the function
 object will then be quicker than using it on the original string.
 
+`id` is a no-op function.
+
 ### Miscellaneous
 
 Comments can be added by prefixing the comment with `#`.  Any content

@@ -1,41 +1,9 @@
-use std::cell::RefCell;
 use std::cmp::Ordering;
-use std::rc::Rc;
 
 use chunk::Value;
 use vm::*;
 
 impl VM {
-    /// Takes all of the elements from the generator at the top of the
-    /// stack, instantiates a list containing those elements, removes
-    /// the generator from the stack, and places the new list at the
-    /// top of the stack.
-    fn generator_to_list(&mut self) -> i32 {
-        let mut lst = VecDeque::new();
-        loop {
-            let dup_res = self.opcode_dup();
-            if dup_res == 0 {
-                return 0;
-            }
-            let shift_res = self.opcode_shift();
-            if shift_res == 0 {
-                return 0;
-            }
-            let element_rr = self.stack.pop().unwrap();
-            match element_rr {
-                Value::Null => {
-                    self.stack.pop();
-                    break;
-                }
-                _ => {
-                    lst.push_back(element_rr);
-                }
-            }
-        }
-        self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
-        1
-    }
-
     /// Sorts the elements of a list or generator using behaviour per
     /// the default cmp operation.
     pub fn core_sort(&mut self) -> i32 {

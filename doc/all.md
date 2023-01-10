@@ -484,14 +484,22 @@ list:
         3: 4
     )
 
-`nth` returns a specific element from a list:
+`get` returns a specific element from a list:
 
-    $ (1 2 3) 1 nth
+    $ (1 2 3) 1 get
     2
 
-`nth!` updates a specific element in a list:
+`get` can also return multiple elements:
 
-    $ (1 2 3 4) 2 10 nth!;
+    $ (1 2 3 4) (0 2) get;
+    (
+        0: 1
+        1: 3
+    )
+
+`set` updates a specific element in a list:
+
+    $ (1 2 3 4) 2 10 set;
     (
         0: 1
         1: 2
@@ -575,6 +583,14 @@ beginning of the set and places it on the stack:
 
     $ h(a 1 b 2) b get;
     1
+
+`get` can also return multiple elements:
+
+    $ h(a 1 b 2) (a b) get;
+    (
+        0: 1
+        1: 2
+    )
 
 `set` is used to update a value in a hash:
 

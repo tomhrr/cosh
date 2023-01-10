@@ -454,9 +454,9 @@ fn regex_tests() {
 }
 
 #[test]
-fn nth_test() {
-    basic_test("(1 2 3) 1 nth", "2");
-    basic_test("(1 2 3) 1 100 nth!", "(\n    0: 1\n    1: 100\n    2: 3\n)");
+fn get_test() {
+    basic_test("(1 2 3) 1 get", "2");
+    basic_test("(1 2 3) 1 100 set", "(\n    0: 1\n    1: 100\n    2: 3\n)");
 }
 
 #[test]
@@ -492,7 +492,7 @@ fn map_test_generator() {
 
 #[test]
 fn split_test() {
-    basic_test("test-data/split f<; take-all; 0 nth; , split",
+    basic_test("test-data/split f<; take-all; 0 get; , split",
                "(\n    0: asdf\n    1: qwer\n    2: \"asdf asdf\"\n    3: asdf,asdf\n    4: \"\"\n    5: \"\"\n    6: \"\"\n    7: \"qwer\\n\"\n)");
 
     basic_test("asdf:asdf:asdf \":\" split; \":\" join", "asdf:asdf:asdf");
@@ -719,17 +719,17 @@ fn eq_test() {
 
 #[test]
 fn nth_bounds_test1() {
-    basic_error_test(
-        "10 range; take-all; 15 nth",
-        "1:24: second nth argument must fall within list bounds",
+    basic_test(
+        "10 range; take-all; 15 get",
+        "null"
     );
 }
 
 #[test]
 fn nth_bounds_test2() {
     basic_error_test(
-        "10 range; take-all; 10 15 nth!",
-        "1:27: second nth! argument must fall within list bounds",
+        "10 range; take-all; 10 15 set",
+        "1:27: second set argument must fall within list bounds",
     );
 }
 
@@ -819,8 +819,8 @@ fn clone_test() {
         "3 range; dup; clone; take-all; swap; take-all; ++; '-' join;",
         "0-1-2-0-1-2",
     );
-    basic_test("h(1 2) keys; dup; clone; 0 nth; swap; 0 nth; ++", "11");
-    basic_test("h(1 2) values; dup; clone; 0 nth; swap; 0 nth; ++", "22");
+    basic_test("h(1 2) keys; dup; clone; 0 get; swap; 0 get; ++", "11");
+    basic_test("h(1 2) values; dup; clone; 0 get; swap; 0 get; ++", "22");
 }
 
 #[test]
@@ -1266,7 +1266,7 @@ fn regex_escape_tests() {
 #[test]
 fn xml_ns_test() {
     basic_test(
-        "test-misc/test.xml f<; '' join; from-xml; namespaces get; 0 nth; name get;",
+        "test-misc/test.xml f<; '' join; from-xml; namespaces get; 0 get; name get;",
         "myns",
     );
     basic_test(
@@ -1274,7 +1274,7 @@ fn xml_ns_test() {
         "myns:top",
     );
     basic_test(
-        "test-misc/test.xml f<; '' join; from-xml; value get; 1 nth; namespaces get",
+        "test-misc/test.xml f<; '' join; from-xml; value get; 1 get; namespaces get",
         "null",
     );
     basic_test(

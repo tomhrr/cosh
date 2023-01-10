@@ -137,8 +137,6 @@ lazy_static! {
         map.insert("m", VM::core_m as fn(&mut VM) -> i32);
         map.insert("s", VM::core_s as fn(&mut VM) -> i32);
         map.insert("c", VM::core_c as fn(&mut VM) -> i32);
-        map.insert("nth", VM::core_nth as fn(&mut VM) -> i32);
-        map.insert("nth!", VM::core_nth_em as fn(&mut VM) -> i32);
         map.insert("++", VM::core_append as fn(&mut VM) -> i32);
         map.insert("push", VM::opcode_push as fn(&mut VM) -> i32);
         map.insert("unshift", VM::core_unshift as fn(&mut VM) -> i32);
@@ -491,6 +489,36 @@ impl VM {
                 return 0;
             }
         }
+        1
+    }
+
+    /// Takes all of the elements from the generator at the top of the
+    /// stack, instantiates a list containing those elements, removes
+    /// the generator from the stack, and places the new list at the
+    /// top of the stack.
+    pub fn generator_to_list(&mut self) -> i32 {
+        let mut lst = VecDeque::new();
+        loop {
+            let dup_res = self.opcode_dup();
+            if dup_res == 0 {
+                return 0;
+            }
+            let shift_res = self.opcode_shift();
+            if shift_res == 0 {
+                return 0;
+            }
+            let element_rr = self.stack.pop().unwrap();
+            match element_rr {
+                Value::Null => {
+                    self.stack.pop();
+                    break;
+                }
+                _ => {
+                    lst.push_back(element_rr);
+                }
+            }
+        }
+        self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
         1
     }
 

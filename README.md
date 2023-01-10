@@ -39,7 +39,7 @@ row of a CSV file:
     </tr>
     <tr>
         <th><b>cosh</b></th>
-        <td><code>test-data/csv f<; [chomp; , split; 1 nth] map;</code></td>
+        <td><code>test-data/csv f<; [chomp; , split; 1 get] map;</code></td>
     </tr>
 </table>
 &nbsp;
@@ -59,7 +59,7 @@ file:
     </tr>
     <tr>
         <th><b>cosh</b></th>
-        <td><code>test-data/json2 f<; from-json; zxcv get; 0 nth</code></td>
+        <td><code>test-data/json2 f<; from-json; zxcv get; 0 get</code></td>
     </tr>
 </table>
 &nbsp;

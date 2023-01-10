@@ -499,9 +499,9 @@
         rand-index var;
         lstlen @; rand; int; rand-index !;
         temp var;
-        lst @; i @; nth; temp !;
-        lst @; i @; lst @; rand-index @; nth; nth!;
-        rand-index @; temp @; nth!;
+        lst @; i @; get; temp !;
+        lst @; i @; lst @; rand-index @; get; set;
+        rand-index @; temp @; set;
         drop;
         i @; 1 +; i !;
         .f until; ,,

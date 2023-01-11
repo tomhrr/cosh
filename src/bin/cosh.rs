@@ -500,12 +500,13 @@ fn main() {
         return;
     }
 
-    let libdir_opt: Option<&'static str> = option_env!("LIBDIR");
-    let rt_chc =
+    let libdir_opt: Option<&'static str> = option_env!("libdir");
+    let libdir =
         match libdir_opt {
             Some(s) => s,
             None    => "/usr/local/lib"
         };
+    let rt_chc = format!("{}/cosh/rt.chc", libdir);
 
     let debug = matches.opt_present("debug");
 

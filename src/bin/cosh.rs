@@ -82,8 +82,6 @@ const DEFAULT_BREAK_CHARS: [u8; 18] = [
 ];
 const DOUBLE_QUOTES_SPECIAL_CHARS: [u8; 4] = [b'"', b'$', b'\\', b'`'];
 
-static LIBDIR: &'static str = env!("libdir");
-
 #[derive(PartialEq)]
 enum ScanMode {
     DoubleQuote,
@@ -502,7 +500,12 @@ fn main() {
         return;
     }
 
-    let rt_chc = format!("{}/cosh/rt.chc", LIBDIR);
+    let libdir_opt: Option<&'static str> = option_env!("LIBDIR");
+    let rt_chc =
+        match libdir_opt {
+            Some(s) => s,
+            None    => "/usr/local/lib"
+        };
 
     let debug = matches.opt_present("debug");
 

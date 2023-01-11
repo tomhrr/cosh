@@ -82,6 +82,8 @@ const DEFAULT_BREAK_CHARS: [u8; 18] = [
 ];
 const DOUBLE_QUOTES_SPECIAL_CHARS: [u8; 4] = [b'"', b'$', b'\\', b'`'];
 
+static LIBDIR: &'static str = env!("libdir");
+
 #[derive(PartialEq)]
 enum ScanMode {
     DoubleQuote,
@@ -500,6 +502,8 @@ fn main() {
         return;
     }
 
+    let rt_chc = format!("{}/cosh/rt.chc", LIBDIR);
+
     let debug = matches.opt_present("debug");
 
     if !matches.free.is_empty() {
@@ -527,7 +531,7 @@ fn main() {
             let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())));
             let mut functions = Vec::new();
             if !matches.opt_present("no-rt") {
-                let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
+                let mut rtchunk_opt = compiler.deserialise(&rt_chc);
                 if rtchunk_opt.is_none() {
                     rtchunk_opt = compiler.deserialise("./rt.chc");
                     if rtchunk_opt.is_none() {
@@ -592,7 +596,7 @@ fn main() {
                 let global_functions = Rc::new(RefCell::new(HashMap::new()));
 
                 if !matches.opt_present("no-rt") {
-                    let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
+                    let mut rtchunk_opt = compiler.deserialise(&rt_chc);
                     if rtchunk_opt.is_none() {
                         rtchunk_opt = compiler.deserialise("./rt.chc");
                         if rtchunk_opt.is_none() {
@@ -615,7 +619,7 @@ fn main() {
         let global_functions = Rc::new(RefCell::new(HashMap::new()));
 
         if !matches.opt_present("no-rt") {
-            let mut rtchunk_opt = compiler.deserialise("/usr/local/lib/cosh/rt.chc");
+            let mut rtchunk_opt = compiler.deserialise(&rt_chc);
             if rtchunk_opt.is_none() {
                 rtchunk_opt = compiler.deserialise("./rt.chc");
                 if rtchunk_opt.is_none() {

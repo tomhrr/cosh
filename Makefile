@@ -8,7 +8,7 @@ rt.chc: target/release/cosh
 	./target/release/cosh --no-rt -c lib/rt.ch -o rt.chc
 
 target/release/cosh:
-	cargo build --release
+	libdir=$(libdir) cargo build --release
 
 test:
 	cargo test --release

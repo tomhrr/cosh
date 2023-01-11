@@ -13,19 +13,19 @@ relying on executables that return text streams.  This makes working
 with the results simpler:
 
 - Find files matching a path, and search them for data:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `find . -print0 | xargs -0 grep data`
-  - **cosh**: `lsr; [f<; [data m] grep] map`
+  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `find . -iname '*test*' -print0 | xargs -0 grep data`
+  - **cosh**: `lsr; [test m] grep; [f<; [data m] grep] map`
 
 - Find the total size of all files in the current directory:
   - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -`
-  - **cosh**: `ls; [stat; size get] map; sum`
+  - **cosh**: `ls; [is-dir; not] grep; [stat; size get] map; sum`
 
 A small set of versatile primitives means that less needs to be
 remembered when compared with typical shells (see e.g. the various
 flags for `cut(1)`), though some commands may be longer as a result:
 
 - Get the second and third columns from each row of a CSV file:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `cat test-data/csv | cut -d, -f2,3`
+  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `cut -d, -f2,3 test-data/csv`
   - **cosh**: `test-data/csv f<; [chomp; , split; (1 2) get] map`
 
 - Sort files by modification time:
@@ -41,7 +41,7 @@ full-featured programming language or a third-party executable:
   - **cosh**: `nums f<; [chomp; 10 +] map;`
 
 - Get the first value from the "zxcv" array member of a JSON file:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `cat test-data/json2 | jq .zxcv[0]`
+  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `jq .zxcv[0] test-data/json2`
   - **cosh**: `test-data/json2 f<; from-json; zxcv get; 0 get`
 
 It also integrates with external executable calls, where that is

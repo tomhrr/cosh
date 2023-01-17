@@ -1375,9 +1375,7 @@ fn newline_command_test() {
         "2"
     );
     basic_test(
-        /* /oe works outside of the test context only, so use /c here
-         * as a stopgap. */
-        "{perl test-misc/newline.pl}/c; len",
-        "4"
+        "{perl test-misc/newline.pl}/e; len",
+        "2"
     );
 }

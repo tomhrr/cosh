@@ -1367,3 +1367,15 @@ fn before_test() {
 fn after_test() {
     basic_test("5 range; [2 >] after; take-all;", "(\n    0: 4\n)");
 }
+
+#[test]
+fn newline_command_test() {
+    basic_test(
+        "{perl test-misc/newline.pl}; len",
+        "2"
+    );
+    basic_test(
+        "{perl test-misc/newline.pl}/oe; len",
+        "4"
+    );
+}

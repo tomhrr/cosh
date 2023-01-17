@@ -283,7 +283,15 @@ impl CommandGenerator {
                 let new_str = std::str::from_utf8(&new_buf).unwrap();
                 Some(new_str.to_string())
             }
-            _ => None,
+            _ => {
+                if !self.stdout_buffer.is_empty() && self.stdout.is_eof() {
+                    let new_buf: Vec<u8> = (&mut self.stdout_buffer).drain(..).collect();
+                    let new_str = std::str::from_utf8(&new_buf).unwrap();
+                    Some(new_str.to_string())
+                } else {
+                    None
+                }
+            }
         }
     }
 
@@ -304,7 +312,15 @@ impl CommandGenerator {
                 let new_str = std::str::from_utf8(&new_buf).unwrap();
                 Some(new_str.to_string())
             }
-            _ => None,
+            _ => {
+                if !self.stderr_buffer.is_empty() && self.stderr.is_eof() {
+                    let new_buf: Vec<u8> = (&mut self.stderr_buffer).drain(..).collect();
+                    let new_str = std::str::from_utf8(&new_buf).unwrap();
+                    Some(new_str.to_string())
+                } else {
+                    None
+                }
+            }
         }
     }
 

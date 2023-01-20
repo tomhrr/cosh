@@ -157,6 +157,7 @@ For each line of a CSV file, remove the newline and split on commas:
             3: 12
         )
     )]
+    cosh$
 
 Read a JSON file into memory:
 

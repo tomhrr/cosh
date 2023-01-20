@@ -30,19 +30,19 @@ fn psv_helper(
         let mut stdout = io::stdout().into_raw_mode().unwrap();
         let stdin = std::io::stdin();
         for c in stdin.keys() {
-            match c.unwrap() {
-                termion::event::Key::Char('q') => {
+            match c {
+                Ok(termion::event::Key::Char('q')) => {
                     stdout.suspend_raw_mode().unwrap();
                     return -1;
                 }
-                termion::event::Key::Ctrl('c') => {
+                Ok(termion::event::Key::Ctrl('c')) => {
                     stdout.suspend_raw_mode().unwrap();
                     return -1;
                 }
-                termion::event::Key::PageDown => {
+                Ok(termion::event::Key::PageDown) => {
                     lines_to_print += window_height;
                 }
-                termion::event::Key::End => {
+                Ok(termion::event::Key::End) => {
                     /* todo: a bit of a hack.  It would be better
                      * if there were some way of indicating that
                      * there's no need to wait on input if End is
@@ -51,14 +51,17 @@ fn psv_helper(
                 }
                 /* The default behaviour for these two might be
                  * confusing, so make them no-ops. */
-                termion::event::Key::Home => {
+                Ok(termion::event::Key::Home) => {
                     continue;
                 }
-                termion::event::Key::PageUp => {
+                Ok(termion::event::Key::PageUp) => {
                     continue;
+                }
+                Ok(_) => {
+                    lines_to_print += 1;
                 }
                 _ => {
-                    lines_to_print += 1;
+                    continue;
                 }
             }
             stdout.flush().unwrap();

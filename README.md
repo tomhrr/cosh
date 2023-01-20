@@ -104,7 +104,7 @@ List files in a specified directory:
         4: test-data/csv
         5: test-data/split
     )]
-    /home/tomh/work/cosh$
+    cosh$
 
 Sort files alphabetically in a specified directory:
 

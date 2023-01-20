@@ -175,7 +175,7 @@ Read a JSON file into memory:
     )
     cosh$
 
-Get the fields names from the JSON file, and print them to standard
+Get the field names from the JSON file, and print them to standard
 output:
 
     cosh$ test-data/json2 f<; from-json; keys; println for;

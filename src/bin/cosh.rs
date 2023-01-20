@@ -4,6 +4,7 @@ extern crate ctrlc;
 extern crate dirs_next;
 extern crate getopts;
 extern crate memchr;
+extern crate nix;
 extern crate regex;
 extern crate rustyline;
 extern crate rustyline_derive;
@@ -15,10 +16,13 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::env;
 use std::env::current_dir;
+use nix::fcntl::{flock, FlockArg};
 use std::fs;
+use std::fs::OpenOptions;
 use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::io::{Seek, SeekFrom};
+use std::os::unix::io::AsRawFd;
 use std::path::{self, Path};
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
@@ -685,7 +689,25 @@ fn main() {
             Cmd::Move(Movement::ForwardWord(1, At::AfterEnd, Word::Vi)),
         );
         rl.set_helper(Some(helper));
-        if rl.load_history(".cosh_history").is_err() {}
+
+        let homedir_res = std::env::var("HOME");
+        let history_path_opt =
+            match homedir_res {
+                Ok(homedir) => {
+                    Some(format!("{}/.cosh_history", homedir))
+                }
+                _ => {
+                    None
+                }
+            };
+
+        /* There isn't a "no limit" setting in rustyline, so just set
+         * it to an arbitrary large number. */
+        rl.history_mut().set_max_len(1000000);
+        if let Some(history_path) = history_path_opt.clone() {
+            if rl.load_history(&history_path).is_err() {}
+        }
+        let history_start_len = rl.history().len();
 
         loop {
             let cwd_res = env::current_dir();
@@ -750,9 +772,23 @@ fn main() {
                 }
             }
         }
-        let res = rl.save_history(".cosh_history");
-        if let Err(e) = res {
-            eprintln!("unable to save REPL history: {}", e);
+
+        if let Some(history_path) = history_path_opt.clone() {
+            let history_end_len = rl.history().len();
+            let mut history_file = OpenOptions::new()
+                .write(true)
+                .append(true)
+                .open(&history_path)
+                .unwrap();
+            let history_fd = history_file.as_raw_fd();
+            flock(history_fd, FlockArg::LockExclusive).unwrap();
+
+            for i in history_start_len..history_end_len {
+                writeln!(history_file, "{}",
+                         rl.history().get(i).unwrap()).unwrap();
+            }
+
+            drop(history_file);
         }
     }
 }

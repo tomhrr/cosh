@@ -5,6 +5,16 @@
 
 cosh is a concatenative command-line shell.
 
+ * [Why?](#why)
+ * [Install](#install)
+    * [Dependencies](#dependencies)
+    * [Supported systems](#supported-systems)
+    * [Building](#building)
+    * [Running](#running)
+ * [Examples](#examples)
+ * [Documentation](#documentation)
+ * [Licence](#licence)
+
 ### Why?
 
 Basic shell operations like `ls`, `ps`, `stat`, and so on are
@@ -51,13 +61,15 @@ necessary:
   - **bash**: ``for i in `find . -iname '*.pem'`; do openssl x509 -in $i -text -noout; done``
   - **cosh**: `lsr; [pem$ m] grep; [{openssl x509 -in {} -text -noout}] map;`
 
+See the full [documentation](./doc/all.md) for more details.
+
 ### Install
 
 #### Dependencies
 
  - [Rust](https://github.com/rust-lang/rust)
 
-### Supported systems
+#### Supported systems
 
 This has been tested on Linux (Debian 12), but should work on any
 Linux/macOS/BSD system where Rust can be built.
@@ -76,6 +88,157 @@ compiled library of core functions (`rt.chc`).
     user@host:/$ cosh
     /$ hello println;
     hello
+
+### Examples
+
+Each example starts from the repository clone directory.
+
+List files in a specified directory:
+
+    cosh$ test-data ls
+    v[gen (
+	0: test-data/json-bigint
+	1: test-data/json2
+	2: test-data/json1
+	3: test-data/readfile
+	4: test-data/csv
+	5: test-data/split
+    )]
+    /home/tomh/work/cosh$
+
+Sort files alphabetically in a specified directory:
+
+    cosh$ test-data ls; sort
+    (
+	0: test-data/csv
+	1: test-data/json-bigint
+	2: test-data/json1
+	3: test-data/json2
+	4: test-data/readfile
+	5: test-data/split
+    )
+    cosh$
+
+An external command can be run by prefixing the command with a space:
+
+    cosh$  vim test-data/csv
+    ...
+
+Read a file into memory:
+
+    cosh$ test-data/csv f<;
+    v[gen (
+	0: "1,2,3,4\n"
+	1: "5,6,7,8\n"
+	2: "9,10,11,12\n"
+    )]
+    cosh$
+
+For each line of a CSV file, remove the newline and split on commas:
+
+    cosh$ test-data/csv f<; [chomp; , split] map;
+    v[gen (
+	0: (
+	    0: 1
+	    1: 2
+	    2: 3
+	    3: 4
+	)
+	1: (
+	    0: 5
+	    1: 6
+	    2: 7
+	    3: 8
+	)
+	2: (
+	    0: 9
+	    1: 10
+	    2: 11
+	    3: 12
+	)
+    )]
+
+Read a JSON file into memory:
+
+    cosh$ test-data/json2 f<; from-json;
+    h(
+	"asdf": 1
+	"qwer": 2
+	"tyui": h(
+	    "asdf": 5
+	)
+	"zxcv": (
+	    0: 3
+	    1: 4
+	)
+    )
+    cosh$
+
+Get the fields names from the JSON file, and print them to standard
+output:
+
+    cosh$ test-data/json2 f<; from-json; keys; println for;
+    asdf
+    qwer
+    tyui
+    zxcv
+    cosh$
+
+Find the field names that match a given regex:
+
+    cosh$ test-data/json2 f<; from-json; keys; [.{4} m] grep;
+    v[gen (
+	0: asdf
+	1: qwer
+	2: tyui
+	3: zxcv
+    )]
+    cosh$
+
+    cosh$ test-data/json2 f<; from-json; keys; [a..f m] grep;
+    v[gen (
+	0: asdf
+    )]
+    cosh$
+
+Define and use a new function:
+
+    cosh$ : add-5 5 +; ,,
+    cosh$ (1 2 3) add-5 map;
+    (
+	0: 6
+	1: 7
+	2: 8
+    )
+    cosh$
+
+Capture a value using a regex:
+
+    cosh$ test-data ls;
+    v[gen (
+	0: test-data/json-bigint
+	1: test-data/json2
+	2: test-data/json1
+	3: test-data/readfile
+	4: test-data/csv
+	5: test-data/split
+    )]
+    cosh$ test-data ls; ["(/.*)" c; shift] map;
+    v[gen (
+	0: /json-bigint
+	1: /json2
+	2: /json1
+	3: /readfile
+	4: /csv
+	5: /split
+    )]
+    cosh$
+
+Print a path's modification time in a specific format:
+
+    cosh$ test-data stat; mtime get; from-epoch; %F strftime;
+    2023-01-20
+    cosh$
 
 ### Documentation
 

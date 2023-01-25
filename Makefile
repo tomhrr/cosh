@@ -1,6 +1,12 @@
 prefix=/usr/local
 bindir=$(prefix)/bin
 libdir=$(prefix)/lib
+INSTALL=install
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    $(warning Using 'ginstall' on macOS. If not available install coreutils, e.g., $ brew install coreutils.)
+	INSTALL=ginstall
+endif
 
 all: rt.chc
 
@@ -14,9 +20,9 @@ test:
 	cargo test --release
 
 install: rt.chc
-	install -D -m 755 bin/wrapped-cosh $(bindir)/wrapped-cosh
-	install -D -m 755 target/release/cosh $(bindir)/cosh
-	install -D -m 755 rt.chc -t $(libdir)/cosh/
+	$(INSTALL) -D -m 755 bin/wrapped-cosh $(bindir)/wrapped-cosh
+	$(INSTALL) -D -m 755 target/release/cosh $(bindir)/cosh
+	$(INSTALL) -D -m 755 rt.chc -t $(libdir)/cosh/
 
 clean:
 	rm *.chc

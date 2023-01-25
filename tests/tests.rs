@@ -1142,6 +1142,16 @@ fn exists_test() {
     basic_test("s(1 2 3 4) 2 exists;", ".t");
 }
 
+#[cfg(target_os = "macos")]
+#[test]
+fn chmod_test() {
+    basic_test(
+        "() asdf f>; asdf 700 oct; chmod; {stat -f '%p' asdf}; shift; chomp; 700 m; asdf rm",
+        ".t",
+    );
+}
+
+#[cfg(not(target_os = "macos"))]
 #[test]
 fn chmod_test() {
     basic_test(

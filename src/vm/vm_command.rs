@@ -400,8 +400,8 @@ impl VM {
         }
 
         let cmd_rr = self.stack.pop().unwrap();
-	let cmd_str_opt: Option<&str>;
-	to_str!(cmd_rr, cmd_str_opt);
+        let cmd_str_opt: Option<&str>;
+        to_str!(cmd_rr, cmd_str_opt);
 
         match cmd_str_opt {
             None => {
@@ -428,8 +428,8 @@ impl VM {
         }
 
         let cmd_rr = self.stack.pop().unwrap();
-	let cmd_str_opt: Option<&str>;
-	to_str!(cmd_rr, cmd_str_opt);
+        let cmd_str_opt: Option<&str>;
+        to_str!(cmd_rr, cmd_str_opt);
 
         match cmd_str_opt {
             None => {

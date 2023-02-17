@@ -390,4 +390,56 @@ impl VM {
         }
         1
     }
+
+    /// Takes a string as its single argument, and runs the string as
+    /// a command (uncaptured).
+    pub fn core_exec(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("exec requires one argument");
+            return 0;
+        }
+
+        let cmd_rr = self.stack.pop().unwrap();
+        let cmd_str_opt: Option<&str>;
+        to_str!(cmd_rr, cmd_str_opt);
+
+        match cmd_str_opt {
+            None => {
+                self.print_error("exec argument must be a string");
+                return 0;
+            }
+            Some(s) => {
+                let i = self.core_command_uncaptured(&s);
+                if i == 0 {
+                    return 0;
+                }
+            }
+        }
+
+        return 1;
+    }
+
+    /// Takes a string as its single argument, and runs the string as
+    /// a command (captured).
+    pub fn core_cmd(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("cmd requires one argument");
+            return 0;
+        }
+
+        let cmd_rr = self.stack.pop().unwrap();
+        let cmd_str_opt: Option<&str>;
+        to_str!(cmd_rr, cmd_str_opt);
+
+        match cmd_str_opt {
+            None => {
+                self.print_error("exec argument must be a string");
+                return 0;
+            }
+            Some(s) => {
+                let params: HashSet<char> = HashSet::new();
+                return self.core_command(&s, params);
+            }
+        }
+    }
 }

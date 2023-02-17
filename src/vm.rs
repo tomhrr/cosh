@@ -230,6 +230,8 @@ lazy_static! {
         map.insert("sort", VM::core_sort as fn(&mut VM) -> i32);
         map.insert("sortp", VM::core_sortp as fn(&mut VM) -> i32);
         map.insert("fmt", VM::core_fmt as fn(&mut VM) -> i32);
+        map.insert("exec", VM::core_exec as fn(&mut VM) -> i32);
+        map.insert("cmd", VM::core_cmd as fn(&mut VM) -> i32);
         map
     };
 

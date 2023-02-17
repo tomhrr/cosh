@@ -399,7 +399,7 @@ Some of the more commonly-used stack functions from Forth are defined:
 
 `++` appends one string to another:
 
-    $ asdf qwer append
+    $ asdf qwer ++
     "asdfqwer"
 
 `++` also works for lists and hashes, as well as generators.

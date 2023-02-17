@@ -846,10 +846,10 @@ greater-than):
 object over the files in that directory:
 
     $ . ls
-    (
-        ./Cargo.toml
+    v[gen (
+        0: ./Cargo.toml
         ...
-    )
+    )]
 
 `lsr` does the same thing, but includes all files within nested
 directories as well.  If the stack is empty when either of these
@@ -862,11 +862,10 @@ that hidden files/directories are included in the output.
 `f<` takes a filename as its argument and returns a generator over the
 lines in that file:
 
-    $ README.md f<; 3 take;
+    $ README.md f<; 2 take;
     (
-        "## cosh\n"
-        "\n"
-        "cosh is a concatenative command-line shell.\n"
+        0: "## cosh\n"
+        1: "\n"
     )
 
 `f>` takes a list of strings (or a single string) and a filename as
@@ -874,11 +873,11 @@ its arguments and writes the strings (or string) to that file:
 
     $ ("asdf\n" "qwer\n" "zxcv\n") asdf f>;
     $ asdf f<;
-    (
-        "asdf\n"
-        "qwer\n"
-        "zxcv\n"
-    )
+    v[gen (
+        0: "asdf\n"
+        1: "qwer\n"
+        2: "zxcv\n"
+    )]
 
 Other operations:
 
@@ -1060,7 +1059,7 @@ the result is a generator:
 
     $ {ls}; take-all;
     (
-        "bin\n"
+        0: "bin\n"
         ...
     )
 
@@ -1069,20 +1068,13 @@ popping values from the stack, or by indexing into the stack (0 is the
 element most recently pushed onto the stack):
 
     $ {ls}; [{stat -c "%s" {}}; shift; chomp] map;
-    (
-        4096
-        4096
+    v[gen (
+        0: 4096
+        1: 4096
         ...
-    )
+    )]
 
-    {ls}; [{stat -c "%s" {}}; shift; chomp] map;
-    (
-        4096
-        4096
-        22813
-        ...
-    )
-    $ 1 2 3 {dc -e "{0} {1} + {2} + p"} shift; chomp
+    $ 1 2 3 {dc -e "{0} {1} + {2} + p"}; shift; chomp
     1
     2
     3
@@ -1095,8 +1087,8 @@ The output of a generator can also be piped to a command:
 
     $ {ls}; {sort -r} |; take-all;
     (
-        "tests\n"
-        "test-data\n"
+        0: "tests\n"
+        1: "test-data\n"
         ...
     )
 
@@ -1105,30 +1097,30 @@ output stream of the command.  Flags can be added to the command in
 order to get the generator to return the standard error stream:
 
     $ {ls asdf}/e;
-    (
-        "ls: cannot access \'asdf\': No such file or directory\n"
-    )
+    v[command-gen (
+        0: "ls: cannot access \'asdf\': No such file or directory\n"
+    )]
 
 or both combined:
 
     $ {ls Cargo.toml asdf}/oe;
-    (
-        "ls: cannot access \'asdf\': No such file or directory\n"
-        "Cargo.toml\n"
-    )
+    v[command-gen (
+        0: "ls: cannot access \'asdf\': No such file or directory\n"
+        1: "Cargo.toml\n"
+    )]
 
 or both combined, with a number indicating the stream for the line (1
 for standard output, and 2 for standard error):
 
     $ {ls Cargo.toml asdf}/c;
-    (
-        (
-            2
-            "ls: cannot access \'asdf\': No such file or directory\n"
+    v[command-gen (
+        0: (
+            0: 2
+            1: "ls: cannot access \'asdf\': No such file or directory\n"
         )
-        (
-            1
-            "Cargo.toml\n"
+        1: (
+            0: 1
+            1: "Cargo.toml\n"
         )
     )
 
@@ -1136,9 +1128,9 @@ Environment variables can also be set for commands, in the same way as
 for a standard shell:
 
     $ {TZ=Europe/London date};
-    (
-        "Mon 26 Dec 2022 11:43:19 GMT\n"
-    )
+    v[command-gen (
+        0: "Mon 26 Dec 2022 11:43:19 GMT\n"
+    )]
 
 ### Miscellaneous
 

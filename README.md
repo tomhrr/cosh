@@ -224,7 +224,7 @@ Capture a value using a regex:
         4: test-data/csv
         5: test-data/split
     )]
-    cosh$ test-data ls; ["(/.*)" c; shift] map;
+    cosh$ test-data ls; ["/.*" c; shift] map;
     v[gen (
         0: /json-bigint
         1: /json2

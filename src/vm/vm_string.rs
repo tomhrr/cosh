@@ -73,11 +73,11 @@ impl VM {
                                 ))));
                             }
                             (Some(_), _) => {
-                                self.print_error("second append argument must be string");
+                                self.print_error("second ++ argument must be string");
                                 return 0;
                             }
                             (_, _) => {
-                                self.print_error("first append argument must be string");
+                                self.print_error("first ++ argument must be string");
                                 return 0;
                             }
                         }

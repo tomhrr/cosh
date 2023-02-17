@@ -135,20 +135,26 @@ impl VM {
                     let captures = regex.captures_iter(s);
                     let mut lst = VecDeque::new();
                     for capture in captures {
-                        lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                            capture.get(0).unwrap().as_str().to_string(),
-                            None,
-                        )))));
+                        let mut sublst = VecDeque::new();
+                        for subcapture in capture.iter() {
+                            sublst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                                subcapture.unwrap().as_str().to_string(),
+                                None,
+                            )))));
+                        }
+                        lst.push_back(Value::List(Rc::new(RefCell::new(sublst))));
                     }
                     self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                 } else {
                     let captures = regex.captures(s);
                     let mut lst = VecDeque::new();
                     if let Some(capture) = captures {
-                        lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                            capture.get(0).unwrap().as_str().to_string(),
-                            None,
-                        )))));
+                        for subcapture in capture.iter() {
+                            lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                                subcapture.unwrap().as_str().to_string(),
+                                None,
+                            )))));
+                        }
                     }
                     self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                 }

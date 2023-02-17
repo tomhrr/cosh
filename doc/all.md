@@ -437,10 +437,14 @@ in a list containing the captures from the expression (if any):
     .t
     $ asdf asdf2 m
     .f
-    $ asdf "(..)" c
+    $ asdf ".." c
     (
-        as
-        df
+        0: as
+    )
+    $ asdf ".(.)" c
+    (
+        0: as
+        1: s
     )
 
 The `s` form handles search and replace:
@@ -472,6 +476,30 @@ Flags are attached to regular expressions like so:
 Because flags are separated from the regular expression by a forward
 slash, other forward slash characters that appear within the
 expression must be escaped with a backslash.
+
+If the global flag is attached to a capturing regular expression, then
+the result is a list of lists:
+
+    $ asdf "../g" c
+    (
+        0: (
+            0: as
+        )
+        1: (
+            0: df
+        )
+    )
+    $ asdf ".(.)/g" c
+    (
+        0: (
+            0: as
+            1: s
+        )
+        1: (
+            0: df
+            1: f
+        )
+    )
 
 #### List functions
 

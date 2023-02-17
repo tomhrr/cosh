@@ -448,7 +448,7 @@ fn regex_tests() {
     basic_test("'asdf asdf' asdf m;", ".t");
     basic_test("'asdf asdf' asdf/g qwer s;", "\"qwer qwer\"");
     basic_test(
-        "'12341234' \\d\\d\\d\\d/g c;",
+        "'12341234' \\d\\d\\d\\d/g c; () ++ foldl",
         "(\n    0: 1234\n    1: 1234\n)",
     );
 }
@@ -1255,11 +1255,11 @@ fn regex_modifier_tests() {
 
     basic_test("asdf_asdf_asdf asdf c", "(\n    0: asdf\n)");
     basic_test(
-        "asdf_asdf_asdf asdf/g c",
+        "asdf_asdf_asdf asdf/g c; () ++ foldl",
         "(\n    0: asdf\n    1: asdf\n    2: asdf\n)",
     );
     basic_test(
-        "asDf_aSdf_asdF asdf/ig c",
+        "asDf_aSdf_asdF asdf/ig c; () ++ foldl",
         "(\n    0: asDf\n    1: aSdf\n    2: asdF\n)",
     );
 }
@@ -1387,5 +1387,18 @@ fn newline_command_test() {
     basic_test(
         "{perl test-misc/newline.pl}/e; len",
         "2"
+    );
+}
+
+#[test]
+fn capture_test() {
+    basic_test(
+        "name=al \"name=(.*)$\" c",
+        "(\n    0: name=al\n    1: al\n)"
+    );
+
+    basic_test(
+        "name=al,name=jim \"name=([a-zA-z]+)/g\" c; () ++ foldl",
+        "(\n    0: name=al\n    1: al\n    2: name=jim\n    3: jim\n)"
     );
 }

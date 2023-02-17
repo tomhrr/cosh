@@ -1379,3 +1379,19 @@ fn newline_command_test() {
         "2"
     );
 }
+
+#[test]
+fn exec_test() {
+    basic_test(
+        "'ls doc' exec",
+        "all.md"
+    );
+}
+
+#[test]
+fn cmd_test() {
+    basic_test(
+        "'ls doc' cmd; take-all",
+        "(\n    0: \"all.md\\n\"\n)"
+    );
+}

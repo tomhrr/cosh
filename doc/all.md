@@ -1027,10 +1027,24 @@ character will also be treated as an external call:
     $  ls
     bin     eg      LICENSE     ...
 
+It's also possible to treat a string as an external call:
+
+    $ ls exec
+    bin     eg      LICENSE     ...
+
 A form wrapped in braces operates in the same way, except that
 the result is a generator:
 
     $ {ls}; take-all;
+    (
+        "bin\n"
+        ...
+    )
+
+As with `exec`, strings can be treated as external calls with
+generator output:
+
+    $ ls cmd; take-all;
     (
         "bin\n"
         ...

@@ -23,6 +23,7 @@ fn psv_helper(
     indent: i32,
     no_first_indent: bool,
     window_height: i32,
+    window_width: i32,
     mut lines_to_print: i32,
     index: Option<i32>,
 ) -> i32 {
@@ -69,16 +70,31 @@ fn psv_helper(
         }
         stdout.suspend_raw_mode().unwrap();
     }
+    let mut len: i32 = 0;
     if !no_first_indent {
+        len += indent;
         for _ in 0..indent {
             print!(" ");
         }
     }
     if let Some(n) = index {
+        len += n.to_string().len() as i32;
         print!("{}: ", n);
     }
+    len += s.len() as i32;
+    let lines_used =
+        if window_height == 0 {
+            1
+        } else {
+            1 + (len / window_width)
+        };
+
     println!("{}", s);
-    lines_to_print - 1
+    let mut res = lines_to_print - lines_used;
+    if res < 0 {
+        res = 0;
+    }
+    res
 }
 
 impl VM {
@@ -147,6 +163,7 @@ impl VM {
         indent: i32,
         no_first_indent: bool,
         window_height: i32,
+        window_width: i32,
         mut lines_to_print: i32,
         index: Option<i32>,
     ) -> i32 {
@@ -161,6 +178,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -172,6 +190,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -183,6 +202,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -198,6 +218,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -208,6 +229,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -219,6 +241,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -230,6 +253,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -241,6 +265,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -252,6 +277,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -272,6 +298,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -283,6 +310,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -294,6 +322,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -305,6 +334,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -316,6 +346,7 @@ impl VM {
                         indent,
                         no_first_indent,
                         window_height,
+                        window_width,
                         lines_to_print,
                         index,
                     );
@@ -327,6 +358,7 @@ impl VM {
                             indent,
                             no_first_indent,
                             window_height,
+                            window_width,
                             lines_to_print,
                             index,
                         );
@@ -336,6 +368,7 @@ impl VM {
                             indent,
                             no_first_indent,
                             window_height,
+                            window_width,
                             lines_to_print,
                             index,
                         );
@@ -351,6 +384,7 @@ impl VM {
                                 new_indent,
                                 false,
                                 window_height,
+                                window_width,
                                 lines_to_print,
                                 Some(index.try_into().unwrap()),
                             );
@@ -359,7 +393,8 @@ impl VM {
                             }
                         }
                         lines_to_print =
-                            psv_helper(")", indent, false, window_height, lines_to_print, None);
+                            psv_helper(")", indent, false, window_height,
+                                       window_width, lines_to_print, None);
                     }
                 }
                 Value::Hash(map) => {
@@ -369,6 +404,7 @@ impl VM {
                             indent,
                             no_first_indent,
                             window_height,
+                            window_width,
                             lines_to_print,
                             index,
                         );
@@ -378,6 +414,7 @@ impl VM {
                             indent,
                             no_first_indent,
                             window_height,
+                            window_width,
                             lines_to_print,
                             index,
                         );
@@ -411,6 +448,7 @@ impl VM {
                                 new_indent,
                                 true,
                                 window_height,
+                                window_width,
                                 lines_to_print,
                                 None,
                             );
@@ -419,7 +457,8 @@ impl VM {
                             }
                         }
                         lines_to_print =
-                            psv_helper(")", indent, false, window_height, lines_to_print, None);
+                            psv_helper(")", indent, false, window_height,
+                                       window_width, lines_to_print, None);
                     }
                 }
                 Value::Set(map) => {
@@ -429,6 +468,7 @@ impl VM {
                             indent,
                             no_first_indent,
                             window_height,
+                            window_width,
                             lines_to_print,
                             index,
                         );
@@ -438,6 +478,7 @@ impl VM {
                             indent,
                             no_first_indent,
                             window_height,
+                            window_width,
                             lines_to_print,
                             index,
                         );
@@ -454,6 +495,7 @@ impl VM {
                                 new_indent,
                                 false,
                                 window_height,
+                                window_width,
                                 lines_to_print,
                                 index,
                             );
@@ -462,7 +504,8 @@ impl VM {
                             }
                         }
                         lines_to_print =
-                            psv_helper(")", indent, false, window_height, lines_to_print, None);
+                            psv_helper(")", indent, false, window_height,
+                                       window_width, lines_to_print, None);
                     }
                 }
                 Value::Generator(_)
@@ -513,6 +556,7 @@ impl VM {
                             indent,
                             no_first_indent,
                             window_height,
+                            window_width,
                             lines_to_print,
                             index,
                         );
@@ -528,6 +572,7 @@ impl VM {
                         indent + 4,
                         false,
                         window_height,
+                        window_width,
                         lines_to_print,
                         Some(element_index),
                     );
@@ -547,12 +592,14 @@ impl VM {
                     indent,
                     no_first_indent,
                     window_height,
+                    window_width,
                     lines_to_print,
                     index,
                 );
             } else {
                 lines_to_print =
-                    psv_helper(")]", indent, false, window_height, lines_to_print, None);
+                    psv_helper(")]", indent, false, window_height,
+                               window_width, lines_to_print, None);
             }
         }
         if lines_to_print == -1 {
@@ -573,9 +620,11 @@ impl VM {
         }
         self.printing_stack = true;
 
+        let mut window_width:  i32 = 0;
         let mut window_height: i32 = 0;
         let dim_opt = term_size::dimensions();
-        if let Some((_, h)) = dim_opt {
+        if let Some((w, h)) = dim_opt {
+            window_width  = w.try_into().unwrap();
             window_height = h.try_into().unwrap();
         }
         let mut lines_to_print = window_height - 1;
@@ -590,6 +639,7 @@ impl VM {
                 0,
                 false,
                 window_height,
+                window_width,
                 lines_to_print,
                 None,
             );

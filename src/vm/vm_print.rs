@@ -3,11 +3,68 @@ use std::io;
 use std::io::Write;
 use std::str;
 
+use atty::Stream;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
 use chunk::{Chunk, Value};
 use vm::*;
+
+/// Helper function for paging once the line limit has been reached.
+fn pager_input(window_height: i32,
+               mut lines_to_print: i32) -> i32 {
+    if (window_height <= 0)
+            || !atty::is(Stream::Stdout) {
+        return 1;
+    }
+    if lines_to_print > 0 {
+        return lines_to_print;
+    }
+
+    let mut stdout = io::stdout().into_raw_mode().unwrap();
+    let stdin = std::io::stdin();
+    for c in stdin.keys() {
+        match c {
+            Ok(termion::event::Key::Char('q')) => {
+                stdout.suspend_raw_mode().unwrap();
+                return -1;
+            }
+            Ok(termion::event::Key::Ctrl('c')) => {
+                stdout.suspend_raw_mode().unwrap();
+                return -1;
+            }
+            Ok(termion::event::Key::PageDown) => {
+                lines_to_print += window_height - 1;
+            }
+            Ok(termion::event::Key::End) => {
+                /* todo: a bit of a hack.  It would be better
+                 * if there were some way of indicating that
+                 * there's no need to wait on input if End is
+                 * pressed. */
+                lines_to_print = i32::MAX;
+            }
+            /* The default behaviour for these two might be
+             * confusing, so make them no-ops. */
+            Ok(termion::event::Key::Home) => {
+                continue;
+            }
+            Ok(termion::event::Key::PageUp) => {
+                continue;
+            }
+            Ok(_) => {
+                lines_to_print += 1;
+            }
+            _ => {
+                continue;
+            }
+        }
+        stdout.flush().unwrap();
+        break;
+    }
+    stdout.suspend_raw_mode().unwrap();
+
+    return lines_to_print;
+}
 
 /// Helper function for print_stack_value.  Takes a string, an indent
 /// count, whether the first indent needs to be skipped, the window
@@ -27,74 +84,62 @@ fn psv_helper(
     mut lines_to_print: i32,
     index: Option<i32>,
 ) -> i32 {
-    if window_height != 0 && lines_to_print == 0 {
-        let mut stdout = io::stdout().into_raw_mode().unwrap();
-        let stdin = std::io::stdin();
-        for c in stdin.keys() {
-            match c {
-                Ok(termion::event::Key::Char('q')) => {
-                    stdout.suspend_raw_mode().unwrap();
-                    return -1;
-                }
-                Ok(termion::event::Key::Ctrl('c')) => {
-                    stdout.suspend_raw_mode().unwrap();
-                    return -1;
-                }
-                Ok(termion::event::Key::PageDown) => {
-                    lines_to_print += window_height;
-                }
-                Ok(termion::event::Key::End) => {
-                    /* todo: a bit of a hack.  It would be better
-                     * if there were some way of indicating that
-                     * there's no need to wait on input if End is
-                     * pressed. */
-                    lines_to_print = i32::MAX;
-                }
-                /* The default behaviour for these two might be
-                 * confusing, so make them no-ops. */
-                Ok(termion::event::Key::Home) => {
-                    continue;
-                }
-                Ok(termion::event::Key::PageUp) => {
-                    continue;
-                }
-                Ok(_) => {
-                    lines_to_print += 1;
-                }
-                _ => {
-                    continue;
-                }
+    if !atty::is(Stream::Stdout) || (window_width == 0) {
+        if !no_first_indent {
+            for _ in 0..indent {
+                print!(" ");
             }
-            stdout.flush().unwrap();
-            break;
         }
-        stdout.suspend_raw_mode().unwrap();
+        if let Some(n) = index {
+            print!("{}: ", n);
+        }
+        println!("{}", s);
+        return lines_to_print - 1;
     }
-    let mut len: i32 = 0;
+
+    lines_to_print = pager_input(window_height, lines_to_print);
+    if lines_to_print == -1 {
+        return -1;
+    }
+
+    let mut str_offset = 0;
     if !no_first_indent {
-        len += indent;
+        str_offset += indent;
         for _ in 0..indent {
             print!(" ");
         }
     }
     if let Some(n) = index {
-        len += n.to_string().len() as i32;
+        str_offset += n.to_string().len() as i32;
+        str_offset += 2;
         print!("{}: ", n);
     }
-    len += s.len() as i32;
-    let lines_used =
-        if window_height == 0 {
-            1
-        } else {
-            1 + (len / window_width)
-        };
 
-    println!("{}", s);
-    let mut res = lines_to_print - lines_used;
-    if res < 0 {
-        res = 0;
+    let mut str_finish =
+        (window_width - str_offset) as usize;
+
+    let slen = s.len();
+    if slen < str_finish {
+        println!("{}", s);
+        return lines_to_print - 1;
     }
-    res
+    let mut str_start = 0;
+    while str_finish < slen {
+        println!("{}", &s[str_start..str_finish]);
+        str_start = str_finish;
+        str_finish += window_width as usize;
+        lines_to_print -= 1;
+        lines_to_print = pager_input(window_height, lines_to_print);
+        if lines_to_print == -1 {
+            return -1;
+        }
+    }
+    if str_start <= slen {
+        println!("{}", &s[str_start..slen]);
+        lines_to_print -= 1;
+    }
+
+    return lines_to_print;
 }
 
 impl VM {

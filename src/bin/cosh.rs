@@ -710,6 +710,11 @@ fn main() {
         let history_start_len = rl.history().len();
 
         loop {
+            /* The ctrl-c handler that sets running to false is
+             * supposed to be caught by the loop in run_inner in the
+             * VM and set to true again, but that doesn't always
+             * happen, so set it to true here just in case. */
+            vm.running.clone().store(true, Ordering::SeqCst);
             let cwd_res = env::current_dir();
             match cwd_res {
                 Ok(_) => {}

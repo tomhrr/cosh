@@ -296,6 +296,15 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
+        if value_rr.is_generator() {
+            self.stack.push(value_rr);
+            let res = self.generator_to_list();
+            if res == 0 {
+                return 0;
+            }
+            return self.opcode_str();
+        }
+
         let is_string;
         {
             match value_rr {

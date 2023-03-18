@@ -1337,6 +1337,28 @@ impl Value {
                 Some(s)
             }
             Value::Null => Some("".to_string()),
+            Value::List(lst) => {
+                let mut bytes = Vec::<u8>::new();
+                for e in lst.borrow().iter() {
+                    match e {
+                        Value::Byte(b) => {
+                            bytes.push(*b);
+                        }
+                        _ => {
+                            return None;
+                        }
+                    }
+                }
+                let s_opt = str::from_utf8(&bytes[..]);
+                match s_opt {
+                    Ok(s) => {
+                        return Some(s.to_string());
+                    }
+                    Err(e) => {
+                        return None;
+                    }
+                }
+            }
             _ => None,
         }
     }

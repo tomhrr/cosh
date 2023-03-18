@@ -85,7 +85,8 @@ The shell language is dynamically-typed.  The basic primitive types
 are:
 
   * `bool`: boolean value
-  * `int`: signed integer (32-bit)
+  * `byte`: unsigned 8-bit integer
+  * `int`: signed 32-bit integer
   * `bigint`: arbitrary-precision integer
   * `float`: double-width floating-point number
   * `string`: a string
@@ -117,8 +118,8 @@ Interpretation is like so:
     string that contains whitespace, use double-quote characters to
     delimit the string.)
 
-The forms `bool`, `str`, `int`, `bigint`, and `float` can be used to
-convert primitive values of one type to another type.  If the
+The forms `bool`, `byte`, `str`, `int`, `bigint`, and `float` can be
+used to convert primitive values of one type to another type.  If the
 conversion is not supported, then the null value will be returned.
 `int` will convert a value to a `bigint` if required.
 
@@ -126,6 +127,7 @@ There are type predicates for each of the basic types, as well as the
 null value:
 
   * `is-bool`
+  * `is-byte`
   * `is-int`
   * `is-bigint`
   * `is-float`

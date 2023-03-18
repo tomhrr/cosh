@@ -390,6 +390,8 @@ pub enum Value {
     Null,
     /// Boolean.
     Bool(bool),
+    /// Byte.
+    Byte(u8),
     /// 32-bit integer.
     Int(i32),
     /// Unbounded integer.
@@ -461,6 +463,9 @@ impl fmt::Debug for Value {
         match self {
             Value::Null => {
                 write!(f, "Null")
+            }
+            Value::Byte(i) => {
+                write!(f, "{:#04x}", i)
             }
             Value::Int(i) => {
                 write!(f, "{}", i)
@@ -1199,6 +1204,12 @@ impl Chunk {
                 OpCode::BigInt => {
                     println!("OP_BIGINT");
                 }
+                OpCode::Byte => {
+                    println!("OP_BYTE");
+                }
+                OpCode::IsByte => {
+                    println!("OP_ISBYTE");
+                }
                 OpCode::Unknown => {
                     println!("(Unknown)");
                 }
@@ -1334,6 +1345,7 @@ impl Value {
     /// representable as an i32, the result will be None.
     pub fn to_int(&self) -> Option<i32> {
         match self {
+            Value::Byte(b) => Some(*b as i32),
             Value::Int(n) => Some(*n),
             Value::BigInt(n) => n.to_i32(),
             Value::Float(f) => Some(*f as i32),
@@ -1354,6 +1366,7 @@ impl Value {
     /// representable as a bigint, the result will be None.
     pub fn to_bigint(&self) -> Option<BigInt> {
         match self {
+            Value::Byte(b) => Some(BigInt::from_i32(*b as i32).unwrap()),
             Value::Int(n) => Some(BigInt::from_i32(*n).unwrap()),
             Value::BigInt(n) => Some(n.clone()),
             Value::Float(f) => Some(BigInt::from_i32(*f as i32).unwrap()),
@@ -1410,6 +1423,7 @@ impl Value {
         match self {
             Value::Null => self.clone(),
             Value::Bool(_) => self.clone(),
+            Value::Byte(_) => self.clone(),
             Value::Int(_) => self.clone(),
             Value::BigInt(_) => self.clone(),
             Value::Float(_) => self.clone(),
@@ -1531,6 +1545,7 @@ impl Value {
         let s = match self {
             Value::Null => "null",
             Value::Bool(..) => "bool",
+            Value::Byte(..) => "byte",
             Value::Int(..) => "int",
             Value::BigInt(..) => "bigint",
             Value::Float(..) => "float",

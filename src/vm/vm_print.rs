@@ -291,6 +291,18 @@ impl VM {
                         index,
                     );
                 }
+                Value::Byte(b) => {
+                    let s = format!("{:#04x}", b);
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        window_width,
+                        lines_to_print,
+                        index,
+                    );
+                }
                 Value::Int(n) => {
                     let s = format!("{}", n);
                     lines_to_print = psv_helper(

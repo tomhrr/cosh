@@ -257,6 +257,37 @@ impl VM {
         1
     }
 
+    /// Convert a value into a byte value.
+    pub fn opcode_byte(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("byte requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        match value_rr {
+            Value::Int(n) => {
+                if n <= 255 {
+                    let nv = Value::Byte(n as u8);
+                    self.stack.push(nv);
+                    return 1;
+                }
+            }
+            Value::BigInt(n) => {
+                if n <= BigInt::from_u32(255).unwrap() {
+                    let nv = Value::Byte(n.to_u8().unwrap());
+                    self.stack.push(nv);
+                    return 1;
+                }
+            }
+            _ => {
+            }
+        }
+
+        self.stack.push(Value::Null);
+        return 1;
+    }
+
     /// Convert a value into a string value.
     pub fn opcode_str(&mut self) -> i32 {
         if self.stack.is_empty() {
@@ -461,6 +492,19 @@ impl VM {
 
         let value_rr = self.stack.pop().unwrap();
         let res = matches!(value_rr, Value::BigInt(_));
+        self.stack.push(Value::Bool(res));
+        1
+    }
+
+    /// Check whether a value is of byte type.
+    pub fn opcode_is_byte(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("is-byte requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let res = matches!(value_rr, Value::Byte(_));
         self.stack.push(Value::Bool(res));
         1
     }

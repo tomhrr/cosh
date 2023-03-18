@@ -75,6 +75,8 @@ pub enum OpCode {
     ToggleMode = 72,
     PrintStack = 73,
     ToFunction = 74,
+    Byte = 75,
+    IsByte = 76,
     Unknown = 255,
 }
 
@@ -155,6 +157,8 @@ pub fn to_opcode(value: u8) -> OpCode {
         72 => OpCode::ToggleMode,
         73 => OpCode::PrintStack,
         74 => OpCode::ToFunction,
+        75 => OpCode::Byte,
+        76 => OpCode::IsByte,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

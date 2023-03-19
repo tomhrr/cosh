@@ -6,6 +6,7 @@ use std::str;
 use atty::Stream;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+use unicode_segmentation::UnicodeSegmentation;
 
 use chunk::{Chunk, Value};
 use vm::*;
@@ -118,14 +119,17 @@ fn psv_helper(
     let mut str_finish =
         (window_width - str_offset) as usize;
 
-    let slen = s.len();
+    let graphemes: Vec<&str> = s.graphemes(true).collect();
+
+    let slen = graphemes.len();
     if slen < str_finish {
         println!("{}", s);
         return lines_to_print - 1;
     }
     let mut str_start = 0;
     while str_finish < slen {
-        println!("{}", &s[str_start..str_finish]);
+        let joined_str = graphemes[str_start..str_finish].join("");
+        println!("{}", joined_str);
         str_start = str_finish;
         str_finish += window_width as usize;
         lines_to_print -= 1;
@@ -135,7 +139,8 @@ fn psv_helper(
         }
     }
     if str_start <= slen {
-        println!("{}", &s[str_start..slen]);
+        let joined_str = graphemes[str_start..slen].join("");
+        println!("{}", joined_str);
         lines_to_print -= 1;
     }
 

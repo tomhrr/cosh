@@ -1252,6 +1252,34 @@ macro_rules! to_str {
     };
 }
 
+/// Same as to_str, except that it uses from_utf8_lossy for converting
+/// a list of bytes into a string.
+macro_rules! to_strx {
+    ($val:expr, $var:expr) => {
+        let lib_str_s;
+        let lib_str_b;
+        let lib_str_str;
+        let lib_str_bk: Option<String>;
+        $var = match $val {
+            Value::String(st) => {
+                lib_str_s = st;
+                lib_str_b = lib_str_s.borrow();
+                Some(&lib_str_b.string)
+            }
+            _ => {
+                lib_str_bk = $val.to_stringx();
+                match lib_str_bk {
+                    Some(s) => {
+                        lib_str_str = s;
+                        Some(&lib_str_str)
+                    }
+                    _ => None,
+                }
+            }
+        }
+    };
+}
+
 impl Value {
     /// Convert the current value into a string.  Not intended for use
     /// with Value::String.
@@ -1354,12 +1382,39 @@ impl Value {
                     Ok(s) => {
                         return Some(s.to_string());
                     }
-                    Err(e) => {
+                    Err(_) => {
                         return None;
                     }
                 }
             }
             _ => None,
+        }
+    }
+
+    /// Convert the current value into a string.  If the value is a
+    /// list of bytes that isn't valid UTF-8, then this will use
+    /// from_utf8_lossy for the conversion.  Not intended for use with
+    /// Value::String.
+    pub fn to_stringx(&self) -> Option<String> {
+        match self {
+            Value::List(lst) => {
+                let mut bytes = Vec::<u8>::new();
+                for e in lst.borrow().iter() {
+                    match e {
+                        Value::Byte(b) => {
+                            bytes.push(*b);
+                        }
+                        _ => {
+                            return None;
+                        }
+                    }
+                }
+                let s = String::from_utf8_lossy(&bytes[..]).into_owned();
+                return Some(s);
+            }
+            _ => {
+                return self.to_string();
+            }
         }
     }
 

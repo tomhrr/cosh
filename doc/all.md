@@ -121,7 +121,8 @@ Interpretation is like so:
 The forms `bool`, `byte`, `str`, `int`, `bigint`, and `float` can be
 used to convert primitive values of one type to another type.  If the
 conversion is not supported, then the null value will be returned.
-`int` will convert a value to a `bigint` if required.
+`int` will convert a value to a `bigint` if required.  `str` can also
+be used to convert a list of bytes into a string.
 
 There are type predicates for each of the basic types, as well as the
 null value:
@@ -427,6 +428,10 @@ character to lowercase, and returns the updated string.  `uc` and
 `ucfirst` operate similarly, except they convert to uppercase.
 
 `reverse` reverses a string.  It also works on lists.
+
+`strx` operates as per `str`, save that if the input is a list of
+bytes and it isn't valid UTF-8, the parts that are invalid will be
+replaced with `U+FFFD REPLACEMENT_CHARACTER`.
 
 ##### Regular expressions
 

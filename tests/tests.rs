@@ -1418,3 +1418,14 @@ fn capture_test() {
         "(\n    0: name=al\n    1: al\n    2: name=jim\n    3: jim\n)"
     );
 }
+
+#[test]
+fn byte_test() {
+    basic_test("48 byte", "0x30");
+    basic_test("10 range; [48 +; byte] map; str;", "0123456789");
+}
+
+#[test]
+fn strx_test() {
+    basic_test("255 range; byte map; strx; len", "509");
+}

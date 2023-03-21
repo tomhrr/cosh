@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::fs::metadata;
 use std::fs::File;
-use std::io::BufRead;
 use std::io::BufReader;
 use std::io::BufWriter;
 use std::io::Write;
@@ -11,7 +10,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use tempfile::{NamedTempFile, TempDir};
 
-use chunk::{StringTriple, Value};
+use chunk::{StringTriple, Value, BufReaderWithBuffer};
 use vm::*;
 
 lazy_static! {
@@ -60,7 +59,9 @@ impl VM {
                         match file_res {
                             Ok(file) => {
                                 self.stack.push(Value::FileReader(Rc::new(RefCell::new(
-                                    BufReader::new(file),
+                                    BufReaderWithBuffer::new(
+                                        BufReader::new(file)
+                                    )
                                 ))));
                             }
                             Err(e) => {
@@ -119,30 +120,61 @@ impl VM {
             return 0;
         }
 
-        let file_reader_rr = self.stack.pop().unwrap();
+        let mut file_reader_rr = self.stack.pop().unwrap();
 
         match file_reader_rr {
-            Value::FileReader(bufread) => {
-                let mut contents = String::new();
-                let res = bufread.borrow_mut().read_line(&mut contents);
-                match res {
-                    Ok(0) => {
-                        self.stack.push(Value::Null);
-                    }
-                    Ok(_) => {
-                        self.stack
-                            .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                contents, None,
-                            )))));
+            Value::FileReader(ref mut brwb) => {
+                let str_res = brwb.borrow_mut().readline();
+
+                match str_res {
+                    Some(v) => {
+                        self.stack.push(v);
                     }
                     _ => {
-                        self.print_error("unable to read line from file");
                         return 0;
                     }
                 }
             }
             _ => {
                 self.print_error("readline argument must be a file reader");
+                return 0;
+            }
+        }
+        1
+    }
+
+    /// Takes a FileReader object as its single argument.  Reads the
+    /// specified number of bytes from the object and places the list
+    /// of bytes onto the stack.
+    pub fn opcode_read(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("read requires two arguments");
+            return 0;
+        }
+
+        let bytes_rr = self.stack.pop().unwrap();
+        let file_reader_rr = self.stack.pop().unwrap();
+
+        let bytes_opt = bytes_rr.to_int();
+
+        match (file_reader_rr, bytes_opt) {
+            (Value::FileReader(ref mut brwb), Some(n)) => {
+                let lst_res = brwb.borrow_mut().read(n as usize);
+                match lst_res {
+                    Some(lst) => {
+                        self.stack.push(lst);
+                    }
+                    None => {
+                        return 0;
+                    }
+                }
+            }
+            (Value::FileReader(_), _) => {
+                self.print_error("second read argument must be an integer");
+                return 0;
+            }
+            _ => {
+                self.print_error("first read argument must be a file reader");
                 return 0;
             }
         }

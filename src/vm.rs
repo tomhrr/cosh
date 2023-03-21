@@ -118,6 +118,7 @@ lazy_static! {
         map.insert("tempfile", VM::opcode_tempfile as fn(&mut VM) -> i32);
         map.insert("tempdir", VM::opcode_tempdir as fn(&mut VM) -> i32);
         map.insert("readline", VM::opcode_readline as fn(&mut VM) -> i32);
+        map.insert("read", VM::opcode_read as fn(&mut VM) -> i32);
         map.insert("println", VM::core_println as fn(&mut VM) -> i32);
         map.insert("rm", VM::core_rm as fn(&mut VM) -> i32);
         map.insert("writeline", VM::core_writeline as fn(&mut VM) -> i32);

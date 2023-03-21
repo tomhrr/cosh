@@ -6,8 +6,10 @@ use std::convert::TryInto;
 use std::fmt;
 use std::fs::File;
 use std::fs::ReadDir;
+use std::io::BufRead;
 use std::io::BufReader;
 use std::io::BufWriter;
+use std::io::Read;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::rc::Rc;
 use std::str;
@@ -180,6 +182,84 @@ impl GeneratorObject {
             call_stack_chunks,
             gen_args,
         }
+    }
+}
+
+/// A file BufReader paired with an additional buffer, for dealing
+/// with calls to read.
+#[derive(Debug)]
+pub struct BufReaderWithBuffer {
+    pub reader: BufReader<File>,
+    pub buffer: [u8; 1024],
+    pub buffer_index: i32,
+    pub buffer_limit: i32,
+}
+
+impl BufReaderWithBuffer {
+    pub fn new(reader: BufReader<File>) -> BufReaderWithBuffer {
+        BufReaderWithBuffer {
+            reader,
+            buffer: [0; 1024],
+            buffer_index: -1,
+            buffer_limit: -1,
+        }
+    }
+
+    pub fn read(&mut self, mut n: usize) -> Option<Value> {
+        let mut buflst = VecDeque::new();
+        while n > 0 {
+            if self.buffer_index > -1 {
+                while (self.buffer_index < self.buffer_limit)
+                        && (n > 0) {
+                    buflst.push_back(
+                        Value::Byte(
+                            self.buffer[self.buffer_index as usize]
+                        )
+                    );
+                    self.buffer_index += 1;
+                    n -= 1;
+                }
+                if self.buffer_index == self.buffer_limit {
+                    self.buffer_index = -1;
+                    self.buffer_limit = -1;
+                }
+            } else {
+                let n_res = self.reader.read(&mut self.buffer);
+                match n_res {
+                    Ok(n) => {
+                        if n == 0 {
+                            break;
+                        }
+                        self.buffer_index = 0;
+                        self.buffer_limit = n as i32;
+                    }
+                    Err(_) => {
+                        return None;
+                    }
+                }
+            }
+        }
+        return Some(Value::List(Rc::new(RefCell::new(buflst))));
+    }
+
+    pub fn readline(&mut self) -> Option<Value> {
+	let mut contents = String::new();
+	let res = self.reader.read_line(&mut contents);
+	match res {
+	    Ok(0) => {
+		Some(Value::Null)
+	    }
+	    Ok(_) => {
+	        Some(
+                    Value::String(Rc::new(RefCell::new(StringTriple::new(
+			contents, None,
+		    ))))
+                )
+	    }
+	    _ => {
+		return None;
+	    }
+	}
     }
 }
 
@@ -435,7 +515,7 @@ pub enum Value {
     /// A generator over key-value pairs (lists) of a hash.
     EachGenerator(Rc<RefCell<HashWithIndex>>),
     /// A file reader value.
-    FileReader(Rc<RefCell<BufReader<File>>>),
+    FileReader(Rc<RefCell<BufReaderWithBuffer>>),
     /// A file writer value.
     FileWriter(Rc<RefCell<BufWriter<File>>>),
     /// A directory handle.
@@ -1209,6 +1289,9 @@ impl Chunk {
                 }
                 OpCode::IsByte => {
                     println!("OP_ISBYTE");
+                }
+                OpCode::Read => {
+                    println!("OP_READ");
                 }
                 OpCode::Unknown => {
                     println!("(Unknown)");

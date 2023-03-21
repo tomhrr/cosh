@@ -77,6 +77,7 @@ pub enum OpCode {
     ToFunction = 74,
     Byte = 75,
     IsByte = 76,
+    Read = 77,
     Unknown = 255,
 }
 
@@ -159,6 +160,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         74 => OpCode::ToFunction,
         75 => OpCode::Byte,
         76 => OpCode::IsByte,
+        77 => OpCode::Read,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

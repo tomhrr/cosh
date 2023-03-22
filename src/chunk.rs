@@ -239,27 +239,81 @@ impl BufReaderWithBuffer {
                 }
             }
         }
-        return Some(Value::List(Rc::new(RefCell::new(buflst))));
+        if buflst.len() == 0 {
+            Some(Value::Null)
+        } else {
+            Some(Value::List(Rc::new(RefCell::new(buflst))))
+        }
     }
 
     pub fn readline(&mut self) -> Option<Value> {
-	let mut contents = String::new();
-	let res = self.reader.read_line(&mut contents);
-	match res {
-	    Ok(0) => {
-		Some(Value::Null)
-	    }
-	    Ok(_) => {
-	        Some(
-                    Value::String(Rc::new(RefCell::new(StringTriple::new(
-			contents, None,
-		    ))))
-                )
-	    }
-	    _ => {
-		return None;
-	    }
-	}
+        if self.buffer_index == -1 {
+            let mut contents = String::new();
+            let res = self.reader.read_line(&mut contents);
+            match res {
+                Ok(0) => {
+                    Some(Value::Null)
+                }
+                Ok(_) => {
+                    Some(
+                        Value::String(Rc::new(RefCell::new(StringTriple::new(
+                            contents, None,
+                        ))))
+                    )
+                }
+                _ => None
+            }
+        } else {
+            let mut i = self.buffer_index;
+            let mut found = false;
+            while i < self.buffer_limit {
+                if self.buffer[i as usize] == '\n' as u8 {
+                    i += 1;
+                    found = true;
+                    break;
+                }
+                i += 1;
+            }
+            if found {
+                let slice = &self.buffer[self.buffer_index as usize..i as usize];
+                let s_res = str::from_utf8(slice);
+                match s_res {
+                    Ok(s) => {
+                        if self.buffer_index == self.buffer_limit - 1 {
+                            self.buffer_index = -1;
+                            self.buffer_limit = -1;
+                        } else {
+                            self.buffer_index = i;
+                        }
+                        Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                            s.to_string(), None
+                        )))))
+                    }
+                    _ => None
+                }
+            } else {
+                let mut sbuf = Vec::new();
+                let res = self.reader.read_until('\n' as u8, &mut sbuf);
+                match res {
+                    Ok(_) => {
+                        let bufvec = &mut self.buffer[self.buffer_index as usize..].to_vec();
+                        bufvec.append(&mut sbuf);
+                        let s_res = str::from_utf8(bufvec);
+                        match s_res {
+                            Ok(s) => {
+                                self.buffer_index = -1;
+                                self.buffer_limit = -1;
+                                Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                                    s.to_string(), None
+                                )))))
+                            }
+                            _ => None
+                        }
+                    }
+                    _ => None
+                }
+            }
+        }
     }
 }
 

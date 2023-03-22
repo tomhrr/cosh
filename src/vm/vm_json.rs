@@ -54,6 +54,7 @@ fn convert_to_json(v: &Value) -> String {
         Value::Null => "null".to_string(),
         Value::Bool(true) => "true".to_string(),
         Value::Bool(false) => "false".to_string(),
+        Value::Byte(n) => n.to_string(),
         Value::Int(n) => n.to_string(),
         Value::Float(f) => f.to_string(),
         Value::String(st) => {

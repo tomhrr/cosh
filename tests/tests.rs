@@ -1429,3 +1429,59 @@ fn byte_test() {
 fn strx_test() {
     basic_test("255 range; byte map; strx; len", "509");
 }
+
+#[test]
+fn read_test() {
+    basic_test(
+        "
+test-data/readlines r open; 1024 read; str;
+5 range; [drop; \"0123456789\n\"] map; '' join;
+=
+", ".t");
+
+    basic_test(
+        "
+test-data/readlines r open; fh var; fh !;
+() lst var; lst !;
+begin;
+    lst @; fh @; 1 read; dup; is-null; if;
+        drop;
+        drop;
+        leave;
+    then;
+    ++; lst !;
+    .f until;
+lst @; str;
+5 range; [drop; \"0123456789\n\"] map; '' join;
+=
+", ".t");
+
+    basic_test(
+        "
+test-data/readlines r open; fh var; fh !;
+() lst var; lst !;
+begin;
+    lst @; fh @; 8 read; dup; is-null; if;
+        drop;
+        drop;
+        leave;
+    then;
+    ++; lst !;
+    .f until;
+lst @; str;
+5 range; [drop; \"0123456789\n\"] map; '' join;
+=
+", ".t");
+
+    basic_test(
+        "
+test-data/readlines r open; fh var; fh !;
+fh @; 5 read; str; \"01234\" =;
+fh @; readline; \"56789\n\" =;
+fh @; 3 read; str; \"012\" =;
+fh @; readline; \"3456789\n\" =;
+fh @; readline; \"0123456789\n\" =;
+fh @; 500 read; str;
+2 range; [drop; \"0123456789\n\"] map; '' join; =;
+", ".t\n.t\n.t\n.t\n.t\n.t");
+}

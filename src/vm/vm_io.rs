@@ -181,6 +181,59 @@ impl VM {
         1
     }
 
+    /// Takes a FileWriter object and a list of bytes as its
+    /// arguments.  Writes the bytes to the file.
+    pub fn core_write(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("write requires two arguments");
+            return 0;
+        }
+
+        let bytes_rr = self.stack.pop().unwrap();
+        let mut file_writer = self.stack.pop().unwrap();
+
+        match bytes_rr {
+            Value::List(lst) => {
+                let mut bytes = Vec::new();
+                for v in lst.borrow().iter() {
+                    match v {
+                        Value::Byte(b) => {
+                            bytes.push(*b);
+                        }
+                        _ => {
+                            self.print_error("second write argument must be list of bytes");
+                            return 0;
+                        }
+                    }
+                }
+                match file_writer {
+                    Value::FileWriter(ref mut line_writer) => {
+                        let res =
+                            line_writer.borrow_mut().write_all(&bytes);
+                        match res {
+                            Ok(_) => {
+                                return 1;
+                            }
+                            Err(e) => {
+                                let err_str = format!("unable to write to file: {}", e);
+                                self.print_error(&err_str);
+                                return 0;
+                            }
+                        }
+                    }
+                    _ => {
+                        self.print_error("first writeline argument must be a file writer");
+                        return 0;
+                    }
+                }
+            }
+            _ => {
+                self.print_error("second writeline argument must be a string");
+                return 0;
+            }
+        };
+    }
+
     /// Takes a FileWriter object and a line as its arguments.  Writes
     /// the line to the file.
     pub fn core_writeline(&mut self) -> i32 {
@@ -205,7 +258,7 @@ impl VM {
                                     return 1;
                                 }
                                 Err(e) => {
-                                    let err_str = format!("unable to open file: {}", e);
+                                    let err_str = format!("unable to write to file: {}", e);
                                     self.print_error(&err_str);
                                     return 0;
                                 }

@@ -1426,11 +1426,6 @@ fn byte_test() {
 }
 
 #[test]
-fn strx_test() {
-    basic_test("255 range; byte map; strx; len", "509");
-}
-
-#[test]
 fn read_test() {
     basic_test(
         "

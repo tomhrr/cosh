@@ -223,7 +223,6 @@ impl VM {
                     get_stdout = true;
                 }
                 let get_bytes = params.contains(&'b');
-                let get_lossy = params.contains(&'x');
                 let cmd_generator =
                     Value::CommandGenerator(Rc::new(RefCell::new(CommandGenerator::new(
                         noblock_stdout,
@@ -232,7 +231,6 @@ impl VM {
                         get_stderr,
                         get_combined,
                         get_bytes,
-                        get_lossy,
                     ))));
                 self.stack.push(cmd_generator);
             }
@@ -337,7 +335,6 @@ impl VM {
                                         NonBlockingReader::from_fd(upstream_stdout).unwrap(),
                                         NonBlockingReader::from_fd(upstream_stderr).unwrap(),
                                         true,
-                                        false,
                                         false,
                                         false,
                                         false,

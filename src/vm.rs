@@ -160,7 +160,6 @@ lazy_static! {
         map.insert("bool", VM::opcode_bool as fn(&mut VM) -> i32);
         map.insert("byte", VM::opcode_byte as fn(&mut VM) -> i32);
         map.insert("str", VM::opcode_str as fn(&mut VM) -> i32);
-        map.insert("strx", VM::opcode_strx as fn(&mut VM) -> i32);
         map.insert("int", VM::opcode_int as fn(&mut VM) -> i32);
         map.insert("float", VM::opcode_flt as fn(&mut VM) -> i32);
         map.insert("rand", VM::opcode_rand as fn(&mut VM) -> i32);

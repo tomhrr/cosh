@@ -276,21 +276,16 @@ impl BufReaderWithBuffer {
             }
             if found {
                 let slice = &self.buffer[self.buffer_index as usize..i as usize];
-                let s_res = str::from_utf8(slice);
-                match s_res {
-                    Ok(s) => {
-                        if self.buffer_index == self.buffer_limit - 1 {
-                            self.buffer_index = -1;
-                            self.buffer_limit = -1;
-                        } else {
-                            self.buffer_index = i;
-                        }
-                        Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                            s.to_string(), None
-                        )))))
-                    }
-                    _ => None
+                let s = String::from_utf8_lossy(slice);
+                if self.buffer_index == self.buffer_limit - 1 {
+                    self.buffer_index = -1;
+                    self.buffer_limit = -1;
+                } else {
+                    self.buffer_index = i;
                 }
+                Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                    s.to_string(), None
+                )))))
             } else {
                 let mut sbuf = Vec::new();
                 let res = self.reader.read_until('\n' as u8, &mut sbuf);
@@ -298,17 +293,12 @@ impl BufReaderWithBuffer {
                     Ok(_) => {
                         let bufvec = &mut self.buffer[self.buffer_index as usize..].to_vec();
                         bufvec.append(&mut sbuf);
-                        let s_res = str::from_utf8(bufvec);
-                        match s_res {
-                            Ok(s) => {
-                                self.buffer_index = -1;
-                                self.buffer_limit = -1;
-                                Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                    s.to_string(), None
-                                )))))
-                            }
-                            _ => None
-                        }
+                        let s = String::from_utf8_lossy(bufvec);
+                        self.buffer_index = -1;
+                        self.buffer_limit = -1;
+                        Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                            s.to_string(), None
+                        )))))
                     }
                     _ => None
                 }
@@ -380,7 +370,6 @@ pub struct CommandGenerator {
     get_stderr: bool,
     pub get_combined: bool,
     pub get_bytes: bool,
-    pub get_lossy: bool,
 }
 
 impl CommandGenerator {
@@ -391,7 +380,6 @@ impl CommandGenerator {
         get_stderr: bool,
         get_combined: bool,
         get_bytes: bool,
-        get_lossy: bool,
     ) -> CommandGenerator {
         CommandGenerator {
             stdout,
@@ -402,7 +390,6 @@ impl CommandGenerator {
             get_stderr,
             get_combined,
             get_bytes,
-            get_lossy,
         }
     }
 
@@ -420,21 +407,15 @@ impl CommandGenerator {
                  * a multibyte Unicode character?  Not sure if this
                  * is possible, though. */
                 let new_buf: Vec<u8> = (&mut self.stdout_buffer).drain(0..(n + 1)).collect();
-                let new_str = if self.get_lossy {
-                    String::from_utf8_lossy(&new_buf).to_string()
-                } else {
-                    String::from_utf8(new_buf).unwrap()
-                };
+                let new_str =
+                    String::from_utf8_lossy(&new_buf).to_string();
                 Some(new_str)
             }
             _ => {
                 if !self.stdout_buffer.is_empty() && self.stdout.is_eof() {
                     let new_buf: Vec<u8> = (&mut self.stdout_buffer).drain(..).collect();
-                    let new_str = if self.get_lossy {
-                        String::from_utf8_lossy(&new_buf).to_string()
-                    } else {
-                        String::from_utf8(new_buf).unwrap()
-                    };
+                    let new_str =
+                        String::from_utf8_lossy(&new_buf).to_string();
                     Some(new_str)
                 } else {
                     None
@@ -457,21 +438,15 @@ impl CommandGenerator {
                  * a multibyte Unicode character?  Not sure if this
                  * is possible, though. */
                 let new_buf: Vec<u8> = (&mut self.stderr_buffer).drain(0..(n + 1)).collect();
-                let new_str = if self.get_lossy {
-                    String::from_utf8_lossy(&new_buf).to_string()
-                } else {
-                    String::from_utf8(new_buf).unwrap()
-                };
+                let new_str =
+                    String::from_utf8_lossy(&new_buf).to_string();
                 Some(new_str)
             }
             _ => {
                 if !self.stderr_buffer.is_empty() && self.stderr.is_eof() {
                     let new_buf: Vec<u8> = (&mut self.stderr_buffer).drain(..).collect();
-                    let new_str = if self.get_lossy {
-                        String::from_utf8_lossy(&new_buf).to_string()
-                    } else {
-                        String::from_utf8(new_buf).unwrap()
-                    };
+                    let new_str =
+                        String::from_utf8_lossy(&new_buf).to_string();
                     Some(new_str)
                 } else {
                     None
@@ -1437,34 +1412,6 @@ macro_rules! to_str {
     };
 }
 
-/// Same as to_str, except that it uses from_utf8_lossy for converting
-/// a list of bytes into a string.
-macro_rules! to_strx {
-    ($val:expr, $var:expr) => {
-        let lib_str_s;
-        let lib_str_b;
-        let lib_str_str;
-        let lib_str_bk: Option<String>;
-        $var = match $val {
-            Value::String(st) => {
-                lib_str_s = st;
-                lib_str_b = lib_str_s.borrow();
-                Some(&lib_str_b.string)
-            }
-            _ => {
-                lib_str_bk = $val.to_stringx();
-                match lib_str_bk {
-                    Some(s) => {
-                        lib_str_str = s;
-                        Some(&lib_str_str)
-                    }
-                    _ => None,
-                }
-            }
-        }
-    };
-}
-
 impl Value {
     /// Convert the current value into a string.  Not intended for use
     /// with Value::String.
@@ -1562,44 +1509,10 @@ impl Value {
                         }
                     }
                 }
-                let s_opt = str::from_utf8(&bytes[..]);
-                match s_opt {
-                    Ok(s) => {
-                        return Some(s.to_string());
-                    }
-                    Err(_) => {
-                        return None;
-                    }
-                }
+                let s = String::from_utf8_lossy(&bytes[..]);
+                return Some(s.to_string());
             }
             _ => None,
-        }
-    }
-
-    /// Convert the current value into a string.  If the value is a
-    /// list of bytes that isn't valid UTF-8, then this will use
-    /// from_utf8_lossy for the conversion.  Not intended for use with
-    /// Value::String.
-    pub fn to_stringx(&self) -> Option<String> {
-        match self {
-            Value::List(lst) => {
-                let mut bytes = Vec::<u8>::new();
-                for e in lst.borrow().iter() {
-                    match e {
-                        Value::Byte(b) => {
-                            bytes.push(*b);
-                        }
-                        _ => {
-                            return None;
-                        }
-                    }
-                }
-                let s = String::from_utf8_lossy(&bytes[..]).into_owned();
-                return Some(s);
-            }
-            _ => {
-                return self.to_string();
-            }
         }
     }
 

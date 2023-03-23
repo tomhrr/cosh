@@ -341,57 +341,6 @@ impl VM {
         1
     }
 
-    /// Convert a value into a string value.  If the value is a list
-    /// of bytes and cannot be converted into a Unicode string, then
-    /// the bytes that can't be converted will included as "\xNN"
-    /// sequences, per from_utf8_lossy.
-    pub fn opcode_strx(&mut self) -> i32 {
-        if self.stack.is_empty() {
-            self.print_error("strx requires one argument");
-            return 0;
-        }
-
-        let value_rr = self.stack.pop().unwrap();
-        if value_rr.is_generator() {
-            self.stack.push(value_rr);
-            let res = self.generator_to_list();
-            if res == 0 {
-                return 0;
-            }
-            return self.opcode_strx();
-        }
-
-        let is_string;
-        {
-            match value_rr {
-                Value::String(_) => {
-                    is_string = true;
-                }
-                _ => {
-                    let value_opt: Option<&str>;
-                    to_strx!(value_rr, value_opt);
-
-                    match value_opt {
-                        Some(s) => {
-                            self.stack.push(Value::String(Rc::new(RefCell::new(
-                                StringTriple::new(s.to_string(), None),
-                            ))));
-                            return 1;
-                        }
-                        _ => {
-                            self.stack.push(Value::Null);
-                            return 1;
-                        }
-                    }
-                }
-            }
-        }
-        if is_string {
-            self.stack.push(value_rr);
-        }
-        1
-    }
-
     /// Convert a value into an integer/bigint value.
     pub fn opcode_int(&mut self) -> i32 {
         if self.stack.is_empty() {

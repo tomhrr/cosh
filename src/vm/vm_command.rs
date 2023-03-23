@@ -219,6 +219,7 @@ impl VM {
                 let get_stdout = params.contains(&'o') || params.is_empty();
                 let get_stderr = params.contains(&'e');
                 let get_combined = params.contains(&'c');
+                let get_bytes = params.contains(&'b');
                 let cmd_generator =
                     Value::CommandGenerator(Rc::new(RefCell::new(CommandGenerator::new(
                         noblock_stdout,
@@ -226,6 +227,7 @@ impl VM {
                         get_stdout,
                         get_stderr,
                         get_combined,
+                        get_bytes,
                     ))));
                 self.stack.push(cmd_generator);
             }
@@ -330,6 +332,7 @@ impl VM {
                                         NonBlockingReader::from_fd(upstream_stdout).unwrap(),
                                         NonBlockingReader::from_fd(upstream_stderr).unwrap(),
                                         true,
+                                        false,
                                         false,
                                         false,
                                     ),

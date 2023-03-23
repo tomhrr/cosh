@@ -1485,3 +1485,27 @@ fh @; 500 read; str;
 2 range; [drop; \"0123456789\n\"] map; '' join; =;
 ", ".t\n.t\n.t\n.t\n.t\n.t");
 }
+
+#[test]
+fn write_test() {
+    basic_test(
+        "
+test-data/cert.der b<; output-file b>;
+output-file b<;        () ++ foldl; int map; '' join;
+test-data/cert.der b<; () ++ foldl; int map; '' join;
+output-file rm;
+=;
+", ".t");
+}
+
+#[test]
+fn byte_file_test() {
+    basic_test(
+        "
+{cat test-data/cert.der}/b; output-file b>;
+output-file b<;        () ++ foldl; int map; '' join;
+test-data/cert.der b<; () ++ foldl; int map; '' join;
+output-file rm;
+=;
+", ".t");
+}

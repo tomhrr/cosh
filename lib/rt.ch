@@ -88,6 +88,21 @@
         yield;
         .f until; ,,
 
+:~ b< 1 1
+    drop;
+    r open;
+    fh var;
+    fh !;
+    begin;
+        fh @;
+        1024 read;
+        dup; is-null; if;
+            drop;
+            leave;
+        then;
+        yield;
+        .f until; ,,
+
 : for
     depth; 2 <; if;
         "for requires two arguments" error;
@@ -129,6 +144,27 @@
                 leave;
             then;
             fh @; swap; writeline;
+            .f until;
+        fh @; close;
+    then; ,,
+
+: b>
+    depth; 2 <; if;
+        "b> requires two arguments" error;
+    then;
+    w open; fh var; fh !;
+    dup; is-str; if;
+        fh @; swap; writeline;
+        fh @; close;
+    else;
+        begin;
+            dup; shift;
+            dup; is-null; if;
+                drop;
+                drop;
+                leave;
+            then;
+            fh @; swap; write;
             .f until;
         fh @; close;
     then; ,,

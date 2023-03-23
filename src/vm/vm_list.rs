@@ -463,6 +463,7 @@ impl VM {
                 | Value::KeysGenerator(_)
                 | Value::ValuesGenerator(_)
                 | Value::EachGenerator(_)
+                | Value::MultiGenerator(_)
         );
         self.stack.push(Value::Bool(res));
         1

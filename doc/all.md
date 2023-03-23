@@ -89,7 +89,7 @@ are:
   * `int`: signed 32-bit integer
   * `bigint`: arbitrary-precision integer
   * `float`: double-width floating-point number
-  * `string`: a string
+  * `string`: a string encoded as UTF-8
 
 The basic composite types are:
 
@@ -428,10 +428,6 @@ character to lowercase, and returns the updated string.  `uc` and
 `ucfirst` operate similarly, except they convert to uppercase.
 
 `reverse` reverses a string.  It also works on lists.
-
-`strx` operates as per `str`, save that if the input is a list of
-bytes and it isn't valid UTF-8, the parts that are invalid will be
-replaced with `U+FFFD REPLACEMENT_CHARACTER`.
 
 ##### Regular expressions
 
@@ -886,6 +882,10 @@ its arguments and writes the strings (or string) to that file:
         2: "zxcv\n"
     )]
 
+`b<` and `b>` operate in the same way as `f<` and `f>`, except that
+they produce and consume lists where each element of the list is a
+list of bytes.  This make them suitable for handling binary data.
+
 Other operations:
 
  - `cd`: changes the current working directory;
@@ -1145,6 +1145,10 @@ for standard output, and 2 for standard error):
         )
     )
 
+The `/b` flag can be used to produce a generator over lists of bytes
+from standard output, in instances where binary data is being dealt
+with.
+
 Environment variables can also be set for commands, in the same way as
 for a standard shell:
 
@@ -1182,6 +1186,9 @@ be switched using `toggle-mode`:
     3
     $ .s
     3
+
+All conversions to string (e.g. `str`, `readline`, `f<`) will replace
+invalid UTF-8 sequences with `U+FFFD REPLACEMENT CHARACTER`.
 
 #### Caveats and pitfalls
 

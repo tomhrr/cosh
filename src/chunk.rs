@@ -380,6 +380,7 @@ pub struct CommandGenerator {
     get_stderr: bool,
     pub get_combined: bool,
     pub get_bytes: bool,
+    pub get_lossy: bool,
 }
 
 impl CommandGenerator {
@@ -390,6 +391,7 @@ impl CommandGenerator {
         get_stderr: bool,
         get_combined: bool,
         get_bytes: bool,
+        get_lossy: bool,
     ) -> CommandGenerator {
         CommandGenerator {
             stdout,
@@ -400,6 +402,7 @@ impl CommandGenerator {
             get_stderr,
             get_combined,
             get_bytes,
+            get_lossy,
         }
     }
 
@@ -417,14 +420,22 @@ impl CommandGenerator {
                  * a multibyte Unicode character?  Not sure if this
                  * is possible, though. */
                 let new_buf: Vec<u8> = (&mut self.stdout_buffer).drain(0..(n + 1)).collect();
-                let new_str = std::str::from_utf8(&new_buf).unwrap();
-                Some(new_str.to_string())
+                let new_str = if self.get_lossy {
+                    String::from_utf8_lossy(&new_buf).to_string()
+                } else {
+                    String::from_utf8(new_buf).unwrap()
+                };
+                Some(new_str)
             }
             _ => {
                 if !self.stdout_buffer.is_empty() && self.stdout.is_eof() {
                     let new_buf: Vec<u8> = (&mut self.stdout_buffer).drain(..).collect();
-                    let new_str = std::str::from_utf8(&new_buf).unwrap();
-                    Some(new_str.to_string())
+                    let new_str = if self.get_lossy {
+                        String::from_utf8_lossy(&new_buf).to_string()
+                    } else {
+                        String::from_utf8(new_buf).unwrap()
+                    };
+                    Some(new_str)
                 } else {
                     None
                 }
@@ -446,14 +457,22 @@ impl CommandGenerator {
                  * a multibyte Unicode character?  Not sure if this
                  * is possible, though. */
                 let new_buf: Vec<u8> = (&mut self.stderr_buffer).drain(0..(n + 1)).collect();
-                let new_str = std::str::from_utf8(&new_buf).unwrap();
-                Some(new_str.to_string())
+                let new_str = if self.get_lossy {
+                    String::from_utf8_lossy(&new_buf).to_string()
+                } else {
+                    String::from_utf8(new_buf).unwrap()
+                };
+                Some(new_str)
             }
             _ => {
                 if !self.stderr_buffer.is_empty() && self.stderr.is_eof() {
                     let new_buf: Vec<u8> = (&mut self.stderr_buffer).drain(..).collect();
-                    let new_str = std::str::from_utf8(&new_buf).unwrap();
-                    Some(new_str.to_string())
+                    let new_str = if self.get_lossy {
+                        String::from_utf8_lossy(&new_buf).to_string()
+                    } else {
+                        String::from_utf8(new_buf).unwrap()
+                    };
+                    Some(new_str)
                 } else {
                     None
                 }

@@ -216,10 +216,14 @@ impl VM {
                 let upstream_stderr = process.stderr.take().unwrap();
                 let noblock_stdout = NonBlockingReader::from_fd(upstream_stdout).unwrap();
                 let noblock_stderr = NonBlockingReader::from_fd(upstream_stderr).unwrap();
-                let get_stdout = params.contains(&'o') || params.is_empty();
+                let mut get_stdout = params.contains(&'o');
                 let get_stderr = params.contains(&'e');
                 let get_combined = params.contains(&'c');
+                if !get_stdout && !get_stderr && !get_combined {
+                    get_stdout = true;
+                }
                 let get_bytes = params.contains(&'b');
+                let get_lossy = params.contains(&'x');
                 let cmd_generator =
                     Value::CommandGenerator(Rc::new(RefCell::new(CommandGenerator::new(
                         noblock_stdout,
@@ -228,6 +232,7 @@ impl VM {
                         get_stderr,
                         get_combined,
                         get_bytes,
+                        get_lossy,
                     ))));
                 self.stack.push(cmd_generator);
             }
@@ -332,6 +337,7 @@ impl VM {
                                         NonBlockingReader::from_fd(upstream_stdout).unwrap(),
                                         NonBlockingReader::from_fd(upstream_stderr).unwrap(),
                                         true,
+                                        false,
                                         false,
                                         false,
                                         false,

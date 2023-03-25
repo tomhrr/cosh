@@ -98,6 +98,7 @@ lazy_static! {
         map.insert("||", VM::core_or as fn(&mut VM) -> i32);
         map.insert("&", VM::core_and as fn(&mut VM) -> i32);
         map.insert("/", VM::opcode_divide as fn(&mut VM) -> i32);
+        map.insert("%", VM::opcode_remainder as fn(&mut VM) -> i32);
         map.insert("<=>", VM::opcode_cmp as fn(&mut VM) -> i32);
         map.insert("=", VM::opcode_eq as fn(&mut VM) -> i32);
         map.insert(">", VM::opcode_gt as fn(&mut VM) -> i32);
@@ -300,6 +301,7 @@ lazy_static! {
         vec[OpCode::Subtract as usize] = Some(VM::opcode_subtract as fn(&mut VM) -> i32);
         vec[OpCode::Multiply as usize] = Some(VM::opcode_multiply as fn(&mut VM) -> i32);
         vec[OpCode::Divide as usize] = Some(VM::opcode_divide as fn(&mut VM) -> i32);
+        vec[OpCode::Remainder as usize] = Some(VM::opcode_remainder as fn(&mut VM) -> i32);
         vec[OpCode::Cmp as usize] = Some(VM::opcode_cmp as fn(&mut VM) -> i32);
         vec[OpCode::Eq as usize] = Some(VM::opcode_eq as fn(&mut VM) -> i32);
         vec[OpCode::Gt as usize] = Some(VM::opcode_gt as fn(&mut VM) -> i32);

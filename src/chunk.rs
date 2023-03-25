@@ -1119,6 +1119,9 @@ impl Chunk {
                 OpCode::Divide => {
                     println!("OP_DIVIDE");
                 }
+                OpCode::Remainder => {
+                    println!("OP_REMAINDER");
+                }
                 OpCode::EndFn => {
                     println!("OP_ENDFN");
                 }

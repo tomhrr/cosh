@@ -1504,3 +1504,10 @@ output-file rm;
 =;
 ", ".t");
 }
+
+#[test]
+fn remainder_test() {
+    basic_test("100 6 %", "4");
+    basic_test("-21 4 %", "-1");
+    basic_test("10000000000000000000 101 %", "91");
+}

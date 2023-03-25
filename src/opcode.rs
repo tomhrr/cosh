@@ -78,6 +78,7 @@ pub enum OpCode {
     Byte = 75,
     IsByte = 76,
     Read = 77,
+    Remainder = 78,
     Unknown = 255,
 }
 
@@ -161,6 +162,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         75 => OpCode::Byte,
         76 => OpCode::IsByte,
         77 => OpCode::Read,
+        78 => OpCode::Remainder,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

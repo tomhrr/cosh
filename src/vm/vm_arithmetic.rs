@@ -1,5 +1,6 @@
 use num::FromPrimitive;
 use num::ToPrimitive;
+use num::Integer;
 use num_bigint::BigInt;
 use num_traits::Signed;
 
@@ -57,7 +58,7 @@ fn multiply_ints(n1: i32, n2: i32) -> Value {
     }
 }
 
-/// Divide one integer by anotherand return the result value.  Promote
+/// Divide one integer by another and return the result value.  Promote
 /// to bigint if the value cannot be stored in an i32.
 fn divide_ints(n1: i32, n2: i32) -> Value {
     match n2.checked_div(n1) {
@@ -65,6 +66,20 @@ fn divide_ints(n1: i32, n2: i32) -> Value {
         None => {
             let n2_bigint = BigInt::from_i32(n2).unwrap();
             Value::BigInt(n2_bigint / n1)
+        }
+    }
+}
+
+/// Divide one integer by another and return the remainder.  Promote
+/// to bigint if the value cannot be stored in an i32.
+fn remainder_ints(n1: i32, n2: i32) -> Value {
+    match n2.checked_rem(n1) {
+        Some(n3) => Value::Int(n3),
+        None => {
+            let n2_bigint = BigInt::from_i32(n2).unwrap();
+            let n1_bigint = BigInt::from_i32(n1).unwrap();
+            let (_, remainder) = n2_bigint.div_rem(&n1_bigint);
+            Value::BigInt(remainder)
         }
     }
 }
@@ -401,6 +416,73 @@ impl VM {
             let res = self.opcode_divide_inner(&v1_rr, &v2_rr);
             if res == 0 {
                 self.print_error("/ requires two numbers");
+                return 0;
+            }
+        }
+
+        1
+    }
+
+    /// Helper function for dividing two values and placing the
+    /// remainder onto the stack.  Returns an integer indicating
+    /// whether the values were able to be divided.
+    fn opcode_remainder_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
+        match (v1, v2) {
+            (Value::BigInt(n1), Value::BigInt(n2)) => {
+                let (_, remainder) = n2.div_rem(&n1);
+                self.stack.push(Value::BigInt(remainder));
+                1
+            }
+            (Value::BigInt(_), Value::Int(n2)) => self.opcode_remainder_inner(v1, &int_to_bigint(*n2)),
+            (Value::Int(n1), Value::BigInt(_)) => self.opcode_remainder_inner(&int_to_bigint(*n1), v2),
+            (Value::Int(n1), Value::Int(n2)) => {
+                self.stack.push(remainder_ints(*n1, *n2));
+                1
+            }
+            (_, _) => {
+                let n1_opt = v1.to_int();
+                let n2_opt = v2.to_int();
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    self.stack.push(remainder_ints(n1, n2));
+                    return 1;
+                }
+                let n1_opt = v1.to_bigint();
+                let n2_opt = v2.to_bigint();
+                if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    let (_, remainder) = n2.div_rem(&n1);
+                    self.stack.push(Value::BigInt(remainder));
+                    return 1;
+                }
+                0
+            }
+        }
+    }
+
+    /// Takes two values as its arguments, subtracts them, and places
+    /// the result onto the stack.
+    pub fn opcode_remainder(&mut self) -> i32 {
+        let len = self.stack.len();
+        if len < 2 {
+            self.print_error("% requires two arguments");
+            return 0;
+        }
+
+        let v1_rr = self.stack.pop().unwrap();
+        let mut done = false;
+
+        if let (Value::Int(n1), Value::Int(ref mut n2)) =
+            (&v1_rr, self.stack.get_mut(len - 2).unwrap())
+        {
+            *n2 %= n1;
+            done = true;
+        }
+
+        if !done {
+            let v2_rr = self.stack.pop().unwrap();
+
+            let res = self.opcode_remainder_inner(&v1_rr, &v2_rr);
+            if res == 0 {
+                self.print_error("% requires two numbers");
                 return 0;
             }
         }

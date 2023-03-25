@@ -367,8 +367,8 @@ over `int` and `float` for the exponent.
 over the integral types for the operand and `int`s for the number of
 bit positions.
 
-`&` (bitwise and), `||` (bitwise or), and `^` (bitwise xor) are
-defined over the integral types.
+`&` (bitwise and), `||` (bitwise or), `^` (bitwise xor) and `%`
+(remainder) are defined over the integral types.
 
 #### Stack functions
 

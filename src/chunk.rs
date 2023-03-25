@@ -1716,6 +1716,7 @@ impl Value {
                 | Value::DirectoryHandle(..)
                 | Value::IpSet(..)
                 | Value::MultiGenerator(..)
+                | Value::CommandGenerator(..)
         )
     }
 

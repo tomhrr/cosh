@@ -216,7 +216,7 @@
         .f until;
     lst @; ,,
 
-:~ grep-generator 2 2
+:~ grep 2 2
     drop;
     dup; is-callable; not; if;
         "second grep argument must be callable" error;
@@ -239,47 +239,10 @@
         then;
         .f until; ,,
 
-: grep-list
-    dup; is-callable; not; if;
-        "second grep argument must be callable" error;
-    then;
-    fn var; to-function; fn !;
-    dup; is-shiftable; not; if;
-        "first grep argument must be shiftable" error;
-    then;
-    lst var; lst !;
-    () reslst var; reslst !;
-    begin;
-        lst @;
-        shift;
-        dup; is-null; if;
-            drop;
-            leave;
-        then;
-        dup; fn @; funcall; if;
-            reslst @; swap; push; drop;
-        else;
-            drop;
-        then;
-        .f until;
-    reslst @; ,,
-
 : is-list-or-set
     dup; is-list; swap; is-set; or; ,,
 
-: grep
-    depth; 2 <; if;
-        "grep requires two arguments" error;
-    then;
-    swap; dup; is-list-or-set; if;
-        swap;
-        grep-list;
-    else;
-        swap;
-        grep-generator;
-    then; ,,
-
-:~ map-generator 2 2
+:~ map 2 2
     drop;
     dup; is-callable; not; if;
         "second map argument must be callable" error;
@@ -297,40 +260,6 @@
         then;
         fn @; funcall; yield;
         .f until; ,,
-
-: map-list
-    dup; is-callable; not; if;
-        "second map argument must be callable" error;
-    then;
-    fn var; to-function; fn !;
-    dup; is-shiftable; not; if;
-        "first map argument must be shiftable" error;
-    then;
-    lst var; lst !;
-    () reslst var; reslst !;
-    begin;
-        lst @;
-        shift;
-        dup; is-null; if;
-            drop;
-            leave;
-        then;
-        fn @; funcall;
-        reslst @; swap; push; drop;
-        .f until;
-    reslst @; ,,
-
-: map
-    depth; 2 <; if;
-        "map requires two arguments" error;
-    then;
-    swap; dup; is-list-or-set; if;
-        swap;
-        map-list;
-    else;
-        swap;
-        map-generator;
-    then; ,,
 
 :~ range 1 1
     drop;

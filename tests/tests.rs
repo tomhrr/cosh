@@ -248,12 +248,12 @@ fn get_must_be_string_in_fn_error() {
 
 #[test]
 fn map_test_with_result() {
-    basic_test("(1 2 3) [2 +] map", "(\n    0: 3\n    1: 4\n    2: 5\n)");
+    basic_test("(1 2 3) [2 +] map", "v[gen (\n    0: 3\n    1: 4\n    2: 5\n)]");
 }
 
 #[test]
 fn grep_test() {
-    basic_test("(1 2 3) [2 =] grep", "(\n    0: 2\n)");
+    basic_test("(1 2 3) [2 =] grep", "v[gen (\n    0: 2\n)]");
 }
 
 #[test]
@@ -394,7 +394,7 @@ fn implicit_generator_test() {
 fn regex_borrow_problem() {
     basic_test(
         "((\"asdf\") (\"asdf\")) [[asdf m] grep] map",
-        "(\n    0: (\n        0: asdf\n    )\n    1: (\n        0: asdf\n    )\n)",
+        "v[gen (\n    0: v[gen (\n        0: asdf\n    )]\n    1: v[gen (\n        0: asdf\n    )]\n)]",
     );
 }
 
@@ -474,7 +474,7 @@ fn grep_test_generator() {
     );
     basic_test(
         "10 range; take-all; [5 <] grep",
-        "(\n    0: 0\n    1: 1\n    2: 2\n    3: 3\n    4: 4\n)",
+        "v[gen (\n    0: 0\n    1: 1\n    2: 2\n    3: 3\n    4: 4\n)]",
     );
 }
 
@@ -486,7 +486,7 @@ fn map_test_generator() {
     );
     basic_test(
         "5 range; take-all; [2 *] map",
-        "(\n    0: 0\n    1: 2\n    2: 4\n    3: 6\n    4: 8\n)",
+        "v[gen (\n    0: 0\n    1: 2\n    2: 4\n    3: 6\n    4: 8\n)]",
     );
 }
 
@@ -533,17 +533,17 @@ fn coerce_to_string_test() {
 fn commands_test() {
     basic_test(
         "{ls}; {sort} |; take-all; [o.toml m] grep; chomp map;",
-        "(\n    0: Cargo.toml\n)",
+        "v[gen (\n    0: Cargo.toml\n)]",
     );
     basic_test(". -type f {find {2} -maxdepth 1 {1} {0}}; {sort} |; take-all; [o.toml m] grep; chomp map; nip; nip; nip;",
-               "(\n    0: ./Cargo.toml\n)");
+               "v[gen (\n    0: ./Cargo.toml\n)]");
     basic_test(
         "3 2 1 {dc -e \"{2} {0} + {1} + p\"}; shift; chomp; nip; nip; nip;",
         "6",
     );
     basic_test(
         "{ls}; -r {sort {}} |; take-all; [o.toml m] grep; chomp map;",
-        "(\n    0: Cargo.toml\n)",
+        "v[gen (\n    0: Cargo.toml\n)]",
     );
 }
 
@@ -652,7 +652,7 @@ fn grep_not_iterated_n_is_the_same() {
 
 #[test]
 fn regex_numbers() {
-    basic_test("((asdf asdf)) [[243 m] grep] map", "(\n    0: ()\n)");
+    basic_test("((asdf asdf)) [[243 m] grep] map", "v[gen (\n    0: v[gen]\n)]");
 }
 
 #[test]
@@ -941,24 +941,24 @@ fn ip_test() {
 fn ipset_test() {
     basic_test(
         "0.0.0.0-1.0.0.0 ip; ip.prefixes; str map;",
-        "(\n    0: 0.0.0.0/8\n    1: 1.0.0.0\n)",
+        "v[gen (\n    0: 0.0.0.0/8\n    1: 1.0.0.0\n)]",
     );
     basic_test(
         "0.0.0.0-1.0.0.0 ips; take-all; str map;",
-        "(\n    0: 0.0.0.0/8\n    1: 1.0.0.0\n)",
+        "v[gen (\n    0: 0.0.0.0/8\n    1: 1.0.0.0\n)]",
     );
-    basic_test("::-FFFF:: ip; ip.prefixes; str map;", "(\n    0: ::/1\n    1: 8000::/2\n    2: c000::/3\n    3: e000::/4\n    4: f000::/5\n    5: f800::/6\n    6: fc00::/7\n    7: fe00::/8\n    8: ff00::/9\n    9: ff80::/10\n    10: ffc0::/11\n    11: ffe0::/12\n    12: fff0::/13\n    13: fff8::/14\n    14: fffc::/15\n    15: fffe::/16\n    16: ffff::\n)");
-    basic_test("::-FFFF:: ips; take-all; str map;", "(\n    0: ::/1\n    1: 8000::/2\n    2: c000::/3\n    3: e000::/4\n    4: f000::/5\n    5: f800::/6\n    6: fc00::/7\n    7: fe00::/8\n    8: ff00::/9\n    9: ff80::/10\n    10: ffc0::/11\n    11: ffe0::/12\n    12: fff0::/13\n    13: fff8::/14\n    14: fffc::/15\n    15: fffe::/16\n    16: ffff::\n)");
+    basic_test("::-FFFF:: ip; ip.prefixes; str map;", "v[gen (\n    0: ::/1\n    1: 8000::/2\n    2: c000::/3\n    3: e000::/4\n    4: f000::/5\n    5: f800::/6\n    6: fc00::/7\n    7: fe00::/8\n    8: ff00::/9\n    9: ff80::/10\n    10: ffc0::/11\n    11: ffe0::/12\n    12: fff0::/13\n    13: fff8::/14\n    14: fffc::/15\n    15: fffe::/16\n    16: ffff::\n)]");
+    basic_test("::-FFFF:: ips; take-all; str map;", "v[gen (\n    0: ::/1\n    1: 8000::/2\n    2: c000::/3\n    3: e000::/4\n    4: f000::/5\n    5: f800::/6\n    6: fc00::/7\n    7: fe00::/8\n    8: ff00::/9\n    9: ff80::/10\n    10: ffc0::/11\n    11: ffe0::/12\n    12: fff0::/13\n    13: fff8::/14\n    14: fffc::/15\n    15: fffe::/16\n    16: ffff::\n)]");
 
     basic_test(
         "1.0.0.0/8 ip; ip.prefixes; str map;",
-        "(\n    0: 1.0.0.0/8\n)",
+        "v[gen (\n    0: 1.0.0.0/8\n)]",
     );
     basic_test("0.0.0.251-0.0.5.16 ip; ip.prefixes; str map;",
-               "(\n    0: 0.0.0.251\n    1: 0.0.0.252/30\n    2: 0.0.1.0/24\n    3: 0.0.2.0/23\n    4: 0.0.4.0/24\n    5: 0.0.5.0/28\n    6: 0.0.5.16\n)");
-    basic_test("::/120 ip; ip.prefixes; str map;", "(\n    0: ::/120\n)");
+               "v[gen (\n    0: 0.0.0.251\n    1: 0.0.0.252/30\n    2: 0.0.1.0/24\n    3: 0.0.2.0/23\n    4: 0.0.4.0/24\n    5: 0.0.5.0/28\n    6: 0.0.5.16\n)]");
+    basic_test("::/120 ip; ip.prefixes; str map;", "v[gen (\n    0: ::/120\n)]");
     basic_test("1:0:0:0:0:0:0:1-1:0:0:0:0:0:0:8000 ip; ip.prefixes; str map;",
-               "(\n    0: 1::1\n    1: 1::2/127\n    2: 1::4/126\n    3: 1::8/125\n    4: 1::10/124\n    5: 1::20/123\n    6: 1::40/122\n    7: 1::80/121\n    8: 1::100/120\n    9: 1::200/119\n    10: 1::400/118\n    11: 1::800/117\n    12: 1::1000/116\n    13: 1::2000/115\n    14: 1::4000/114\n    15: 1::8000\n)");
+               "v[gen (\n    0: 1::1\n    1: 1::2/127\n    2: 1::4/126\n    3: 1::8/125\n    4: 1::10/124\n    5: 1::20/123\n    6: 1::40/122\n    7: 1::80/121\n    8: 1::100/120\n    9: 1::200/119\n    10: 1::400/118\n    11: 1::800/117\n    12: 1::1000/116\n    13: 1::2000/115\n    14: 1::4000/114\n    15: 1::8000\n)]");
 
     basic_test("(0.0.0.0/8 1.0.0.0/8) ips; str", "0.0.0.0/7");
     basic_test("(:: ::1) ips; str", "::/127");
@@ -977,7 +977,7 @@ fn ipset_test() {
     );
     basic_test(
         "1.0.0.0-1.255.255.255 ips; take-all; str map",
-        "(\n    0: 1.0.0.0/8\n)",
+        "v[gen (\n    0: 1.0.0.0/8\n)]",
     );
     basic_test("1.0.0.0-1.255.255.255 ips; dup; =;", ".t");
     basic_test(

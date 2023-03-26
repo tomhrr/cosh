@@ -713,29 +713,30 @@ the previous generator discussion in this document.)
 #### Higher-order functions (map, grep, for, etc.)
 
 `map` iterates over a list, applying a function to each
-element and collecting the results into a new list:
+element and collecting the results into a new generator:
 
     $ : add-1 1 + ; ,,
     $ (1 2 3 4) add-1 map
-    (
+    v[gen (
         0: 2
         1: 3
         2: 4
         3: 5
-    )
+    )]
 
 `grep` iterates over a list, applying a predicate to each element and
-collecting the values for which the predicate is true into a new list:
+collecting the values for which the predicate is true into a new
+generator:
 
     $ : <4 4 < ; ,,
     $ (1 2 3 4) add-1 map; <4 grep;
-    (
+    v[gen (
         0: 2
         1: 3
-    )
+    )]
 
 `for` is the same as map, except that it does not collect the results
-into a new list (i.e. the function is executed only for its
+into a new generator (i.e. the function is executed only for its
 side effects).
 
 `foldl` takes a list, a seed, and a function, applies the function to
@@ -746,10 +747,8 @@ next element from the list until the list is exhausted:
     $ (1 2 3) 0 + foldl
     6
 
-Each of the above functions can accept a generator instead of a list,
-and if the function results in a list when called with a list, it will
-result in a generator when called with a generator.  Similarly, they
-can also accept sets as arguments.
+Each of the above functions can accept a generator or a set as an
+argument, instead of a list.
 
 Anonymous functions can be used inline in these calls:
 

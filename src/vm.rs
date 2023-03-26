@@ -458,8 +458,14 @@ impl VM {
                 match import_chunk_opt {
                     Some(import_chunk) => {
                         for (k, v) in import_chunk.functions.iter() {
-                            self.global_functions.insert(k.clone(), v.clone());
+                            if !k.starts_with("anon") {
+                                self.global_functions.insert(k.clone(), v.clone());
+                            }
                         }
+                        /* The main reason for running the chunk is so
+                         * that global variables are introduced. */
+                        self.run(Rc::new(RefCell::new(import_chunk)));
+                        self.stack.clear();
                     }
                     None => {
                         let file_res = std::fs::File::open(s);
@@ -477,6 +483,8 @@ impl VM {
                                                 self.global_functions.insert(k.clone(), v.clone());
                                             }
                                         }
+                                        self.run(chunk);
+                                        self.stack.clear();
                                     }
                                     None => {
                                         self.print_error("unable to load import path");
@@ -1473,11 +1481,25 @@ impl VM {
                         }
                     }
 
-                    self.scopes
-                        .last_mut()
-                        .unwrap()
-                        .borrow_mut()
-                        .insert(var_name.to_string(), Value::Int(0));
+                    let var_name_ref = &var_name;
+                    let has_existing_var = {
+                        let last_scope = self.scopes.last().unwrap().borrow();
+                        let existing_var = last_scope.get(var_name_ref);
+                        match existing_var {
+                            Some(_) => true,
+                            _       => false
+                        }
+                    };
+                    if has_existing_var {
+                        self.print_error(
+                            "variable has already been declared in this scope"
+                        );
+                        return 0;
+                    }
+
+                    let mut last_scope =
+                        self.scopes.last_mut().unwrap().borrow_mut();
+                    last_scope.insert(var_name.to_string(), Value::Int(0));
                 }
                 OpCode::SetVar => {
                     if self.stack.len() < 2 {

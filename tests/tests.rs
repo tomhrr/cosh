@@ -129,8 +129,9 @@ fn begin_until_nested() {
     basic_test(
         "
 x var; 3 x !;
+y var;
 begin;
-    y var; 2 y !;
+    2 y !;
     begin;
         y @; println;
         y @; 1 -; y !;
@@ -1510,4 +1511,9 @@ fn remainder_test() {
     basic_test("100 6 %", "4");
     basic_test("-21 4 %", "-1");
     basic_test("10000000000000000000 101 %", "91");
+}
+
+#[test]
+fn import_var_test() {
+    basic_test("test-data/test.ch import; nfn; nfn;", "101\n102");
 }

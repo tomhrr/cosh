@@ -736,6 +736,7 @@ fn main() {
                     if line.starts_with(' ') {
                         line = "$".to_owned() + &line;
                     }
+                    line = line.trim().to_string();
                     let file_res = tempfile();
                     match file_res {
                         Ok(_) => {}

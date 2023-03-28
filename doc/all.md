@@ -164,6 +164,9 @@ stack has an associated definition:
     $ 1 2 + ; 1 2 + ; +
     6
 
+(When running interactively, trailing whitespace is also ignored for
+the purposes of implicit execution.)
+
 Functions are defined like so:
 
     $ : add-1 1 + ; ,,

@@ -21,6 +21,7 @@ use sysinfo::{System, SystemExt};
 use chunk::{print_error, Chunk, GeneratorObject, StringTriple, Value, ValueSD};
 use compiler::Compiler;
 use opcode::{to_opcode, OpCode};
+use rl::RLHelper;
 
 mod vm_arithmetic;
 mod vm_basics;
@@ -76,6 +77,8 @@ pub struct VM {
     pub running: Arc<AtomicBool>,
     /// A lookup for regexes, to save regenerating them.
     pub regexes: HashMap<String, (Rc<Regex>, bool)>,
+    /// The readline object, for fetching history.
+    pub readline: Option<Rc<RefCell<rustyline::Editor<RLHelper>>>>,
     /// A System object, for getting process information.
     sys: System,
     /// The local time zone.
@@ -371,6 +374,7 @@ impl VM {
             regexes: HashMap::new(),
             local_tz: chrono_tz::Tz::from_str(&ltz).unwrap(),
             utc_tz: chrono_tz::Tz::from_str("UTC").unwrap(),
+            readline: None,
         }
     }
 

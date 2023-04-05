@@ -419,6 +419,32 @@ impl VM {
                     }
                 }
             }
+            Value::HistoryGenerator(ref mut hist_gen_rr) => {
+                match &self.readline {
+                    None => {
+                        self.stack.push(Value::Null);
+                    }
+                    Some(rl_rr) => {
+                        let hist_int = *hist_gen_rr.borrow();
+                        let rl_rrb = rl_rr.borrow();
+                        let hist_line_opt =
+                            rl_rrb.history().get(hist_int as usize);
+                        match hist_line_opt {
+                            Some(s) => {
+                                self.stack.push(
+                                    Value::String(Rc::new(RefCell::new(StringTriple::new(
+                                        s.to_string(), None,
+                                    ))))
+                                );
+                                *hist_gen_rr.borrow_mut() += 1;
+                            }
+                            None => {
+                                self.stack.push(Value::Null);
+                            }
+                        }
+                    }
+                }
+            }
             _ => {
                 self.print_error("shift argument does not support shift");
                 return 0;

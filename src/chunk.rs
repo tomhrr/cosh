@@ -613,6 +613,9 @@ pub enum Value {
     IpSet(Rc<RefCell<IpSet>>),
     /// Multiple generators combined together.
     MultiGenerator(Rc<RefCell<VecDeque<Value>>>),
+    /// A generator over the shell history.  This is presented as a
+    /// 'plain' generator outside of the compiler.
+    HistoryGenerator(Rc<RefCell<i32>>),
 }
 
 impl fmt::Debug for Value {
@@ -711,6 +714,9 @@ impl fmt::Debug for Value {
             }
             Value::MultiGenerator(_) => {
                 write!(f, "((MultiGenerator))")
+            }
+            Value::HistoryGenerator(_) => {
+                write!(f, "((Generator))")
             }
         }
     }
@@ -1666,6 +1672,7 @@ impl Value {
             Value::Ipv6Range(_) => self.clone(),
             Value::IpSet(_) => self.clone(),
             Value::MultiGenerator(_) => self.clone(),
+            Value::HistoryGenerator(_) => self.clone(),
         }
     }
 
@@ -1701,6 +1708,7 @@ impl Value {
             (Value::Ipv6Range(..), Value::Ipv6Range(..)) => true,
             (Value::IpSet(..), Value::IpSet(..)) => true,
             (Value::MultiGenerator(..), Value::MultiGenerator(..)) => true,
+            (Value::HistoryGenerator(..), Value::HistoryGenerator(..)) => true,
             (..) => false,
         }
     }
@@ -1716,6 +1724,7 @@ impl Value {
                 | Value::DirectoryHandle(..)
                 | Value::IpSet(..)
                 | Value::MultiGenerator(..)
+                | Value::HistoryGenerator(..)
                 | Value::CommandGenerator(..)
         )
     }
@@ -1753,6 +1762,7 @@ impl Value {
             Value::Ipv6Range(..) => "ip",
             Value::IpSet(..) => "ips",
             Value::MultiGenerator(..) => "multi-gen",
+            Value::HistoryGenerator(..) => "gen",
         };
         s.to_string()
     }

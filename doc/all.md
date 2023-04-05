@@ -1166,6 +1166,10 @@ Comments can be added by prefixing the comment line with `#`.
 On starting the shell for interactive use, the `.coshrc` file in the
 current user's home directory will be run.
 
+When running interactively, the `history` function will return a
+generator over the shell's history.  When not running interactively,
+the `history` function will return an empty generator.
+
 The `clone` form can be used to get a deep copy of certain types of
 values: lists, hashes, user-defined generator objects, and the
 generators returned by the `keys`, `values`, and `each` calls.  For

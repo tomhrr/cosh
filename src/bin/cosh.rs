@@ -274,6 +274,9 @@ fn main() {
         }
         let history_start_len = rl.history().len();
 
+        let rl_rr = Rc::new(RefCell::new(rl));
+        vm.readline = Some(rl_rr.clone());
+
         loop {
             /* The ctrl-c handler that sets running to false is
              * supposed to be caught by the loop in run_inner in the
@@ -292,7 +295,7 @@ fn main() {
             let cwd_str = cwd.as_path().to_str().unwrap();
             let prompt = format!("{}$ ", cwd_str);
 
-            let readline_res = rl.readline(&prompt);
+            let readline_res = rl_rr.borrow_mut().readline(&prompt);
             match readline_res {
                 Ok(mut line) => {
                     if line.is_empty() {
@@ -322,7 +325,7 @@ fn main() {
                     file.seek(SeekFrom::Start(0)).unwrap();
 
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                    rl.add_history_entry(line.as_str());
+                    rl_rr.borrow_mut().add_history_entry(line.as_str());
                     let chunk_opt = vm.interpret(global_functions.clone(), &mut bufread, "(main)");
                     match chunk_opt {
                         Some(chunk) => {
@@ -345,7 +348,7 @@ fn main() {
         }
 
         if let Some(history_path) = history_path_opt.clone() {
-            let history_end_len = rl.history().len();
+            let history_end_len = rl_rr.borrow().history().len();
             let mut history_file = OpenOptions::new()
                 .write(true)
                 .append(true)
@@ -356,7 +359,7 @@ fn main() {
 
             for i in history_start_len..history_end_len {
                 writeln!(history_file, "{}",
-                         rl.history().get(i).unwrap()).unwrap();
+                         rl_rr.borrow().history().get(i).unwrap()).unwrap();
             }
 
             drop(history_file);

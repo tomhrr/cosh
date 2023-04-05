@@ -239,6 +239,7 @@ lazy_static! {
         map.insert("fmt", VM::core_fmt as fn(&mut VM) -> i32);
         map.insert("exec", VM::core_exec as fn(&mut VM) -> i32);
         map.insert("cmd", VM::core_cmd as fn(&mut VM) -> i32);
+        map.insert("history", VM::core_history as fn(&mut VM) -> i32);
         map
     };
 
@@ -441,6 +442,14 @@ impl VM {
             self.stack.push(backup_rr);
         }
         1
+    }
+
+    /// Return a generator over the shell history.  If not being run
+    /// in shell context, returns an error message.
+    pub fn core_history(&mut self) -> i32 {
+        let hist_gen = Value::HistoryGenerator(Rc::new(RefCell::new(0)));
+        self.stack.push(hist_gen);
+        return 1;
     }
 
     /// Import the functions from the specified path into the current

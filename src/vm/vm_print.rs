@@ -576,6 +576,7 @@ impl VM {
                 | Value::ValuesGenerator(_)
                 | Value::EachGenerator(_)
                 | Value::MultiGenerator(_)
+                | Value::HistoryGenerator(_)
                 | Value::IpSet(_) => {
                     is_generator = true;
                 }

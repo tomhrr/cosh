@@ -56,6 +56,9 @@ pub struct VM {
     debug: bool,
     /// The stack.
     stack: Vec<Value>,
+    /// The last stack, i.e. the (possibly partially) reified state of
+    /// the stack as at the conclusion of the last call.
+    last_stack: Vec<Value>,
     /// The current chunk.
     chunk: Rc<RefCell<Chunk>>,
     /// The instruction index for the current chunk.
@@ -240,6 +243,7 @@ lazy_static! {
         map.insert("exec", VM::core_exec as fn(&mut VM) -> i32);
         map.insert("cmd", VM::core_cmd as fn(&mut VM) -> i32);
         map.insert("history", VM::core_history as fn(&mut VM) -> i32);
+        map.insert("last", VM::core_last as fn(&mut VM) -> i32);
         map
     };
 
@@ -362,6 +366,7 @@ impl VM {
         VM {
             debug,
             stack: Vec::new(),
+            last_stack: Vec::new(),
             local_var_stack: Rc::new(RefCell::new(Vec::new())),
             print_stack,
             printing_stack: false,
@@ -449,6 +454,16 @@ impl VM {
     pub fn core_history(&mut self) -> i32 {
         let hist_gen = Value::HistoryGenerator(Rc::new(RefCell::new(0)));
         self.stack.push(hist_gen);
+        return 1;
+    }
+
+    /// Push the elements from the last stack (i.e. the stack as at
+    /// the conclusion of the last call) onto the stack.
+    pub fn core_last(&mut self) -> i32 {
+        for e in self.last_stack.iter() {
+            self.stack.push(e.clone());
+        }
+        self.last_stack.clear();
         return 1;
     }
 
@@ -1744,6 +1759,7 @@ impl VM {
         }
 
         if self.print_stack {
+            self.last_stack.clear();
             let res = self.print_stack(chunk, i, false);
             self.stack.clear();
             if !res {

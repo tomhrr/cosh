@@ -216,12 +216,14 @@ impl VM {
         window_width: i32,
         mut lines_to_print: i32,
         index: Option<i32>,
+        last_stack: &mut Vec<Value>,
     ) -> i32 {
         let mut is_generator = false;
         let type_string = value_rr.type_string();
         {
             match value_rr {
                 Value::Ipv4(_) | Value::Ipv4Range(_) | Value::Ipv6(_) | Value::Ipv6Range(_) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("v[{} {}]", &type_string, value_rr.to_string().unwrap());
                     lines_to_print = psv_helper(
                         &s,
@@ -234,6 +236,7 @@ impl VM {
                     );
                 }
                 Value::DateTimeNT(dt) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("v[{} {}]", &type_string, dt.format("%F %T %Z"));
                     lines_to_print = psv_helper(
                         &s,
@@ -246,6 +249,7 @@ impl VM {
                     );
                 }
                 Value::DateTimeOT(dt) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("v[{} {}]", &type_string, dt.format("%F %T %Z"));
                     lines_to_print = psv_helper(
                         &s,
@@ -262,6 +266,7 @@ impl VM {
                  * it may be that having separate representations is
                  * useful for some reason. */
                 Value::CoreFunction(_) | Value::NamedFunction(_) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("v[{}]", &type_string);
                     lines_to_print = psv_helper(
                         &s,
@@ -274,6 +279,7 @@ impl VM {
                     );
                 }
                 Value::Null => {
+                    last_stack.push(value_rr.clone());
                     lines_to_print = psv_helper(
                         "null",
                         indent,
@@ -285,6 +291,7 @@ impl VM {
                     );
                 }
                 Value::Bool(b) => {
+                    last_stack.push(value_rr.clone());
                     let s = if *b { ".t" } else { ".f" };
                     lines_to_print = psv_helper(
                         s,
@@ -297,6 +304,7 @@ impl VM {
                     );
                 }
                 Value::Byte(b) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("{:#04x}", b);
                     lines_to_print = psv_helper(
                         &s,
@@ -309,6 +317,7 @@ impl VM {
                     );
                 }
                 Value::Int(n) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("{}", n);
                     lines_to_print = psv_helper(
                         &s,
@@ -321,6 +330,7 @@ impl VM {
                     );
                 }
                 Value::BigInt(n) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("{}", n);
                     lines_to_print = psv_helper(
                         &s,
@@ -333,6 +343,7 @@ impl VM {
                     );
                 }
                 Value::Float(f) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("{}", f);
                     lines_to_print = psv_helper(
                         &s,
@@ -345,6 +356,7 @@ impl VM {
                     );
                 }
                 Value::String(st) => {
+                    last_stack.push(value_rr.clone());
                     let mut ss = st.borrow().escaped_string.clone();
                     if st.borrow().string.contains(char::is_whitespace) {
                         ss = format!("\"{}\"", ss);
@@ -366,6 +378,7 @@ impl VM {
                     );
                 }
                 Value::Command(s, _) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("v[{} {}]", &type_string, s);
                     lines_to_print = psv_helper(
                         &s,
@@ -378,6 +391,7 @@ impl VM {
                     );
                 }
                 Value::CommandUncaptured(s) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("v[{} {}]", &type_string, s);
                     lines_to_print = psv_helper(
                         &s,
@@ -390,6 +404,7 @@ impl VM {
                     );
                 }
                 Value::FileWriter(_) | Value::FileReader(_) | Value::DirectoryHandle(_) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("v[{}]", &type_string);
                     lines_to_print = psv_helper(
                         &s,
@@ -402,6 +417,7 @@ impl VM {
                     );
                 }
                 Value::AnonymousFunction(_, _) => {
+                    last_stack.push(value_rr.clone());
                     let s = format!("v[{}]", &(value_rr.type_string()));
                     lines_to_print = psv_helper(
                         &s,
@@ -414,7 +430,9 @@ impl VM {
                     );
                 }
                 Value::List(list) => {
+                    let mut sublist = Vec::new();
                     if list.borrow().len() == 0 {
+                        last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
                         lines_to_print = psv_helper(
                             "()",
                             indent,
@@ -435,6 +453,7 @@ impl VM {
                             index,
                         );
                         if lines_to_print == -1 {
+                            last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
                             return lines_to_print;
                         }
                         let new_indent = indent + 4;
@@ -449,18 +468,23 @@ impl VM {
                                 window_width,
                                 lines_to_print,
                                 Some(index.try_into().unwrap()),
+                                &mut sublist,
                             );
                             if lines_to_print == -1 {
+                                last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
                                 return lines_to_print;
                             }
                         }
+                        last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
                         lines_to_print =
                             psv_helper(")", indent, false, window_height,
                                        window_width, lines_to_print, None);
                     }
                 }
                 Value::Hash(map) => {
+                    let mut subhash = IndexMap::new();
                     if map.borrow().len() == 0 {
+                        last_stack.push(Value::Hash(Rc::new(RefCell::new(subhash))));
                         lines_to_print = psv_helper(
                             "h()",
                             indent,
@@ -481,6 +505,7 @@ impl VM {
                             index,
                         );
                         if lines_to_print == -1 {
+                            last_stack.push(Value::Hash(Rc::new(RefCell::new(subhash))));
                             return lines_to_print;
                         }
 
@@ -493,6 +518,7 @@ impl VM {
                         }
 
                         let new_indent = indent + 4;
+                        let mut hash_values = Vec::new();
                         for (k, v) in map.borrow().iter() {
                             for _ in 0..new_indent {
                                 print!(" ");
@@ -513,18 +539,26 @@ impl VM {
                                 window_width,
                                 lines_to_print,
                                 None,
+                                &mut hash_values,
                             );
+                            let new_hash_value =
+                                hash_values.pop().unwrap();
+                            subhash.insert(k.to_string(), new_hash_value);
                             if lines_to_print == -1 {
+                                last_stack.push(Value::Hash(Rc::new(RefCell::new(subhash))));
                                 return lines_to_print;
                             }
                         }
+                        last_stack.push(Value::Hash(Rc::new(RefCell::new(subhash))));
                         lines_to_print =
                             psv_helper(")", indent, false, window_height,
                                        window_width, lines_to_print, None);
                     }
                 }
                 Value::Set(map) => {
+                    let mut subhash = IndexMap::new();
                     if map.borrow().len() == 0 {
+                        last_stack.push(Value::Set(Rc::new(RefCell::new(subhash))));
                         lines_to_print = psv_helper(
                             "s()",
                             indent,
@@ -545,11 +579,13 @@ impl VM {
                             index,
                         );
                         if lines_to_print == -1 {
+                            last_stack.push(Value::Set(Rc::new(RefCell::new(subhash))));
                             return lines_to_print;
                         }
 
                         let new_indent = indent + 4;
-                        for (_, v) in map.borrow().iter() {
+                        let mut hash_values = Vec::new();
+                        for (k, v) in map.borrow().iter() {
                             lines_to_print = self.print_stack_value(
                                 v,
                                 chunk.clone(),
@@ -560,11 +596,17 @@ impl VM {
                                 window_width,
                                 lines_to_print,
                                 index,
+                                &mut hash_values,
                             );
+                            let new_hash_value =
+                                hash_values.pop().unwrap();
+                            subhash.insert(k.to_string(), new_hash_value);
                             if lines_to_print == -1 {
+                                last_stack.push(Value::Set(Rc::new(RefCell::new(subhash))));
                                 return lines_to_print;
                             }
                         }
+                        last_stack.push(Value::Set(Rc::new(RefCell::new(subhash))));
                         lines_to_print =
                             psv_helper(")", indent, false, window_height,
                                        window_width, lines_to_print, None);
@@ -586,13 +628,16 @@ impl VM {
             let mut has_elements = false;
             self.stack.push(value_rr.clone());
             let mut element_index = 0;
+            let mut sublist = Vec::new();
             loop {
                 let dup_res = self.opcode_dup();
                 if dup_res == 0 {
+                    last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
                     return -1;
                 }
                 let shift_res = self.opcode_shift();
                 if shift_res == 0 {
+                    last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
                     self.stack.pop();
                     return -1;
                 }
@@ -624,6 +669,7 @@ impl VM {
                             index,
                         );
                         if lines_to_print == -1 {
+                            last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
                             return lines_to_print;
                         }
                         has_elements = true;
@@ -638,9 +684,11 @@ impl VM {
                         window_width,
                         lines_to_print,
                         Some(element_index),
+                        &mut sublist,
                     );
                     element_index += 1;
                     if lines_to_print == -1 {
+                        last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
                         return lines_to_print;
                     }
                 } else {
@@ -664,6 +712,7 @@ impl VM {
                     psv_helper(")]", indent, false, window_height,
                                window_width, lines_to_print, None);
             }
+            last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
         }
         if lines_to_print == -1 {
             return lines_to_print;
@@ -676,7 +725,8 @@ impl VM {
     /// global functions, and a boolean indicating whether the stack
     /// needs to be cleared after the stack is printed.  Prints the
     /// stack to standard output.
-    pub fn print_stack(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize, no_remove: bool) -> bool {
+    pub fn print_stack(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize,
+                       no_remove: bool) -> bool {
         if self.printing_stack {
             self.print_error("cannot call .s recursively");
             return false;
@@ -693,6 +743,7 @@ impl VM {
         let mut lines_to_print = window_height - 1;
 
         let mut stack_backup = Vec::new();
+        let mut last_stack = Vec::new();
         while !self.stack.is_empty() {
             let value_rr = self.stack.remove(0);
             lines_to_print = self.print_stack_value(
@@ -705,12 +756,14 @@ impl VM {
                 window_width,
                 lines_to_print,
                 None,
+                &mut last_stack
             );
             if lines_to_print == -1 {
                 if !no_remove {
                     self.stack.clear();
                 }
                 self.printing_stack = false;
+                self.last_stack = last_stack;
                 return true;
             }
             stack_backup.push(value_rr);
@@ -719,6 +772,7 @@ impl VM {
             self.stack = stack_backup;
         }
         self.printing_stack = false;
+        self.last_stack = last_stack;
         true
     }
 }

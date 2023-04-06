@@ -1050,6 +1050,11 @@ object will then be quicker than using it on the original string.
 
 `id` is a no-op function.
 
+When running interactively, `last` takes the previous stack (i.e. as
+at the conclusion of the last line that was executed) and adds those
+elements on to the current stack.  Any generators that were on the
+previous stack will be converted into lists.
+
 ### External program execution
 
 A command that begins with `$` will be treated as an external call:

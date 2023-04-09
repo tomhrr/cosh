@@ -899,7 +899,6 @@ impl VM {
 
     /// Inner function for reification.
     pub fn core_reify_inner(&mut self, value: Value) -> Option<Value> {
-	let mut is_generator = false;
         match value {
             Value::List(list) => {
                 let mut new_list = VecDeque::new();
@@ -949,19 +948,9 @@ impl VM {
                 }
                 return Some(Value::Set(Rc::new(RefCell::new(new_map))));
             }
-	    Value::Generator(_)
-	    | Value::CommandGenerator(_)
-	    | Value::KeysGenerator(_)
-	    | Value::ValuesGenerator(_)
-	    | Value::EachGenerator(_)
-	    | Value::MultiGenerator(_)
-	    | Value::HistoryGenerator(_)
-	    | Value::IpSet(_) => {
-		is_generator = true;
-	    }
             _ => {}
         }
-        if is_generator {
+        if value.is_generator() {
             self.stack.push(value);
             let mut new_list = VecDeque::new();
             loop {

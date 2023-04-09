@@ -218,7 +218,6 @@ impl VM {
         index: Option<i32>,
         last_stack: &mut Vec<Value>,
     ) -> i32 {
-        let mut is_generator = false;
         let type_string = value_rr.type_string();
         {
             match value_rr {
@@ -676,19 +675,10 @@ impl VM {
                                        window_width, lines_to_print, None);
                     }
                 }
-                Value::Generator(_)
-                | Value::CommandGenerator(_)
-                | Value::KeysGenerator(_)
-                | Value::ValuesGenerator(_)
-                | Value::EachGenerator(_)
-                | Value::MultiGenerator(_)
-                | Value::HistoryGenerator(_)
-                | Value::IpSet(_) => {
-                    is_generator = true;
-                }
+                _ => {}
             }
         }
-        if is_generator {
+        if value_rr.is_generator() {
             let mut has_elements = false;
             self.stack.push(value_rr.clone());
             let mut element_index = 0;

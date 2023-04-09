@@ -896,4 +896,136 @@ impl VM {
             }
         }
     }
+
+    /// Inner function for reification.
+    pub fn core_reify_inner(&mut self, value: Value) -> Option<Value> {
+	let mut is_generator = false;
+        match value {
+            Value::List(list) => {
+                let mut new_list = VecDeque::new();
+                let lb = list.borrow();
+                for v in lb.iter() {
+                    let new_v_opt = self.core_reify_inner(v.clone());
+                    match new_v_opt {
+                        Some(new_v) => {
+                            new_list.push_back(new_v);
+                        }
+                        _ => {
+                            return None;
+                        }
+                    }
+                }
+                return Some(Value::List(Rc::new(RefCell::new(new_list))));
+            }
+            Value::Hash(map) => {
+                let mut new_map = IndexMap::new();
+                let mb = map.borrow();
+                for (k, v) in mb.iter() {
+                    let new_v_opt = self.core_reify_inner(v.clone());
+                    match new_v_opt {
+                        Some(new_v) => {
+                            new_map.insert(k.to_string(), new_v);
+                        }
+                        _ => {
+                            return None;
+                        }
+                    }
+                }
+                return Some(Value::Hash(Rc::new(RefCell::new(new_map))));
+            }
+            Value::Set(map) => {
+                let mut new_map = IndexMap::new();
+                let mb = map.borrow();
+                for (k, v) in mb.iter() {
+                    let new_v_opt = self.core_reify_inner(v.clone());
+                    match new_v_opt {
+                        Some(new_v) => {
+                            new_map.insert(k.to_string(), new_v);
+                        }
+                        _ => {
+                            return None;
+                        }
+                    }
+                }
+                return Some(Value::Set(Rc::new(RefCell::new(new_map))));
+            }
+	    Value::Generator(_)
+	    | Value::CommandGenerator(_)
+	    | Value::KeysGenerator(_)
+	    | Value::ValuesGenerator(_)
+	    | Value::EachGenerator(_)
+	    | Value::MultiGenerator(_)
+	    | Value::HistoryGenerator(_)
+	    | Value::IpSet(_) => {
+		is_generator = true;
+	    }
+            _ => {}
+        }
+        if is_generator {
+            self.stack.push(value);
+            let mut new_list = VecDeque::new();
+            loop {
+                let dup_res = self.opcode_dup();
+                if dup_res == 0 {
+                    return None;
+                }
+                let shift_res = self.opcode_shift();
+                if shift_res == 0 {
+                    return None;
+                }
+                if self.stack.is_empty() {
+                    break;
+                }
+                let is_null;
+                let v = self.stack.pop().unwrap();
+                {
+                    match v {
+                        Value::Null => {
+                            is_null = true;
+                        }
+                        _ => {
+                            is_null = false;
+                        }
+                    }
+                }
+                if !is_null {
+                    let new_v_opt = self.core_reify_inner(v);
+                    match new_v_opt {
+                        Some(new_v) => {
+                            new_list.push_back(new_v);
+                        }
+                        _ => {
+                            return None;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+            self.stack.pop();
+            return Some(Value::List(Rc::new(RefCell::new(new_list))));
+        } else {
+            return Some(value);
+        }
+    }
+
+    /// Reify a value (i.e. turn all generators into lists,
+    /// recursively).
+    pub fn core_reify(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("r requires one argument");
+            return 0;
+        }
+        let value = self.stack.pop().unwrap();
+        let new_value_opt = self.core_reify_inner(value);
+        match new_value_opt {
+            Some(new_value) => {
+                self.stack.push(new_value);
+                return 1;
+            }
+            _ => {
+                return 0;
+            }
+        }
+    }
 }

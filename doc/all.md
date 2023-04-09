@@ -321,6 +321,10 @@ result will also be a generator.  `is-shiftable` is an additional type
 predicate that returns a boolean indicating whether `shift` can be
 called on the argument.
 
+There is also a general reification function named `r`, which will
+convert any generators in the argument value into lists, recursively,
+while leaving other values unchanged.
+
 #### Error handling
 
 Whenever an error occurs, an error message is displayed and control is
@@ -1182,6 +1186,11 @@ all other value types, `clone` has the same effect as `dup`: this is
 fine in most cases, but it's important to be aware that `dup` for
 file/directory read/write generators is a shallow copy, and
 reads/writes against one value will affect cloned values as well.
+
+`@@` works in the same way as `@`, except that it also `clone`s the
+variable's value.  In conjunction with reification (via `r`), this can
+be useful when there's a need to generate, store, and refer to a value
+repeatedly, and generation of that value is time-consuming.
 
 By default, the shell starts in 'transient' mode, unless it is being
 used to run a script, in which case it starts in 'persistent' mode.

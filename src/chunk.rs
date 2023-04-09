@@ -993,6 +993,11 @@ impl Chunk {
         }
     }
 
+    /// Check that the chunk has at least one constant.
+    pub fn has_constant(&mut self) -> bool {
+        self.constants.len() != 0
+    }
+
     /// Get the chunk's most recently-added constant.
     pub fn get_last_constant(&mut self) -> Value {
         self.get_constant((self.constants.len() - 1).try_into().unwrap())

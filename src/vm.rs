@@ -244,6 +244,7 @@ lazy_static! {
         map.insert("cmd", VM::core_cmd as fn(&mut VM) -> i32);
         map.insert("history", VM::core_history as fn(&mut VM) -> i32);
         map.insert("last", VM::core_last as fn(&mut VM) -> i32);
+        map.insert("r", VM::core_reify as fn(&mut VM) -> i32);
         map
     };
 

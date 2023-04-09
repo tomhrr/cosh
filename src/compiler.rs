@@ -935,6 +935,13 @@ impl Compiler {
                             }
                         }
                     } else if s == "var" {
+                        if !chunk.has_constant() {
+                            eprintln!(
+                                "{}:{}: variable name must precede var",
+                                token.line_number, token.column_number
+                            );
+                            return false;
+                        }
                         if self.scope_depth == 0 {
                             chunk.add_opcode(OpCode::Var);
                             has_vars = true;
@@ -979,6 +986,13 @@ impl Compiler {
                             chunk.add_byte((self.locals.len() - 1) as u8);
                         }
                     } else if s == "!" {
+                        if !chunk.has_constant() {
+                            eprintln!(
+                                "{}:{}: variable name must precede !",
+                                token.line_number, token.column_number
+                            );
+                            return false;
+                        }
                         let last_constant_rr = chunk.get_last_constant();
                         chunk.pop_byte();
                         chunk.pop_byte();
@@ -1032,6 +1046,13 @@ impl Compiler {
                             chunk.add_opcode(OpCode::SetVar);
                         }
                     } else if s == "@" {
+                        if !chunk.has_constant() {
+                            eprintln!(
+                                "{}:{}: variable name must precede @",
+                                token.line_number, token.column_number
+                            );
+                            return false;
+                        }
                         let last_constant_rr = chunk.get_last_constant();
                         chunk.pop_byte();
                         chunk.pop_byte();
@@ -1083,6 +1104,68 @@ impl Compiler {
                             chunk.add_byte(i_upper as u8);
                             chunk.add_byte(i_lower as u8);
                             chunk.add_opcode(OpCode::GetVar);
+                        }
+                    } else if s == "@@" {
+                        if !chunk.has_constant() {
+                            eprintln!(
+                                "{}:{}: variable name must precede @@",
+                                token.line_number, token.column_number
+                            );
+                            return false;
+                        }
+                        let last_constant_rr = chunk.get_last_constant();
+                        chunk.pop_byte();
+                        chunk.pop_byte();
+                        let last_opcode = chunk.get_last_opcode();
+                        chunk.pop_byte();
+                        let not_constant = !matches!(last_opcode, OpCode::Constant);
+                        if not_constant {
+                            eprintln!(
+                                "{}:{}: variable name must precede @@",
+                                token.line_number, token.column_number
+                            );
+                            return false;
+                        }
+                        let mut success = false;
+                        {
+                            match last_constant_rr {
+                                Value::String(ref st) => {
+                                    if !self.locals.is_empty() {
+                                        let mut i = self.locals.len() - 1;
+                                        loop {
+                                            let local = &self.locals[i];
+                                            if local.name.eq(&st.borrow().string) {
+                                                chunk.add_opcode(OpCode::GetLocalVar);
+                                                chunk.add_opcode(OpCode::Clone);
+                                                chunk.add_byte(i as u8);
+                                                success = true;
+                                                break;
+                                            }
+                                            if i == 0 {
+                                                break;
+                                            }
+                                            i -= 1;
+                                        }
+                                    }
+                                }
+                                _ => {
+                                    eprintln!(
+                                        "{}:{}: variable name must be a string",
+                                        token.line_number, token.column_number
+                                    );
+                                    return false;
+                                }
+                            }
+                        }
+                        if !success {
+                            let i = chunk.add_constant(last_constant_rr);
+                            chunk.add_opcode(OpCode::Constant);
+                            let i_upper = (i >> 8) & 0xFF;
+                            let i_lower = i & 0xFF;
+                            chunk.add_byte(i_upper as u8);
+                            chunk.add_byte(i_lower as u8);
+                            chunk.add_opcode(OpCode::GetVar);
+                            chunk.add_opcode(OpCode::Clone);
                         }
                     } else if s == ".s" {
                         chunk.add_opcode(OpCode::PrintStack);

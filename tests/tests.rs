@@ -1517,3 +1517,15 @@ fn remainder_test() {
 fn import_var_test() {
     basic_test("test-data/test.ch import; nfn; nfn;", "101\n102");
 }
+
+#[test]
+fn reify_test() {
+    basic_test("100 r", "100");
+    basic_test("(1 2 3) r", "(\n    0: 1\n    1: 2\n    2: 3\n)");
+    basic_test("3 range; [drop; 3 range] map; r;", "(\n    0: (\n        0: 0\n        1: 1\n        2: 2\n    )\n    1: (\n        0: 0\n        1: 1\n        2: 2\n    )\n    2: (\n        0: 0\n        1: 1\n        2: 2\n    )\n)");
+}
+
+#[test]
+fn get_clone_test() {
+    basic_test("5 range; v var; v !; v @@; len; v @@; len; +", "10");
+}

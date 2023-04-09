@@ -296,6 +296,8 @@
 
 : sum 0 + foldl; ,,
 
+: flatten () ++ foldl; ,,
+
 : any
     depth; 2 <; if;
         "any requires two arguments" error;

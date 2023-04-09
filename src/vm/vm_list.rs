@@ -479,19 +479,7 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        let res = matches!(
-            value_rr,
-            Value::List(_)
-                | Value::Set(_)
-                | Value::IpSet(_)
-                | Value::Generator(_)
-                | Value::CommandGenerator(_)
-                | Value::KeysGenerator(_)
-                | Value::ValuesGenerator(_)
-                | Value::EachGenerator(_)
-                | Value::MultiGenerator(_)
-        );
-        self.stack.push(Value::Bool(res));
+        self.stack.push(Value::Bool(value_rr.is_shiftable()));
         1
     }
 

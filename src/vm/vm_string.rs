@@ -25,7 +25,7 @@ impl VM {
         let v2 = self.stack.pop().unwrap();
         let mut v1 = self.stack.pop().unwrap();
 
-        if v1.is_generator() && v2.is_generator() {
+        if v1.is_shiftable() && v2.is_shiftable() {
             match v1 {
                 Value::MultiGenerator(ref mut genlist) => {
                     genlist.borrow_mut().push_back(v2);
@@ -41,14 +41,6 @@ impl VM {
             }
         } else {
             match (v1.clone(), v2.clone()) {
-                (Value::List(lst1_ref), Value::List(lst2_ref)) => {
-                    let mut lst = lst1_ref.borrow().clone();
-                    for k in lst2_ref.borrow().iter() {
-                        lst.push_back(k.clone());
-                    }
-                    let res = Value::List(Rc::new(RefCell::new(lst)));
-                    self.stack.push(res);
-                }
                 (Value::Hash(hs1_ref), Value::Hash(hs2_ref)) => {
                     let mut hsh = hs1_ref.borrow().clone();
                     for (k, v) in hs2_ref.borrow().iter() {
@@ -58,28 +50,25 @@ impl VM {
                     self.stack.push(res);
                 }
                 (_, _) => {
-                    if v1.is_generator() && v2.is_generator() {
-                    } else {
-                        let v1_str_opt: Option<&str>;
-                        to_str!(v1, v1_str_opt);
-                        let v2_str_opt: Option<&str>;
-                        to_str!(v2, v2_str_opt);
+                    let v1_str_opt: Option<&str>;
+                    to_str!(v1, v1_str_opt);
+                    let v2_str_opt: Option<&str>;
+                    to_str!(v2, v2_str_opt);
 
-                        match (v1_str_opt, v2_str_opt) {
-                            (Some(s1), Some(s2)) => {
-                                let s3 = format!("{}{}", s1, s2);
-                                self.stack.push(Value::String(Rc::new(RefCell::new(
-                                    StringTriple::new(s3, None),
-                                ))));
-                            }
-                            (Some(_), _) => {
-                                self.print_error("second ++ argument must be string");
-                                return 0;
-                            }
-                            (_, _) => {
-                                self.print_error("first ++ argument must be string");
-                                return 0;
-                            }
+                    match (v1_str_opt, v2_str_opt) {
+                        (Some(s1), Some(s2)) => {
+                            let s3 = format!("{}{}", s1, s2);
+                            self.stack.push(Value::String(Rc::new(RefCell::new(
+                                StringTriple::new(s3, None),
+                            ))));
+                        }
+                        (Some(_), _) => {
+                            self.print_error("second ++ argument must be string");
+                            return 0;
+                        }
+                        (_, _) => {
+                            self.print_error("first ++ argument must be string");
+                            return 0;
                         }
                     }
                 }

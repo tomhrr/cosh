@@ -1734,6 +1734,17 @@ impl Value {
         )
     }
 
+    pub fn is_shiftable(&self) -> bool {
+        if self.is_generator() {
+            return true;
+        }
+        matches!(
+            self,
+            Value::List(_)
+                | Value::Set(_)
+        )
+    }
+
     pub fn type_string(&self) -> String {
         let s = match self {
             Value::Null => "null",

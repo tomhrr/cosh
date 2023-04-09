@@ -281,6 +281,7 @@ lazy_static! {
         set.insert("grep-list");
         set.insert("no-upwards");
         set.insert("sum");
+        set.insert("flatten");
         set.insert("f>");
         set.insert("none");
         set.insert("take");

@@ -450,7 +450,7 @@ fn regex_tests() {
     basic_test("'asdf asdf' asdf/g qwer s;", "\"qwer qwer\"");
     basic_test(
         "'12341234' \\d\\d\\d\\d/g c; () ++ foldl",
-        "(\n    0: 1234\n    1: 1234\n)",
+        "v[multi-gen (\n    0: 1234\n    1: 1234\n)]",
     );
 }
 
@@ -512,7 +512,7 @@ fn append_test() {
     basic_test("a b ++", "ab");
     basic_test(
         "3 range; take-all; 3 range; take-all; ++",
-        "(\n    0: 0\n    1: 1\n    2: 2\n    3: 0\n    4: 1\n    5: 2\n)",
+        "v[multi-gen (\n    0: 0\n    1: 1\n    2: 2\n    3: 0\n    4: 1\n    5: 2\n)]",
     );
     basic_test("h(1 2) h(3 4) ++; keys; sort; '-' join", "1-3");
 }
@@ -1257,11 +1257,11 @@ fn regex_modifier_tests() {
     basic_test("asdf_asdf_asdf asdf c", "(\n    0: asdf\n)");
     basic_test(
         "asdf_asdf_asdf asdf/g c; () ++ foldl",
-        "(\n    0: asdf\n    1: asdf\n    2: asdf\n)",
+        "v[multi-gen (\n    0: asdf\n    1: asdf\n    2: asdf\n)]",
     );
     basic_test(
         "asDf_aSdf_asdF asdf/ig c; () ++ foldl",
-        "(\n    0: asDf\n    1: aSdf\n    2: asdF\n)",
+        "v[multi-gen (\n    0: asDf\n    1: aSdf\n    2: asdF\n)]",
     );
 }
 
@@ -1416,7 +1416,7 @@ fn capture_test() {
 
     basic_test(
         "name=al,name=jim \"name=([a-zA-z]+)/g\" c; () ++ foldl",
-        "(\n    0: name=al\n    1: al\n    2: name=jim\n    3: jim\n)"
+        "v[multi-gen (\n    0: name=al\n    1: al\n    2: name=jim\n    3: jim\n)]"
     );
 }
 
@@ -1528,4 +1528,12 @@ fn reify_test() {
 #[test]
 fn get_clone_test() {
     basic_test("5 range; v var; v !; v @@; len; v @@; len; +", "10");
+}
+
+#[test]
+fn list_generator_append_test() {
+    basic_test("(1 2 3) 3 range; ++",
+               "v[multi-gen (\n    0: 1\n    1: 2\n    2: 3\n    3: 0\n    4: 1\n    5: 2\n)]");
+    basic_test("3 range; (1 2 3) ++",
+               "v[multi-gen (\n    0: 0\n    1: 1\n    2: 2\n    3: 1\n    4: 2\n    5: 3\n)]");
 }

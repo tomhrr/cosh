@@ -457,22 +457,43 @@ impl VM {
                             return lines_to_print;
                         }
                         let new_indent = indent + 4;
-                        for (index, element) in list.borrow().iter().enumerate() {
-                            lines_to_print = self.print_stack_value(
-                                element,
-                                chunk.clone(),
-                                i,
-                                new_indent,
-                                false,
-                                window_height,
-                                window_width,
-                                lines_to_print,
-                                Some(index.try_into().unwrap()),
-                                &mut sublist,
-                            );
-                            if lines_to_print == -1 {
-                                last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
-                                return lines_to_print;
+                        let lb = list.borrow();
+                        let mut eniter = lb.iter().enumerate();
+                        loop {
+                            let next = eniter.next();
+                            match next {
+                                Some((index, element)) => {
+                                    lines_to_print = self.print_stack_value(
+                                        element,
+                                        chunk.clone(),
+                                        i,
+                                        new_indent,
+                                        false,
+                                        window_height,
+                                        window_width,
+                                        lines_to_print,
+                                        Some(index.try_into().unwrap()),
+                                        &mut sublist,
+                                    );
+                                    if lines_to_print == -1 {
+                                        loop {
+                                            let next = eniter.next();
+                                            match next {
+                                                Some((_, element)) => {
+                                                    sublist.push(element.clone());
+                                                }
+                                                _ => {
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
+                                        return lines_to_print;
+                                    }
+                                }
+                                _ => {
+                                    break;
+                                }
                             }
                         }
                         last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
@@ -519,34 +540,55 @@ impl VM {
 
                         let new_indent = indent + 4;
                         let mut hash_values = Vec::new();
-                        for (k, v) in map.borrow().iter() {
-                            for _ in 0..new_indent {
-                                print!(" ");
-                            }
-                            print!("\"{}\": ", k);
-                            let extra_spaces = key_maxlen - k.len();
-                            for _ in 0..extra_spaces {
-                                print!(" ");
-                            }
+                        let mb = map.borrow();
+                        let mut iter = mb.iter();
+                        loop {
+                            let next = iter.next();
+                            match next {
+                                Some((k, v)) => {
+                                    for _ in 0..new_indent {
+                                        print!(" ");
+                                    }
+                                    print!("\"{}\": ", k);
+                                    let extra_spaces = key_maxlen - k.len();
+                                    for _ in 0..extra_spaces {
+                                        print!(" ");
+                                    }
 
-                            lines_to_print = self.print_stack_value(
-                                v,
-                                chunk.clone(),
-                                i,
-                                new_indent,
-                                true,
-                                window_height,
-                                window_width,
-                                lines_to_print,
-                                None,
-                                &mut hash_values,
-                            );
-                            let new_hash_value =
-                                hash_values.pop().unwrap();
-                            subhash.insert(k.to_string(), new_hash_value);
-                            if lines_to_print == -1 {
-                                last_stack.push(Value::Hash(Rc::new(RefCell::new(subhash))));
-                                return lines_to_print;
+                                    lines_to_print = self.print_stack_value(
+                                        v,
+                                        chunk.clone(),
+                                        i,
+                                        new_indent,
+                                        true,
+                                        window_height,
+                                        window_width,
+                                        lines_to_print,
+                                        None,
+                                        &mut hash_values,
+                                    );
+                                    let new_hash_value =
+                                        hash_values.pop().unwrap();
+                                    subhash.insert(k.to_string(), new_hash_value);
+                                    if lines_to_print == -1 {
+                                        loop {
+                                            let next = iter.next();
+                                            match next {
+                                                Some((k, v)) => {
+                                                    subhash.insert(k.to_string(), v.clone());
+                                                }
+                                                _ => {
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        last_stack.push(Value::Hash(Rc::new(RefCell::new(subhash))));
+                                        return lines_to_print;
+                                    }
+                                }
+                                _ => {
+                                    break;
+                                }
                             }
                         }
                         last_stack.push(Value::Hash(Rc::new(RefCell::new(subhash))));
@@ -585,25 +627,47 @@ impl VM {
 
                         let new_indent = indent + 4;
                         let mut hash_values = Vec::new();
-                        for (k, v) in map.borrow().iter() {
-                            lines_to_print = self.print_stack_value(
-                                v,
-                                chunk.clone(),
-                                i,
-                                new_indent,
-                                false,
-                                window_height,
-                                window_width,
-                                lines_to_print,
-                                index,
-                                &mut hash_values,
-                            );
-                            let new_hash_value =
-                                hash_values.pop().unwrap();
-                            subhash.insert(k.to_string(), new_hash_value);
-                            if lines_to_print == -1 {
-                                last_stack.push(Value::Set(Rc::new(RefCell::new(subhash))));
-                                return lines_to_print;
+                        let mb = map.borrow();
+                        let mut iter = mb.iter();
+                        loop {
+                            let next = iter.next();
+                            match next {
+                                Some((k, v)) => {
+
+                                    lines_to_print = self.print_stack_value(
+                                        v,
+                                        chunk.clone(),
+                                        i,
+                                        new_indent,
+                                        false,
+                                        window_height,
+                                        window_width,
+                                        lines_to_print,
+                                        index,
+                                        &mut hash_values,
+                                    );
+                                    let new_hash_value =
+                                        hash_values.pop().unwrap();
+                                    subhash.insert(k.to_string(), new_hash_value);
+                                    if lines_to_print == -1 {
+                                        loop {
+                                            let next = iter.next();
+                                            match next {
+                                                Some((k, v)) => {
+                                                    subhash.insert(k.to_string(), v.clone());
+                                                }
+                                                _ => {
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        last_stack.push(Value::Set(Rc::new(RefCell::new(subhash))));
+                                        return lines_to_print;
+                                    }
+                                }
+                                _ => {
+                                    break;
+                                }
                             }
                         }
                         last_stack.push(Value::Set(Rc::new(RefCell::new(subhash))));
@@ -632,12 +696,26 @@ impl VM {
             loop {
                 let dup_res = self.opcode_dup();
                 if dup_res == 0 {
-                    last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
+                    let mut submg = VecDeque::new();
+                    submg.push_back(
+                        Value::List(Rc::new(RefCell::new(VecDeque::from(sublist))))
+                    );
+                    submg.push_back(value_rr.clone());
+                    last_stack.push(
+                        Value::MultiGenerator(Rc::new(RefCell::new(submg)))
+                    );
                     return -1;
                 }
                 let shift_res = self.opcode_shift();
                 if shift_res == 0 {
-                    last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
+                    let mut submg = VecDeque::new();
+                    submg.push_back(
+                        Value::List(Rc::new(RefCell::new(VecDeque::from(sublist))))
+                    );
+                    submg.push_back(value_rr.clone());
+                    last_stack.push(
+                        Value::MultiGenerator(Rc::new(RefCell::new(submg)))
+                    );
                     self.stack.pop();
                     return -1;
                 }
@@ -669,7 +747,14 @@ impl VM {
                             index,
                         );
                         if lines_to_print == -1 {
-                            last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
+                            let mut submg = VecDeque::new();
+                            submg.push_back(
+                                Value::List(Rc::new(RefCell::new(VecDeque::from(sublist))))
+                            );
+                            submg.push_back(value_rr.clone());
+                            last_stack.push(
+                                Value::MultiGenerator(Rc::new(RefCell::new(submg)))
+                            );
                             return lines_to_print;
                         }
                         has_elements = true;
@@ -688,7 +773,14 @@ impl VM {
                     );
                     element_index += 1;
                     if lines_to_print == -1 {
-                        last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
+                        let mut submg = VecDeque::new();
+                        submg.push_back(
+                            Value::List(Rc::new(RefCell::new(VecDeque::from(sublist))))
+                        );
+                        submg.push_back(value_rr.clone());
+                        last_stack.push(
+                            Value::MultiGenerator(Rc::new(RefCell::new(submg)))
+                        );
                         return lines_to_print;
                     }
                 } else {

@@ -894,24 +894,24 @@ list of bytes.  This make them suitable for handling binary data.
 
 Other operations:
 
- - `cd`: changes the current working directory;
- - `pwd`: returns the current working directory;
+ - `cd`: changes the current working directory.
+ - `pwd`: returns the current working directory.
  - `is-dir`: returns a boolean indicating whether the argument is a
-   directory;
- - `rm`: removes the argument file;
+   directory.
+ - `rm`: removes the argument file.
  - `touch`: if the argument file doesn't exist, creates an empty file
    with the given name, otherwise updates the modification time of the
-   existing file to be the current time;
- - `cp`: copies the file at the first path to the second path;
- - `mv`: moves the file at the first path to the second path;
+   existing file to be the current time.
+ - `cp`: copies the file at the first path to the second path.
+ - `mv`: moves the file at the first path to the second path.
  - `rename`: rename the file at the first path such that its path is
-   the second path;
- - `stat`: returns a hash containing metadata about the argument file;
+   the second path.
+ - `stat`: returns a hash containing metadata about the argument file.
  - `lstat`: like stat, but if the argument is a symbolic link, returns
-   metadata about the link itself, instead of its target;
+   metadata about the link itself, instead of its target.
  - `ps`: returns a list containing details on the currently-running
-   processes, where each current process has a separate hash
-   containing the PID, UID, and the process name; and
+   processes, where each process has a separate hash containing the
+   PID, UID, process name, full command, and current CPU usage.
  - `kill`: takes a PID and a signal name (e.g. "term", "kill"), and
    sends the specified signal to the process.
  - `chmod`: takes a path and a numeric mode, and updates the path's

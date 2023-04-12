@@ -14,7 +14,7 @@ use std::time::SystemTime;
 use indexmap::IndexMap;
 use num::FromPrimitive;
 use num_bigint::BigInt;
-use sysinfo::{ProcessExt, SystemExt};
+use sysinfo::{PidExt, ProcessExt, SystemExt, CpuRefreshKind};
 use utime::*;
 
 use chunk::{StringTriple, Value};
@@ -478,6 +478,12 @@ impl VM {
         let sys = &mut self.sys;
         sys.refresh_processes();
 
+        /* Using the same approach as in nushell for calculating CPU
+         * usage. */
+        sys.refresh_cpu_specifics(CpuRefreshKind::everything());
+        std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL * 2);
+        sys.refresh_cpu_specifics(CpuRefreshKind::new().with_cpu_usage());
+
         /* refresh_processes does not remove processes that have
          * since completed, which is why these extra steps are
          * necessary. */
@@ -500,11 +506,11 @@ impl VM {
             let mut map = IndexMap::new();
             map.insert(
                 "pid".to_string(),
-                Value::BigInt(BigInt::from_i32(*pid).unwrap()),
+                Value::BigInt(BigInt::from_i32(pid.as_u32().try_into().unwrap()).unwrap()),
             );
             map.insert(
                 "uid".to_string(),
-                Value::BigInt(BigInt::from_u32(process.uid).unwrap()),
+                Value::BigInt(BigInt::from_u32(**(process.user_id().unwrap())).unwrap()),
             );
             map.insert(
                 "name".to_string(),
@@ -512,6 +518,17 @@ impl VM {
                     process.name().to_string(),
                     None,
                 )))),
+            );
+            map.insert(
+                "cmd".to_string(),
+                Value::String(Rc::new(RefCell::new(StringTriple::new(
+                    process.cmd().join(" "),
+                    None,
+                )))),
+            );
+            map.insert(
+                "cpu".to_string(),
+                Value::Float(process.cpu_usage().into()),
             );
             lst.push_back(Value::Hash(Rc::new(RefCell::new(map))))
         }

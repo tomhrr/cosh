@@ -3,6 +3,7 @@ use nix::unistd::{Group, Pid, User};
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::collections::VecDeque;
+use std::convert::TryFrom;
 use std::env;
 use std::fs;
 use std::os::unix::fs::MetadataExt;
@@ -11,10 +12,11 @@ use std::path::Path;
 use std::rc::Rc;
 use std::time::SystemTime;
 
+use chrono::{DateTime, NaiveDateTime, Utc};
 use indexmap::IndexMap;
 use num::FromPrimitive;
 use num_bigint::BigInt;
-use sysinfo::{PidExt, ProcessExt, SystemExt, CpuRefreshKind};
+use sysinfo::{PidExt, ProcessExt, SystemExt, CpuRefreshKind, UserExt};
 use utime::*;
 
 use chunk::{StringTriple, Value};
@@ -488,18 +490,18 @@ impl VM {
          * since completed, which is why these extra steps are
          * necessary. */
         let mut pids = Vec::new();
-        for pid in self.sys.processes().keys() {
+        for pid in sys.processes().keys() {
             pids.push(*pid);
         }
         let mut actual_pids = HashSet::new();
         for pid in pids {
-            if self.sys.refresh_process(pid) {
+            if sys.refresh_process(pid) {
                 actual_pids.insert(pid);
             }
         }
 
         let mut lst = VecDeque::new();
-        for (pid, process) in self.sys.processes() {
+        for (pid, process) in sys.processes() {
             if !actual_pids.contains(pid) {
                 continue;
             }
@@ -511,6 +513,17 @@ impl VM {
             map.insert(
                 "uid".to_string(),
                 Value::BigInt(BigInt::from_u32(**(process.user_id().unwrap())).unwrap()),
+            );
+            map.insert(
+                "gid".to_string(),
+                Value::BigInt(BigInt::from_u32(*(process.group_id().unwrap())).unwrap()),
+            );
+            map.insert(
+                "user".to_string(),
+                Value::String(Rc::new(RefCell::new(StringTriple::new(
+                    sys.get_user_by_id(process.user_id().unwrap()).unwrap().name().to_string(),
+                    None,
+                )))),
             );
             map.insert(
                 "name".to_string(),
@@ -530,6 +543,36 @@ impl VM {
                 "cpu".to_string(),
                 Value::Float(process.cpu_usage().into()),
             );
+            map.insert(
+                "mem".to_string(),
+                Value::BigInt(BigInt::from_u64(process.memory().into()).unwrap()),
+            );
+            map.insert(
+                "vmem".to_string(),
+                Value::BigInt(BigInt::from_u64(process.virtual_memory().into()).unwrap()),
+            );
+            map.insert(
+                "runtime".to_string(),
+                Value::BigInt(BigInt::from_u64(process.run_time()).unwrap()),
+            );
+            let s = format!("{}", process.status());
+            map.insert(
+                "status".to_string(),
+                Value::String(Rc::new(RefCell::new(StringTriple::new(
+                    s,
+                    None,
+                )))),
+            );
+
+	    let epoch64 = i64::try_from(process.start_time()).unwrap();
+	    let naive = NaiveDateTime::from_timestamp_opt(epoch64, 0).unwrap();
+	    let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
+	    let newdate = datetime.with_timezone(&self.utc_tz);
+            map.insert(
+                "start".to_string(),
+                Value::DateTimeNT(newdate)
+            );
+
             lst.push_back(Value::Hash(Rc::new(RefCell::new(map))))
         }
         self.stack.push(Value::List(Rc::new(RefCell::new(lst))));

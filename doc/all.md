@@ -911,7 +911,11 @@ Other operations:
    metadata about the link itself, instead of its target.
  - `ps`: returns a list containing details on the currently-running
    processes, where each process has a separate hash containing the
-   PID, UID, process name, full command, and current CPU usage.
+   PID, UID, username, GID, process name, full command, memory usage
+   (in bytes), virtual memory usage (in bytes), current CPU usage (as
+   a percentage of the total number of available CPUs), the time the
+   process was started, the number of seconds for which the process
+   has been running, and the process's status.
  - `kill`: takes a PID and a signal name (e.g. "term", "kill"), and
    sends the specified signal to the process.
  - `chmod`: takes a path and a numeric mode, and updates the path's

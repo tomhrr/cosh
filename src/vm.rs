@@ -378,7 +378,7 @@ impl VM {
             running: Arc::new(AtomicBool::new(true)),
             chunk: Rc::new(RefCell::new(Chunk::new_standard("unused".to_string()))),
             i: 0,
-            sys: System::new(),
+            sys: System::new_all(),
             regexes: HashMap::new(),
             local_tz: chrono_tz::Tz::from_str(&ltz).unwrap(),
             utc_tz: chrono_tz::Tz::from_str("UTC").unwrap(),

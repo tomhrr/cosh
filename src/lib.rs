@@ -32,6 +32,7 @@ extern crate searchpath;
 extern crate serde;
 extern crate sha1;
 extern crate sha2;
+extern crate sqlx;
 extern crate sysinfo;
 extern crate tempfile;
 extern crate term_size;

@@ -4,8 +4,8 @@ use std::rc::Rc;
 
 use regex::Regex;
 
-use chunk::{StringTriple, Value};
-use vm::*;
+use crate::chunk::{StringTriple, Value};
+use crate::vm::*;
 
 lazy_static! {
     static ref RE_ADJUST: Regex = Regex::new(r"\\([\d+])").unwrap();

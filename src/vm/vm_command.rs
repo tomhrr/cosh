@@ -12,8 +12,8 @@ use nonblock::NonBlockingReader;
 use regex::Regex;
 use std::process::{Command, Stdio};
 
-use chunk::{CommandGenerator, Value};
-use vm::*;
+use crate::chunk::{CommandGenerator, Value};
+use crate::vm::*;
 
 lazy_static! {
     static ref START_DOUBLE_QUOTE: Regex = Regex::new(r#"^\s*""#).unwrap();

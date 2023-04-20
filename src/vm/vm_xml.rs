@@ -4,8 +4,8 @@ use std::rc::Rc;
 
 use indexmap::IndexMap;
 
-use chunk::{StringTriple, Value};
-use vm::*;
+use crate::chunk::{StringTriple, Value};
+use crate::vm::*;
 
 /// Converts a value into an XML string.
 fn convert_to_xml(v: &Value) -> Option<String> {

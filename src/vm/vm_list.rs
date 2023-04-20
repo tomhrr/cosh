@@ -7,8 +7,8 @@ use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
 
-use chunk::{IpSet, StringTriple, Value};
-use vm::VM;
+use crate::chunk::{IpSet, StringTriple, Value};
+use crate::vm::VM;
 
 impl VM {
     /// Takes a list or a set and a value as its arguments.  Pushes

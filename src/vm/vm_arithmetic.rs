@@ -4,8 +4,8 @@ use num::Integer;
 use num_bigint::BigInt;
 use num_traits::Signed;
 
-use chunk::Value;
-use vm::*;
+use crate::chunk::Value;
+use crate::vm::*;
 
 /// Convert an i32 to a bigint value.
 fn int_to_bigint(i: i32) -> Value {

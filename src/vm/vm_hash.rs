@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use chunk::{HashWithIndex, Value};
-use vm::*;
+use crate::chunk::{HashWithIndex, Value};
+use crate::vm::*;
 
 impl VM {
     /// Takes a hash or list (or generator) and a key string or list

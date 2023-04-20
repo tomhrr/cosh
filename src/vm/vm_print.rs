@@ -8,8 +8,8 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use unicode_segmentation::UnicodeSegmentation;
 
-use chunk::{Chunk, Value};
-use vm::*;
+use crate::chunk::{Chunk, Value};
+use crate::vm::*;
 
 /// Helper function for paging once the line limit has been reached.
 fn pager_input(window_height: i32,
@@ -428,6 +428,19 @@ impl VM {
                         index,
                     );
                 }
+                Value::DBConnection(..) => {
+                    last_stack.push(value_rr.clone());
+                    let s = format!("v[{}]", &(value_rr.type_string()));
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        window_width,
+                        lines_to_print,
+                        index,
+                    );
+                }
                 Value::List(list) => {
                     let mut sublist = Vec::new();
                     if list.borrow().len() == 0 {
@@ -675,7 +688,17 @@ impl VM {
                                        window_width, lines_to_print, None);
                     }
                 }
-                _ => {}
+                _ => {
+                    lines_to_print = psv_helper(
+                        "(Unknown)",
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        window_width,
+                        lines_to_print,
+                        index,
+                    );
+                }
             }
         }
         if value_rr.is_generator() {

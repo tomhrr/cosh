@@ -5,8 +5,8 @@ use iprange::IpRange;
 use num_bigint::{BigInt, BigUint};
 use num_traits::{FromPrimitive, ToPrimitive, Zero};
 
-use chunk::{IpSet, Ipv4Range, Ipv6Range};
-use vm::*;
+use crate::chunk::{IpSet, Ipv4Range, Ipv6Range};
+use crate::vm::*;
 
 /// Convert an IPv4 address to a u32.
 fn ipv4_addr_to_int(ipv4: Ipv4Addr) -> u32 {

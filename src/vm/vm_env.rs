@@ -4,8 +4,8 @@ use std::rc::Rc;
 
 use indexmap::IndexMap;
 
-use chunk::StringTriple;
-use vm::*;
+use crate::chunk::StringTriple;
+use crate::vm::*;
 
 impl VM {
     /// Add a hash containing the data from the current environment to

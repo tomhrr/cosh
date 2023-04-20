@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
-use chunk::Value;
-use vm::*;
+use crate::chunk::Value;
+use crate::vm::*;
 
 impl VM {
     /// Sorts the elements of a list or generator using behaviour per

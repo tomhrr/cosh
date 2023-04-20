@@ -8,8 +8,8 @@ use num_traits::ToPrimitive;
 use rand::Rng;
 use unicode_segmentation::UnicodeSegmentation;
 
-use chunk::{StringTriple, Value};
-use vm::*;
+use crate::chunk::{StringTriple, Value};
+use crate::vm::*;
 
 impl VM {
     /// Remove the top element from the stack.

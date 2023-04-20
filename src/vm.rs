@@ -18,15 +18,16 @@ use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
 use sysinfo::{System, SystemExt};
 
-use chunk::{print_error, Chunk, GeneratorObject, StringTriple, Value, ValueSD};
-use compiler::Compiler;
-use opcode::{to_opcode, OpCode};
-use rl::RLHelper;
+use crate::chunk::{print_error, Chunk, GeneratorObject, StringTriple, Value, ValueSD};
+use crate::compiler::Compiler;
+use crate::opcode::{to_opcode, OpCode};
+use crate::rl::RLHelper;
 
 mod vm_arithmetic;
 mod vm_basics;
 mod vm_command;
 mod vm_datetime;
+mod vm_db;
 mod vm_digest;
 mod vm_env;
 mod vm_hash;
@@ -245,6 +246,9 @@ lazy_static! {
         map.insert("history", VM::core_history as fn(&mut VM) -> i32);
         map.insert("last", VM::core_last as fn(&mut VM) -> i32);
         map.insert("r", VM::core_reify as fn(&mut VM) -> i32);
+        map.insert("db.conn", VM::core_db_conn as fn(&mut VM) -> i32);
+        map.insert("db.prep", VM::core_db_prep as fn(&mut VM) -> i32);
+        map.insert("db.exec", VM::core_db_exec as fn(&mut VM) -> i32);
         map
     };
 

@@ -17,8 +17,8 @@ use rustyline::{Context, Result};
 use rustyline_derive::Helper;
 use searchpath::search_path;
 
-use chunk::{Chunk, Value};
-use vm::{LIB_FORMS, SIMPLE_FORMS};
+use crate::chunk::{Chunk, Value};
+use crate::vm::{LIB_FORMS, SIMPLE_FORMS};
 
 // Most of the code through to 'impl Completer for ShellCompleter' is
 // taken from kkawakam/rustyline#574 as at 3a41ee9, with some small

@@ -5,8 +5,8 @@ use std::rc::Rc;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use chunk::{StringTriple, Value};
-use vm::*;
+use crate::chunk::{StringTriple, Value};
+use crate::vm::*;
 
 lazy_static! {
     static ref CAPTURE_NUM: Regex = Regex::new("\\{(\\d+)\\}").unwrap();

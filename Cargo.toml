@@ -2,13 +2,13 @@
 name = "cosh"
 version = "0.0.1"
 authors = ["Tom Harrison <tomh5908@gmail.com>"]
+edition = "2021"
 
 [dependencies]
 csv = "1.0.0-beta.5"
 getopts = "0.2"
 regex = "0.2"
 time = "0.1"
-assert_cmd = "1.0.1"
 tempfile = "3.1.0"
 serde = { version = "1.0.107", features = ["derive", "rc"] }
 serde_json = "1.0.57"
@@ -45,3 +45,5 @@ md5 = "0.7.0"
 sha1 = "0.10.1"
 sha2 = "0.10.2"
 atty = "0.2.14"
+sqlx = { version = "0.5", features = [ "runtime-async-std-native-tls", "mysql" ] }
+futures = "0.3"

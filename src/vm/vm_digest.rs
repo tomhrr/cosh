@@ -4,8 +4,8 @@ use std::rc::Rc;
 use sha1::{Digest, Sha1};
 use sha2::{Sha256, Sha512};
 
-use chunk::{StringTriple, Value};
-use vm::*;
+use crate::chunk::{StringTriple, Value};
+use crate::vm::*;
 
 impl VM {
     /// Takes a string as its single argument.  Hashes the string

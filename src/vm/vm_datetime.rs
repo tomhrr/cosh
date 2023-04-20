@@ -7,7 +7,7 @@ use chrono::format::{parse, Parsed, StrftimeItems};
 use chrono::{DateTime, Duration, NaiveDateTime, TimeZone, Utc};
 use chronoutil::RelativeDuration;
 
-use vm::*;
+use crate::vm::*;
 
 impl VM {
     /// Returns the current time as a date-time object, offset at UTC.

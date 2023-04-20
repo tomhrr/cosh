@@ -6,8 +6,8 @@ use std::rc::Rc;
 use indexmap::IndexMap;
 use num_bigint::ToBigInt;
 
-use chunk::{StringTriple, Value};
-use vm::*;
+use crate::chunk::{StringTriple, Value};
+use crate::vm::*;
 
 /// Converts a serde_json object into a value.
 fn convert_from_json(v: &serde_json::value::Value) -> Value {

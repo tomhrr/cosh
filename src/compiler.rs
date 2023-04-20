@@ -12,8 +12,8 @@ use std::str;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use chunk::{Chunk, StringTriple, Value};
-use opcode::OpCode;
+use crate::chunk::{Chunk, StringTriple, Value};
+use crate::opcode::OpCode;
 
 /// The various token types used by the compiler.
 #[derive(Debug)]

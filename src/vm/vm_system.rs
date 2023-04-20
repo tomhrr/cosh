@@ -19,8 +19,8 @@ use num_bigint::BigInt;
 use sysinfo::{PidExt, ProcessExt, SystemExt, CpuRefreshKind, UserExt};
 use utime::*;
 
-use chunk::{StringTriple, Value};
-use vm::*;
+use crate::chunk::{StringTriple, Value};
+use crate::vm::*;
 
 impl VM {
     /// Takes a value that can be stringified as its single argument.

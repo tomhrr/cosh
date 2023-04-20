@@ -10,8 +10,8 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use tempfile::{NamedTempFile, TempDir};
 
-use chunk::{StringTriple, Value, BufReaderWithBuffer};
-use vm::*;
+use crate::chunk::{StringTriple, Value, BufReaderWithBuffer};
+use crate::vm::*;
 
 lazy_static! {
     static ref HOME_DIR_TILDE: Regex = Regex::new("~").unwrap();

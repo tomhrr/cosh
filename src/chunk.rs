@@ -26,9 +26,10 @@ use num_traits::Zero;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::{ChildStderr, ChildStdout};
+use sqlx::MySql;
 
-use opcode::{to_opcode, OpCode};
-use vm::VM;
+use crate::opcode::{to_opcode, OpCode};
+use crate::vm::*;
 
 /// A chunk is a parsed/processed piece of code.
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -360,6 +361,31 @@ impl IpSet {
     }
 }
 
+/// A database connection object.
+#[derive(Debug, Clone)]
+pub struct DBConnection {
+    pub pool: sqlx::Pool<MySql>,
+}
+
+impl DBConnection {
+    pub fn new(pool: sqlx::Pool<MySql>) -> DBConnection {
+        DBConnection { pool }
+    }
+}
+
+/// A database statement object.
+#[derive(Debug)]
+pub struct DBStatement {
+    pub pool: sqlx::Pool<MySql>,
+    pub query: String,
+}
+
+impl DBStatement {
+    pub fn new(pool: sqlx::Pool<MySql>, query: String) -> DBStatement {
+        DBStatement { pool, query }
+    }
+}
+
 /// A command generator object.
 pub struct CommandGenerator {
     pub stdout: NonBlockingReader<ChildStdout>,
@@ -477,6 +503,7 @@ impl CommandGenerator {
                 }
             }
         }
+
         None
     }
 
@@ -616,6 +643,10 @@ pub enum Value {
     /// A generator over the shell history.  This is presented as a
     /// 'plain' generator outside of the compiler.
     HistoryGenerator(Rc<RefCell<i32>>),
+    /// A database connection.
+    DBConnection(Rc<RefCell<DBConnection>>),
+    /// A database statement.
+    DBStatement(Rc<RefCell<DBStatement>>),
 }
 
 impl fmt::Debug for Value {
@@ -717,6 +748,12 @@ impl fmt::Debug for Value {
             }
             Value::HistoryGenerator(_) => {
                 write!(f, "((Generator))")
+            }
+            Value::DBConnection(_) => {
+                write!(f, "((DBConnection))")
+            }
+            Value::DBStatement(_) => {
+                write!(f, "((DBStatement))")
             }
         }
     }
@@ -1678,6 +1715,8 @@ impl Value {
             Value::IpSet(_) => self.clone(),
             Value::MultiGenerator(_) => self.clone(),
             Value::HistoryGenerator(_) => self.clone(),
+            Value::DBConnection(_) => self.clone(),
+            Value::DBStatement(_) => self.clone(),
         }
     }
 
@@ -1714,6 +1753,8 @@ impl Value {
             (Value::IpSet(..), Value::IpSet(..)) => true,
             (Value::MultiGenerator(..), Value::MultiGenerator(..)) => true,
             (Value::HistoryGenerator(..), Value::HistoryGenerator(..)) => true,
+            (Value::DBConnection(..), Value::DBConnection(..)) => true,
+            (Value::DBStatement(..), Value::DBStatement(..)) => true,
             (..) => false,
         }
     }
@@ -1779,6 +1820,8 @@ impl Value {
             Value::IpSet(..) => "ips",
             Value::MultiGenerator(..) => "multi-gen",
             Value::HistoryGenerator(..) => "gen",
+            Value::DBConnection(..) => "db-connection",
+            Value::DBStatement(..) => "db-statement",
         };
         s.to_string()
     }

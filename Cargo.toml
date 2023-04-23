@@ -5,6 +5,7 @@ authors = ["Tom Harrison <tomh5908@gmail.com>"]
 edition = "2021"
 
 [dependencies]
+assert_cmd = "2.0.9"
 csv = "1.0.0-beta.5"
 getopts = "0.2"
 regex = "0.2"

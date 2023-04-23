@@ -689,15 +689,7 @@ impl VM {
                     }
                 }
                 _ => {
-                    lines_to_print = psv_helper(
-                        "(Unknown)",
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        window_width,
-                        lines_to_print,
-                        index,
-                    );
+                    /* todo: Handle this in some way. */
                 }
             }
         }

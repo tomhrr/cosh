@@ -331,6 +331,60 @@ impl VM {
                                         }
                                     }
                                 }
+                                "TINYINT UNSIGNED" | "SMALLINT UNSIGNED" | "MEDIUMINT UNSIGNED" => {
+                                    let final_value_res =
+                                        raw_record.get::<Option<i32>, usize>(index);
+                                    match final_value_res {
+                                        None => {
+                                            ret_record.insert(
+                                                name.to_string(),
+                                                Value::Null
+                                            );
+                                        }
+                                        Some(final_value) => {
+                                            ret_record.insert(
+                                                name.to_string(),
+                                                Value::Int(final_value)
+                                            );
+                                        }
+                                    }
+                                }
+                                "INT UNSIGNED" => {
+                                    let final_value_res =
+                                        raw_record.get::<Option<u32>, usize>(index);
+                                    match final_value_res {
+                                        None => {
+                                            ret_record.insert(
+                                                name.to_string(),
+                                                Value::Null
+                                            );
+                                        }
+                                        Some(final_value) => {
+                                            ret_record.insert(
+                                                name.to_string(),
+                                                Value::BigInt(BigInt::from_u32(final_value).unwrap())
+                                            );
+                                        }
+                                    }
+                                }
+                                "BIGINT UNSIGNED" => {
+                                    let final_value_res =
+                                        raw_record.get::<Option<u64>, usize>(index);
+                                    match final_value_res {
+                                        None => {
+                                            ret_record.insert(
+                                                name.to_string(),
+                                                Value::Null
+                                            );
+                                        }
+                                        Some(final_value) => {
+                                            ret_record.insert(
+                                                name.to_string(),
+                                                Value::BigInt(BigInt::from_u64(final_value).unwrap())
+                                            );
+                                        }
+                                    }
+                                }
                                 "FLOAT" => {
                                     let final_value_res =
                                         raw_record.get::<Option<f32>, usize>(index);

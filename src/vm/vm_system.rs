@@ -521,13 +521,13 @@ impl VM {
                 "gid".to_string(),
                 Value::BigInt(BigInt::from_u32(*(process.group_id().unwrap())).unwrap()),
             );
-            match process.user_id() {
+            match sys.get_user_by_id(process.user_id().unwrap()) {
                 None => {}
                 Some(user) => {
                     map.insert(
                         "user".to_string(),
                         Value::String(Rc::new(RefCell::new(StringTriple::new(
-                            sys.get_user_by_id(user).unwrap().name().to_string(),
+                            user.name().to_string(),
                             None,
                         ))))
                     );

@@ -178,6 +178,24 @@ impl VM {
                                 continue;
                             }
                             match type_info.name() {
+                                "BOOLEAN" => {
+                                    let final_value_res =
+                                        raw_record.get::<Option<bool>, usize>(index);
+                                    match final_value_res {
+                                        None => {
+                                            ret_record.insert(
+                                                name.to_string(),
+                                                Value::Null
+                                            );
+                                        }
+                                        Some(b) => {
+                                            ret_record.insert(
+                                                name.to_string(),
+                                                Value::Bool(b)
+                                            );
+                                        }
+                                    }
+                                }
                                 "VARCHAR" | "CHAR" | "TINYTEXT" | "TEXT" | "MEDIUMTEXT" | "LONGTEXT" | "ENUM" => {
                                     let final_value_res =
                                         raw_record.get::<Option<String>, usize>(index);

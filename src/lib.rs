@@ -26,6 +26,7 @@ extern crate num_traits;
 extern crate rand;
 extern crate regex;
 extern crate roxmltree;
+extern crate rust_decimal;
 extern crate rustyline;
 extern crate rustyline_derive;
 extern crate searchpath;

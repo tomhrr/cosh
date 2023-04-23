@@ -477,7 +477,10 @@ impl VM {
     /// and "name".
     #[allow(unused_variables)]
     pub fn core_ps(&mut self) -> i32 {
-        let sys = &mut self.sys;
+        let tz = self.utc_tz;
+        self.instantiate_sys();
+        let sysopt = &mut self.sys;
+        let sys = &mut sysopt.as_mut().unwrap();
         sys.refresh_processes();
 
         /* Using the same approach as in nushell for calculating CPU
@@ -567,7 +570,7 @@ impl VM {
 	    let epoch64 = i64::try_from(process.start_time()).unwrap();
 	    let naive = NaiveDateTime::from_timestamp_opt(epoch64, 0).unwrap();
 	    let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
-	    let newdate = datetime.with_timezone(&self.utc_tz);
+	    let newdate = datetime.with_timezone(&tz);
             map.insert(
                 "start".to_string(),
                 Value::DateTimeNT(newdate)

@@ -84,7 +84,7 @@ pub struct VM {
     /// The readline object, for fetching history.
     pub readline: Option<Rc<RefCell<rustyline::Editor<RLHelper>>>>,
     /// A System object, for getting process information.
-    sys: System,
+    sys: Option<System>,
     /// The local time zone.
     local_tz: chrono_tz::Tz,
     /// The UTC timezone.
@@ -382,11 +382,21 @@ impl VM {
             running: Arc::new(AtomicBool::new(true)),
             chunk: Rc::new(RefCell::new(Chunk::new_standard("unused".to_string()))),
             i: 0,
-            sys: System::new_all(),
+            sys: None,
             regexes: HashMap::new(),
             local_tz: chrono_tz::Tz::from_str(&ltz).unwrap(),
             utc_tz: chrono_tz::Tz::from_str("UTC").unwrap(),
             readline: None,
+        }
+    }
+
+    /// Instantiate the VM's system object, if necessary.
+    pub fn instantiate_sys(&mut self) {
+        match self.sys {
+            None => {
+                self.sys = Some(System::new_all());
+            }
+            _ => {}
         }
     }
 

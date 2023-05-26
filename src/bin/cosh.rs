@@ -31,6 +31,7 @@ use rustyline::{
 };
 use tempfile::tempfile;
 
+use cosh::chunk::Chunk;
 use cosh::compiler::Compiler;
 use cosh::vm::VM;
 use cosh::rl::{RLHelper, ShellCompleter};
@@ -38,6 +39,26 @@ use cosh::rl::{RLHelper, ShellCompleter};
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options] file", program);
     print!("{}", opts.usage(&brief));
+}
+
+fn import_coshrc(vm: &mut VM, global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>) {
+    if let Some(home) = home_dir() {
+        let coshrc_path = format!("{}/.coshrc", home.into_os_string().into_string().unwrap());
+        if Path::new(&coshrc_path).exists() {
+            let file_res = fs::File::open(coshrc_path);
+            if let Ok(file) = file_res {
+                let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
+                let chunk_opt = vm.interpret(global_functions.clone(), &mut bufread, ".coshrc");
+                if let Some(chunk) = chunk_opt {
+                    for (k, v) in chunk.borrow().functions.iter() {
+                        if !k.starts_with("anon") {
+                            global_functions.borrow_mut().insert(k.clone(), v.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn main() {
@@ -167,6 +188,7 @@ fn main() {
                 let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())));
                 let mut compiler = Compiler::new();
                 let global_functions = Rc::new(RefCell::new(HashMap::new()));
+                import_coshrc(&mut vm, global_functions.clone());
 
                 if !matches.opt_present("no-rt") {
                     let mut rtchunk_opt = compiler.deserialise(&rt_chc);
@@ -215,23 +237,7 @@ fn main() {
         })
         .unwrap();
 
-        if let Some(home) = home_dir() {
-            let coshrc_path = format!("{}/.coshrc", home.into_os_string().into_string().unwrap());
-            if Path::new(&coshrc_path).exists() {
-                let file_res = fs::File::open(coshrc_path);
-                if let Ok(file) = file_res {
-                    let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                    let chunk_opt = vm.interpret(global_functions.clone(), &mut bufread, ".coshrc");
-                    if let Some(chunk) = chunk_opt {
-                        for (k, v) in chunk.borrow().functions.iter() {
-                            if !k.starts_with("anon") {
-                                global_functions.borrow_mut().insert(k.clone(), v.clone());
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        import_coshrc(&mut vm, global_functions.clone());
 
         let config = Config::builder()
             .history_ignore_space(true)

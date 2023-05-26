@@ -1537,3 +1537,17 @@ fn list_generator_append_test() {
     basic_test("3 range; (1 2 3) ++",
                "v[multi-gen (\n    0: 0\n    1: 1\n    2: 2\n    3: 1\n    4: 2\n    5: 3\n)]");
 }
+
+#[test]
+fn no_zombies() {
+    basic_test(
+        "
+: zs ps; [status get; Zombie =] grep; [pid get] map; s() swap; push for; ,,
+zs; {ls}; drop; zs; symdiff; len; 0 =
+", ".t");
+    basic_test(
+        "
+: zs ps; [status get; Zombie =] grep; [pid get] map; s() swap; push for; ,,
+zs; 10 range; {sort -r} |; take-all; drop; zs; symdiff; len; 0 =
+", ".t");
+}

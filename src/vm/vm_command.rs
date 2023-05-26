@@ -225,7 +225,8 @@ impl VM {
                 let get_bytes = params.contains(&'b');
                 let cmd_generator =
                     Value::CommandGenerator(Rc::new(RefCell::new(CommandGenerator::new(
-                        Some(process),
+                        Some(nix::unistd::Pid::from_raw(process.id() as i32)),
+                        None,
                         noblock_stdout,
                         noblock_stderr,
                         get_stdout,
@@ -305,6 +306,7 @@ impl VM {
                 restore_env(env);
                 match process_ {
                     Ok(mut process) => {
+                        let pipe_pid = process.id();
                         let upstream_stdin_opt = process.stdin;
                         if upstream_stdin_opt.is_none() {
                             let err_str = "unable to get stdin from parent".to_string();
@@ -313,7 +315,7 @@ impl VM {
                         }
                         let mut upstream_stdin = upstream_stdin_opt.unwrap();
                         match fork() {
-                            Ok(ForkResult::Parent { .. }) => {
+                            Ok(ForkResult::Parent { child }) => {
                                 self.stack.pop();
                                 let upstream_stdout_opt = process.stdout.take();
                                 if upstream_stdout_opt.is_none() {
@@ -333,7 +335,8 @@ impl VM {
 
                                 let cmd_generator = Value::CommandGenerator(Rc::new(RefCell::new(
                                     CommandGenerator::new(
-                                        None,
+                                        Some(child),
+                                        Some(nix::unistd::Pid::from_raw(pipe_pid as i32)),
                                         NonBlockingReader::from_fd(upstream_stdout).unwrap(),
                                         NonBlockingReader::from_fd(upstream_stderr).unwrap(),
                                         true,

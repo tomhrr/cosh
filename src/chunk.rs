@@ -18,6 +18,7 @@ use chrono::prelude::*;
 use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
+use nix::{sys::wait::waitpid};
 use nonblock::NonBlockingReader;
 use num::FromPrimitive;
 use num::ToPrimitive;
@@ -388,7 +389,11 @@ impl DBStatement {
 
 /// A command generator object.
 pub struct CommandGenerator {
-    pub process: Option<std::process::Child>,
+    /* The two pids are stored individually, rather than as a list,
+     * because there will only ever be one or two processes that need
+     * to be waited on. */
+    pub pid: Option<nix::unistd::Pid>,
+    pub pid2: Option<nix::unistd::Pid>,
     pub stdout: NonBlockingReader<ChildStdout>,
     pub stderr: NonBlockingReader<ChildStderr>,
     pub stdout_buffer: Vec<u8>,
@@ -401,7 +406,8 @@ pub struct CommandGenerator {
 
 impl CommandGenerator {
     pub fn new(
-        process: Option<std::process::Child>,
+        pid: Option<nix::unistd::Pid>,
+        pid2: Option<nix::unistd::Pid>,
         stdout: NonBlockingReader<ChildStdout>,
         stderr: NonBlockingReader<ChildStderr>,
         get_stdout: bool,
@@ -410,7 +416,8 @@ impl CommandGenerator {
         get_bytes: bool,
     ) -> CommandGenerator {
         CommandGenerator {
-            process,
+            pid,
+            pid2,
             stdout,
             stderr,
             stdout_buffer: Vec::new(),
@@ -571,12 +578,18 @@ impl CommandGenerator {
 }
 
 impl Drop for CommandGenerator {
-    /// Wait on the process when it is dropped.
+    /// Wait on the associated processes when this is dropped.
     #[allow(unused_must_use)]
     fn drop(&mut self) {
-        match self.process {
-            Some(ref mut p) => {
-                p.wait();
+        match self.pid {
+            Some(p) => {
+                waitpid(p, None);
+            }
+            _ => {}
+        }
+        match self.pid2 {
+            Some(p) => {
+                waitpid(p, None);
             }
             _ => {}
         }

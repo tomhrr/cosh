@@ -1176,8 +1176,9 @@ for a standard shell:
 
 Comments can be added by prefixing the comment line with `#`.
 
-On starting the shell for interactive use, the `.coshrc` file in the
-current user's home directory will be run.
+On starting the shell for interactive use or when running a script,
+the `.coshrc` file in the current user's home directory will be run.
+The `--no-coshrc` option can be used to skip loading that file.
 
 When running interactively, the `history` function will return a
 generator over the shell's history.  When not running interactively,

@@ -188,7 +188,6 @@ fn main() {
                 let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())));
                 let mut compiler = Compiler::new();
                 let global_functions = Rc::new(RefCell::new(HashMap::new()));
-                import_coshrc(&mut vm, global_functions.clone());
 
                 if !matches.opt_present("no-rt") {
                     let mut rtchunk_opt = compiler.deserialise(&rt_chc);
@@ -204,6 +203,8 @@ fn main() {
                         global_functions.borrow_mut().insert(k.clone(), v.clone());
                     }
                 }
+
+                import_coshrc(&mut vm, global_functions.clone());
 
                 vm.interpret(global_functions, &mut bufread, "(main)");
             }

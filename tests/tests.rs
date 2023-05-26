@@ -14,7 +14,7 @@ fn add_file() {
 
     let mut cmd = Command::cargo_bin("cosh").unwrap();
     let path = file.path();
-    let assert = cmd.arg(path).assert();
+    let assert = cmd.arg("--no-coshrc").arg(path).assert();
     assert.success().stdout("3\n");
 }
 
@@ -24,7 +24,7 @@ fn basic_test(input: &str, output: &str) {
 
     let mut cmd = Command::cargo_bin("cosh").unwrap();
     let path = file.path();
-    let assert = cmd.arg(path).assert();
+    let assert = cmd.arg("--no-coshrc").arg(path).assert();
     let output2 = format!("{}\n", output);
     assert.success().stdout(output2);
 }
@@ -35,7 +35,7 @@ fn basic_error_test(input: &str, output: &str) {
 
     let mut cmd = Command::cargo_bin("cosh").unwrap();
     let path = file.path();
-    let assert = cmd.arg(path).assert();
+    let assert = cmd.arg("--no-coshrc").arg(path).assert();
     assert.success().stderr(output.to_owned() + "\n");
 }
 

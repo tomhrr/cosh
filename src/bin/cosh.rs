@@ -71,6 +71,7 @@ fn main() {
     opts.optflag("c", "compile", "compile to bytecode");
     opts.optflag("", "disassemble", "disassemble from bytecode");
     opts.optflag("", "no-rt", "run without loading runtime");
+    opts.optflag("", "no-coshrc", "run without loading .coshrc");
     opts.optflag("d", "debug", "show debug information");
     opts.optopt("o", "", "set output file name for compilation", "NAME");
     let matches = match opts.parse(&args[1..]) {
@@ -203,8 +204,9 @@ fn main() {
                         global_functions.borrow_mut().insert(k.clone(), v.clone());
                     }
                 }
-
-                import_coshrc(&mut vm, global_functions.clone());
+                if !matches.opt_present("no-coshrc") {
+                    import_coshrc(&mut vm, global_functions.clone());
+                }
 
                 vm.interpret(global_functions, &mut bufread, "(main)");
             }
@@ -238,7 +240,9 @@ fn main() {
         })
         .unwrap();
 
-        import_coshrc(&mut vm, global_functions.clone());
+        if !matches.opt_present("no-coshrc") {
+            import_coshrc(&mut vm, global_functions.clone());
+        }
 
         let config = Config::builder()
             .history_ignore_space(true)

@@ -388,6 +388,7 @@ impl DBStatement {
 
 /// A command generator object.
 pub struct CommandGenerator {
+    pub process: Option<std::process::Child>,
     pub stdout: NonBlockingReader<ChildStdout>,
     pub stderr: NonBlockingReader<ChildStderr>,
     pub stdout_buffer: Vec<u8>,
@@ -400,6 +401,7 @@ pub struct CommandGenerator {
 
 impl CommandGenerator {
     pub fn new(
+        process: Option<std::process::Child>,
         stdout: NonBlockingReader<ChildStdout>,
         stderr: NonBlockingReader<ChildStderr>,
         get_stdout: bool,
@@ -408,6 +410,7 @@ impl CommandGenerator {
         get_bytes: bool,
     ) -> CommandGenerator {
         CommandGenerator {
+            process,
             stdout,
             stderr,
             stdout_buffer: Vec::new(),
@@ -563,6 +566,19 @@ impl CommandGenerator {
                     return None;
                 }
             }
+        }
+    }
+}
+
+impl Drop for CommandGenerator {
+    /// Wait on the process when it is dropped.
+    #[allow(unused_must_use)]
+    fn drop(&mut self) {
+        match self.process {
+            Some(ref mut p) => {
+                p.wait();
+            }
+            _ => {}
         }
     }
 }

@@ -225,6 +225,7 @@ impl VM {
                 let get_bytes = params.contains(&'b');
                 let cmd_generator =
                     Value::CommandGenerator(Rc::new(RefCell::new(CommandGenerator::new(
+                        Some(process),
                         noblock_stdout,
                         noblock_stderr,
                         get_stdout,
@@ -332,6 +333,7 @@ impl VM {
 
                                 let cmd_generator = Value::CommandGenerator(Rc::new(RefCell::new(
                                     CommandGenerator::new(
+                                        None,
                                         NonBlockingReader::from_fd(upstream_stdout).unwrap(),
                                         NonBlockingReader::from_fd(upstream_stderr).unwrap(),
                                         true,

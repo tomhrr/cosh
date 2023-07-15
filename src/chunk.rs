@@ -18,7 +18,8 @@ use chrono::prelude::*;
 use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
-use nix::sys::signal::Signal;
+use nix::{sys::signal::Signal,
+          sys::wait::waitpid};
 use nonblock::NonBlockingReader;
 use num::FromPrimitive;
 use num::ToPrimitive;
@@ -590,6 +591,7 @@ impl Drop for CommandGenerator {
                         eprintln!("unable to kill process: {}", e);
                     }
                 }
+                waitpid(p, None);
             }
             _ => {}
         }
@@ -602,6 +604,7 @@ impl Drop for CommandGenerator {
                         eprintln!("unable to kill process: {}", e);
                     }
                 }
+                waitpid(p, None);
             }
             _ => {}
         }

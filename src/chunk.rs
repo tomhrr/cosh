@@ -18,7 +18,7 @@ use chrono::prelude::*;
 use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
-use nix::{sys::wait::waitpid};
+use nix::sys::signal::Signal;
 use nonblock::NonBlockingReader;
 use num::FromPrimitive;
 use num::ToPrimitive;
@@ -578,18 +578,30 @@ impl CommandGenerator {
 }
 
 impl Drop for CommandGenerator {
-    /// Wait on the associated processes when this is dropped.
+    /// Kill the associated processes when this is dropped.
     #[allow(unused_must_use)]
     fn drop(&mut self) {
         match self.pid {
             Some(p) => {
-                waitpid(p, None);
+                let res = nix::sys::signal::kill(p, Signal::SIGTERM);
+                match res {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("unable to kill process: {}", e);
+                    }
+                }
             }
             _ => {}
         }
         match self.pid2 {
             Some(p) => {
-                waitpid(p, None);
+                let res = nix::sys::signal::kill(p, Signal::SIGTERM);
+                match res {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("unable to kill process: {}", e);
+                    }
+                }
             }
             _ => {}
         }

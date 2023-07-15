@@ -476,10 +476,7 @@ impl VM {
     /// Push the elements from the last stack (i.e. the stack as at
     /// the conclusion of the last call) onto the stack.
     pub fn core_last(&mut self) -> i32 {
-        for e in self.last_stack.iter() {
-            self.stack.push(e.clone());
-        }
-        self.last_stack.clear();
+        self.stack.append(&mut self.last_stack);
         return 1;
     }
 

@@ -20,7 +20,7 @@ impl VM {
 
     /// Returns the current time as a date-time object, offset at the
     /// local time zone.
-    pub fn core_lcnow(&mut self) -> i32 {
+    pub fn core_date(&mut self) -> i32 {
         let date = chrono::offset::Utc::now();
         let newdate = date.with_timezone(&self.local_tz);
         self.stack.push(Value::DateTimeNT(newdate));

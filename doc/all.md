@@ -970,7 +970,7 @@ JSON and XML can be serialised and deserialised using the
 
  - `now`: returns the current time as a DateTime object, offset at
    UTC.
- - `lcnow`: returns the current time as a DateTime object, offset at
+ - `date`: returns the current time as a DateTime object, offset at
    the local time zone.
  - `from-epoch`: takes the epoch time (i.e. the number of seconds that
    have elapsed since 1970-01-01 00:00:00 UTC) and returns a DateTime

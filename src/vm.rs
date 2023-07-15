@@ -176,7 +176,7 @@ lazy_static! {
         map.insert("|", VM::core_pipe as fn(&mut VM) -> i32);
         map.insert("clone", VM::opcode_clone as fn(&mut VM) -> i32);
         map.insert("now", VM::core_now as fn(&mut VM) -> i32);
-        map.insert("lcnow", VM::core_lcnow as fn(&mut VM) -> i32);
+        map.insert("date", VM::core_date as fn(&mut VM) -> i32);
         map.insert("strftime", VM::core_strftime as fn(&mut VM) -> i32);
         map.insert("to-epoch", VM::core_to_epoch as fn(&mut VM) -> i32);
         map.insert("from-epoch", VM::core_from_epoch as fn(&mut VM) -> i32);

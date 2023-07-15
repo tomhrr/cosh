@@ -827,7 +827,7 @@ fn clone_test() {
 #[test]
 fn date_test() {
     basic_test("now; now; =", ".f");
-    basic_test("lcnow; lcnow; =", ".f");
+    basic_test("date; date; =", ".f");
     basic_test("now; now; <", ".t");
     basic_test("now; now; >", ".f");
     basic_test("now; to-epoch; \\d+ m;", ".t");

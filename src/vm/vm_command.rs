@@ -227,6 +227,7 @@ impl VM {
                     Value::CommandGenerator(Rc::new(RefCell::new(CommandGenerator::new(
                         Some(nix::unistd::Pid::from_raw(process.id() as i32)),
                         None,
+                        None,
                         noblock_stdout,
                         noblock_stderr,
                         get_stdout,
@@ -316,7 +317,7 @@ impl VM {
                         let mut upstream_stdin = upstream_stdin_opt.unwrap();
                         match fork() {
                             Ok(ForkResult::Parent { child }) => {
-                                self.stack.pop();
+                                let input_value = self.stack.pop().unwrap();
                                 let upstream_stdout_opt = process.stdout.take();
                                 if upstream_stdout_opt.is_none() {
                                     let err_str = "unable to get stdout from parent".to_string();
@@ -337,6 +338,7 @@ impl VM {
                                     CommandGenerator::new(
                                         Some(child),
                                         Some(nix::unistd::Pid::from_raw(pipe_pid as i32)),
+                                        Some(input_value),
                                         NonBlockingReader::from_fd(upstream_stdout).unwrap(),
                                         NonBlockingReader::from_fd(upstream_stderr).unwrap(),
                                         true,

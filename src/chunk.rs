@@ -395,6 +395,7 @@ pub struct CommandGenerator {
      * to be waited on. */
     pub pid: Option<nix::unistd::Pid>,
     pub pid2: Option<nix::unistd::Pid>,
+    pub value: Option<Value>,
     pub stdout: NonBlockingReader<ChildStdout>,
     pub stderr: NonBlockingReader<ChildStderr>,
     pub stdout_buffer: Vec<u8>,
@@ -409,6 +410,7 @@ impl CommandGenerator {
     pub fn new(
         pid: Option<nix::unistd::Pid>,
         pid2: Option<nix::unistd::Pid>,
+        value: Option<Value>,
         stdout: NonBlockingReader<ChildStdout>,
         stderr: NonBlockingReader<ChildStderr>,
         get_stdout: bool,
@@ -419,6 +421,7 @@ impl CommandGenerator {
         CommandGenerator {
             pid,
             pid2,
+            value,
             stdout,
             stderr,
             stdout_buffer: Vec::new(),

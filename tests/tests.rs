@@ -1551,3 +1551,8 @@ zs; {ls}; drop; zs; symdiff; len; 0 =
 zs; 10 range; {sort -r} |; take-all; drop; zs; symdiff; len; 0 =
 ", ".t");
 }
+
+#[test]
+fn dir_open_error() {
+    basic_error_test("eg r open", "1:6: unable to open file: is a directory");
+}

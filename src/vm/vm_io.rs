@@ -55,14 +55,31 @@ impl VM {
                 "r" => match path_str_opt {
                     Some(s) => {
                         let ss = tilde_expansion(s);
-                        let file_res = File::open(ss);
-                        match file_res {
-                            Ok(file) => {
-                                self.stack.push(Value::FileReader(Rc::new(RefCell::new(
-                                    BufReaderWithBuffer::new(
-                                        BufReader::new(file)
-                                    )
-                                ))));
+                        let metadata_res = metadata(ss.clone());
+                        match metadata_res {
+                            Ok(metadata) => {
+                                let is_dir = metadata.is_dir();
+                                if !is_dir {
+                                    let file_res = File::open(ss);
+                                    match file_res {
+                                        Ok(file) => {
+                                            self.stack.push(Value::FileReader(Rc::new(RefCell::new(
+                                                BufReaderWithBuffer::new(
+                                                    BufReader::new(file)
+                                                )
+                                            ))));
+                                        }
+                                        Err(e) => {
+                                            let err_str = format!("unable to open file: {}", e);
+                                            self.print_error(&err_str);
+                                            return 0;
+                                        }
+                                    }
+                                } else {
+                                    let err_str = format!("unable to open file: is a directory");
+                                    self.print_error(&err_str);
+                                    return 0;
+                                }
                             }
                             Err(e) => {
                                 let err_str = format!("unable to open file: {}", e);

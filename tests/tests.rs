@@ -1556,3 +1556,8 @@ zs; 10 range; {sort -r} |; take-all; drop; zs; symdiff; len; 0 =
 fn dir_open_error() {
     basic_error_test("eg r open", "1:6: unable to open file: is a directory");
 }
+
+#[test]
+fn ipset_clone() {
+    basic_test("103.0.0.0/8 ips; dup; clone; ++; len;", "2");
+}

@@ -1759,7 +1759,9 @@ impl Value {
             Value::Ipv4Range(_) => self.clone(),
             Value::Ipv6(_) => self.clone(),
             Value::Ipv6Range(_) => self.clone(),
-            Value::IpSet(_) => self.clone(),
+            Value::IpSet(ipset_ref) => {
+                Value::IpSet(Rc::new(RefCell::new(ipset_ref.borrow().clone())))
+            },
             Value::MultiGenerator(_) => self.clone(),
             Value::HistoryGenerator(_) => self.clone(),
             Value::DBConnection(_) => self.clone(),

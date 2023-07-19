@@ -477,7 +477,7 @@ impl VM {
     /// and "name".
     #[allow(unused_variables)]
     pub fn core_ps(&mut self) -> i32 {
-        let tz = self.utc_tz;
+        let tz = self.local_tz;
         self.instantiate_sys();
         let sysopt = &mut self.sys;
         let sys = &mut sysopt.as_mut().unwrap();

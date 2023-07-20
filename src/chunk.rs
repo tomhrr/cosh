@@ -208,6 +208,23 @@ impl BufReaderWithBuffer {
         }
     }
 
+    fn fill_buffer(&mut self) -> i32 {
+        let n_res = self.reader.read(&mut self.buffer);
+        match n_res {
+            Ok(n) => {
+                if n == 0 {
+                    return 0;
+                }
+                self.buffer_index = 0;
+                self.buffer_limit = n as i32;
+                return 1;
+            }
+            Err(_) => {
+                return -1;
+            }
+        }
+    }
+
     pub fn read(&mut self, mut n: usize) -> Option<Value> {
         let mut buflst = VecDeque::new();
         while n > 0 {
@@ -227,18 +244,11 @@ impl BufReaderWithBuffer {
                     self.buffer_limit = -1;
                 }
             } else {
-                let n_res = self.reader.read(&mut self.buffer);
-                match n_res {
-                    Ok(n) => {
-                        if n == 0 {
-                            break;
-                        }
-                        self.buffer_index = 0;
-                        self.buffer_limit = n as i32;
-                    }
-                    Err(_) => {
-                        return None;
-                    }
+                let res = self.fill_buffer();
+                if res == 0 {
+                    break;
+                } else if res == -1 {
+                    return None;
                 }
             }
         }
@@ -251,60 +261,50 @@ impl BufReaderWithBuffer {
 
     pub fn readline(&mut self) -> Option<Value> {
         if self.buffer_index == -1 {
-            let mut contents = String::new();
-            let res = self.reader.read_line(&mut contents);
-            match res {
-                Ok(0) => {
-                    Some(Value::Null)
-                }
-                Ok(_) => {
-                    Some(
-                        Value::String(Rc::new(RefCell::new(StringTriple::new(
-                            contents, None,
-                        ))))
-                    )
-                }
-                _ => None
+            let res = self.fill_buffer();
+            if res == 0 {
+                return Some(Value::Null);
+            } else if res == -1 {
+                return None;
             }
-        } else {
-            let mut i = self.buffer_index;
-            let mut found = false;
-            while i < self.buffer_limit {
-                if self.buffer[i as usize] == '\n' as u8 {
-                    i += 1;
-                    found = true;
-                    break;
-                }
+        }
+
+        let mut i = self.buffer_index;
+        let mut found = false;
+        while i < self.buffer_limit {
+            if self.buffer[i as usize] == '\n' as u8 {
                 i += 1;
+                found = true;
+                break;
             }
-            if found {
-                let slice = &self.buffer[self.buffer_index as usize..i as usize];
-                let s = String::from_utf8_lossy(slice);
-                if self.buffer_index == self.buffer_limit - 1 {
+            i += 1;
+        }
+        if found {
+            let slice = &self.buffer[self.buffer_index as usize..i as usize];
+            let s = String::from_utf8_lossy(slice);
+            self.buffer_index = i;
+            if self.buffer_index == self.buffer_limit {
+                self.buffer_index = -1;
+                self.buffer_limit = -1;
+            }
+            Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                s.to_string(), None
+            )))))
+        } else {
+            let mut sbuf = Vec::new();
+            let res = self.reader.read_until('\n' as u8, &mut sbuf);
+            match res {
+                Ok(_) => {
+                    let bufvec = &mut self.buffer[self.buffer_index as usize..].to_vec();
+                    bufvec.append(&mut sbuf);
+                    let s = String::from_utf8_lossy(bufvec);
                     self.buffer_index = -1;
                     self.buffer_limit = -1;
-                } else {
-                    self.buffer_index = i;
+                    Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                        s.to_string(), None
+                    )))))
                 }
-                Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                    s.to_string(), None
-                )))))
-            } else {
-                let mut sbuf = Vec::new();
-                let res = self.reader.read_until('\n' as u8, &mut sbuf);
-                match res {
-                    Ok(_) => {
-                        let bufvec = &mut self.buffer[self.buffer_index as usize..].to_vec();
-                        bufvec.append(&mut sbuf);
-                        let s = String::from_utf8_lossy(bufvec);
-                        self.buffer_index = -1;
-                        self.buffer_limit = -1;
-                        Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                            s.to_string(), None
-                        )))))
-                    }
-                    _ => None
-                }
+                _ => None
             }
         }
     }

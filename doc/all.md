@@ -28,6 +28,7 @@ cosh is a concatenative command-line shell.
     * [JSON/XML Parsing](#jsonxml-parsing)
     * [Datetimes](#datetimes)
     * [IP addresses](#ip-addresses)
+    * [Networking](#networking)
     * [Miscellaneous functions](#miscellaneous-functions)
  * [External program execution](#external-program-execution)
  * [Miscellaneous](#miscellaneous)
@@ -1035,6 +1036,18 @@ functions as a standard set, but it will additionally simplify the set
 after each call to the minimum set of prefixes required to cover the
 address space in the set.  Finally, `=` is also defined for IP sets,
 and `str` is defined for both IP objects and IP sets.
+
+#### Networking
+
+ - `ping`: takes a single IP address or hostname as a string, and
+   returns a boolean indicating whether the host is able to respond to
+   a ping within five seconds.
+ - `pingn`: takes a single IP address or hostname, along with a ping
+   count, and returns a generator over a set of ping results for the
+   host.  Each ping result is a hash comprising the ICMP sequence
+   number of the ping attempt, the TTL of the response packet, and the
+   time it took to receive the response.  The generator will return
+   results as they are received.
 
 #### Miscellaneous functions
 

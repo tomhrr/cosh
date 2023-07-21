@@ -606,3 +606,32 @@
             leave;
         then;
         .f until; ,,
+
+# ping and pingn are implemented by calling ping(1), to avoid needing
+# root privileges in the shell.
+: ping
+    depth; 1 <; if;
+        "ping requires one argument" error;
+    then;
+    {ping -c 1 -W 5 {}}/oe; r;
+    ["1 received" m] first;
+    is-null; not;
+    ,,
+
+: pingn
+    depth; 2 <; if;
+        "pingn requires two arguments" error;
+    then;
+    {ping -c {} -W 5 {}};
+    ["bytes from" m] grep;
+    ["icmp_seq=(\d+) ttl=(\d+) time=(\d+\.\d+) (.*)" c;
+     dup; shift; drop; results var; results !;
+     h() res var; res !;
+     res @; "icmp_seq" results @; shift; set;
+            "ttl"      results @; shift; set;
+            "time_ms"  results @; shift; set; drop;
+     results @; shift; s =; if;
+        res @; time [1000 *] time hm; drop;
+     then;
+     res @] map;
+    ,,

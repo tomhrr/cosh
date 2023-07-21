@@ -12,11 +12,6 @@ fn int_to_bigint(i: i32) -> Value {
     Value::BigInt(BigInt::from_i32(i).unwrap())
 }
 
-/// Convert a bigint to a floating-point value.
-fn bigint_to_float(i: &BigInt) -> Value {
-    Value::Float(FromPrimitive::from_u64(i.to_u64().unwrap()).unwrap())
-}
-
 /// Convert an i32 to a floating-point value.
 fn int_to_float(i: i32) -> Value {
     Value::Float(FromPrimitive::from_i32(i).unwrap())
@@ -105,8 +100,6 @@ impl VM {
                 self.stack.push(Value::Float(n1 + n2));
                 1
             }
-            (Value::BigInt(n1), Value::Float(_)) => self.opcode_add_inner(&bigint_to_float(n1), v2),
-            (Value::Float(_), Value::BigInt(n2)) => self.opcode_add_inner(v1, &bigint_to_float(n2)),
             (Value::Int(n1), Value::Float(_)) => self.opcode_add_inner(&int_to_float(*n1), v2),
             (Value::Float(_), Value::Int(n2)) => self.opcode_add_inner(v1, &int_to_float(*n2)),
             (_, _) => {
@@ -187,12 +180,6 @@ impl VM {
             (Value::Float(n1), Value::Float(n2)) => {
                 self.stack.push(Value::Float(n2 - n1));
                 1
-            }
-            (Value::BigInt(n1), Value::Float(_)) => {
-                self.opcode_subtract_inner(&bigint_to_float(n1), v2)
-            }
-            (Value::Float(_), Value::BigInt(n2)) => {
-                self.opcode_subtract_inner(v1, &bigint_to_float(n2))
             }
             (Value::Int(n1), Value::Float(_)) => self.opcode_subtract_inner(&int_to_float(*n1), v2),
             (Value::Float(_), Value::Int(n2)) => self.opcode_subtract_inner(v1, &int_to_float(*n2)),
@@ -276,12 +263,6 @@ impl VM {
                 self.stack.push(Value::Float(n1 * n2));
                 1
             }
-            (Value::BigInt(n1), Value::Float(_)) => {
-                self.opcode_multiply_inner(&bigint_to_float(n1), v2)
-            }
-            (Value::Float(_), Value::BigInt(n2)) => {
-                self.opcode_multiply_inner(v1, &bigint_to_float(n2))
-            }
             (Value::Int(n1), Value::Float(_)) => self.opcode_multiply_inner(&int_to_float(*n1), v2),
             (Value::Float(_), Value::Int(n2)) => self.opcode_multiply_inner(v1, &int_to_float(*n2)),
             (_, _) => {
@@ -358,12 +339,6 @@ impl VM {
             (Value::Float(n1), Value::Float(n2)) => {
                 self.stack.push(Value::Float(n2 / n1));
                 1
-            }
-            (Value::BigInt(n1), Value::Float(_)) => {
-                self.opcode_divide_inner(&bigint_to_float(n1), v2)
-            }
-            (Value::Float(_), Value::BigInt(n2)) => {
-                self.opcode_divide_inner(v1, &bigint_to_float(n2))
             }
             (Value::Int(n1), Value::Float(_)) => self.opcode_divide_inner(&int_to_float(*n1), v2),
             (Value::Float(_), Value::Int(n2)) => self.opcode_divide_inner(v1, &int_to_float(*n2)),
@@ -518,8 +493,6 @@ impl VM {
                     0
                 }
             }
-            (Value::BigInt(n1), Value::Float(_)) => self.opcode_eq_inner(&bigint_to_float(n1), v2),
-            (Value::Float(_), Value::BigInt(n2)) => self.opcode_eq_inner(v1, &bigint_to_float(n2)),
             (Value::Int(n1), Value::Float(_)) => self.opcode_eq_inner(&int_to_float(*n1), v2),
             (Value::Float(_), Value::Int(n2)) => self.opcode_eq_inner(v1, &int_to_float(*n2)),
             (Value::Float(n1), Value::Float(n2)) => {
@@ -632,8 +605,6 @@ impl VM {
                     0
                 }
             }
-            (Value::BigInt(n1), Value::Float(_)) => self.opcode_gt_inner(&bigint_to_float(n1), v2),
-            (Value::Float(_), Value::BigInt(n2)) => self.opcode_gt_inner(v1, &bigint_to_float(n2)),
             (Value::Int(n1), Value::Float(_)) => self.opcode_gt_inner(&int_to_float(*n1), v2),
             (Value::Float(_), Value::Int(n2)) => self.opcode_gt_inner(v1, &int_to_float(*n2)),
             (Value::Float(n1), Value::Float(n2)) => {
@@ -746,8 +717,6 @@ impl VM {
                     0
                 }
             }
-            (Value::BigInt(n1), Value::Float(_)) => self.opcode_lt_inner(&bigint_to_float(n1), v2),
-            (Value::Float(_), Value::BigInt(n2)) => self.opcode_lt_inner(v1, &bigint_to_float(n2)),
             (Value::Int(n1), Value::Float(_)) => self.opcode_lt_inner(&int_to_float(*n1), v2),
             (Value::Float(_), Value::Int(n2)) => self.opcode_lt_inner(v1, &int_to_float(*n2)),
             (Value::Float(n1), Value::Float(n2)) => {
@@ -849,8 +818,6 @@ impl VM {
             (Value::BigInt(_), Value::Int(n2)) => self.opcode_cmp_inner(v1, &int_to_bigint(*n2)),
             (Value::Int(n1), Value::BigInt(_)) => self.opcode_cmp_inner(&int_to_bigint(*n1), v2),
             (Value::Int(n1), Value::Int(n2)) => n2.cmp(n1) as i32,
-            (Value::BigInt(n1), Value::Float(_)) => self.opcode_cmp_inner(&bigint_to_float(n1), v2),
-            (Value::Float(_), Value::BigInt(n2)) => self.opcode_cmp_inner(v1, &bigint_to_float(n2)),
             (Value::Int(n1), Value::Float(_)) => self.opcode_cmp_inner(&int_to_float(*n1), v2),
             (Value::Float(_), Value::Int(n2)) => self.opcode_cmp_inner(v1, &int_to_float(*n2)),
             (Value::Float(n1), Value::Float(n2)) => n2.partial_cmp(n1).unwrap() as i32,

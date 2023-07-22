@@ -1049,6 +1049,11 @@ and `str` is defined for both IP objects and IP sets.
    time it took to receive the response.  The generator will return
    results as they are received.
 
+ - `dig`: takes a DNS record type and a DNS name, and returns the DNS
+   response for that query.  The result from the call is a hash,
+   including separate entries for the header, question, answer, and
+   authority sections from the DNS response.
+
 #### Miscellaneous functions
 
 `rand` takes a floating-point value and returns a random value between

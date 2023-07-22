@@ -635,3 +635,107 @@
      then;
      res @] map;
     ,,
+
+: _list-to-hash
+    input var; input !;
+    h() result var; result !;
+    begin;
+        input @; len; 0 =; if;
+            leave;
+        then;
+        result @; input @; 2 take;
+        dup; shift; swap; shift; set; drop;
+        0 until;
+    result @;
+    ,,
+
+: _dig-header
+    response var; response !;
+    results var; results !;
+
+    results @; ["<<>>" m] first;
+    dup; is-null; if;
+        "no top section in response" error;
+    then;
+    top var; top !;
+    top @; "->>HEADER<<- (.*)\n" c; 1 get;
+    dup; is-null; if;
+        "no header section in response" error;
+    then;
+    ,\s* splitr; [\s*:\s* splitr] map; flatten; r; _list-to-hash;
+    response @; header rot; set; drop;
+    ,,
+
+: _dig-questions
+    response var; response !;
+    results var; results !;
+
+    results @; ["QUESTION SECTION" m] first;
+    dup; is-null; not; if;
+        "QUESTION SECTION:\n;(.*)" c; 1 get; \s+ splitr;
+        qlist var; qlist !;
+        h() question var; question !;
+        question @; name  qlist @; shift; set;
+                    type  qlist @; shift; set;
+                    class qlist @; shift; set;
+        response @; question rot; set; drop;
+    else;
+        drop;
+    then;
+    ,,
+
+: _dig-rrs
+    section-name var; section-name !;
+    response-name var; response-name !;
+    response var; response !;
+    results var; results !;
+
+    results @; [section-name @; " SECTION" ++; m] first;
+    dup; is-null; not; if;
+        ".*" section-name @; ++; " SECTION:\n" ++; '' s; \n splitr;
+        elist var; elist !;
+        () entries var; entries !;
+        begin;
+            elist @; len; 0 =; if;
+                leave;
+            then;
+            elist @; shift; \s+ splitr; e var; e !;
+            h() entry var; entry !;
+            entry @; name  e @; shift; set;
+                     ttl   e @; shift; set;
+                     class e @; shift; set;
+                     type  e @; shift; set;
+                     rdata e @; " " join; set;
+            entries @; swap; push; drop;
+            0 until;
+        response @; response-name @; entries @; set; drop;
+    else;
+        drop;
+    then;
+    ,,
+
+: dig
+    depth; 2 <; if;
+        "dig requires one argument" error;
+    then;
+    {dig {} {}}; r;
+    "" join;
+    "\n\n" split;
+    [^\s* '' s; \s*$ '' s] map; r;
+    results var; results !;
+
+    h() response var; response !;
+
+    results @; clone; response @;
+    _dig-header;
+
+    results @; clone; response @;
+    _dig-questions;
+
+    results @; clone; response @; answer     ANSWER     _dig-rrs;
+    results @; clone; response @; additional ADDITIONAL _dig-rrs;
+    results @; clone; response @; authority  AUTHORITY  _dig-rrs;
+
+    response @;
+
+    ,,

@@ -1053,6 +1053,12 @@ and `str` is defined for both IP objects and IP sets.
    response for that query.  The result from the call is a hash,
    including separate entries for the header, question, answer, and
    authority sections from the DNS response.
+ - `dig/t`: like `dig +trace`, so the result from the call is a
+   generator over a series of hashes, where each hash contains the
+   answer from the next level of the hierarchy, starting at the root.
+ - `digat`: takes a DNS record type, a DNS name, and a nameserver IP
+   address or hostname.  Queries the nameserver and returns a response
+   with the same format as `dig`.
 
 #### Miscellaneous functions
 

@@ -645,7 +645,7 @@
         then;
         result @; input @; 2 take;
         dup; shift; swap; shift; set; drop;
-        0 until;
+        .f until;
     result @;
     ,,
 
@@ -685,6 +685,29 @@
     ,,
 
 : _dig-rrs
+    response-name var; response-name !;
+    response var; response !;
+    elist var; elist !;
+
+    () entries var; entries !;
+    begin;
+        elist @; len; 0 =; if;
+            leave;
+        then;
+        elist @; shift; \s+ splitr; e var; e !;
+        h() entry var; entry !;
+        entry @; name  e @; shift; set;
+                    ttl   e @; shift; set;
+                    class e @; shift; set;
+                    type  e @; shift; set;
+                    rdata e @; " " join; set;
+        entries @; swap; push; drop;
+        .f until;
+    response @; response-name @; entries @; set; drop;
+    response @;
+    ,,
+
+: _dig-rrs-section
     section-name var; section-name !;
     response-name var; response-name !;
     response var; response !;
@@ -693,30 +716,16 @@
     results @; [section-name @; " SECTION" ++; m] first;
     dup; is-null; not; if;
         ".*" section-name @; ++; " SECTION:\n" ++; '' s; \n splitr;
-        elist var; elist !;
-        () entries var; entries !;
-        begin;
-            elist @; len; 0 =; if;
-                leave;
-            then;
-            elist @; shift; \s+ splitr; e var; e !;
-            h() entry var; entry !;
-            entry @; name  e @; shift; set;
-                     ttl   e @; shift; set;
-                     class e @; shift; set;
-                     type  e @; shift; set;
-                     rdata e @; " " join; set;
-            entries @; swap; push; drop;
-            0 until;
-        response @; response-name @; entries @; set; drop;
-    else;
-        drop;
+        response @;
+        response-name @;
+        _dig-rrs;
     then;
+    drop;
     ,,
 
 : dig
     depth; 2 <; if;
-        "dig requires one argument" error;
+        "dig requires two arguments" error;
     then;
     {dig {} {}}; r;
     "" join;
@@ -732,10 +741,56 @@
     results @; clone; response @;
     _dig-questions;
 
-    results @; clone; response @; answer     ANSWER     _dig-rrs;
-    results @; clone; response @; additional ADDITIONAL _dig-rrs;
-    results @; clone; response @; authority  AUTHORITY  _dig-rrs;
+    results @; clone; response @; answer     ANSWER     _dig-rrs-section;
+    results @; clone; response @; additional ADDITIONAL _dig-rrs-section;
+    results @; clone; response @; authority  AUTHORITY  _dig-rrs-section;
 
     response @;
+    ,,
 
+:~ dig/t 2 2
+    drop;
+    depth; 2 <; if;
+        "dig/t requires two arguments" error;
+    then;
+    {dig +trace {} {}};
+    results var; results !;
+    results @; shift; drop;
+    results @; shift; drop;
+    results @; shift; drop;
+    begin;
+        results @; [\n =] before;
+        ["^;;" m; not] grep; r;
+        dup; clone; len; 0 =; if;
+            drop;
+            null yield;
+        then;
+        h() answer _dig-rrs;
+        yield;
+        .f until;
+    ,,
+
+: digat
+    depth; 3 <; if;
+        "digat requires three arguments" error;
+    then;
+    {dig @{} {} {}}; r;
+    "" join;
+    "\n\n" split;
+    [^\s* '' s; \s*$ '' s] map; r;
+    results var; results !;
+
+    h() response var; response !;
+
+    results @; clone; response @;
+    _dig-header;
+
+    results @; clone; response @;
+    _dig-questions;
+
+    results @; clone; response @; answer     ANSWER     _dig-rrs-section;
+    results @; clone; response @; additional ADDITIONAL _dig-rrs-section;
+    results @; clone; response @; authority  AUTHORITY  _dig-rrs-section;
+
+    response @;
     ,,

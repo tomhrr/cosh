@@ -697,11 +697,61 @@
         elist @; shift; \s+ splitr; e var; e !;
         h() entry var; entry !;
         entry @; name  e @; shift; set;
-                    ttl   e @; shift; set;
-                    class e @; shift; set;
-                    type  e @; shift; set;
-                    rdata e @; " " join; set;
+                 ttl   e @; shift; set;
+                 class e @; shift; set;
+                 type  e @; shift; set;
+                 rdata e @;
+                    dup; clone;
+                    rdata var; rdata !;
+                    " " join; set;
         entries @; swap; push; drop;
+
+        h() sdata var; sdata !;
+        entry @; type get;
+        dup; is-null; not; if;
+            dup; A =; if;
+                sdata @; address  rdata @; 0 get; set; drop;
+            else; dup; AAAA =; if;
+                sdata @; address  rdata @; 0 get; set; drop;
+            else; dup; NS =; if;
+                sdata @; nsdname  rdata @; 0 get; set; drop;
+            else; dup; CNAME =; if;
+                sdata @; cname    rdata @; 0 get; set; drop;
+            else; dup; PTR =; if;
+                sdata @; ptrdname rdata @; 0 get; set; drop;
+            else; dup; TXT =; if;
+                sdata @; txtdata  rdata @; 0 get; set; drop;
+            else; dup; MX =; if;
+                sdata @; preference rdata @; 0 get; set;
+                         exchange   rdata @; 1 get; set; drop;
+            else; dup; SOA =; if;
+                sdata @; mname   rdata @; 0 get; set;
+                         rname   rdata @; 1 get; set;
+                         serial  rdata @; 2 get; set;
+                         refresh rdata @; 3 get; set;
+                         retry   rdata @; 4 get; set;
+                         expire  rdata @; 5 get; set;
+                         minimum rdata @; 6 get; set; drop;
+            else; dup; DS =; if;
+                sdata @; keytag    rdata @; shift; set;
+                         algorithm rdata @; shift; set;
+                         digtype   rdata @; shift; set;
+                         digest    rdata @; " " join; set; drop
+            else; dup; DNSKEY =; if;
+                sdata @; flags     rdata @; shift; set;
+                         protocol  rdata @; shift; set;
+                         algorithm rdata @; shift; set;
+                         keybin    rdata @; " " join; set; drop
+            then; then; then; then; then; then; then; then; then; then;
+            drop;
+        else;
+            drop;
+        then;
+
+        sdata @; len; 0 =; not; if;
+            entry @; sdata sdata @; set; drop;
+        then;
+
         .f until;
     response @; response-name @; entries @; set; drop;
     response @;

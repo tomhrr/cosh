@@ -14,7 +14,8 @@ use crate::chunk::{StringTriple, Value, BufReaderWithBuffer};
 use crate::vm::*;
 
 lazy_static! {
-    static ref HOME_DIR_TILDE: Regex = Regex::new("~").unwrap();
+    static ref HOME_DIR_TILDE:   Regex = Regex::new("~").unwrap();
+    static ref TRAILING_SLASHES: Regex = Regex::new("/*$").unwrap();
 }
 
 /// Takes a path, and replaces any ~ characters with the user's home
@@ -345,7 +346,8 @@ impl VM {
         match path_str_opt {
             Some(s) => {
                 let ss = tilde_expansion(s);
-                let dir_handle_res = std::fs::read_dir(ss);
+                let ss2 = TRAILING_SLASHES.replace_all(&ss, "").to_string();
+                let dir_handle_res = std::fs::read_dir(ss2);
                 match dir_handle_res {
                     Ok(dir_handle) => {
                         self.stack

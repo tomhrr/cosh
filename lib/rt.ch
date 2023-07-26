@@ -624,7 +624,7 @@
     then;
     {ping -c {} -W 5 {}};
     ["bytes from" m] grep;
-    ["icmp_seq=(\d+) ttl=(\d+) time=(\d+\.\d+) (.*)" c;
+    ["icmp_seq=(\d+) ttl=(\d+) time=(\d+\.?\d+?) (.*)" c;
      dup; shift; drop; results var; results !;
      h() res var; res !;
      res @; "icmp_seq" results @; shift; set;

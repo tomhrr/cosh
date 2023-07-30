@@ -24,7 +24,8 @@ use nonblock::NonBlockingReader;
 use num::FromPrimitive;
 use num::ToPrimitive;
 use num_bigint::BigInt;
-use num_traits::Zero;
+use num_traits::{Zero, Num};
+use pipe_channel::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::{ChildStderr, ChildStdout};
@@ -47,7 +48,7 @@ pub struct Chunk {
     /// bytecode vector.
     pub points: Vec<(u32, u32)>,
     /// The set of constant values for the chunk.
-    pub constants: Vec<ValueSD>,
+    pub constants: Vec<ValueLiteral>,
     /// The functions defined within the chunk.
     pub functions: HashMap<String, Rc<RefCell<Chunk>>>,
     #[serde(skip)]
@@ -388,6 +389,20 @@ impl DBStatement {
     }
 }
 
+/// A channel generator object.
+#[derive(Debug)]
+pub struct ChannelGenerator {
+    pub rx: Receiver<ValueTS>,
+    pub pid: nix::unistd::Pid,
+    pub finished: bool,
+}
+
+impl ChannelGenerator {
+    pub fn new(rx: Receiver<ValueTS>, pid: nix::unistd::Pid) -> ChannelGenerator {
+        ChannelGenerator { rx, pid, finished: false }
+    }
+}
+
 /// A command generator object.
 pub struct CommandGenerator {
     /* The two pids are stored individually, rather than as a list,
@@ -614,6 +629,22 @@ impl Drop for CommandGenerator {
     }
 }
 
+impl Drop for ChannelGenerator {
+    /// Kill the associated process when this is dropped.
+    #[allow(unused_must_use)]
+    fn drop(&mut self) {
+        let p = self.pid;
+        let res = nix::sys::signal::kill(p, Signal::SIGTERM);
+        match res {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("unable to kill process: {}", e);
+            }
+        }
+        waitpid(p, None);
+    }
+}
+
 /// The core value type used by the compiler and VM.
 #[derive(Clone)]
 pub enum Value {
@@ -694,6 +725,8 @@ pub enum Value {
     DBConnection(Rc<RefCell<DBConnection>>),
     /// A database statement.
     DBStatement(Rc<RefCell<DBStatement>>),
+    /// A generator from a channel from a forked process.
+    ChannelGenerator(Rc<RefCell<ChannelGenerator>>),
 }
 
 impl fmt::Debug for Value {
@@ -802,15 +835,17 @@ impl fmt::Debug for Value {
             Value::DBStatement(_) => {
                 write!(f, "((DBStatement))")
             }
+            Value::ChannelGenerator(_) => {
+                write!(f, "((ChannelGenerator))")
+            }
         }
     }
 }
 
-/// An enum for the Value types that can be serialised and
-/// deserialised (i.e. those that can be stored as constants in a
-/// chunk).
+/// An enum for the Value types that can be parsed from literals,
+/// being those that can be stored as constants in a chunk.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ValueSD {
+pub enum ValueLiteral {
     Null,
     Bool(bool),
     Int(i32),
@@ -819,6 +854,111 @@ pub enum ValueSD {
     String(String, String),
     Command(String, HashSet<char>),
     CommandUncaptured(String),
+}
+
+/// An enum for the Value types that can be serialised and
+/// deserialised, being those that can be passed from/to a child
+/// process (see pmap).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ValueSD {
+    Null,
+    Bool(bool),
+    Int(i32),
+    Float(f64),
+    BigInt(String),
+    String(String),
+    List(VecDeque<ValueSD>),
+    Hash(IndexMap<String, ValueSD>),
+    /* todo: Add the remaining types here. */
+}
+
+pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
+    match value_sd {
+        ValueSD::Null => Value::Null,
+        ValueSD::Bool(b) => Value::Bool(b),
+        ValueSD::Int(n) => Value::Int(n),
+        ValueSD::Float(f) => Value::Float(f),
+        ValueSD::BigInt(bis) =>
+            Value::BigInt(BigInt::from_str_radix(&bis, 10).unwrap()),
+        ValueSD::String(s) =>
+            Value::String(Rc::new(RefCell::new(StringTriple::new(s, None)))),
+        ValueSD::List(lst) => {
+            let mut vds = VecDeque::new();
+            for e in lst.iter() {
+                vds.push_back(valuesd_to_value((*e).clone()));
+            }
+            Value::List(Rc::new(RefCell::new(vds)))
+        }
+        ValueSD::Hash(im) => {
+            let mut newim = IndexMap::new();
+            for (k, v) in im.iter() {
+                newim.insert(k.clone(), valuesd_to_value(v.clone()));
+            }
+            Value::Hash(Rc::new(RefCell::new(newim)))
+        }
+        _ => Value::Null
+    }
+}
+
+pub fn value_to_valuesd(value: Value) -> ValueSD {
+    match value {
+        Value::Null => ValueSD::Null,
+        Value::Bool(b) => ValueSD::Bool(b),
+        Value::Int(n) => ValueSD::Int(n),
+        Value::Float(f) => ValueSD::Float(f),
+        Value::BigInt(bi) => ValueSD::BigInt(bi.to_str_radix(10)),
+        Value::String(s) => ValueSD::String(s.borrow().string.clone()),
+        Value::List(lst_rr) => {
+            let vd = lst_rr.borrow();
+            let mut vds = VecDeque::new();
+            for e in vd.iter() {
+                vds.push_back(value_to_valuesd(e.clone()));
+            }
+            ValueSD::List(vds)
+        }
+        Value::Hash(im_rr) => {
+            let im = im_rr.borrow();
+            let mut newim = IndexMap::new();
+            for (k, v) in im.iter() {
+                newim.insert(k.clone(), value_to_valuesd(v.clone()));
+            }
+            ValueSD::Hash(newim)
+        }
+        _ => ValueSD::Null
+    }
+}
+
+pub struct ValueTS {
+    pub len: i32,
+    pub data: [u8; 1024],
+}
+
+impl ValueTS {
+    pub fn new() -> ValueTS {
+        let len = 0;
+        let data: [u8; 1024] = [0; 1024];
+        ValueTS { len, data }
+    }
+}
+
+pub fn valuesd_to_valuets(value: ValueSD) -> ValueTS {
+    let mut vts: ValueTS = ValueTS::new();
+    let vec = bincode::serialize(&value).unwrap();
+    let len = vec.len();
+    vts.len = len as i32;
+    for i in 0..len {
+        vts.data[i] = *vec.get(i).unwrap();
+    }
+    return vts;
+}
+
+pub fn valuets_to_valuesd(value: ValueTS) -> ValueSD {
+    let mut vec = Vec::new();
+    for i in 0..value.len {
+        vec.push(value.data[i as usize]);
+    }
+    let vsd = bincode::deserialize(&vec).unwrap();
+    return vsd;
 }
 
 /// Takes a chunk, an instruction index, and an error message as its
@@ -883,17 +1023,17 @@ impl Chunk {
     /// the constants list (for later calls to `get_constant`).
     pub fn add_constant(&mut self, value_rr: Value) -> i32 {
         let value_sd = match value_rr {
-            Value::Null => ValueSD::Null,
-            Value::Int(n) => ValueSD::Int(n),
-            Value::Float(n) => ValueSD::Float(n),
-            Value::BigInt(n) => ValueSD::BigInt(n.to_str_radix(10)),
-            Value::String(st) => ValueSD::String(
+            Value::Null => ValueLiteral::Null,
+            Value::Int(n) => ValueLiteral::Int(n),
+            Value::Float(n) => ValueLiteral::Float(n),
+            Value::BigInt(n) => ValueLiteral::BigInt(n.to_str_radix(10)),
+            Value::String(st) => ValueLiteral::String(
                 st.borrow().string.to_string(),
                 st.borrow().escaped_string.to_string(),
             ),
-            Value::Command(s, params) => ValueSD::Command(s.to_string(), (*params).clone()),
-            Value::CommandUncaptured(s) => ValueSD::CommandUncaptured(s.to_string()),
-            Value::Bool(b) => ValueSD::Bool(b),
+            Value::Command(s, params) => ValueLiteral::Command(s.to_string(), (*params).clone()),
+            Value::CommandUncaptured(s) => ValueLiteral::CommandUncaptured(s.to_string()),
+            Value::Bool(b) => ValueLiteral::Bool(b),
             _ => {
                 eprintln!("constant type cannot be added to chunk! {:?}", value_rr);
                 std::process::abort();
@@ -907,22 +1047,22 @@ impl Chunk {
     pub fn get_constant(&self, i: i32) -> Value {
         let value_sd = &self.constants[i as usize];
         match value_sd {
-            ValueSD::Null => Value::Null,
-            ValueSD::Bool(b) => Value::Bool(*b),
-            ValueSD::Int(n) => Value::Int(*n),
-            ValueSD::Float(n) => Value::Float(*n),
-            ValueSD::BigInt(n) => {
+            ValueLiteral::Null => Value::Null,
+            ValueLiteral::Bool(b) => Value::Bool(*b),
+            ValueLiteral::Int(n) => Value::Int(*n),
+            ValueLiteral::Float(n) => Value::Float(*n),
+            ValueLiteral::BigInt(n) => {
                 let nn = n.parse::<num_bigint::BigInt>().unwrap();
                 Value::BigInt(nn)
             }
-            ValueSD::String(st1, st2) => {
+            ValueLiteral::String(st1, st2) => {
                 let st = StringTriple::new_with_escaped(st1.to_string(), st2.to_string(), None);
                 Value::String(Rc::new(RefCell::new(st)))
             }
-            ValueSD::Command(s, params) => {
+            ValueLiteral::Command(s, params) => {
                 Value::Command(Rc::new(s.to_string()), Rc::new((*params).clone()))
             }
-            ValueSD::CommandUncaptured(s) => Value::CommandUncaptured(Rc::new(s.to_string())),
+            ValueLiteral::CommandUncaptured(s) => Value::CommandUncaptured(Rc::new(s.to_string())),
         }
     }
 
@@ -941,7 +1081,7 @@ impl Chunk {
     pub fn get_constant_int(&self, i: i32) -> i32 {
         let value_sd = &self.constants[i as usize];
         match *value_sd {
-            ValueSD::Int(n) => n,
+            ValueLiteral::Int(n) => n,
             _ => 0,
         }
     }
@@ -950,7 +1090,7 @@ impl Chunk {
     /// specified index.
     pub fn has_constant_int(&self, i: i32) -> bool {
         let value_sd = &self.constants[i as usize];
-        matches!(*value_sd, ValueSD::Int(_))
+        matches!(*value_sd, ValueLiteral::Int(_))
     }
 
     /// Add an opcode to the current chunk's data.
@@ -1766,6 +1906,7 @@ impl Value {
             Value::HistoryGenerator(_) => self.clone(),
             Value::DBConnection(_) => self.clone(),
             Value::DBStatement(_) => self.clone(),
+            Value::ChannelGenerator(_) => self.clone(),
         }
     }
 
@@ -1821,6 +1962,7 @@ impl Value {
                 | Value::MultiGenerator(..)
                 | Value::HistoryGenerator(..)
                 | Value::CommandGenerator(..)
+                | Value::ChannelGenerator(..)
         )
     }
 
@@ -1871,6 +2013,7 @@ impl Value {
             Value::HistoryGenerator(..) => "gen",
             Value::DBConnection(..) => "db-connection",
             Value::DBStatement(..) => "db-statement",
+            Value::ChannelGenerator(..) => "channel-gen",
         };
         s.to_string()
     }

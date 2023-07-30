@@ -18,7 +18,7 @@ use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
 use sysinfo::{System, SystemExt};
 
-use crate::chunk::{print_error, Chunk, GeneratorObject, StringTriple, Value, ValueSD};
+use crate::chunk::{print_error, Chunk, GeneratorObject, StringTriple, Value, ValueLiteral};
 use crate::compiler::Compiler;
 use crate::opcode::{to_opcode, OpCode};
 use crate::rl::RLHelper;
@@ -35,6 +35,7 @@ mod vm_io;
 mod vm_ip;
 mod vm_json;
 mod vm_list;
+mod vm_parallel;
 mod vm_print;
 mod vm_regex;
 mod vm_sort;
@@ -249,6 +250,7 @@ lazy_static! {
         map.insert("db.conn", VM::core_db_conn as fn(&mut VM) -> i32);
         map.insert("db.prep", VM::core_db_prep as fn(&mut VM) -> i32);
         map.insert("db.exec", VM::core_db_exec as fn(&mut VM) -> i32);
+        map.insert("pmap", VM::core_pmap as fn(&mut VM) -> i32);
         map
     };
 
@@ -1383,7 +1385,7 @@ impl VM {
 
                     let value_sd = chunk.borrow().constants[i2 as usize].clone();
                     match value_sd {
-                        ValueSD::String(st, _) => {
+                        ValueLiteral::String(st, _) => {
                             self.i = i;
 
                             /* todo: the two lookups here may be affecting

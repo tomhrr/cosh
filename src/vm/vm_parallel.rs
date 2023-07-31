@@ -15,9 +15,8 @@ use std::io::Read;
 use std::io::Write;
 
 use crate::vm::*;
-use crate::chunk::{ChannelGenerator, ValueSD, ValueTS,
+use crate::chunk::{ChannelGenerator, ValueSD,
                    value_to_valuesd, valuesd_to_value,
-                   valuesd_to_valuets, valuets_to_valuesd,
                    read_valuesd, write_valuesd};
 
 pub struct Subprocess {

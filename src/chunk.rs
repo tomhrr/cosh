@@ -870,6 +870,7 @@ pub enum ValueSD {
     String(String),
     List(VecDeque<ValueSD>),
     Hash(IndexMap<String, ValueSD>),
+    Set(IndexMap<String, ValueSD>),
     /* todo: Add the remaining types here. */
 }
 
@@ -896,6 +897,13 @@ pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
                 newim.insert(k.clone(), valuesd_to_value(v.clone()));
             }
             Value::Hash(Rc::new(RefCell::new(newim)))
+        }
+        ValueSD::Set(im) => {
+            let mut newim = IndexMap::new();
+            for (k, v) in im.iter() {
+                newim.insert(k.clone(), valuesd_to_value(v.clone()));
+            }
+            Value::Set(Rc::new(RefCell::new(newim)))
         }
         _ => Value::Null
     }
@@ -925,41 +933,16 @@ pub fn value_to_valuesd(value: Value) -> ValueSD {
             }
             ValueSD::Hash(newim)
         }
+        Value::Set(im_rr) => {
+            let im = im_rr.borrow();
+            let mut newim = IndexMap::new();
+            for (k, v) in im.iter() {
+                newim.insert(k.clone(), value_to_valuesd(v.clone()));
+            }
+            ValueSD::Set(newim)
+        }
         _ => ValueSD::Null
     }
-}
-
-pub struct ValueTS {
-    pub len: i32,
-    pub data: [u8; 1024],
-}
-
-impl ValueTS {
-    pub fn new() -> ValueTS {
-        let len = 0;
-        let data: [u8; 1024] = [0; 1024];
-        ValueTS { len, data }
-    }
-}
-
-pub fn valuesd_to_valuets(value: ValueSD) -> ValueTS {
-    let mut vts: ValueTS = ValueTS::new();
-    let vec = bincode::serialize(&value).unwrap();
-    let len = vec.len();
-    vts.len = len as i32;
-    for i in 0..len {
-        vts.data[i] = *vec.get(i).unwrap();
-    }
-    return vts;
-}
-
-pub fn valuets_to_valuesd(value: ValueTS) -> ValueSD {
-    let mut vec = Vec::new();
-    for i in 0..value.len {
-        vec.push(value.data[i as usize]);
-    }
-    let vsd = bincode::deserialize(&vec).unwrap();
-    return vsd;
 }
 
 pub fn bytes_to_i32(bytes: &Vec<u8>) -> i32 {

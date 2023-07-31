@@ -8,7 +8,7 @@ use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
 
 use crate::chunk::{IpSet, StringTriple, Value, ValueSD,
-valuesd_to_value, valuets_to_valuesd, valuesd_to_valuets};
+valuesd_to_value, valuets_to_valuesd, valuesd_to_valuets, read_valuesd};
 use crate::vm::VM;
 
 impl VM {
@@ -452,23 +452,15 @@ impl VM {
                     return 1;
                 }
                 let mut finished = false;
-                match cg.borrow_mut().rx.recv() {
-                    Ok(vts) => {
-                        let vsd = valuets_to_valuesd(vts);
-                        match vsd {
-                            ValueSD::Null => {
-                                finished = true;
-                            }
-                            _ => {}
-                        }
-                        self.stack.push(valuesd_to_value(vsd));
+                let mut size_buf = vec![0u8; 4];
+                let vsd = read_valuesd(&mut cg.borrow_mut().rx);
+                match vsd {
+                    ValueSD::Null => {
+                        finished = true;
                     }
-                    Err(e) => {
-                        /* todo: Include the actual error message. */
-                        self.print_error("error retrieving value from channel");
-                        return 0;
-                    }
+                    _ => {}
                 }
+                self.stack.push(valuesd_to_value(vsd));
                 if finished {
                     cg.borrow_mut().finished = true;
                 }

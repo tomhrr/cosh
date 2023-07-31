@@ -13,6 +13,7 @@ use std::io::Read;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::rc::Rc;
 use std::str;
+use std::io::Write;
 
 use chrono::prelude::*;
 use indexmap::IndexMap;
@@ -392,13 +393,13 @@ impl DBStatement {
 /// A channel generator object.
 #[derive(Debug)]
 pub struct ChannelGenerator {
-    pub rx: Receiver<ValueTS>,
+    pub rx: std::fs::File,
     pub pid: nix::unistd::Pid,
     pub finished: bool,
 }
 
 impl ChannelGenerator {
-    pub fn new(rx: Receiver<ValueTS>, pid: nix::unistd::Pid) -> ChannelGenerator {
+    pub fn new(rx: std::fs::File, pid: nix::unistd::Pid) -> ChannelGenerator {
         ChannelGenerator { rx, pid, finished: false }
     }
 }
@@ -959,6 +960,40 @@ pub fn valuets_to_valuesd(value: ValueTS) -> ValueSD {
     }
     let vsd = bincode::deserialize(&vec).unwrap();
     return vsd;
+}
+
+pub fn bytes_to_i32(bytes: &Vec<u8>) -> i32 {
+    let n0 = *bytes.get(0).unwrap() as i32;
+    let n1 = *bytes.get(1).unwrap() as i32;
+    let n2 = *bytes.get(2).unwrap() as i32;
+    let n3 = *bytes.get(3).unwrap() as i32;
+    let n = n0 | (n1 << 8) | (n2 << 16) | (n3 << 24);
+    return n.into();
+}
+
+pub fn i32_to_bytes(n: i32, bytes: &mut Vec<u8>) {
+    bytes[0] = (n         & 0xFF) as u8;
+    bytes[1] = ((n >> 8)  & 0xFF) as u8;
+    bytes[2] = ((n >> 16) & 0xFF) as u8;
+    bytes[3] = ((n >> 24) & 0xFF) as u8;
+}
+
+pub fn read_valuesd(mut file: &mut std::fs::File) -> ValueSD {
+    let mut size_buf = vec![0u8; 4];
+    file.read_exact(&mut size_buf);
+    let n = bytes_to_i32(&size_buf);
+    let mut content_buf = vec![0u8; n as usize];
+    file.read_exact(&mut content_buf);
+    let vsd = bincode::deserialize(&content_buf).unwrap();
+    return vsd;
+}
+
+pub fn write_valuesd(mut file: &mut std::fs::File, value: ValueSD) {
+    let mut vec = bincode::serialize(&value).unwrap();
+    let mut size_buf = vec![0u8; 4];
+    i32_to_bytes(vec.len() as i32, &mut size_buf);
+    size_buf.append(&mut vec);
+    file.write(&size_buf);
 }
 
 /// Takes a chunk, an instruction index, and an error message as its

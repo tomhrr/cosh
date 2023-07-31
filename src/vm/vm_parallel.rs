@@ -9,24 +9,27 @@ use epoll;
 use nix::sys::signal::Signal;
 use nix::sys::wait::waitpid;
 use nix::unistd::{fork, ForkResult};
-use pipe_channel::*;
 use signal_hook::{consts::SIGTERM, iterator::Signals};
+use std::fs::File;
+use std::io::Read;
+use std::io::Write;
 
 use crate::vm::*;
 use crate::chunk::{ChannelGenerator, ValueSD, ValueTS,
                    value_to_valuesd, valuesd_to_value,
-                   valuesd_to_valuets, valuets_to_valuesd};
+                   valuesd_to_valuets, valuets_to_valuesd,
+                   read_valuesd, write_valuesd};
 
 pub struct Subprocess {
     pub pid: nix::unistd::Pid,
-    pub value_tx: Sender<ValueTS>,
-    pub reqvalue_rx: Receiver<bool>,
+    pub value_tx: std::fs::File,
+    pub reqvalue_rx: std::fs::File,
 }
 
 impl Subprocess {
     pub fn new(pid: nix::unistd::Pid,
-               value_tx: Sender<ValueTS>,
-               reqvalue_rx: Receiver<bool>) -> Subprocess {
+               value_tx: std::fs::File,
+               reqvalue_rx: std::fs::File) -> Subprocess {
         Subprocess { pid, value_tx, reqvalue_rx }
     }
 }
@@ -43,15 +46,46 @@ impl VM {
         let gen_rr = self.stack.pop().unwrap();
 
         // For transmitting results back up (processor to top).
-        let (mut ptt_tx, mut ptt_rx) = channel::<ValueTS>();
+        let mut ptt_tx;
+        let mut ptt_rx;
+        match nix::unistd::pipe() {
+            Ok((fd1, fd2)) => {
+                ptt_rx = unsafe { File::from_raw_fd(fd1) };
+                ptt_tx = unsafe { File::from_raw_fd(fd2) };
+            }
+            Err(e) => {
+                eprintln!("unable to create pipe: {}", e);
+                return 0;
+            }
+        }
 
-        // For transmitting generator elements to the processor.
-        let (mut ctp_tx, mut ctp_rx) = channel::<ValueTS>();
+        let mut ctp_tx;
+        let mut ctp_rx;
+        match nix::unistd::pipe() {
+            Ok((fd1, fd2)) => {
+                ctp_rx = unsafe { File::from_raw_fd(fd1) };
+                ctp_tx = unsafe { File::from_raw_fd(fd2) };
+            }
+            Err(e) => {
+                eprintln!("unable to create pipe: {}", e);
+                return 0;
+            }
+        }
 
-        // For requesting a value from the co-ordinator.
-        let (mut ptc_tx, mut ptc_rx) = channel::<ValueTS>();
+        let mut ptc_tx;
+        let mut ptc_rx;
+        match nix::unistd::pipe() {
+            Ok((fd1, fd2)) => {
+                ptc_rx = unsafe { File::from_raw_fd(fd1) };
+                ptc_tx = unsafe { File::from_raw_fd(fd2) };
+            }
+            Err(e) => {
+                eprintln!("unable to create pipe: {}", e);
+                return 0;
+            }
+        }
 
-        let pcount = 4;
+        let pcount = 2;
 
         match fork() {
             Ok(ForkResult::Parent { child }) => {
@@ -65,10 +99,32 @@ impl VM {
                 let mut subprocesses = Vec::new();
 
                 for i in 0..pcount {
-                    let (mut value_tx, mut value_rx) =
-                        channel::<ValueTS>();
-                    let (mut reqvalue_tx, mut reqvalue_rx) =
-                        channel::<bool>();
+                    let mut value_tx;
+                    let mut value_rx;
+                    match nix::unistd::pipe() {
+                        Ok((fd1, fd2)) => {
+                            value_rx = unsafe { File::from_raw_fd(fd1) };
+                            value_tx = unsafe { File::from_raw_fd(fd2) };
+                        }
+                        Err(e) => {
+                            eprintln!("unable to create pipe: {}", e);
+                            return 0;
+                        }
+                    }
+
+                    let mut reqvalue_tx;
+                    let mut reqvalue_rx;
+                    match nix::unistd::pipe() {
+                        Ok((fd1, fd2)) => {
+                            reqvalue_rx = unsafe { File::from_raw_fd(fd1) };
+                            reqvalue_tx = unsafe { File::from_raw_fd(fd2) };
+                        }
+                        Err(e) => {
+                            eprintln!("unable to create pipe: {}", e);
+                            return 0;
+                        }
+                    }
+
                     match fork() {
                         Ok(ForkResult::Parent { child }) => {
                             subprocesses.push(
@@ -82,9 +138,15 @@ impl VM {
                         Ok(ForkResult::Child) => {
                             let sp_fn_rr = fn_rr.clone();
                             loop {
-                                reqvalue_tx.send(true);
-                                let vts = value_rx.recv().unwrap();
-                                let vsd = valuets_to_valuesd(vts);
+                                match reqvalue_tx.write(b"1") {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        eprintln!("unable to send request byte");
+                                        exit(0);
+                                    }
+                                }
+
+                                let vsd = read_valuesd(&mut value_rx);
                                 let v;
                                 match vsd {
                                     ValueSD::Null => {
@@ -107,8 +169,7 @@ impl VM {
                                     _ => {}
                                 }
                                 let vsd = value_to_valuesd(nv);
-                                let vts = valuesd_to_valuets(vsd);
-                                ptt_tx.send(vts);
+                                write_valuesd(&mut ptt_tx, vsd);
                             }
                         }
                         Err(e) => {
@@ -188,7 +249,8 @@ impl VM {
                                 let subprocess = &mut subprocesses.get_mut(i).unwrap();
                                 let pid = subprocess.pid;
 
-                                let v = subprocess.reqvalue_rx.recv();
+                                let mut size_buf = vec![0u8; 1];
+                                subprocess.reqvalue_rx.read_exact(&mut size_buf);
 
                                 let dup_res = self.opcode_dup();
                                 if dup_res == 0 {
@@ -205,8 +267,7 @@ impl VM {
                                     }
                                     _ => {
                                         let vsd = value_to_valuesd(element_rr);
-                                        let vts = valuesd_to_valuets(vsd);
-                                        subprocess.value_tx.send(vts).unwrap();
+                                        write_valuesd(&mut subprocess.value_tx, vsd);
                                     }
                                 }
                                 break;
@@ -216,15 +277,12 @@ impl VM {
                 }
                 self.stack.pop();
                 for i in 0..pcount {
-                    let vts = valuesd_to_valuets(ValueSD::Null);
-                    subprocesses.get_mut(i).unwrap().value_tx.send(vts);
+                    write_valuesd(&mut subprocesses.get_mut(i).unwrap().value_tx, ValueSD::Null);
                 }
                 for i in 0..pcount {
                     waitpid(subprocesses.get(i).unwrap().pid, None);
                 }
-                let vsd = ValueSD::Null;
-                let vts = valuesd_to_valuets(vsd);
-                ptt_tx.send(vts);
+                write_valuesd(&mut ptt_tx, ValueSD::Null);
                 exit(0);
             }
             Err(e) => {

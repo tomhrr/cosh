@@ -28,6 +28,15 @@ impl VM {
         if v1.is_shiftable() && v2.is_shiftable() {
             match v1 {
                 Value::MultiGenerator(ref mut genlist) => {
+                    match v2 {
+                        Value::MultiGenerator(ref genlist_v2) => {
+                            if Rc::ptr_eq(genlist, genlist_v2) {
+                                self.print_error("++ cannot be used to append generator to itself");
+                                return 0;
+                            }
+                        }
+                        _ => {}
+                    }
                     genlist.borrow_mut().push_back(v2);
                     self.stack.push(v1);
                 }

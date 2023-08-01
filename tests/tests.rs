@@ -1561,3 +1561,9 @@ fn dir_open_error() {
 fn ipset_clone() {
     basic_test("103.0.0.0/8 ips; dup; clone; ++; len;", "2");
 }
+
+#[test]
+fn mg_self_append() {
+    basic_error_test("(0) dup; clone; ++; dup; clone; ++;",
+                     "1:34: ++ cannot be used to append generator to itself");
+}

@@ -214,7 +214,7 @@ impl VM {
 
                 thread::spawn(move || {
                     for sig in signals.forever() {
-                        for i in pids {
+                        for i in pids.clone() {
                             let res = nix::sys::signal::kill(i, Signal::SIGTERM);
                             match res {
                                 Ok(_) => {}
@@ -223,6 +223,8 @@ impl VM {
                                     eprintln!("unable to kill process: {}", e);
                                 }
                             }
+                        }
+                        for i in pids {
                             waitpid(i, None);
                         }
                         exit(0);
@@ -236,8 +238,13 @@ impl VM {
                     let mut n = 0;
                     match res {
                         Err(e) => {
-                            eprintln!("epoll wait failed: {:?}", e);
-                            exit(0);
+                            /* Assuming that "Interrupted" is due
+                             * to ctrl-c, in which case there's no
+                             * need to show an error message. */
+                            if !e.to_string().contains("Interrupted") {
+                                eprintln!("epoll wait failed: {:?}", e);
+                            }
+                            break 'done;
                         }
                         Ok(n_ok) => { n = n_ok; }
                     }

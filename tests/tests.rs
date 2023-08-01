@@ -1567,3 +1567,15 @@ fn mg_self_append() {
     basic_error_test("(0) dup; clone; ++; dup; clone; ++;",
                      "1:34: ++ cannot be used to append generator to itself");
 }
+
+#[test]
+fn cg_datetime_ot() {
+    basic_test("2 range; [drop; \"2023-01-01 00:00:00\" \"%F %T\" strptime] pmap;",
+               "v[channel-gen (\n    0: v[datetime 2023-01-01 00:00:00 +00:00]\n    1: v[datetime 2023-01-01 00:00:00 +00:00]\n)]");
+}
+
+#[test]
+fn cg_datetime_nt() {
+    basic_test("2 range; [drop; \"2023-01-01 00:00:00\" \"%F %T\" Australia/Brisbane strptimez] pmap;",
+               "v[channel-gen (\n    0: v[datetime 2023-01-01 00:00:00 AEST]\n    1: v[datetime 2023-01-01 00:00:00 AEST]\n)]");
+}

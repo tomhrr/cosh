@@ -14,7 +14,9 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 use std::rc::Rc;
 use std::str;
 use std::io::Write;
+use std::str::FromStr;
 
+use chrono::format::{parse, Parsed, StrftimeItems};
 use chrono::prelude::*;
 use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
@@ -868,6 +870,8 @@ pub enum ValueSD {
     Float(f64),
     BigInt(String),
     String(String),
+    DateTimeOT(DateTime<FixedOffset>),
+    DateTimeNT(String, String),
     List(VecDeque<ValueSD>),
     Hash(IndexMap<String, ValueSD>),
     Set(IndexMap<String, ValueSD>),
@@ -884,6 +888,18 @@ pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
             Value::BigInt(BigInt::from_str_radix(&bis, 10).unwrap()),
         ValueSD::String(s) =>
             Value::String(Rc::new(RefCell::new(StringTriple::new(s, None)))),
+        ValueSD::DateTimeOT(d) => Value::DateTimeOT(d),
+        ValueSD::DateTimeNT(s, tzs) => {
+	    let mut parsed = Parsed::new();
+	    let si = StrftimeItems::new("%FT%T");
+	    let res = parse(&mut parsed, &s, si);
+	    let dt_res = parsed
+                .to_naive_date()
+                .unwrap()
+                .and_time(parsed.to_naive_time().unwrap());
+            let tzr = chrono_tz::Tz::from_str(&tzs).unwrap();
+	    Value::DateTimeNT(tzr.from_local_datetime(&dt_res).unwrap())
+        }
         ValueSD::List(lst) => {
             let mut vds = VecDeque::new();
             for e in lst.iter() {
@@ -917,6 +933,13 @@ pub fn value_to_valuesd(value: Value) -> ValueSD {
         Value::Float(f) => ValueSD::Float(f),
         Value::BigInt(bi) => ValueSD::BigInt(bi.to_str_radix(10)),
         Value::String(s) => ValueSD::String(s.borrow().string.clone()),
+        Value::DateTimeOT(d) => ValueSD::DateTimeOT(d),
+        /* todo: Look at making this more efficient. */
+        Value::DateTimeNT(d) => {
+            let tzs = d.timezone().to_string();
+            let ss = d.format("%FT%T").to_string();
+            ValueSD::DateTimeNT(ss, tzs)
+        }
         Value::List(lst_rr) => {
             let vd = lst_rr.borrow();
             let mut vds = VecDeque::new();

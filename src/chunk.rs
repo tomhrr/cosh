@@ -16,7 +16,6 @@ use std::str;
 use std::io::Write;
 use std::str::FromStr;
 
-use atomic_dbg::eprintln;
 use chrono::format::{parse, Parsed, StrftimeItems};
 use chrono::prelude::*;
 use indexmap::IndexMap;

@@ -299,7 +299,9 @@ impl BufReaderWithBuffer {
             let res = self.reader.read_until('\n' as u8, &mut sbuf);
             match res {
                 Ok(_) => {
-                    let bufvec = &mut self.buffer[self.buffer_index as usize..].to_vec();
+                    let bufvec =
+                        &mut self.buffer[self.buffer_index as usize..
+                                         self.buffer_limit as usize].to_vec();
                     bufvec.append(&mut sbuf);
                     let s = String::from_utf8_lossy(bufvec);
                     self.buffer_index = -1;

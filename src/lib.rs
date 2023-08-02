@@ -16,7 +16,6 @@ extern crate indexmap;
 extern crate ipnet;
 extern crate iprange;
 extern crate lazy_static;
-extern crate libc;
 extern crate memchr;
 extern crate md5;
 extern crate nix;

@@ -9,8 +9,6 @@ extern crate tempfile;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::fs::File;
-use std::os::fd::FromRawFd;
 use std::env;
 use nix::fcntl::{flock, FlockArg};
 use std::fs;
@@ -22,10 +20,6 @@ use std::os::unix::io::AsRawFd;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
-use libc::setvbuf;
-use std::ptr::null_mut;
-use libc_stdhandle::stderr;
-use libc::FILE;
 
 use dirs_next::home_dir;
 use getopts::Options;
@@ -68,9 +62,6 @@ fn import_coshrc(vm: &mut VM, global_functions: Rc<RefCell<HashMap<String, Rc<Re
 }
 
 fn main() {
-    let n: *mut i8 = std::ptr::null_mut();
-    unsafe { setvbuf(stderr(), n, libc::_IOLBF, libc::BUFSIZ as usize); };
-
     let args: Vec<String> = env::args().collect();
     let program = args[0].clone();
 

@@ -16,6 +16,7 @@ use std::str;
 use std::io::Write;
 use std::str::FromStr;
 
+use atomic_dbg::eprintln;
 use chrono::format::{parse, Parsed, StrftimeItems};
 use chrono::prelude::*;
 use indexmap::IndexMap;
@@ -1032,10 +1033,12 @@ pub fn print_error(chunk: Rc<RefCell<Chunk>>, i: usize, error: &str) {
     };
     match point {
         Some((line, col)) => {
-            eprintln!("{}{}:{}: {}", error_start, line, col, error);
+            let s = format!("{}{}:{}: {}", error_start, line, col, error).to_string();
+            eprintln!("{}", s);
         }
         _ => {
-            eprintln!("{}{}", error_start, error);
+            let s = format!("{}{}", error_start, error).to_string();
+            eprintln!("{}", s);
         }
     }
 }

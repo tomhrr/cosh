@@ -251,6 +251,7 @@ lazy_static! {
         map.insert("db.prep", VM::core_db_prep as fn(&mut VM) -> i32);
         map.insert("db.exec", VM::core_db_exec as fn(&mut VM) -> i32);
         map.insert("pmap", VM::core_pmap as fn(&mut VM) -> i32);
+        map.insert("pmapn", VM::core_pmapn as fn(&mut VM) -> i32);
         map
     };
 

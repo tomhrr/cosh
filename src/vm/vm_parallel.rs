@@ -36,11 +36,39 @@ impl Subprocess {
 impl VM {
     /// Parallel map.
     pub fn core_pmap(&mut self) -> i32 {
-        if self.stack.is_empty() {
+        if self.stack.len() < 2 {
             self.print_error("pmap requires two arguments");
             return 0;
         }
 
+        return self.pmap_inner(4);
+    }
+
+    /// Parallel map with a specified number of processes.
+    pub fn core_pmapn(&mut self) -> i32 {
+        if self.stack.len() < 3 {
+            self.print_error("pmapn requires three arguments");
+            return 0;
+        }
+
+        let procs_rr = self.stack.pop().unwrap();
+        let procs_int = procs_rr.to_int();
+        match procs_int {
+            Some(n) => {
+                if n < 1 {
+                    self.print_error("third pmapn argument must be positive integer");
+                    return 0;
+                }
+                return self.pmap_inner(n as usize);
+            }
+            _ => {
+                self.print_error("third pmapn argument must be integer");
+                return 0;
+            }
+        }
+    }
+
+    pub fn pmap_inner(&mut self, procs: usize) -> i32 {
         let fn_rr = self.stack.pop().unwrap();
         let gen_rr = self.stack.pop().unwrap();
 
@@ -84,8 +112,6 @@ impl VM {
             }
         }
 
-        let pcount = 2;
-
         match fork() {
             Ok(ForkResult::Parent { child }) => {
                 let cg_obj = ChannelGenerator::new(ptt_rx, child);
@@ -97,7 +123,7 @@ impl VM {
             Ok(ForkResult::Child) => {
                 let mut subprocesses = Vec::new();
 
-                for i in 0..pcount {
+                for i in 0..procs {
                     let mut value_tx;
                     let mut value_rx;
                     match nix::unistd::pipe() {
@@ -197,7 +223,7 @@ impl VM {
                     }
                 }
 
-                for i in 0..pcount {
+                for i in 0..procs {
                     let fd = subprocesses.get(i).unwrap()
                                 .reqvalue_rx.as_raw_fd();
                     let res =
@@ -257,7 +283,7 @@ impl VM {
                     }
                     for i in 0..n {
                         let event = events.get(i).unwrap();
-                        for i in 0..pcount {
+                        for i in 0..procs {
                             if subprocesses.get(i).unwrap().reqvalue_rx.as_raw_fd() == event.data as i32 {
                                 let subprocess = &mut subprocesses.get_mut(i).unwrap();
                                 let pid = subprocess.pid;
@@ -296,10 +322,10 @@ impl VM {
                     }
                 }
                 self.stack.pop();
-                for i in 0..pcount {
+                for i in 0..procs {
                     write_valuesd(&mut subprocesses.get_mut(i).unwrap().value_tx, ValueSD::Null);
                 }
-                for i in 0..pcount {
+                for i in 0..procs {
                     waitpid(subprocesses.get(i).unwrap().pid, None);
                 }
                 write_valuesd(&mut ptt_tx, ValueSD::Null);

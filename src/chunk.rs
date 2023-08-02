@@ -10,10 +10,9 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::BufWriter;
 use std::io::Read;
+use std::io::Write;
 use std::net::{Ipv4Addr, Ipv6Addr};
 use std::rc::Rc;
-use std::str;
-use std::io::Write;
 use std::str::FromStr;
 
 use chrono::format::{parse, Parsed, StrftimeItems};
@@ -28,7 +27,6 @@ use num::FromPrimitive;
 use num::ToPrimitive;
 use num_bigint::BigInt;
 use num_traits::{Zero, Num};
-use pipe_channel::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::{ChildStderr, ChildStdout};
@@ -394,7 +392,7 @@ impl DBStatement {
     }
 }
 
-/// A channel generator object.
+/// A channel generator object (see pmap).
 #[derive(Debug)]
 pub struct ChannelGenerator {
     pub rx: std::fs::File,
@@ -642,6 +640,7 @@ impl Drop for ChannelGenerator {
         let res = nix::sys::signal::kill(p, Signal::SIGTERM);
         match res {
             Ok(_) => {}
+            Err(nix::Error::Sys(nix::errno::Errno::ESRCH)) => {}
             Err(e) => {
                 eprintln!("unable to kill process: {}", e);
             }
@@ -848,7 +847,7 @@ impl fmt::Debug for Value {
 }
 
 /// An enum for the Value types that can be parsed from literals,
-/// being those that can be stored as constants in a chunk.
+/// (i.e. those that can be stored as constants in a chunk).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ValueLiteral {
     Null,
@@ -862,8 +861,8 @@ pub enum ValueLiteral {
 }
 
 /// An enum for the Value types that can be serialised and
-/// deserialised, being those that can be passed from/to a child
-/// process (see pmap).
+/// deserialised (i.e. those that can be passed from/to a child
+/// process (see pmap)).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ValueSD {
     Null,
@@ -882,7 +881,6 @@ pub enum ValueSD {
     List(VecDeque<ValueSD>),
     Hash(IndexMap<String, ValueSD>),
     Set(IndexMap<String, ValueSD>),
-    /* todo: Add the remaining types here. */
 }
 
 pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
@@ -902,15 +900,15 @@ pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
         ValueSD::Ipv6Range(d) => Value::Ipv6Range(d),
         ValueSD::IpSet(d) => Value::IpSet(Rc::new(RefCell::new(d))),
         ValueSD::DateTimeNT(s, tzs) => {
-	    let mut parsed = Parsed::new();
-	    let si = StrftimeItems::new("%FT%T");
-	    let res = parse(&mut parsed, &s, si);
-	    let dt_res = parsed
+            let mut parsed = Parsed::new();
+            let pattern = StrftimeItems::new("%FT%T");
+            parse(&mut parsed, &s, pattern).unwrap();
+            let dt_res = parsed
                 .to_naive_date()
                 .unwrap()
                 .and_time(parsed.to_naive_time().unwrap());
-            let tzr = chrono_tz::Tz::from_str(&tzs).unwrap();
-	    Value::DateTimeNT(tzr.from_local_datetime(&dt_res).unwrap())
+            let tz = chrono_tz::Tz::from_str(&tzs).unwrap();
+            Value::DateTimeNT(tz.from_local_datetime(&dt_res).unwrap())
         }
         ValueSD::List(lst) => {
             let mut vds = VecDeque::new();
@@ -919,21 +917,20 @@ pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
             }
             Value::List(Rc::new(RefCell::new(vds)))
         }
-        ValueSD::Hash(im) => {
-            let mut newim = IndexMap::new();
-            for (k, v) in im.iter() {
-                newim.insert(k.clone(), valuesd_to_value(v.clone()));
+        ValueSD::Hash(hsh) => {
+            let mut new_hsh = IndexMap::new();
+            for (k, v) in hsh.iter() {
+                new_hsh.insert(k.clone(), valuesd_to_value(v.clone()));
             }
-            Value::Hash(Rc::new(RefCell::new(newim)))
+            Value::Hash(Rc::new(RefCell::new(new_hsh)))
         }
-        ValueSD::Set(im) => {
-            let mut newim = IndexMap::new();
-            for (k, v) in im.iter() {
-                newim.insert(k.clone(), valuesd_to_value(v.clone()));
+        ValueSD::Set(hsh) => {
+            let mut new_hsh = IndexMap::new();
+            for (k, v) in hsh.iter() {
+                new_hsh.insert(k.clone(), valuesd_to_value(v.clone()));
             }
-            Value::Set(Rc::new(RefCell::new(newim)))
+            Value::Set(Rc::new(RefCell::new(new_hsh)))
         }
-        _ => Value::Null
     }
 }
 
@@ -965,26 +962,27 @@ pub fn value_to_valuesd(value: Value) -> ValueSD {
             }
             ValueSD::List(vds)
         }
-        Value::Hash(im_rr) => {
-            let im = im_rr.borrow();
-            let mut newim = IndexMap::new();
-            for (k, v) in im.iter() {
-                newim.insert(k.clone(), value_to_valuesd(v.clone()));
+        Value::Hash(hsh_rr) => {
+            let hsh = hsh_rr.borrow();
+            let mut new_hsh = IndexMap::new();
+            for (k, v) in hsh.iter() {
+                new_hsh.insert(k.clone(), value_to_valuesd(v.clone()));
             }
-            ValueSD::Hash(newim)
+            ValueSD::Hash(new_hsh)
         }
-        Value::Set(im_rr) => {
-            let im = im_rr.borrow();
-            let mut newim = IndexMap::new();
-            for (k, v) in im.iter() {
-                newim.insert(k.clone(), value_to_valuesd(v.clone()));
+        Value::Set(hsh_rr) => {
+            let hsh = hsh_rr.borrow();
+            let mut new_hsh = IndexMap::new();
+            for (k, v) in hsh.iter() {
+                new_hsh.insert(k.clone(), value_to_valuesd(v.clone()));
             }
-            ValueSD::Set(newim)
+            ValueSD::Set(new_hsh)
         }
         _ => ValueSD::Null
     }
 }
 
+/// Convert a four-byte array into an i32 value.
 pub fn bytes_to_i32(bytes: &Vec<u8>) -> i32 {
     let n0 = *bytes.get(0).unwrap() as i32;
     let n1 = *bytes.get(1).unwrap() as i32;
@@ -994,6 +992,7 @@ pub fn bytes_to_i32(bytes: &Vec<u8>) -> i32 {
     return n.into();
 }
 
+/// Write an i32 value to a four-byte array.
 pub fn i32_to_bytes(n: i32, bytes: &mut Vec<u8>) {
     bytes[0] = (n         & 0xFF) as u8;
     bytes[1] = ((n >> 8)  & 0xFF) as u8;
@@ -1001,22 +1000,24 @@ pub fn i32_to_bytes(n: i32, bytes: &mut Vec<u8>) {
     bytes[3] = ((n >> 24) & 0xFF) as u8;
 }
 
-pub fn read_valuesd(mut file: &mut std::fs::File) -> ValueSD {
+/// Read a ValueSD value from the specified file.
+pub fn read_valuesd(file: &mut std::fs::File) -> ValueSD {
     let mut size_buf = vec![0u8; 4];
-    file.read_exact(&mut size_buf);
+    file.read_exact(&mut size_buf).unwrap();
     let n = bytes_to_i32(&size_buf);
     let mut content_buf = vec![0u8; n as usize];
-    file.read_exact(&mut content_buf);
+    file.read_exact(&mut content_buf).unwrap();
     let vsd = bincode::deserialize(&content_buf).unwrap();
     return vsd;
 }
 
-pub fn write_valuesd(mut file: &mut std::fs::File, value: ValueSD) {
+/// Write a ValueSD value to the specified file.
+pub fn write_valuesd(file: &mut std::fs::File, value: ValueSD) {
     let mut vec = bincode::serialize(&value).unwrap();
     let mut size_buf = vec![0u8; 4];
     i32_to_bytes(vec.len() as i32, &mut size_buf);
     size_buf.append(&mut vec);
-    file.write(&size_buf);
+    file.write(&size_buf).unwrap();
 }
 
 /// Takes a chunk, an instruction index, and an error message as its

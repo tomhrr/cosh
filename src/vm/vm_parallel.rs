@@ -1,9 +1,6 @@
-use std::error::Error;
-use std::os::fd::{RawFd, AsRawFd, FromRawFd};
+use std::os::fd::{AsRawFd, FromRawFd};
 use std::process::exit;
 use std::thread;
-use std::time;
-use std::time::Duration;
 
 use epoll;
 use nix::sys::signal::Signal;
@@ -14,14 +11,20 @@ use std::fs::File;
 use std::io::Read;
 use std::io::Write;
 
-use crate::vm::*;
-use crate::chunk::{ChannelGenerator, ValueSD,
+use crate::chunk::{ChannelGenerator,
+                   ValueSD,
                    value_to_valuesd, valuesd_to_value,
                    read_valuesd, write_valuesd};
+use crate::vm::*;
 
+/// The details for a subprocess created by way of pmap.
 pub struct Subprocess {
+    /// The subprocess's process identifier.
     pub pid: nix::unistd::Pid,
+    /// The filehandle for transmitting values to the subprocess.
     pub value_tx: std::fs::File,
+    /// The filehandle for listening for requests from the subprocess
+    /// for more values.
     pub reqvalue_rx: std::fs::File,
 }
 
@@ -31,6 +34,23 @@ impl Subprocess {
                reqvalue_rx: std::fs::File) -> Subprocess {
         Subprocess { pid, value_tx, reqvalue_rx }
     }
+}
+
+fn make_pipe() -> Option<(std::fs::File, std::fs::File)> {
+    let tx;
+    let rx;
+    match nix::unistd::pipe() {
+        Ok((fd1, fd2)) => {
+            rx = unsafe { File::from_raw_fd(fd1) };
+            tx = unsafe { File::from_raw_fd(fd2) };
+        }
+        Err(e) => {
+            eprintln!("unable to create pipe: {}", e);
+            return None;
+        }
+    }
+
+    return Some((tx, rx));
 }
 
 impl VM {
@@ -68,49 +88,14 @@ impl VM {
         }
     }
 
+    /// Core parallel map operation.
     pub fn pmap_inner(&mut self, procs: usize) -> i32 {
         let fn_rr = self.stack.pop().unwrap();
         let gen_rr = self.stack.pop().unwrap();
 
-        // For transmitting results back up (processor to top).
-        let mut ptt_tx;
-        let mut ptt_rx;
-        match nix::unistd::pipe() {
-            Ok((fd1, fd2)) => {
-                ptt_rx = unsafe { File::from_raw_fd(fd1) };
-                ptt_tx = unsafe { File::from_raw_fd(fd2) };
-            }
-            Err(e) => {
-                eprintln!("unable to create pipe: {}", e);
-                return 0;
-            }
-        }
-
-        let mut ctp_tx;
-        let mut ctp_rx;
-        match nix::unistd::pipe() {
-            Ok((fd1, fd2)) => {
-                ctp_rx = unsafe { File::from_raw_fd(fd1) };
-                ctp_tx = unsafe { File::from_raw_fd(fd2) };
-            }
-            Err(e) => {
-                eprintln!("unable to create pipe: {}", e);
-                return 0;
-            }
-        }
-
-        let mut ptc_tx;
-        let mut ptc_rx;
-        match nix::unistd::pipe() {
-            Ok((fd1, fd2)) => {
-                ptc_rx = unsafe { File::from_raw_fd(fd1) };
-                ptc_tx = unsafe { File::from_raw_fd(fd2) };
-            }
-            Err(e) => {
-                eprintln!("unable to create pipe: {}", e);
-                return 0;
-            }
-        }
+        /* For transmitting results back up (subprocesses to original
+         * process). */
+        let (mut ptt_tx, ptt_rx) = make_pipe().unwrap();
 
         match fork() {
             Ok(ForkResult::Parent { child }) => {
@@ -123,32 +108,11 @@ impl VM {
             Ok(ForkResult::Child) => {
                 let mut subprocesses = Vec::new();
 
-                for i in 0..procs {
-                    let mut value_tx;
-                    let mut value_rx;
-                    match nix::unistd::pipe() {
-                        Ok((fd1, fd2)) => {
-                            value_rx = unsafe { File::from_raw_fd(fd1) };
-                            value_tx = unsafe { File::from_raw_fd(fd2) };
-                        }
-                        Err(e) => {
-                            eprintln!("unable to create pipe: {}", e);
-                            return 0;
-                        }
-                    }
-
-                    let mut reqvalue_tx;
-                    let mut reqvalue_rx;
-                    match nix::unistd::pipe() {
-                        Ok((fd1, fd2)) => {
-                            reqvalue_rx = unsafe { File::from_raw_fd(fd1) };
-                            reqvalue_tx = unsafe { File::from_raw_fd(fd2) };
-                        }
-                        Err(e) => {
-                            eprintln!("unable to create pipe: {}", e);
-                            return 0;
-                        }
-                    }
+                for _ in 0..procs {
+                    let (value_tx, mut value_rx) =
+                        make_pipe().unwrap();
+                    let (mut reqvalue_tx, reqvalue_rx) =
+                        make_pipe().unwrap();
 
                     match fork() {
                         Ok(ForkResult::Parent { child }) => {
@@ -163,9 +127,12 @@ impl VM {
                         Ok(ForkResult::Child) => {
                             let sp_fn_rr = fn_rr.clone();
                             loop {
+                                /* The value used here doesn't matter,
+                                 * as long as it's one byte in length.
+                                 * */
                                 match reqvalue_tx.write(b"1") {
                                     Ok(_) => {}
-                                    Err(e) => {
+                                    Err(_) => {
                                         eprintln!("unable to send request byte");
                                         exit(0);
                                     }
@@ -211,7 +178,7 @@ impl VM {
                     }
                 }
 
-                let mut epoll_fd = 0;
+                let epoll_fd;
                 let epoll_fd_res = epoll::create(true);
                 match epoll_fd_res {
                     Ok(epoll_fd_ok) => {
@@ -232,7 +199,8 @@ impl VM {
                             epoll::ControlOptions::EPOLL_CTL_ADD,
                             fd,
                             epoll::Event::new(epoll::Events::EPOLLIN,
-                                              fd as u64));
+                                              fd as u64)
+                        );
                     match res {
                         Err(e) => {
                             eprintln!("epoll ctl failed: {:?}", e);
@@ -246,7 +214,7 @@ impl VM {
                 let pids = subprocesses.iter().map(|e| e.pid).collect::<Vec<_>>();
 
                 thread::spawn(move || {
-                    for sig in signals.forever() {
+                    for _ in signals.forever() {
                         for i in pids.clone() {
                             let res = nix::sys::signal::kill(i, Signal::SIGTERM);
                             match res {
@@ -258,17 +226,18 @@ impl VM {
                             }
                         }
                         for i in pids {
-                            waitpid(i, None);
+                            waitpid(i, None).unwrap();
                         }
                         exit(0);
                     }
                 });
 
                 self.stack.push(gen_rr);
-                let mut events = [epoll::Event::new(epoll::Events::empty(), 0); 10];
+                let mut events =
+                    [epoll::Event::new(epoll::Events::empty(), 0); 50];
                 'done: loop {
                     let res = epoll::wait(epoll_fd, -1, &mut events);
-                    let mut n = 0;
+                    let n;
                     match res {
                         Err(e) => {
                             /* Assuming that "Interrupted" is due
@@ -286,10 +255,9 @@ impl VM {
                         for i in 0..procs {
                             if subprocesses.get(i).unwrap().reqvalue_rx.as_raw_fd() == event.data as i32 {
                                 let subprocess = &mut subprocesses.get_mut(i).unwrap();
-                                let pid = subprocess.pid;
 
                                 let mut size_buf = vec![0u8; 1];
-                                subprocess.reqvalue_rx.read_exact(&mut size_buf);
+                                subprocess.reqvalue_rx.read_exact(&mut size_buf).unwrap();
 
                                 let dup_res = self.opcode_dup();
                                 if dup_res == 0 {
@@ -326,7 +294,7 @@ impl VM {
                     write_valuesd(&mut subprocesses.get_mut(i).unwrap().value_tx, ValueSD::Null);
                 }
                 for i in 0..procs {
-                    waitpid(subprocesses.get(i).unwrap().pid, None);
+                    waitpid(subprocesses.get(i).unwrap().pid, None).unwrap();
                 }
                 write_valuesd(&mut ptt_tx, ValueSD::Null);
                 exit(0);

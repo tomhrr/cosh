@@ -452,7 +452,6 @@ impl VM {
                     return 1;
                 }
                 let mut finished = false;
-                let mut size_buf = vec![0u8; 4];
                 let vsd = read_valuesd(&mut cg.borrow_mut().rx);
                 match vsd {
                     ValueSD::Null => {

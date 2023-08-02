@@ -1569,6 +1569,11 @@ fn mg_self_append() {
 }
 
 #[test]
+fn basic_pmap() {
+    basic_test("10 range; [1 rand; sleep] 10 pmapn; sum", "45");
+}
+
+#[test]
 fn cg_datetime_ot() {
     basic_test("2 range; [drop; \"2023-01-01 00:00:00\" \"%F %T\" strptime] pmap;",
                "v[channel-gen (\n    0: v[datetime 2023-01-01 00:00:00 +00:00]\n    1: v[datetime 2023-01-01 00:00:00 +00:00]\n)]");

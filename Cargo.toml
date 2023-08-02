@@ -37,8 +37,8 @@ chrono = { version = "0.4.20", features = [ "serde" ] }
 chrono-tz = "0.6"
 iana-time-zone = "0.1.41"
 chronoutil = "0.2.3"
-iprange = "0.6.7"
-ipnet = "2.5.0"
+iprange = { version = "0.6.7", features = [ "serde" ] }
+ipnet = { version = "2.5.0", features = [ "serde" ] }
 unicode-segmentation = "1.9.0"
 nonblock = "0.2.0"
 ansi_term = "0.12.1"

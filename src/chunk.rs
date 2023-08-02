@@ -329,7 +329,7 @@ impl HashWithIndex {
 }
 
 /// An IPv4 range object.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ipv4Range {
     pub s: Ipv4Addr,
     pub e: Ipv4Addr,
@@ -342,7 +342,7 @@ impl Ipv4Range {
 }
 
 /// An IPv6 range object.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ipv6Range {
     pub s: Ipv6Addr,
     pub e: Ipv6Addr,
@@ -355,7 +355,7 @@ impl Ipv6Range {
 }
 
 /// An IP set object.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct IpSet {
     pub ipv4: IpRange<Ipv4Net>,
     pub ipv6: IpRange<Ipv6Net>,
@@ -872,6 +872,11 @@ pub enum ValueSD {
     String(String),
     DateTimeOT(DateTime<FixedOffset>),
     DateTimeNT(String, String),
+    Ipv4(Ipv4Net),
+    Ipv6(Ipv6Net),
+    Ipv4Range(Ipv4Range),
+    Ipv6Range(Ipv6Range),
+    IpSet(IpSet),
     List(VecDeque<ValueSD>),
     Hash(IndexMap<String, ValueSD>),
     Set(IndexMap<String, ValueSD>),
@@ -889,6 +894,11 @@ pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
         ValueSD::String(s) =>
             Value::String(Rc::new(RefCell::new(StringTriple::new(s, None)))),
         ValueSD::DateTimeOT(d) => Value::DateTimeOT(d),
+        ValueSD::Ipv4(d) => Value::Ipv4(d),
+        ValueSD::Ipv6(d) => Value::Ipv6(d),
+        ValueSD::Ipv4Range(d) => Value::Ipv4Range(d),
+        ValueSD::Ipv6Range(d) => Value::Ipv6Range(d),
+        ValueSD::IpSet(d) => Value::IpSet(Rc::new(RefCell::new(d))),
         ValueSD::DateTimeNT(s, tzs) => {
 	    let mut parsed = Parsed::new();
 	    let si = StrftimeItems::new("%FT%T");
@@ -940,6 +950,11 @@ pub fn value_to_valuesd(value: Value) -> ValueSD {
             let ss = d.format("%FT%T").to_string();
             ValueSD::DateTimeNT(ss, tzs)
         }
+        Value::Ipv4(d) => ValueSD::Ipv4(d),
+        Value::Ipv6(d) => ValueSD::Ipv6(d),
+        Value::Ipv4Range(d) => ValueSD::Ipv4Range(d),
+        Value::Ipv6Range(d) => ValueSD::Ipv6Range(d),
+        Value::IpSet(d) => ValueSD::IpSet(d.borrow().clone()),
         Value::List(lst_rr) => {
             let vd = lst_rr.borrow();
             let mut vds = VecDeque::new();

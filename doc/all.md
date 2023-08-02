@@ -22,6 +22,7 @@ cosh is a concatenative command-line shell.
     * [Set functions](#set-functions)
     * [Hash functions](#hash-functions)
     * [Higher-order functions (map, grep, for, etc.)](#higher-order-functions-map-grep-for-etc)
+    * [Parallel processing](#parallel-processing)
     * [Sorting](#sorting)
     * [Filesystem operations](#filesystem-operations)
     * [Environment variables](#environment-variables)
@@ -820,6 +821,33 @@ Other higher-order functions:
 
 Each of the above, except for `apply`, can also accept a set or
 generator in place of a list argument.
+
+#### Parallel processing
+
+`mapn` operates similarly to `map`, except that it distributes the
+work across four processes, and the resulting generator returns
+results in arbitrary order:
+
+    $ 5 range; [1 rand; sleep] pmap;
+    v[channel-gen (
+	0: 2
+	1: 0
+	2: 1
+	3: 3
+	4: 4
+    )]
+
+State changes in the forked processes (e.g. new function definitions,
+variable modifications) will not take effect in the original process.
+
+`pmapn` operates in the same way as `pmap`, except that it takes an
+additional process count argument:
+
+    $ : dt date; to-epoch; ,,
+    $ dt; 10 range; [1 sleep] 10 pmapn; r; drop; dt; swap; -
+    1
+    $ dt; 10 range; [1 sleep] 2  pmapn; r; drop; dt; swap; -
+    5
 
 #### Sorting
 

@@ -167,7 +167,14 @@ impl VM {
                                     }
                                     _ => {}
                                 }
-                                let vsd = value_to_valuesd(nv);
+                                let vsd = value_to_valuesd(nv.clone());
+                                match (&vsd, nv) {
+                                    (&ValueSD::Null, Value::Null) => {}
+                                    (&ValueSD::Null, _) => {
+                                        self.print_error("unable to serialise value for pmap");
+                                    }
+                                    _ => {}
+                                }
                                 write_valuesd(&mut ptt_tx, vsd);
                             }
                         }
@@ -272,7 +279,14 @@ impl VM {
                                         break 'done;
                                     }
                                     _ => {
-                                        let vsd = value_to_valuesd(element_rr);
+                                        let vsd = value_to_valuesd(element_rr.clone());
+                                        match (&vsd, element_rr) {
+                                            (&ValueSD::Null, Value::Null) => {}
+                                            (&ValueSD::Null, _) => {
+                                                self.print_error("unable to serialise value for pmap");
+                                            }
+                                            _ => {}
+                                        }
                                         write_valuesd(&mut subprocess.value_tx, vsd);
                                     }
                                 }

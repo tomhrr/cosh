@@ -68,14 +68,6 @@ fn import_coshrc(vm: &mut VM, global_functions: Rc<RefCell<HashMap<String, Rc<Re
 }
 
 fn main() {
-    /*
-    pub unsafe extern "C" fn setvbuf(
-	stream: *mut FILE,
-	buffer: *mut c_char,
-	mode: c_int,
-	size: size_t
-    ) -> c_int
-    */
     let n: *mut i8 = std::ptr::null_mut();
     unsafe { setvbuf(stderr(), n, libc::_IOLBF, libc::BUFSIZ as usize); };
 

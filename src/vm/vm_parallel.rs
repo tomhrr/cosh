@@ -226,7 +226,18 @@ impl VM {
                             }
                         }
                         for i in pids {
-                            waitpid(i, None).unwrap();
+                            let res = waitpid(i, None);
+                            match res {
+                                /* Termination by way of the normal
+                                 * process further down may have
+                                 * happened by this time, so ignore
+                                 * this error. */
+                                Err(nix::Error::Sys(nix::errno::Errno::ECHILD)) => {},
+                                Err(e) => {
+                                    eprintln!("unable to clean up process: {}", e);
+                                }
+                                _ => {}
+                            }
                         }
                         exit(0);
                     }
@@ -294,7 +305,18 @@ impl VM {
                     write_valuesd(&mut subprocesses.get_mut(i).unwrap().value_tx, ValueSD::Null);
                 }
                 for i in 0..procs {
-                    waitpid(subprocesses.get(i).unwrap().pid, None).unwrap();
+                    let res =
+                        waitpid(subprocesses.get(i).unwrap().pid, None);
+                    match res {
+                        /* Termination by way of a signal may have
+                         * happened by this point, so ignore this
+                         * error. */
+                        Err(nix::Error::Sys(nix::errno::Errno::ECHILD)) => {},
+                        Err(e) => {
+                            eprintln!("unable to clean up process: {}", e);
+                        }
+                        _ => {}
+                    }
                 }
                 write_valuesd(&mut ptt_tx, ValueSD::Null);
                 exit(0);

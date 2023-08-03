@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::convert::TryFrom;
+use std::fmt::Write;
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -279,13 +280,22 @@ impl VM {
 
         match (dt_rr, pat_opt) {
             (Value::DateTimeNT(dt), Some(s)) => {
-                let ss = dt.format(s);
-                self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        ss.to_string(),
-                        None,
-                    )))));
-                1
+                let mut buffer = String::new();
+                let res = write!(buffer, "{}", dt.format(s));
+                match res {
+                    Ok(_) => {
+                        self.stack
+                            .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
+                                buffer,
+                                None,
+                            )))));
+                        1
+                    }
+                    Err(_) => {
+                        self.print_error("second strftime argument is invalid");
+                        0
+                    }
+                }
             }
             (Value::DateTimeOT(dt), Some(s)) => {
                 let ss = dt.format(s);

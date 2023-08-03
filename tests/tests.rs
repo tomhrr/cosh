@@ -1592,3 +1592,9 @@ fn rand_test() {
     basic_error_test("-10 rand;",
                      "1:5: rand argument must be positive number");
 }
+
+#[test]
+fn invalid_strftime_test() {
+    basic_error_test("date; \"%T %N\" strftime;",
+                     "1:15: second strftime argument is invalid");
+}

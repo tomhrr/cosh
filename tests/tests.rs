@@ -1584,3 +1584,11 @@ fn cg_datetime_nt() {
     basic_test("2 range; [drop; \"2023-01-01 00:00:00\" \"%F %T\" Australia/Brisbane strptimez] pmap;",
                "v[channel-gen (\n    0: v[datetime 2023-01-01 00:00:00 AEST]\n    1: v[datetime 2023-01-01 00:00:00 AEST]\n)]");
 }
+
+#[test]
+fn rand_test() {
+    basic_error_test("0 rand;",
+                     "1:3: rand argument must be positive number");
+    basic_error_test("-10 rand;",
+                     "1:5: rand argument must be positive number");
+}

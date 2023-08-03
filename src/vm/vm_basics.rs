@@ -586,6 +586,10 @@ impl VM {
         let value_opt = value_rr.to_float();
         match value_opt {
             Some(n) => {
+                if n <= 0.0 {
+                    self.print_error("rand argument must be positive number");
+                    return 0;
+                }
                 let mut rng = rand::thread_rng();
                 let rand_value = rng.gen_range(0.0..n);
                 self.stack.push(Value::Float(rand_value));

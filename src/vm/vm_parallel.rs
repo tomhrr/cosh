@@ -99,7 +99,7 @@ impl VM {
 
         match fork() {
             Ok(ForkResult::Parent { child }) => {
-                let cg_obj = ChannelGenerator::new(ptt_rx, child);
+                let cg_obj = ChannelGenerator::new(ptt_rx, child, gen_rr);
                 let cg =
                     Value::ChannelGenerator(Rc::new(RefCell::new(cg_obj)));
                 self.stack.push(cg);

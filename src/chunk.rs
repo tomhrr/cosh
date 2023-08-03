@@ -397,12 +397,15 @@ impl DBStatement {
 pub struct ChannelGenerator {
     pub rx: std::fs::File,
     pub pid: nix::unistd::Pid,
+    pub input_generator: Value,
     pub finished: bool,
 }
 
 impl ChannelGenerator {
-    pub fn new(rx: std::fs::File, pid: nix::unistd::Pid) -> ChannelGenerator {
-        ChannelGenerator { rx, pid, finished: false }
+    pub fn new(rx: std::fs::File,
+               pid: nix::unistd::Pid,
+               input_generator: Value) -> ChannelGenerator {
+        ChannelGenerator { rx, pid, input_generator, finished: false }
     }
 }
 

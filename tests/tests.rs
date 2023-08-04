@@ -1598,3 +1598,9 @@ fn invalid_strftime_test() {
     basic_error_test("date; \"%T %N\" strftime;",
                      "1:15: second strftime argument is invalid");
 }
+
+#[test]
+fn env_scope_test() {
+    basic_test("env; TEST_VAR get; {TEST_VAR=1234 true}; r; env; TEST_VAR get",
+               "null\n()\nnull");
+}

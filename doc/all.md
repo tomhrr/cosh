@@ -521,6 +521,14 @@ beginning of the list and places it on the stack:
     $ (1 2 3) shift;
     1
 
+`shift-all` removes all elements from the list and places them onto
+the stack:
+
+    $ (1 2 3) shift-all;
+    1
+    2
+    3
+
 `unshift` takes a list and an element and places it at the beginning
 of the list:
 
@@ -601,6 +609,9 @@ even though that's not strictly necessary for determining whether the
 generator is empty, because having it shift a single element from the
 generator each time it is called could be confusing.)
 
+`mlist` takes an integer argument, removes that number of elements
+from the stack, and returns a list containing those elements.
+
 #### Set functions
 
 When called with a set argument, `shift` removes one element from the
@@ -646,6 +657,9 @@ beginning of the set and places it on the stack:
         1
         4
     )
+
+`mset` takes an integer argument, removes that number of elements
+from the stack, and returns a set containing those elements.
 
 #### Hash functions
 
@@ -718,6 +732,10 @@ beginning of the set and places it on the stack:
 (There are separate generator types for the generators created by way
 of `keys`, `values`, and `each`, but their behaviour is as per
 the previous generator discussion in this document.)
+
+`mhash` takes an integer argument, removes that number of element
+pairs from the stack, and returns a hash containing each of those
+pairs, where the first element is the key and the second is the value.
 
 #### Higher-order functions (map, grep, for, etc.)
 
@@ -824,17 +842,18 @@ generator in place of a list argument.
 
 #### Parallel processing
 
-`mapn` operates similarly to `map`, except that it distributes the
+`pmap` operates similarly to `map`, except that it distributes the
 work across four processes, and the resulting generator returns
-results in arbitrary order:
+results as they are received from those processes (i.e. in
+indeterminate order):
 
     $ 5 range; [1 rand; sleep] pmap;
     v[channel-gen (
-	0: 2
-	1: 0
-	2: 1
-	3: 3
-	4: 4
+        0: 2
+        1: 0
+        2: 1
+        3: 3
+        4: 4
     )]
 
 State changes in the forked processes (e.g. new function definitions,

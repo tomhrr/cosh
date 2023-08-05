@@ -1604,3 +1604,18 @@ fn env_scope_test() {
     basic_test("env; TEST_VAR get; {TEST_VAR=1234 true}; r; env; TEST_VAR get",
                "null\n()\nnull");
 }
+
+#[test]
+fn m_test() {
+    basic_test("1 2 2 mlist;",
+               "(\n    0: 1\n    1: 2\n)");
+    basic_test("1 2 2 mset;",
+               "s(\n    1\n    2\n)");
+    basic_test("1 2 3 4 2 mhash;",
+               "h(\n    \"1\": 2\n    \"3\": 4\n)");
+}
+
+#[test]
+fn shift_all_test() {
+    basic_test("10 range; shift-all; 10 mlist; sum", "45");
+}

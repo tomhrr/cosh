@@ -844,3 +844,53 @@
 
     response @;
     ,,
+
+: mlist
+    depth; 1 <; if;
+        "mlist requires at least one argument" error;
+    then;
+    n var; n !;
+    ()
+    begin;
+        n @; 0 <=; if;
+            leave;
+        then;
+        n @; 1 -; n !;
+        swap; push;
+        .f until;
+    reverse;
+    ,,
+
+: mset
+    depth; 1 <; if;
+        "mset requires at least one argument" error;
+    then;
+    mlist; s() swap; push for;
+    ,,
+
+: mhash
+    depth; 1 <; if;
+        "mhash requires at least one argument" error;
+    then;
+    2 *; mlist; lst var; lst !;
+    h()
+    begin;
+        lst @; len; 0 =; if;
+            leave;
+        then;
+        lst @; dup; shift; swap; shift; set;
+        .f until;
+    ,,
+
+: shift-all
+    depth; 1 <; if;
+        "shift-all requires one argument" error;
+    then;
+    obj var; obj !;
+    begin;
+        obj @; shift; dup; is-null; if;
+            drop;
+            leave;
+        then;
+        .f until;
+    ,,

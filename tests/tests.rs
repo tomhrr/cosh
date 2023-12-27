@@ -1543,13 +1543,13 @@ fn no_zombies() {
     basic_test(
         "
 : zs ps; [status get; Zombie =] grep; [pid get] map; s() swap; push for; ,,
-zs; {ls}; drop; zs; symdiff; len; 0 =
-", ".t");
+zs; {ls}; drop; zs; swap; diff;
+", "s()");
     basic_test(
         "
 : zs ps; [status get; Zombie =] grep; [pid get] map; s() swap; push for; ,,
-zs; 10 range; {sort -r} |; take-all; drop; zs; symdiff; len; 0 =
-", ".t");
+zs; 10 range; {sort -r} |; take-all; drop; zs; swap; diff;
+", "s()");
 }
 
 #[test]

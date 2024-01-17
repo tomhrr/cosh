@@ -28,6 +28,7 @@ cosh is a concatenative command-line shell.
     * [JSON/XML Parsing](#jsonxml-parsing)
     * [Datetimes](#datetimes)
     * [IP addresses](#ip-addresses)
+    * [SQL databases](#sql-databases)
     * [Miscellaneous functions](#miscellaneous-functions)
  * [External program execution](#external-program-execution)
  * [Miscellaneous](#miscellaneous)
@@ -1035,6 +1036,17 @@ functions as a standard set, but it will additionally simplify the set
 after each call to the minimum set of prefixes required to cover the
 address space in the set.  Finally, `=` is also defined for IP sets,
 and `str` is defined for both IP objects and IP sets.
+
+#### SQL databases
+
+ - `db.conn`: takes a database type, a database server hostname, a
+   database name, a username, and a password, and returns a database
+   connection object.
+ - `db.prep`: takes a database connection object and an SQL statement,
+   and returns a database statement handle.
+ - `db.exec`: takes a database statement handle and a list of
+   parameters (possibly empty), and returns a generator containing a
+   hash for each of the records retrieved from the database.
 
 #### Miscellaneous functions
 

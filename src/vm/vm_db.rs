@@ -2,12 +2,13 @@ use crate::chunk::DBConnection;
 use crate::chunk::DBStatement;
 use crate::chunk::Value;
 use crate::vm::*;
-use chrono::Utc;
+use crate::sqlx::Connection;
+//use chrono::Utc;
 use futures::executor::block_on;
 use num_bigint::BigInt;
 use num_traits::FromPrimitive;
-use sqlx::Column;
 use sqlx::Row;
+use sqlx::Column;
 use sqlx::TypeInfo;
 
 impl VM {
@@ -38,11 +39,25 @@ impl VM {
             let host_str_opt: Option<&str>;
             to_str!(host, host_str_opt);
 
+            sqlx::any::install_default_drivers();
+
             match (dbtype_str_opt, host_str_opt, db_str_opt, user_str_opt, pass_str_opt) {
                 (Some(dbtype_str), Some(host_str), Some(db_str), Some(user_str), Some(pass_str)) => {
-                    let url = format!("{}://{}:{}@{}/{}",
-                        dbtype_str, user_str, pass_str, host_str, db_str);
-                    let pool_res = sqlx::Pool::connect(&url).await;
+                    let url = match dbtype_str {
+                        "mysql" | "postgresql" => {
+                            format!("{}://{}:{}@{}/{}",
+                                    dbtype_str, user_str, pass_str, host_str, db_str)
+                        }
+                        "sqlite" => {
+                            format!("{}://{}",
+                                    dbtype_str, host_str)
+                        }
+                        _ => {
+                            self.print_error("invalid/unsupported database type");
+                            return 0;
+                        }
+                    };
+                    let pool_res = sqlx::AnyConnection::connect(&url).await;
                     match pool_res {
                         Ok(pool) => {
                             let dbc = DBConnection::new(pool);
@@ -120,10 +135,8 @@ impl VM {
 
             match (sv, params) {
                 (Value::DBStatement(ref mut dbsv), Value::List(lst)) => {
-                    let mut dbsvb = dbsv.borrow_mut();
+                    let dbsvb = dbsv.borrow_mut();
                     let query = dbsvb.query.clone();
-                    let pool = &mut dbsvb.pool;
-                    let mut conn = pool.acquire().await.unwrap();
                     let mut query_obj = sqlx::query(&query);
                     let lstb = lst.borrow();
                     for param in lstb.iter() {
@@ -151,7 +164,8 @@ impl VM {
                             }
                         }
                     }
-                    let query_res = query_obj.fetch_all(&mut conn).await;
+                    let query_res =
+                        query_obj.fetch_all(&mut *dbsvb.pool.borrow_mut()).await;
                     let mut records = VecDeque::new();
                     let raw_records;
                     match query_res {
@@ -237,6 +251,11 @@ impl VM {
                                         }
                                     }
                                 }
+                                /*
+                                Temporarily commenting out types not supported by
+                                the Any driver.
+                                */
+                                /*
                                 "DATE" => {
                                     let final_value_res =
                                         raw_record.get::<Option<chrono::NaiveDate>, usize>(index);
@@ -313,6 +332,7 @@ impl VM {
                                         }
                                     }
                                 }
+                                */
                                 "TINYINT" | "SMALLINT" | "MEDIUMINT" | "INT" => {
                                     let final_value_res =
                                         raw_record.get::<Option<i32>, usize>(index);
@@ -367,6 +387,7 @@ impl VM {
                                         }
                                     }
                                 }
+                                /*
                                 "INT UNSIGNED" => {
                                     let final_value_res =
                                         raw_record.get::<Option<u32>, usize>(index);
@@ -403,6 +424,7 @@ impl VM {
                                         }
                                     }
                                 }
+                                */
                                 "FLOAT" => {
                                     let final_value_res =
                                         raw_record.get::<Option<f32>, usize>(index);
@@ -439,6 +461,7 @@ impl VM {
                                         }
                                     }
                                 }
+                                /*
                                 "DECIMAL" => {
                                     let final_value_res =
                                         raw_record.get::<Option<rust_decimal::Decimal>, usize>(index);
@@ -458,6 +481,7 @@ impl VM {
                                         }
                                     }
                                 }
+                                */
                                 _ => {
                                     eprintln!("{}: {}, {}", name, index, type_info.name());
                                     eprintln!("{:?}", ret_record);

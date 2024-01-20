@@ -30,7 +30,7 @@ use num_traits::{Zero, Num};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::{ChildStderr, ChildStdout};
-use sqlx::MySql;
+use sqlx::{MySql, Postgres, Sqlite};
 
 use crate::opcode::{to_opcode, OpCode};
 use crate::vm::*;
@@ -367,28 +367,75 @@ impl IpSet {
     }
 }
 
-/// A database connection object.
+/// MySQL database objects.
 #[derive(Debug, Clone)]
-pub struct DBConnection {
+pub struct DBConnectionMySQL {
     pub pool: sqlx::Pool<MySql>,
 }
 
-impl DBConnection {
-    pub fn new(pool: sqlx::Pool<MySql>) -> DBConnection {
-        DBConnection { pool }
+impl DBConnectionMySQL {
+    pub fn new(pool: sqlx::Pool<MySql>) -> DBConnectionMySQL {
+        DBConnectionMySQL { pool }
     }
 }
 
-/// A database statement object.
 #[derive(Debug)]
-pub struct DBStatement {
+pub struct DBStatementMySQL {
     pub pool: sqlx::Pool<MySql>,
     pub query: String,
 }
 
-impl DBStatement {
-    pub fn new(pool: sqlx::Pool<MySql>, query: String) -> DBStatement {
-        DBStatement { pool, query }
+impl DBStatementMySQL {
+    pub fn new(pool: sqlx::Pool<MySql>, query: String) -> DBStatementMySQL {
+        DBStatementMySQL { pool, query }
+    }
+}
+
+/// PostgreSQL database objects.
+#[derive(Debug, Clone)]
+pub struct DBConnectionPostgres {
+    pub pool: sqlx::Pool<Postgres>,
+}
+
+impl DBConnectionPostgres {
+    pub fn new(pool: sqlx::Pool<Postgres>) -> DBConnectionPostgres {
+        DBConnectionPostgres { pool }
+    }
+}
+
+#[derive(Debug)]
+pub struct DBStatementPostgres {
+    pub pool: sqlx::Pool<Postgres>,
+    pub query: String,
+}
+
+impl DBStatementPostgres {
+    pub fn new(pool: sqlx::Pool<Postgres>, query: String) -> DBStatementPostgres {
+        DBStatementPostgres { pool, query }
+    }
+}
+
+/// SQLite database objects.
+#[derive(Debug, Clone)]
+pub struct DBConnectionSQLite {
+    pub pool: sqlx::Pool<Sqlite>,
+}
+
+impl DBConnectionSQLite {
+    pub fn new(pool: sqlx::Pool<Sqlite>) -> DBConnectionSQLite {
+        DBConnectionSQLite { pool }
+    }
+}
+
+#[derive(Debug)]
+pub struct DBStatementSQLite {
+    pub pool: sqlx::Pool<Sqlite>,
+    pub query: String,
+}
+
+impl DBStatementSQLite {
+    pub fn new(pool: sqlx::Pool<Sqlite>, query: String) -> DBStatementSQLite {
+        DBStatementSQLite { pool, query }
     }
 }
 
@@ -728,12 +775,20 @@ pub enum Value {
     /// A generator over the shell history.  This is presented as a
     /// 'plain' generator outside of the compiler.
     HistoryGenerator(Rc<RefCell<i32>>),
-    /// A database connection.
-    DBConnection(Rc<RefCell<DBConnection>>),
-    /// A database statement.
-    DBStatement(Rc<RefCell<DBStatement>>),
     /// A generator from a channel from a forked process.
     ChannelGenerator(Rc<RefCell<ChannelGenerator>>),
+    /// A MySQL database connection.
+    DBConnectionMySQL(Rc<RefCell<DBConnectionMySQL>>),
+    /// A MySQL database statement.
+    DBStatementMySQL(Rc<RefCell<DBStatementMySQL>>),
+    /// A PostgreSQL database connection.
+    DBConnectionPostgres(Rc<RefCell<DBConnectionPostgres>>),
+    /// A PostgreSQL database statement.
+    DBStatementPostgres(Rc<RefCell<DBStatementPostgres>>),
+    /// A SQLite database connection.
+    DBConnectionSQLite(Rc<RefCell<DBConnectionSQLite>>),
+    /// A SQLite database statement.
+    DBStatementSQLite(Rc<RefCell<DBStatementSQLite>>),
 }
 
 impl fmt::Debug for Value {
@@ -836,10 +891,22 @@ impl fmt::Debug for Value {
             Value::HistoryGenerator(_) => {
                 write!(f, "((Generator))")
             }
-            Value::DBConnection(_) => {
+            Value::DBConnectionMySQL(_) => {
                 write!(f, "((DBConnection))")
             }
-            Value::DBStatement(_) => {
+            Value::DBStatementMySQL(_) => {
+                write!(f, "((DBStatement))")
+            }
+            Value::DBConnectionPostgres(_) => {
+                write!(f, "((DBConnection))")
+            }
+            Value::DBStatementPostgres(_) => {
+                write!(f, "((DBStatement))")
+            }
+            Value::DBConnectionSQLite(_) => {
+                write!(f, "((DBConnection))")
+            }
+            Value::DBStatementSQLite(_) => {
                 write!(f, "((DBStatement))")
             }
             Value::ChannelGenerator(_) => {
@@ -1968,9 +2035,13 @@ impl Value {
             },
             Value::MultiGenerator(_) => self.clone(),
             Value::HistoryGenerator(_) => self.clone(),
-            Value::DBConnection(_) => self.clone(),
-            Value::DBStatement(_) => self.clone(),
             Value::ChannelGenerator(_) => self.clone(),
+            Value::DBConnectionMySQL(_) => self.clone(),
+            Value::DBStatementMySQL(_) => self.clone(),
+            Value::DBConnectionPostgres(_) => self.clone(),
+            Value::DBStatementPostgres(_) => self.clone(),
+            Value::DBConnectionSQLite(_) => self.clone(),
+            Value::DBStatementSQLite(_) => self.clone(),
         }
     }
 
@@ -2007,8 +2078,12 @@ impl Value {
             (Value::IpSet(..), Value::IpSet(..)) => true,
             (Value::MultiGenerator(..), Value::MultiGenerator(..)) => true,
             (Value::HistoryGenerator(..), Value::HistoryGenerator(..)) => true,
-            (Value::DBConnection(..), Value::DBConnection(..)) => true,
-            (Value::DBStatement(..), Value::DBStatement(..)) => true,
+            (Value::DBConnectionMySQL(..), Value::DBConnectionMySQL(..)) => true,
+            (Value::DBStatementMySQL(..), Value::DBStatementMySQL(..)) => true,
+            (Value::DBConnectionPostgres(..), Value::DBConnectionPostgres(..)) => true,
+            (Value::DBStatementPostgres(..), Value::DBStatementPostgres(..)) => true,
+            (Value::DBConnectionSQLite(..), Value::DBConnectionSQLite(..)) => true,
+            (Value::DBStatementSQLite(..), Value::DBStatementSQLite(..)) => true,
             (..) => false,
         }
     }
@@ -2075,9 +2150,13 @@ impl Value {
             Value::IpSet(..) => "ips",
             Value::MultiGenerator(..) => "multi-gen",
             Value::HistoryGenerator(..) => "gen",
-            Value::DBConnection(..) => "db-connection",
-            Value::DBStatement(..) => "db-statement",
             Value::ChannelGenerator(..) => "channel-gen",
+            Value::DBConnectionMySQL(..) => "db-connection",
+            Value::DBStatementMySQL(..) => "db-statement",
+            Value::DBConnectionPostgres(..) => "db-connection",
+            Value::DBStatementPostgres(..) => "db-statement",
+            Value::DBConnectionSQLite(..) => "db-connection",
+            Value::DBStatementSQLite(..) => "db-statement",
         };
         s.to_string()
     }

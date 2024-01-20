@@ -428,7 +428,72 @@ impl VM {
                         index,
                     );
                 }
-                Value::DBConnection(..) => {
+                Value::DBConnectionMySQL(..) => {
+                    last_stack.push(value_rr.clone());
+                    let s = format!("v[{}]", &(value_rr.type_string()));
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        window_width,
+                        lines_to_print,
+                        index,
+                    );
+                }
+                Value::DBConnectionPostgres(..) => {
+                    last_stack.push(value_rr.clone());
+                    let s = format!("v[{}]", &(value_rr.type_string()));
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        window_width,
+                        lines_to_print,
+                        index,
+                    );
+                }
+                Value::DBConnectionSQLite(..) => {
+                    last_stack.push(value_rr.clone());
+                    let s = format!("v[{}]", &(value_rr.type_string()));
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        window_width,
+                        lines_to_print,
+                        index,
+                    );
+                }
+                Value::DBStatementMySQL(..) => {
+                    last_stack.push(value_rr.clone());
+                    let s = format!("v[{}]", &(value_rr.type_string()));
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        window_width,
+                        lines_to_print,
+                        index,
+                    );
+                }
+                Value::DBStatementPostgres(..) => {
+                    last_stack.push(value_rr.clone());
+                    let s = format!("v[{}]", &(value_rr.type_string()));
+                    lines_to_print = psv_helper(
+                        &s,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        window_width,
+                        lines_to_print,
+                        index,
+                    );
+                }
+                Value::DBStatementSQLite(..) => {
                     last_stack.push(value_rr.clone());
                     let s = format!("v[{}]", &(value_rr.type_string()));
                     lines_to_print = psv_helper(

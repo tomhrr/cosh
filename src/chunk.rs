@@ -26,6 +26,7 @@ use num_traits::Zero;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::process::{ChildStderr, ChildStdout};
+use sqlx::MySql;
 
 use crate::opcode::{to_opcode, OpCode};
 use crate::vm::*;
@@ -363,24 +364,24 @@ impl IpSet {
 /// A database connection object.
 #[derive(Debug, Clone)]
 pub struct DBConnection {
-    pub pool: Rc<RefCell<sqlx::AnyConnection>>,
+    pub pool: sqlx::Pool<MySql>,
 }
 
 impl DBConnection {
-    pub fn new(pool: sqlx::AnyConnection) -> DBConnection {
-        DBConnection { pool: Rc::new(RefCell::new(pool)) }
+    pub fn new(pool: sqlx::Pool<MySql>) -> DBConnection {
+        DBConnection { pool }
     }
 }
 
 /// A database statement object.
 #[derive(Debug)]
 pub struct DBStatement {
-    pub pool: Rc<RefCell<sqlx::AnyConnection>>,
+    pub pool: sqlx::Pool<MySql>,
     pub query: String,
 }
 
 impl DBStatement {
-    pub fn new(pool: Rc<RefCell<sqlx::AnyConnection>>, query: String) -> DBStatement {
+    pub fn new(pool: sqlx::Pool<MySql>, query: String) -> DBStatement {
         DBStatement { pool, query }
     }
 }

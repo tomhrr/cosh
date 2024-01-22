@@ -74,7 +74,29 @@ impl VM {
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
-                let res = std::fs::copy(src, dst);
+                let dst_meta_opt = fs::metadata(dst);
+                let dst_path =
+                    if !dst_meta_opt.is_err() {
+                        let dst_meta = dst_meta_opt.unwrap();
+                        if dst_meta.is_dir() {
+                            let src_path = Path::new(src);
+                            let file_name = src_path.file_name();
+                            match file_name {
+                                Some(s) => {
+                                    format!("{}/{}", dst, s.to_str().unwrap())
+                                }
+                                None => {
+                                    self.print_error("unable to copy directory to directory");
+                                    return 0;
+                                }
+                            }
+                        } else {
+                            dst.to_string()
+                        }
+                    } else {
+                        dst.to_string()
+                    };
+                let res = std::fs::copy(src, dst_path);
                 match res {
                     Ok(_) => {}
                     Err(e) => {
@@ -115,21 +137,33 @@ impl VM {
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
-                let res = std::fs::copy(src, dst);
+                self.stack.push(
+                    Value::String(
+                        Rc::new(
+                            RefCell::new(
+                                StringTriple::new(src.to_string(), None)
+                            )
+                        )
+                    )
+                );
+                self.stack.push(
+                    Value::String(
+                        Rc::new(
+                            RefCell::new(
+                                StringTriple::new(dst.to_string(), None)
+                            )
+                        )
+                    )
+                );
+                let res = self.core_cp();
+                if res == 0 {
+                    return 0;
+                }
+                let res = std::fs::remove_file(src);
                 match res {
-                    Ok(_) => {
-                        let res = std::fs::remove_file(src);
-                        match res {
-                            Ok(_) => 1,
-                            Err(e) => {
-                                let err_str = format!("unable to remove original file: {}", e);
-                                self.print_error(&err_str);
-                                0
-                            }
-                        }
-                    }
+                    Ok(_) => 1,
                     Err(e) => {
-                        let err_str = format!("unable to copy file to destination: {}", e);
+                        let err_str = format!("unable to remove original file: {}", e);
                         self.print_error(&err_str);
                         0
                     }
@@ -206,7 +240,29 @@ impl VM {
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
-                let res = std::os::unix::fs::symlink(src, dst);
+                let dst_meta_opt = fs::metadata(dst);
+                let dst_path =
+                    if !dst_meta_opt.is_err() {
+                        let dst_meta = dst_meta_opt.unwrap();
+                        if dst_meta.is_dir() {
+                            let src_path = Path::new(src);
+                            let file_name = src_path.file_name();
+                            match file_name {
+                                Some(s) => {
+                                    format!("{}/{}", dst, s.to_str().unwrap())
+                                }
+                                None => {
+                                    self.print_error("unable to copy directory to directory");
+                                    return 0;
+                                }
+                            }
+                        } else {
+                            dst.to_string()
+                        }
+                    } else {
+                        dst.to_string()
+                    };
+                let res = std::os::unix::fs::symlink(src, dst_path);
                 match res {
                     Ok(_) => {}
                     Err(e) => {

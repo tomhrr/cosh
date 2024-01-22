@@ -1619,3 +1619,22 @@ fn m_test() {
 fn shift_all_test() {
     basic_test("10 range; shift-all; 10 mlist; sum", "45");
 }
+
+#[test]
+fn to_dir_test() {
+    basic_test(
+        "
+tempdir; td var; td !; file touch; file td @; cp; td @; ls; len;
+td @; ls; rm for; td @; rmdir; file rm;
+", "1");
+    basic_test(
+        "
+tempdir; td var; td !; file touch; file td @; mv; td @; ls; len;
+td @; ls; rm for; td @; rmdir;
+", "1");
+    basic_test(
+        "
+tempdir; td var; td !; file touch; file td @; link; td @; ls; len;
+td @; ls; rm for; td @; rmdir; file rm;
+", "1");
+}

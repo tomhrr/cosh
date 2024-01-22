@@ -28,10 +28,23 @@
 	.f until;
     drop; ,,
 
-: ls
-    depth;
+:~ ls 1 0
     0 =; if; . then;
-    lsh; [ "/\." m; not; ] grep; ,,
+    dup; "/*$" "" s; "^{}/\." fmt; myre var; myre !;
+    lsh; lsv var; lsv !;
+    begin;
+        lsv @; shift; dup;
+        is-null; if;
+            drop;
+            leave;
+        else;
+            dup; myre @; m; not; if;
+                yield;
+            else;
+                drop;
+            then;
+        then;
+        .f until; ,,
 
 :~ lshr 1 0
     0 =; if; . then;
@@ -68,10 +81,23 @@
         then;
 	finished @; 1 =; until; ,,
 
-: lsr
-    depth;
+:~ lsr 1 0
     0 =; if; . then;
-    lshr; [ "/\." m; not; ] grep; ,,
+    dup; "/*$" "" s; "^{}/\." fmt; myre var; myre !;
+    lshr; lsv var; lsv !;
+    begin;
+        lsv @; shift; dup;
+        is-null; if;
+            drop;
+            leave;
+        else;
+            dup; myre @; m; not; if;
+                yield;
+            else;
+                drop;
+            then;
+        then;
+        .f until; ,,
 
 :~ f< 1 1
     drop;

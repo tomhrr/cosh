@@ -363,6 +363,7 @@ lazy_static! {
     static ref RE_ESCAPED_SLASH: Regex = Regex::new("\\\\/").unwrap();
     static ref RE_NEWLINE: Regex = Regex::new("\n").unwrap();
     static ref RE_ERROR_PART: Regex = Regex::new(".*error:\\s*").unwrap();
+    static ref RE_HOME_DIR_TILDE: Regex = Regex::new("~").unwrap();
 }
 
 impl VM {
@@ -609,6 +610,24 @@ impl VM {
                 ))))
             })
         }
+    }
+
+    /// Takes a path, and replaces any ~ characters with the user's home
+    /// directory (if available).
+    pub fn tilde_expansion(input_s: &str) -> String {
+	let homedir_res = std::env::var("HOME");
+	let final_s;
+	match homedir_res {
+	    Ok(homedir) => {
+		let s = "".to_owned() + &homedir;
+		final_s = RE_HOME_DIR_TILDE.replace_all(input_s, &*s).to_string();
+	    }
+	    _ => {
+		final_s = input_s.to_string();
+	    }
+	}
+
+	final_s
     }
 
     /// Takes a string and converts it into a regex.

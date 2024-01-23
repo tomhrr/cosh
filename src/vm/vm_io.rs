@@ -14,26 +14,7 @@ use crate::chunk::{StringTriple, Value, BufReaderWithBuffer};
 use crate::vm::*;
 
 lazy_static! {
-    static ref HOME_DIR_TILDE:   Regex = Regex::new("~").unwrap();
     static ref TRAILING_SLASHES: Regex = Regex::new("/*$").unwrap();
-}
-
-/// Takes a path, and replaces any ~ characters with the user's home
-/// directory (if available).
-fn tilde_expansion(input_s: &str) -> String {
-    let homedir_res = std::env::var("HOME");
-    let final_s;
-    match homedir_res {
-        Ok(homedir) => {
-            let s = "".to_owned() + &homedir;
-            final_s = HOME_DIR_TILDE.replace_all(input_s, &*s).to_string();
-        }
-        _ => {
-            final_s = input_s.to_string();
-        }
-    }
-
-    final_s
 }
 
 impl VM {
@@ -55,7 +36,7 @@ impl VM {
             Value::String(st) => match st.borrow().string.as_ref() {
                 "r" => match path_str_opt {
                     Some(s) => {
-                        let ss = tilde_expansion(s);
+                        let ss = VM::tilde_expansion(s);
                         let metadata_res = metadata(ss.clone());
                         match metadata_res {
                             Ok(metadata) => {
@@ -96,7 +77,7 @@ impl VM {
                 },
                 "w" => match path_str_opt {
                     Some(s) => {
-                        let ss = tilde_expansion(s);
+                        let ss = VM::tilde_expansion(s);
                         let file_res = File::create(ss);
                         match file_res {
                             Ok(file) => {
@@ -345,7 +326,7 @@ impl VM {
 
         match path_str_opt {
             Some(s) => {
-                let ss = tilde_expansion(s);
+                let ss = VM::tilde_expansion(s);
                 let ss2 = TRAILING_SLASHES.replace_all(&ss, "").to_string();
                 let dir_handle_res = std::fs::read_dir(ss2);
                 match dir_handle_res {

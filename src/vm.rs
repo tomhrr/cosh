@@ -252,6 +252,7 @@ lazy_static! {
         map.insert("db.exec", VM::core_db_exec as fn(&mut VM) -> i32);
         map.insert("pmap", VM::core_pmap as fn(&mut VM) -> i32);
         map.insert("pmapn", VM::core_pmapn as fn(&mut VM) -> i32);
+        map.insert("expand-tilde", VM::core_expand_tilde as fn(&mut VM) -> i32);
         map
     };
 
@@ -469,6 +470,34 @@ impl VM {
         1
     }
 
+    /// Expand a tilde that appears in the path.
+    pub fn core_expand_tilde(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("expand-tilde requires one argument");
+            return 0;
+        }
+
+        let path_rr = self.stack.pop().unwrap();
+        let path_str_opt: Option<&str>;
+        to_str!(path_rr, path_str_opt);
+
+        match path_str_opt {
+            Some(s) => {
+                let ss = Self::expand_tilde(s);
+                let v = Value::String(Rc::new(RefCell::new(StringTriple::new(
+                    ss.to_string(),
+                    None,
+                ))));
+                self.stack.push(v);
+                return 1;
+            }
+            None => {
+                self.print_error("expand-tilde argument must be a string");
+                return 0;
+            }
+        }
+    }
+
     /// Return a generator over the shell history.  If not being run
     /// in shell context, returns an error message.
     pub fn core_history(&mut self) -> i32 {
@@ -614,7 +643,7 @@ impl VM {
 
     /// Takes a path, and replaces any ~ characters with the user's home
     /// directory (if available).
-    pub fn tilde_expansion(input_s: &str) -> String {
+    pub fn expand_tilde(input_s: &str) -> String {
 	let homedir_res = std::env::var("HOME");
 	let final_s;
 	match homedir_res {

@@ -36,7 +36,7 @@ impl VM {
             Value::String(st) => match st.borrow().string.as_ref() {
                 "r" => match path_str_opt {
                     Some(s) => {
-                        let ss = VM::tilde_expansion(s);
+                        let ss = VM::expand_tilde(s);
                         let metadata_res = metadata(ss.clone());
                         match metadata_res {
                             Ok(metadata) => {
@@ -77,7 +77,7 @@ impl VM {
                 },
                 "w" => match path_str_opt {
                     Some(s) => {
-                        let ss = VM::tilde_expansion(s);
+                        let ss = VM::expand_tilde(s);
                         let file_res = File::create(ss);
                         match file_res {
                             Ok(file) => {
@@ -326,7 +326,7 @@ impl VM {
 
         match path_str_opt {
             Some(s) => {
-                let ss = VM::tilde_expansion(s);
+                let ss = VM::expand_tilde(s);
                 let ss2 = TRAILING_SLASHES.replace_all(&ss, "").to_string();
                 let dir_handle_res = std::fs::read_dir(ss2);
                 match dir_handle_res {

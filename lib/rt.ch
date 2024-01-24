@@ -28,9 +28,12 @@
 	.f until;
     drop; ,,
 
+: ls-filter-path
+    expand-tilde; "/*$" "" s; "^{}/\." fmt; ,,
+
 :~ ls 1 0
     0 =; if; . then;
-    dup; "/*$" "" s; "^{}/\." fmt; myre var; myre !;
+    dup; ls-filter-path; myre var; myre !;
     lsh; lsv var; lsv !;
     begin;
         lsv @; shift; dup;
@@ -83,7 +86,7 @@
 
 :~ lsr 1 0
     0 =; if; . then;
-    dup; "/*$" "" s; "^{}/\." fmt; myre var; myre !;
+    dup; ls-filter-path; myre var; myre !;
     lshr; lsv var; lsv !;
     begin;
         lsv @; shift; dup;

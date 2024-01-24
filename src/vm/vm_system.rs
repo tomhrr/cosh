@@ -37,7 +37,7 @@ impl VM {
 
         match value_opt {
             Some(s) => {
-                let ss = VM::tilde_expansion(s);
+                let ss = VM::expand_tilde(s);
                 let res = std::fs::remove_file(ss);
                 match res {
                     Ok(_) => {}
@@ -75,8 +75,8 @@ impl VM {
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
-                let srcs = VM::tilde_expansion(src);
-                let dsts = VM::tilde_expansion(dst);
+                let srcs = VM::expand_tilde(src);
+                let dsts = VM::expand_tilde(dst);
                 let dst_meta_opt = fs::metadata(&dsts);
                 let dst_path =
                     if !dst_meta_opt.is_err() {
@@ -162,7 +162,7 @@ impl VM {
                 if res == 0 {
                     return 0;
                 }
-                let srcs = VM::tilde_expansion(src);
+                let srcs = VM::expand_tilde(src);
                 let res = std::fs::remove_file(srcs);
                 match res {
                     Ok(_) => 1,
@@ -204,8 +204,8 @@ impl VM {
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
-                let srcs = VM::tilde_expansion(src);
-                let dsts = VM::tilde_expansion(dst);
+                let srcs = VM::expand_tilde(src);
+                let dsts = VM::expand_tilde(dst);
                 let res = std::fs::rename(srcs, dsts);
                 match res {
                     Ok(_) => 1,
@@ -246,8 +246,8 @@ impl VM {
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
-                let srcs = VM::tilde_expansion(src);
-                let dsts = VM::tilde_expansion(dst);
+                let srcs = VM::expand_tilde(src);
+                let dsts = VM::expand_tilde(dst);
                 let dst_meta_opt = fs::metadata(&dsts);
                 let dst_path =
                     if !dst_meta_opt.is_err() {
@@ -324,7 +324,7 @@ impl VM {
 
             match dir_opt {
                 Some(dir) => {
-                    let dirs = VM::tilde_expansion(dir);
+                    let dirs = VM::expand_tilde(dir);
                     let path_dir = Path::new(&dirs);
                     let res = env::set_current_dir(&path_dir);
                     match res {
@@ -382,7 +382,7 @@ impl VM {
 
         match path_opt {
             Some(path_str) => {
-                let path_strs = VM::tilde_expansion(path_str);
+                let path_strs = VM::expand_tilde(path_str);
                 let path = Path::new(&path_strs);
                 if !path.exists() {
                     let res = fs::write(&path_strs, "");
@@ -451,7 +451,7 @@ impl VM {
 
         match path_opt {
             Some(s) => {
-                let ss = VM::tilde_expansion(s);
+                let ss = VM::expand_tilde(s);
                 let meta_res = if use_symlink {
                     fs::symlink_metadata(&ss)
                 } else {
@@ -725,7 +725,7 @@ impl VM {
 
         match (path_opt, mode_opt) {
             (Some(path), Some(mode)) => {
-                let paths = VM::tilde_expansion(path);
+                let paths = VM::expand_tilde(path);
                 let f_opt = fs::metadata(&paths);
                 if f_opt.is_err() {
                     self.print_error("unable to get metadata for path");
@@ -801,7 +801,7 @@ impl VM {
                 }
                 let group_obj = group_opt.unwrap();
 
-                let paths = VM::tilde_expansion(path);
+                let paths = VM::expand_tilde(path);
                 let path_obj = Path::new(&paths);
                 let chown_res = nix::unistd::chown(path_obj, Some(user_obj.uid), Some(group_obj.gid));
                 match chown_res {
@@ -842,7 +842,7 @@ impl VM {
 
         match dir_opt {
             Some(dir) => {
-                let dirs = VM::tilde_expansion(dir);
+                let dirs = VM::expand_tilde(dir);
                 let res = std::fs::create_dir(dirs);
                 match res {
                     Ok(_) => 1,
@@ -874,7 +874,7 @@ impl VM {
 
         match dir_opt {
             Some(dir) => {
-                let dirs = VM::tilde_expansion(dir);
+                let dirs = VM::expand_tilde(dir);
                 let res = std::fs::remove_dir(dirs);
                 match res {
                     Ok(_) => 1,

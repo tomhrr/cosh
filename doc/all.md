@@ -1110,11 +1110,12 @@ and `str` is defined for both IP objects and IP sets.
 
 #### SQL databases
 
- - `db.conn`: takes a database type (one of "mysql", "postgresql", or
-   "sqlite"), a database server hostname, a database name, a username,
-   and a password, and returns a database connection object.  (If
-   "sqlite" is used, the database server hostname is the path to the
-   database file, and the remaining parameters are omitted.)
+ - `db.conn`: takes a username, a password, a database name, a
+   database server hostname, and a database type (one of "mysql",
+   "postgresql", or "sqlite"), and returns a database connection
+   object.  (If "sqlite" is used, the database server hostname is the
+   path to the database file, and the remaining parameters are
+   omitted.)
  - `db.prep`: takes a database connection object and an SQL statement,
    and returns a database statement handle.
  - `db.exec`: takes a database statement handle and a list of
@@ -1122,7 +1123,7 @@ and `str` is defined for both IP objects and IP sets.
    hash for each of the records retrieved from the database.
 
 For PostgreSQL, not all field types are supported.  The issue for
-tracking this problem is #123.
+tracking this problem is https://github.com/tomhrr/cosh/issues/123.
 
 #### Miscellaneous functions
 

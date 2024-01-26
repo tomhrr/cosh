@@ -289,9 +289,7 @@ impl BufReaderWithBuffer {
                 self.buffer_index = -1;
                 self.buffer_limit = -1;
             }
-            Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                s.to_string(), None
-            )))))
+            Some(new_string_value(s.to_string()))
         } else {
             let mut sbuf = Vec::new();
             let res = self.reader.read_until('\n' as u8, &mut sbuf);
@@ -304,9 +302,7 @@ impl BufReaderWithBuffer {
                     let s = String::from_utf8_lossy(bufvec);
                     self.buffer_index = -1;
                     self.buffer_limit = -1;
-                    Some(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        s.to_string(), None
-                    )))))
+                    Some(new_string_value(s.to_string()))
                 }
                 _ => None
             }
@@ -961,8 +957,7 @@ pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
         ValueSD::Float(f) => Value::Float(f),
         ValueSD::BigInt(bis) =>
             Value::BigInt(BigInt::from_str_radix(&bis, 10).unwrap()),
-        ValueSD::String(s) =>
-            Value::String(Rc::new(RefCell::new(StringTriple::new(s, None)))),
+        ValueSD::String(s) => new_string_value(s),
         ValueSD::DateTimeOT(d) => Value::DateTimeOT(d),
         ValueSD::Ipv4(d) => Value::Ipv4(d),
         ValueSD::Ipv6(d) => Value::Ipv6(d),

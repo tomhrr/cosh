@@ -10,7 +10,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use tempfile::{NamedTempFile, TempDir};
 
-use crate::chunk::{StringTriple, Value, BufReaderWithBuffer};
+use crate::chunk::{Value, BufReaderWithBuffer};
 use crate::vm::*;
 
 lazy_static! {
@@ -366,10 +366,7 @@ impl VM {
                 match entry_opt {
                     Some(s) => {
                         let path = s.unwrap().path();
-                        Value::String(Rc::new(RefCell::new(StringTriple::new(
-                            path.to_str().unwrap().to_string(),
-                            None,
-                        ))))
+                        new_string_value(path.to_str().unwrap().to_string())
                     }
                     None => Value::Null,
                 }
@@ -426,10 +423,7 @@ impl VM {
             Ok(ntf) => match ntf.keep() {
                 Ok((file, path)) => {
                     self.stack
-                        .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                            path.to_str().unwrap().to_string(),
-                            None,
-                        )))));
+                        .push(new_string_value(path.to_str().unwrap().to_string()));
                     self.stack
                         .push(Value::FileWriter(Rc::new(RefCell::new(BufWriter::new(
                             file,
@@ -458,10 +452,7 @@ impl VM {
             Ok(td) => {
                 let path = td.into_path();
                 self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        path.to_str().unwrap().to_string(),
-                        None,
-                    )))));
+                    .push(new_string_value(path.to_str().unwrap().to_string()));
                 1
             }
             Err(e) => {

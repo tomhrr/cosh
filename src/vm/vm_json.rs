@@ -6,7 +6,7 @@ use std::rc::Rc;
 use indexmap::IndexMap;
 use num_bigint::ToBigInt;
 
-use crate::chunk::{StringTriple, Value};
+use crate::chunk::Value;
 use crate::vm::*;
 
 /// Converts a serde_json object into a value.
@@ -34,9 +34,8 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
                 Value::Float(n.as_f64().unwrap())
             }
         }
-        serde_json::value::Value::String(s) => Value::String(Rc::new(RefCell::new(
-            StringTriple::new(s.to_string(), None),
-        ))),
+        serde_json::value::Value::String(s) =>
+            new_string_value(s.to_string()), 
         serde_json::value::Value::Array(lst) => Value::List(Rc::new(RefCell::new(
             lst.iter().map(convert_from_json).collect::<VecDeque<_>>(),
         ))),
@@ -121,11 +120,7 @@ impl VM {
             }
         } else {
             self.stack.push(value_rr);
-            self.stack
-                .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                    "".to_string(),
-                    None,
-                )))));
+            self.stack.push(new_string_value("".to_string()));
             let function_rr = self.string_to_callable("join").unwrap();
             let res = self.call(OpCode::Call, function_rr);
             if !res {
@@ -144,12 +139,7 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        self.stack
-            .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                convert_to_json(&value_rr),
-                None,
-            )))));
-
+        self.stack.push(new_string_value(convert_to_json(&value_rr)));
         1
     }
 }

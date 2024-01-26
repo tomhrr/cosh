@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use regex::Regex;
 
-use crate::chunk::{StringTriple, Value};
+use crate::chunk::Value;
 use crate::vm::*;
 
 lazy_static! {
@@ -88,11 +88,7 @@ impl VM {
                 } else {
                     regex.replace(s, &updated_repl_str[..])
                 };
-                self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        updated_str.to_string(),
-                        None,
-                    )))));
+                self.stack.push(new_string_value(updated_str.to_string()));
             }
             (_, Some(_), Some(_)) => {
                 self.print_error("third s argument must be string");
@@ -137,10 +133,11 @@ impl VM {
                     for capture in captures {
                         let mut sublst = VecDeque::new();
                         for subcapture in capture.iter() {
-                            sublst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                subcapture.unwrap().as_str().to_string(),
-                                None,
-                            )))));
+                            sublst.push_back(
+                                new_string_value(
+                                    subcapture.unwrap().as_str().to_string()
+                                )
+                            );
                         }
                         lst.push_back(Value::List(Rc::new(RefCell::new(sublst))));
                     }
@@ -150,10 +147,11 @@ impl VM {
                     let mut lst = VecDeque::new();
                     if let Some(capture) = captures {
                         for subcapture in capture.iter() {
-                            lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                subcapture.unwrap().as_str().to_string(),
-                                None,
-                            )))));
+                            lst.push_back(
+                                new_string_value(
+                                    subcapture.unwrap().as_str().to_string()
+                                )
+                            );
                         }
                     }
                     self.stack.push(Value::List(Rc::new(RefCell::new(lst))));

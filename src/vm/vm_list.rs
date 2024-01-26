@@ -7,8 +7,9 @@ use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
 
-use crate::chunk::{IpSet, StringTriple, Value, ValueSD,
-valuesd_to_value, read_valuesd};
+use crate::chunk::{IpSet, Value, ValueSD,
+                   valuesd_to_value, read_valuesd,
+                   new_string_value};
 use crate::vm::VM;
 
 impl VM {
@@ -292,9 +293,7 @@ impl VM {
                         Some((i, s)) => {
                             let mut lst = VecDeque::new();
                             lst.push_back(Value::Int(i));
-                            lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                s, None,
-                            )))));
+                            lst.push_back(new_string_value(s));
                             self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                         }
                     }
@@ -305,9 +304,7 @@ impl VM {
                             self.stack.push(Value::Null);
                         }
                         Some(s) => {
-                            self.stack.push(Value::String(Rc::new(RefCell::new(
-                                StringTriple::new(s, None),
-                            ))));
+                            self.stack.push(new_string_value(s));
                         }
                     }
                 }
@@ -322,9 +319,9 @@ impl VM {
                             let kv = mapb.get_index(hwi.borrow().i);
                             match kv {
                                 Some((k, _)) => {
-                                    self.stack.push(Value::String(Rc::new(RefCell::new(
-                                        StringTriple::new(k.to_string(), None),
-                                    ))));
+                                    self.stack.push(
+                                        new_string_value(k.to_string())
+                                    );
                                 }
                                 None => {
                                     self.stack.push(Value::Null);
@@ -375,9 +372,7 @@ impl VM {
                             match kv {
                                 Some((k, v)) => {
                                     let mut lst = VecDeque::new();
-                                    lst.push_back(Value::String(Rc::new(RefCell::new(
-                                        StringTriple::new(k.to_string(), None),
-                                    ))));
+                                    lst.push_back(new_string_value(k.to_string()));
                                     lst.push_back(v.clone());
                                     self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                                 }
@@ -433,9 +428,7 @@ impl VM {
                         match hist_line_opt {
                             Some(s) => {
                                 self.stack.push(
-                                    Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                        s.to_string(), None,
-                                    ))))
+                                    new_string_value(s.to_string())
                                 );
                                 *hist_gen_rr.borrow_mut() += 1;
                             }

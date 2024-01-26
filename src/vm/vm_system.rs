@@ -19,7 +19,7 @@ use num_bigint::BigInt;
 use sysinfo::{PidExt, ProcessExt, SystemExt, CpuRefreshKind, UserExt};
 use utime::*;
 
-use crate::chunk::{StringTriple, Value};
+use crate::chunk::Value;
 use crate::vm::*;
 
 impl VM {
@@ -140,24 +140,8 @@ impl VM {
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
-                self.stack.push(
-                    Value::String(
-                        Rc::new(
-                            RefCell::new(
-                                StringTriple::new(src.to_string(), None)
-                            )
-                        )
-                    )
-                );
-                self.stack.push(
-                    Value::String(
-                        Rc::new(
-                            RefCell::new(
-                                StringTriple::new(dst.to_string(), None)
-                            )
-                        )
-                    )
-                );
+                self.stack.push(new_string_value(src.to_string()));
+                self.stack.push(new_string_value(dst.to_string()));
                 let res = self.core_cp();
                 if res == 0 {
                     return 0;
@@ -352,10 +336,7 @@ impl VM {
         match current_dir_res {
             Ok(current_dir) => {
                 self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        current_dir.to_str().unwrap().to_string(),
-                        None,
-                    )))));
+                    .push(new_string_value(current_dir.to_str().unwrap().to_string()));
             }
             Err(e) => {
                 let err_str = format!("unable to pwd: {}", e);
@@ -593,50 +574,38 @@ impl VM {
                 Some(user) => {
                     map.insert(
                         "user".to_string(),
-                        Value::String(Rc::new(RefCell::new(StringTriple::new(
-                            user.name().to_string(),
-                            None,
-                        ))))
+                        new_string_value(user.name().to_string())
                     );
                 }
             };
             map.insert(
                 "name".to_string(),
-                Value::String(Rc::new(RefCell::new(StringTriple::new(
-                    process.name().to_string(),
-                    None,
-                )))),
+                new_string_value(process.name().to_string())
             );
             map.insert(
                 "cmd".to_string(),
-                Value::String(Rc::new(RefCell::new(StringTriple::new(
-                    process.cmd().join(" "),
-                    None,
-                )))),
+                new_string_value(process.cmd().join(" "))
             );
             map.insert(
                 "cpu".to_string(),
-                Value::Float(process.cpu_usage().into()),
+                Value::Float(process.cpu_usage().into())
             );
             map.insert(
                 "mem".to_string(),
-                Value::BigInt(BigInt::from_u64(process.memory().into()).unwrap()),
+                Value::BigInt(BigInt::from_u64(process.memory().into()).unwrap())
             );
             map.insert(
                 "vmem".to_string(),
-                Value::BigInt(BigInt::from_u64(process.virtual_memory().into()).unwrap()),
+                Value::BigInt(BigInt::from_u64(process.virtual_memory().into()).unwrap())
             );
             map.insert(
                 "runtime".to_string(),
-                Value::BigInt(BigInt::from_u64(process.run_time()).unwrap()),
+                Value::BigInt(BigInt::from_u64(process.run_time()).unwrap())
             );
             let s = format!("{}", process.status());
             map.insert(
                 "status".to_string(),
-                Value::String(Rc::new(RefCell::new(StringTriple::new(
-                    s,
-                    None,
-                )))),
+                new_string_value(s)
             );
 
 	    let epoch64 = i64::try_from(process.start_time()).unwrap();

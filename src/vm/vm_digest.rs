@@ -1,10 +1,7 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use sha1::{Digest, Sha1};
 use sha2::{Sha256, Sha512};
 
-use crate::chunk::{StringTriple, Value};
+use crate::chunk::Value;
 use crate::vm::*;
 
 impl VM {
@@ -23,8 +20,7 @@ impl VM {
         match str_opt {
             Some(s) => {
                 let digest = md5::compute(s.as_bytes());
-                let st = StringTriple::new(format!("{:x}", digest), None);
-                self.stack.push(Value::String(Rc::new(RefCell::new(st))));
+                self.stack.push(new_string_value(format!("{:x}", digest)));
             }
             _ => {
                 self.print_error("md5 argument must be string");
@@ -51,8 +47,7 @@ impl VM {
                 let mut hasher = Sha1::new();
                 hasher.update(s.as_bytes());
                 let digest = hasher.finalize();
-                let st = StringTriple::new(format!("{:x}", digest), None);
-                self.stack.push(Value::String(Rc::new(RefCell::new(st))));
+                self.stack.push(new_string_value(format!("{:x}", digest)));
             }
             _ => {
                 self.print_error("sha1 argument must be string");
@@ -79,8 +74,7 @@ impl VM {
                 let mut hasher = Sha256::new();
                 hasher.update(s.as_bytes());
                 let digest = hasher.finalize();
-                let st = StringTriple::new(format!("{:x}", digest), None);
-                self.stack.push(Value::String(Rc::new(RefCell::new(st))));
+                self.stack.push(new_string_value(format!("{:x}", digest)));
             }
             _ => {
                 self.print_error("sha1 argument must be string");
@@ -107,8 +101,7 @@ impl VM {
                 let mut hasher = Sha512::new();
                 hasher.update(s.as_bytes());
                 let digest = hasher.finalize();
-                let st = StringTriple::new(format!("{:x}", digest), None);
-                self.stack.push(Value::String(Rc::new(RefCell::new(st))));
+                self.stack.push(new_string_value(format!("{:x}", digest)));
             }
             _ => {
                 self.print_error("sha1 argument must be string");

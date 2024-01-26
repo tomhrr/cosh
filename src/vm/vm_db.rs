@@ -289,10 +289,9 @@ impl VM {
 				    );
 				}
 				Some(s) => {
-				    let st = StringTriple::new(s.to_string(), None);
 				    ret_record.insert(
 					name.to_string(),
-					Value::String(Rc::new(RefCell::new(st)))
+                                        new_string_value(s.to_string())
 				    );
 				}
 			    }
@@ -330,10 +329,9 @@ impl VM {
 				    );
 				}
 				Some(final_value) => {
-				    let st = StringTriple::new(final_value.to_string(), None);
 				    ret_record.insert(
 					name.to_string(),
-					Value::String(Rc::new(RefCell::new(st)))
+                                        new_string_value(final_value.to_string())
 				    );
 				}
 			    }
@@ -349,10 +347,9 @@ impl VM {
 				    );
 				}
 				Some(final_value) => {
-				    let st = StringTriple::new(final_value.to_string(), None);
 				    ret_record.insert(
 					name.to_string(),
-					Value::String(Rc::new(RefCell::new(st)))
+                                        new_string_value(final_value.to_string())
 				    );
 				}
 			    }
@@ -532,10 +529,9 @@ impl VM {
 				    );
 				}
 				Some(final_value) => {
-				    let st = StringTriple::new(final_value.to_string(), None);
 				    ret_record.insert(
 					name.to_string(),
-					Value::String(Rc::new(RefCell::new(st)))
+                                        new_string_value(final_value.to_string())
 				    );
 				}
 			    }
@@ -643,10 +639,9 @@ impl VM {
 				    );
 				}
 				Some(s) => {
-				    let st = StringTriple::new(s.to_string(), None);
 				    ret_record.insert(
 					name.to_string(),
-					Value::String(Rc::new(RefCell::new(st)))
+                                        new_string_value(s.to_string())
 				    );
 				}
 			    }
@@ -684,10 +679,9 @@ impl VM {
 				    );
 				}
 				Some(final_value) => {
-				    let st = StringTriple::new(final_value.to_string(), None);
 				    ret_record.insert(
 					name.to_string(),
-					Value::String(Rc::new(RefCell::new(st)))
+                                        new_string_value(final_value.to_string())
 				    );
 				}
 			    }
@@ -703,10 +697,9 @@ impl VM {
 				    );
 				}
 				Some(final_value) => {
-				    let st = StringTriple::new(final_value.to_string(), None);
 				    ret_record.insert(
 					name.to_string(),
-					Value::String(Rc::new(RefCell::new(st)))
+                                        new_string_value(final_value.to_string())
 				    );
 				}
 			    }
@@ -879,10 +872,9 @@ impl VM {
                                 );
                             }
                             Ok(final_value) => {
-                                let st = StringTriple::new(final_value.unwrap().to_string(), None);
                                 ret_record.insert(
                                     name.to_string(),
-                                    Value::String(Rc::new(RefCell::new(st)))
+                                    new_string_value(final_value.unwrap().to_string())
                                 );
                             }
                         }
@@ -918,10 +910,9 @@ impl VM {
 				    );
 				}
 				Some(s) => {
-				    let st = StringTriple::new(s.to_string(), None);
 				    ret_record.insert(
 					name.to_string(),
-					Value::String(Rc::new(RefCell::new(st)))
+                                        new_string_value(s.to_string())
 				    );
 				}
 			    }
@@ -959,10 +950,9 @@ impl VM {
 				    );
 				}
 				Some(final_value) => {
-				    let st = StringTriple::new(final_value.to_string(), None);
 				    ret_record.insert(
 					name.to_string(),
-					Value::String(Rc::new(RefCell::new(st)))
+                                        new_string_value(final_value.to_string())
 				    );
 				}
 			    }
@@ -978,10 +968,9 @@ impl VM {
 				    );
 				}
 				Some(final_value) => {
-				    let st = StringTriple::new(final_value.to_string(), None);
 				    ret_record.insert(
 					name.to_string(),
-					Value::String(Rc::new(RefCell::new(st)))
+                                        new_string_value(final_value.to_string())
 				    );
 				}
 			    }
@@ -1042,10 +1031,9 @@ impl VM {
                                                     );
                                                 }
                                                 Some(final_value) => {
-                                                    let st = StringTriple::new(final_value.to_string(), None);
                                                     ret_record.insert(
                                                         name.to_string(),
-                                                        Value::String(Rc::new(RefCell::new(st)))
+                                                        new_string_value(final_value.to_string())
                                                     );
                                                 }
                                             }

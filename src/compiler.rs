@@ -12,7 +12,7 @@ use std::str;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::chunk::{Chunk, StringTriple, Value};
+use crate::chunk::{Chunk, StringTriple, Value, new_string_value};
 use crate::opcode::OpCode;
 
 /// The various token types used by the compiler.
@@ -798,10 +798,8 @@ impl Compiler {
                     if !res {
                         return false;
                     }
-                    let name_str_rr = Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        name_str.as_str().to_string(),
-                        None,
-                    ))));
+                    let name_str_rr =
+                        new_string_value(name_str.as_str().to_string());
                     let i = chunk.add_constant(name_str_rr);
                     chunk.add_opcode(OpCode::Function);
                     let i_upper = (i >> 8) & 0xFF;

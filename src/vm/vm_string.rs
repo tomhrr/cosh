@@ -5,7 +5,7 @@ use std::rc::Rc;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::chunk::{StringTriple, Value};
+use crate::chunk::Value;
 use crate::vm::*;
 
 lazy_static! {
@@ -67,9 +67,7 @@ impl VM {
                     match (v1_str_opt, v2_str_opt) {
                         (Some(s1), Some(s2)) => {
                             let s3 = format!("{}{}", s1, s2);
-                            self.stack.push(Value::String(Rc::new(RefCell::new(
-                                StringTriple::new(s3, None),
-                            ))));
+                            self.stack.push(new_string_value(s3));
                         }
                         (Some(_), _) => {
                             self.print_error("second ++ argument must be string");
@@ -110,9 +108,7 @@ impl VM {
                 let elements = regex.split(list_str);
                 let mut final_elements = VecDeque::new();
                 for e in elements {
-                    final_elements.push_back(Value::String(Rc::new(RefCell::new(
-                        StringTriple::new(e.to_string(), None),
-                    ))));
+                    final_elements.push_back(new_string_value(e.to_string()));
                 }
                 self.stack
                     .push(Value::List(Rc::new(RefCell::new(final_elements))));
@@ -199,10 +195,7 @@ impl VM {
 
                 let mut lst = VecDeque::new();
                 for e in final_elements.iter() {
-                    lst.push_back(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        e.to_string(),
-                        None,
-                    )))));
+                    lst.push_back(new_string_value(e.to_string()));
                 }
                 self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
             }
@@ -326,10 +319,7 @@ impl VM {
                     return 0;
                 }
                 let final_str = final_elements.join(separator);
-                self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        final_str, None,
-                    )))));
+                self.stack.push(new_string_value(final_str));
             }
             _ => {
                 self.print_error("second join argument must be string");
@@ -421,8 +411,7 @@ impl VM {
                     }
                 }
 
-                let st = StringTriple::new(final_s, None);
-                self.stack.push(Value::String(Rc::new(RefCell::new(st))));
+                self.stack.push(new_string_value(final_s));
                 1
             }
             _ => {

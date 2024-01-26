@@ -8,7 +8,7 @@ use num_traits::ToPrimitive;
 use rand::Rng;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::chunk::{StringTriple, Value};
+use crate::chunk::Value;
 use crate::vm::*;
 
 impl VM {
@@ -322,9 +322,7 @@ impl VM {
 
                     match value_opt {
                         Some(s) => {
-                            self.stack.push(Value::String(Rc::new(RefCell::new(
-                                StringTriple::new(s.to_string(), None),
-                            ))));
+                            self.stack.push(new_string_value(s.to_string()));
                             return 1;
                         }
                         _ => {
@@ -636,8 +634,7 @@ impl VM {
                     return 0;
                 }
                 let c = c_opt.unwrap().to_string();
-                let st = Rc::new(RefCell::new(StringTriple::new(c, None)));
-                self.stack.push(Value::String(st));
+                self.stack.push(new_string_value(c));
                 1
             }
             _ => {
@@ -659,8 +656,7 @@ impl VM {
                     return 0;
                 }
                 let c = c_opt.unwrap().to_string();
-                let st = Rc::new(RefCell::new(StringTriple::new(c, None)));
-                self.stack.push(Value::String(st));
+                self.stack.push(new_string_value(c));
                 1
             }
         }
@@ -765,8 +761,7 @@ impl VM {
             return 0;
         }
         let lc_str = value_opt.unwrap().to_lowercase();
-        let st = Rc::new(RefCell::new(StringTriple::new(lc_str, None)));
-        self.stack.push(Value::String(st));
+        self.stack.push(new_string_value(lc_str));
         1
     }
 
@@ -785,8 +780,7 @@ impl VM {
         }
         let vst = value_opt.unwrap();
         if vst.is_empty() {
-            let st = Rc::new(RefCell::new(StringTriple::new(vst.to_string(), None)));
-            self.stack.push(Value::String(st));
+            self.stack.push(new_string_value(vst.to_string()));
             return 1;
         }
         let mut iter = vst.chars();
@@ -794,8 +788,7 @@ impl VM {
         for c in iter {
             new_st.push(c);
         }
-        let st = Rc::new(RefCell::new(StringTriple::new(new_st, None)));
-        self.stack.push(Value::String(st));
+        self.stack.push(new_string_value(new_st));
         1
     }
 
@@ -813,8 +806,7 @@ impl VM {
             return 0;
         }
         let uc_str = value_opt.unwrap().to_uppercase();
-        let st = Rc::new(RefCell::new(StringTriple::new(uc_str, None)));
-        self.stack.push(Value::String(st));
+        self.stack.push(new_string_value(uc_str));
         1
     }
 
@@ -833,8 +825,7 @@ impl VM {
         }
         let vst = value_opt.unwrap();
         if vst.is_empty() {
-            let st = Rc::new(RefCell::new(StringTriple::new(vst.to_string(), None)));
-            self.stack.push(Value::String(st));
+            self.stack.push(new_string_value(vst.to_string()));
             return 1;
         }
         let mut iter = vst.chars();
@@ -842,8 +833,7 @@ impl VM {
         for c in iter {
             new_st.push(c);
         }
-        let st = Rc::new(RefCell::new(StringTriple::new(new_st, None)));
-        self.stack.push(Value::String(st));
+        self.stack.push(new_string_value(new_st));
         1
     }
 
@@ -873,8 +863,7 @@ impl VM {
                 }
                 let vst = value_opt.unwrap();
                 let rev: String = vst.graphemes(true).rev().collect();
-                let st = Rc::new(RefCell::new(StringTriple::new(rev, None)));
-                self.stack.push(Value::String(st));
+                self.stack.push(new_string_value(rev));
                 1
             }
         }

@@ -1,7 +1,5 @@
-use std::cell::RefCell;
 use std::convert::TryFrom;
 use std::fmt::Write;
-use std::rc::Rc;
 use std::str::FromStr;
 
 use chrono::format::{parse, Parsed, StrftimeItems};
@@ -284,11 +282,7 @@ impl VM {
                 let res = write!(buffer, "{}", dt.format(s));
                 match res {
                     Ok(_) => {
-                        self.stack
-                            .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                buffer,
-                                None,
-                            )))));
+                        self.stack.push(new_string_value(buffer));
                         1
                     }
                     Err(_) => {
@@ -299,11 +293,7 @@ impl VM {
             }
             (Value::DateTimeOT(dt), Some(s)) => {
                 let ss = dt.format(s);
-                self.stack
-                    .push(Value::String(Rc::new(RefCell::new(StringTriple::new(
-                        ss.to_string(),
-                        None,
-                    )))));
+                self.stack.push(new_string_value(ss.to_string()));
                 1
             }
             (_, Some(_)) => {

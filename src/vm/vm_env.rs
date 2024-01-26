@@ -4,7 +4,6 @@ use std::rc::Rc;
 
 use indexmap::IndexMap;
 
-use crate::chunk::StringTriple;
 use crate::vm::*;
 
 impl VM {
@@ -13,7 +12,7 @@ impl VM {
     pub fn core_env(&mut self) -> i32 {
         let mut hsh = IndexMap::new();
         for (key, value) in env::vars() {
-            let value_str = Value::String(Rc::new(RefCell::new(StringTriple::new(value, None))));
+            let value_str = new_string_value(value);
             hsh.insert(key, value_str);
         }
         let hsh_rr = Value::Hash(Rc::new(RefCell::new(hsh)));
@@ -38,9 +37,7 @@ impl VM {
                 let value_res = env::var(s);
                 match value_res {
                     Ok(value) => {
-                        let value_sp = StringTriple::new(value, None);
-                        let value_rr = Rc::new(RefCell::new(value_sp));
-                        self.stack.push(Value::String(value_rr));
+                        self.stack.push(new_string_value(value));
                     }
                     _ => {
                         /* Assume that inability to get an environment

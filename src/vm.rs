@@ -18,7 +18,8 @@ use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
 use sysinfo::{System, SystemExt};
 
-use crate::chunk::{print_error, Chunk, GeneratorObject, StringTriple, Value, ValueLiteral};
+use crate::chunk::{print_error, new_string_value, Chunk, GeneratorObject,
+                   StringTriple, Value, ValueLiteral};
 use crate::compiler::Compiler;
 use crate::opcode::{to_opcode, OpCode};
 use crate::rl::RLHelper;
@@ -484,10 +485,7 @@ impl VM {
         match path_str_opt {
             Some(s) => {
                 let ss = Self::expand_tilde(s);
-                let v = Value::String(Rc::new(RefCell::new(StringTriple::new(
-                    ss.to_string(),
-                    None,
-                ))));
+                let v = new_string_value(ss.to_string());
                 self.stack.push(v);
                 return 1;
             }
@@ -633,10 +631,7 @@ impl VM {
             to_str!(value_rr, value_opt);
 
             value_opt.map(|s| {
-                Value::String(Rc::new(RefCell::new(StringTriple::new(
-                    s.to_string(),
-                    None,
-                ))))
+                new_string_value(s.to_string())
             })
         }
     }
@@ -914,10 +909,7 @@ impl VM {
         }
 
         if is_implicit {
-            let value_rr = Value::String(Rc::new(RefCell::new(StringTriple::new(
-                s.to_string(),
-                None,
-            ))));
+            let value_rr = new_string_value(s.to_string());
             self.stack.push(value_rr);
         } else {
             self.print_error("function not found");
@@ -1445,9 +1437,8 @@ impl VM {
                             if let Value::Null = cv {
                                 match op {
                                     OpCode::CallImplicitConstant => {
-                                        let value_rr = Value::String(Rc::new(RefCell::new(
-                                            StringTriple::new(st.to_string(), None),
-                                        )));
+                                        let value_rr =
+                                            new_string_value(st.to_string());
                                         self.stack.push(value_rr);
                                         i += 1;
                                         continue;

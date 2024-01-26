@@ -1656,3 +1656,8 @@ td @; rmdir;
 fn chain_hash() {
     basic_test("h(1 2 3 h(4 5)) 3.4 get", "5");
 }
+
+#[test]
+fn hash_list_retrieval() {
+    basic_test("h(1 2 3 h(4 5)) (1 3) get", "(\n    0: 2\n    1: h(\n        \"4\": 5\n    )\n)");
+}

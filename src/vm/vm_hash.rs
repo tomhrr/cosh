@@ -1,7 +1,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::chunk::{HashWithIndex, Value};
+use crate::chunk::{HashWithIndex, Value,
+                   new_string_value};
 use crate::vm::*;
 
 impl VM {
@@ -32,11 +33,14 @@ impl VM {
         let specifier_opt: Option<&str>;
         to_str!(specifier_rr.clone(), specifier_opt);
 
-        match (object_rr, specifier_opt) {
+        match (object_rr.clone(), specifier_opt) {
             (Value::Hash(map), Some(s)) => {
                 let mapp = map.borrow();
                 let v = mapp.get(s);
                 match v {
+                    Some(r) => {
+                        self.stack.push(r.clone());
+                    }
                     None => {
                         let pos = s.chars().position(|c| c == '.');
                         match pos {
@@ -47,10 +51,7 @@ impl VM {
                                     Some(first) => {
                                         let rest_specifier = &s[n+1..];
                                         let rest_specifier_value =
-                                            Value::String(Rc::new(RefCell::new(StringTriple::new(
-                                                rest_specifier.to_string(),
-                                                None,
-                                            ))));
+                                            new_string_value(rest_specifier.to_string());
                                         self.stack.push(first.clone());
                                         self.stack.push(rest_specifier_value);
                                         return self.core_get();
@@ -65,9 +66,6 @@ impl VM {
                             }
                         }
                     }
-                    Some(r) => {
-                        self.stack.push(r.clone());
-                    }
                 }
             }
             (Value::Hash(map), None) => {
@@ -81,11 +79,20 @@ impl VM {
                             if let Some(s) = e_opt {
                                 let v = mapb.get(s);
                                 match v {
-                                    None => {
-                                        results.push_back(Value::Null);
-                                    }
                                     Some(r) => {
                                         results.push_back(r.clone());
+                                    }
+                                    None => {
+                                        let sv =
+                                            new_string_value(s.to_string());
+                                        self.stack.push(object_rr.clone());
+                                        self.stack.push(sv);
+                                        let res = self.core_get();
+                                        if res == 1 {
+                                            results.push_back(self.stack.pop().unwrap());
+                                        } else {
+                                            results.push_back(Value::Null);
+                                        }
                                     }
                                 }
                             } else {

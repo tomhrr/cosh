@@ -1052,6 +1052,10 @@ pub fn value_to_valuesd(value: Value) -> ValueSD {
     }
 }
 
+pub fn new_string_value(s: String) -> Value {
+    Value::String(Rc::new(RefCell::new(StringTriple::new(s, None))))
+}
+
 /// Convert a four-byte array into an i32 value.
 pub fn bytes_to_i32(bytes: &Vec<u8>) -> i32 {
     let n0 = *bytes.get(0).unwrap() as i32;

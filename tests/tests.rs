@@ -1638,3 +1638,16 @@ tempdir; td var; td !; file touch; file td @; link; td @; ls; len;
 td @; ls; rm for; td @; rmdir; file rm;
 ", "1");
 }
+
+#[test]
+fn space_escape_test() {
+    basic_test(
+        "
+mydir var; pwd; mydir !;
+tempdir; td var; td !; td @; cd;
+my\\ dir mkdir; my\\ dir cd; .. cd; my\\ dir/qwer touch;
+'my dir' ls; len; td @; cd; my\\ dir/qwer rm; . ls; rmdir for;
+mydir @; cd;
+td @; rmdir;
+", "1");
+}

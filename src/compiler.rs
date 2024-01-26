@@ -327,6 +327,7 @@ impl<'a> Scanner<'a> {
         /* This loop is for getting the rest of the token. */
 
         let mut done = false;
+        let mut last_escaped = false;
         let mut brace_count = 0;
         let mut params: HashSet<char> = HashSet::new();
         while !done {
@@ -414,8 +415,17 @@ impl<'a> Scanner<'a> {
                 }
             } else {
                 match buffer[0] as char {
-                    '\n' | ' ' | '\t' => {
+                    '\n' | '\t' => {
                         done = true;
+                    }
+                    ' ' => {
+                        if result_index >= 1
+                                && result[result_index - 1] as char == '\\'
+                                && !last_escaped {
+                            result[result_index - 1] = buffer[0];
+                        } else {
+                            done = true;
+                        }
                     }
                     /* A token that ends in a right parenthesis or
                      * right bracket is stopped on the previous
@@ -437,6 +447,14 @@ impl<'a> Scanner<'a> {
                         if result_index >= 2048 {
                             eprintln!("token is too long (more than 2048 chars)");
                             return self.get_token(TokenType::Error);
+                        }
+                        if result_index > 0
+                                && result[result_index - 1] as char == '\\'
+                                && buffer[0] as char == '\\'
+                                && !last_escaped {
+                            last_escaped = true;
+                        } else {
+                            last_escaped = false;
                         }
                         result[result_index] = buffer[0];
                         result_index += 1;

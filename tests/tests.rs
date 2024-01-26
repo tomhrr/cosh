@@ -1651,3 +1651,8 @@ mydir @; cd;
 td @; rmdir;
 ", "1");
 }
+
+#[test]
+fn chain_hash() {
+    basic_test("h(1 2 3 h(4 5)) 3.4 get", "5");
+}

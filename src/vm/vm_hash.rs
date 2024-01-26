@@ -38,7 +38,32 @@ impl VM {
                 let v = mapp.get(s);
                 match v {
                     None => {
-                        self.stack.push(Value::Null);
+                        let pos = s.chars().position(|c| c == '.');
+                        match pos {
+                            Some(n) => {
+                                let first_key = &s[..n];
+                                let first_opt = mapp.get(first_key);
+                                match first_opt {
+                                    Some(first) => {
+                                        let rest_specifier = &s[n+1..];
+                                        let rest_specifier_value =
+                                            Value::String(Rc::new(RefCell::new(StringTriple::new(
+                                                rest_specifier.to_string(),
+                                                None,
+                                            ))));
+                                        self.stack.push(first.clone());
+                                        self.stack.push(rest_specifier_value);
+                                        return self.core_get();
+                                    }
+                                    _ => {
+                                        self.stack.push(Value::Null);
+                                    }
+                                }
+                            }
+                            _ => {
+                                self.stack.push(Value::Null);
+                            }
+                        }
                     }
                     Some(r) => {
                         self.stack.push(r.clone());

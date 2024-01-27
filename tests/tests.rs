@@ -1653,8 +1653,11 @@ td @; rmdir;
 }
 
 #[test]
-fn chain_hash() {
+fn chain_get() {
     basic_test("h(1 2 3 h(4 5)) 3.4 get", "5");
+    basic_test("h(1 (0 1 2) 3 h(4 5)) 1.2 get", "2");
+    basic_test("h(1 (0 1 2 h(a 7 b 9)) 3 h(4 5)) 1.3.b get", "9");
+    basic_test("((0 1) (2 3)) 1.1 get;", "3");
 }
 
 #[test]

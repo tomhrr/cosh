@@ -114,13 +114,18 @@ impl VM {
             (Value::List(lst), _) => {
 		let num_int_opt = specifier_rr.to_int();
                 if let Some(n) = num_int_opt {
-		    if lst.borrow().len() <= (n as usize) {
-                        self.stack.push(Value::Null);
-                        return 1;
-		    }
-		    let element = lst.borrow()[n as usize].clone();
-		    self.stack.push(element);
-		    return 1;
+                    if let Some(s) = specifier_opt {
+                        let pos = s.chars().position(|c| c == '.');
+                        if pos.is_none() {
+                            if lst.borrow().len() <= (n as usize) {
+                                self.stack.push(Value::Null);
+                                return 1;
+                            }
+                            let element = lst.borrow()[n as usize].clone();
+                            self.stack.push(element);
+                            return 1;
+                        }
+                    }
                 }
                 match specifier_rr {
                     Value::List(ilst) => {
@@ -135,8 +140,14 @@ impl VM {
                                     results.push_back(lstb[n as usize].clone());
                                 }
                             } else {
-                                self.print_error("second get argument must be list of integers");
-                                return 0;
+                                self.stack.push(object_rr.clone());
+                                self.stack.push(e.clone());
+                                let res = self.core_get();
+                                if res == 1 {
+                                    results.push_back(self.stack.pop().unwrap());
+                                } else {
+                                    return 0;
+                                }
                             }
                         }
                         let newlst =
@@ -145,8 +156,45 @@ impl VM {
                         return 1;
                     }
                     _ => {
-                        self.print_error("second get argument must be field specifier");
-                        return 0;
+                        if let Some(s) = specifier_opt {
+                            let pos = s.chars().position(|c| c == '.');
+                            match pos {
+                                Some(n) => {
+                                    let first_key = &s[..n];
+                                    match first_key.parse::<usize>() {
+                                        Ok(nn) => {
+                                            let lstb = lst.borrow();
+                                            if lstb.len() <= nn {
+                                                self.stack.push(Value::Null);
+                                            } else {
+                                                let rest_specifier = &s[n+1..];
+                                                let rest_specifier_value =
+                                                    new_string_value(rest_specifier.to_string());
+                                                self.stack.push(lstb[nn].clone());
+                                                self.stack.push(rest_specifier_value);
+                                                let res = self.core_get();
+                                                if res == 1 {
+                                                    return 1;
+                                                } else {
+                                                    return 0;
+                                                }
+                                            }
+                                        }
+                                        _ => {
+                                            self.print_error("second get argument must be field specifier");
+                                            return 0;
+                                        }
+                                    }
+                                }
+                                _ => {
+                                    self.print_error("second get argument must be field specifier");
+                                    return 0;
+                                }
+                            }
+                        } else {
+                            self.print_error("second get argument must be field specifier");
+                            return 0;
+                        }
                     }
                 }
             }

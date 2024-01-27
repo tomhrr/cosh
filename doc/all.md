@@ -677,6 +677,11 @@ from the stack, and returns a set containing those elements.
         1: 2
     )
 
+and chained accessors can be used as well:
+
+    $ h(a 1 b (0 1 h(c 5 e 7))) b.2.e get;
+    7
+
 `set` is used to update a value in a hash:
 
     $ h(a 1 b 2) c 3 set; c get;

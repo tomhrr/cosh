@@ -362,6 +362,7 @@ fn main() {
             let history_end_len = rl_rr.borrow().history().len();
             let mut history_file = OpenOptions::new()
                 .write(true)
+                .create(true)
                 .append(true)
                 .open(&history_path)
                 .unwrap();

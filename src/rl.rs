@@ -7,7 +7,7 @@ use std::path::{self, Path};
 use std::rc::Rc;
 
 use ansi_term::Colour::{Blue, Purple, Red};
-use dirs_next::home_dir;
+use dirs::home_dir;
 use memchr::memchr;
 use rustyline::completion::{escape, unescape, Candidate, Completer, Pair, Quote};
 use rustyline::highlight::Highlighter;

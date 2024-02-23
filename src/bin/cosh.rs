@@ -1,6 +1,6 @@
 extern crate cosh;
 extern crate ctrlc;
-extern crate dirs_next;
+extern crate dirs;
 extern crate getopts;
 extern crate nix;
 extern crate regex;
@@ -21,7 +21,6 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
 
-use dirs_next::home_dir;
 use getopts::Options;
 use regex::Regex;
 use rustyline::config::OutputStreamType;
@@ -41,23 +40,36 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-fn import_coshrc(vm: &mut VM, global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>) {
-    if let Some(home) = home_dir() {
-        let coshrc_path = format!("{}/.coshrc", home.into_os_string().into_string().unwrap());
-        if Path::new(&coshrc_path).exists() {
-            let file_res = fs::File::open(coshrc_path);
-            if let Ok(file) = file_res {
-                let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                let chunk_opt = vm.interpret(global_functions.clone(), &mut bufread, ".coshrc");
-                if let Some(chunk) = chunk_opt {
-                    for (k, v) in chunk.borrow().functions.iter() {
-                        if !k.starts_with("anon") {
-                            global_functions.borrow_mut().insert(k.clone(), v.clone());
+fn import_cosh_conf(vm: &mut VM, global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>) {
+    let home_opt   = dirs::home_dir();
+    let config_opt = dirs::config_dir();
+    match (home_opt, config_opt) {
+        (Some(home), Some(config)) => {
+            let old_path = format!("{}/.coshrc", home.into_os_string().into_string().unwrap());
+            let new_path = format!("{}/cosh.conf", config.into_os_string().into_string().unwrap());
+            let has_old_path = Path::new(&old_path).exists();
+            let has_new_path = Path::new(&new_path).exists();
+            if has_old_path && !has_new_path {
+                eprintln!("error: please move '{}' to new expected location '{}'",
+                          old_path, new_path);
+                std::process::exit(1);
+            }
+            if has_new_path {
+                let file_res = fs::File::open(new_path);
+                if let Ok(file) = file_res {
+                    let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
+                    let chunk_opt = vm.interpret(global_functions.clone(), &mut bufread, "cosh.conf");
+                    if let Some(chunk) = chunk_opt {
+                        for (k, v) in chunk.borrow().functions.iter() {
+                            if !k.starts_with("anon") {
+                                global_functions.borrow_mut().insert(k.clone(), v.clone());
+                            }
                         }
                     }
                 }
             }
         }
+        _ => {}
     }
 }
 
@@ -71,7 +83,7 @@ fn main() {
     opts.optflag("c", "compile", "compile to bytecode");
     opts.optflag("", "disassemble", "disassemble from bytecode");
     opts.optflag("", "no-rt", "run without loading runtime");
-    opts.optflag("", "no-coshrc", "run without loading .coshrc");
+    opts.optflag("", "no-cosh-conf", "run without loading cosh.conf");
     opts.optflag("d", "debug", "show debug information");
     opts.optopt("o", "", "set output file name for compilation", "NAME");
     let matches = match opts.parse(&args[1..]) {
@@ -204,8 +216,8 @@ fn main() {
                         global_functions.borrow_mut().insert(k.clone(), v.clone());
                     }
                 }
-                if !matches.opt_present("no-coshrc") {
-                    import_coshrc(&mut vm, global_functions.clone());
+                if !matches.opt_present("no-cosh-conf") {
+                    import_cosh_conf(&mut vm, global_functions.clone());
                 }
 
                 vm.interpret(global_functions, &mut bufread, "(main)");
@@ -240,8 +252,8 @@ fn main() {
         })
         .unwrap();
 
-        if !matches.opt_present("no-coshrc") {
-            import_coshrc(&mut vm, global_functions.clone());
+        if !matches.opt_present("no-cosh-conf") {
+            import_cosh_conf(&mut vm, global_functions.clone());
         }
 
         let config = Config::builder()

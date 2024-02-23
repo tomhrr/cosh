@@ -10,7 +10,7 @@ extern crate atty;
 extern crate chrono;
 extern crate chrono_tz;
 extern crate chronoutil;
-extern crate dirs_next;
+extern crate dirs;
 extern crate iana_time_zone;
 extern crate indexmap;
 extern crate ipnet;

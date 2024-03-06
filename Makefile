@@ -20,7 +20,6 @@ test:
 	cargo test --release
 
 install: rt.chc
-	$(INSTALL) -D -m 755 bin/wrapped-cosh $(bindir)/wrapped-cosh
 	$(INSTALL) -D -m 755 target/release/cosh $(bindir)/cosh
 	$(INSTALL) -D -m 755 rt.chc -t $(libdir)/cosh/
 

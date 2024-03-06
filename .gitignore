@@ -1,5 +1,4 @@
 *.swp
-Cargo.lock
 target
 .cosh_history
 *.chc

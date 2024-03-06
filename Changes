@@ -1,0 +1,15 @@
+Changelog
+
+0.2.0   6 March 2024
+        - Byte data type and associated operations.
+        - Reification (`r`).
+        - `last`, for getting the result of the previous call.
+        - Parallel processing (`pmap`/`pmapn`).
+        - `m{type}` functions for constructing composite object types.
+        - Chained accessors for composite object types.
+        - Additional data in `ps` entries.
+        - `ping` and `dig`, and related functions.
+        - SQL database functions.
+
+0.0.1   11 January 2023
+        - Initial release.    

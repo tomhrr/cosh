@@ -1,6 +1,6 @@
 [package]
 name = "cosh"
-version = "0.0.1"
+version = "0.2.0"
 authors = ["Tom Harrison <tomhrr@tomhrr.org>"]
 edition = "2021"
 

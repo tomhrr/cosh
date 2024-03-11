@@ -57,31 +57,86 @@ remembered when compared with typical shells (see e.g. the various
 flags for `cut(1)`), though some commands may be longer as a result:
 
 - Get the second and third columns from each row of a CSV file:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `cut -d, -f2,3 test-data/csv`
-  - **cosh**: `test-data/csv f<; [chomp; , split; (1 2) get] map`
+
+  <div>
+    <table>
+      <tr>
+        <td><b>sh</b></td>
+        <td><tt>cut -d, -f2,3 test-data/csv</tt></td>
+      </tr>
+      <tr>
+        <td><b>cosh</b></td>
+        <td><tt>test-data/csv f<; [chomp; , split; (1 2) get] map</tt></td>
+      </tr>
+    </table>
+  </div>
 
 - Sort files by modification time:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ls -tr`
-  - **cosh**: `ls; [[stat; mtime get] 2 apply; <=>] sortp`
+
+  <div>
+    <table>
+      <tr>
+        <td><b>sh</b></td>
+        <td><tt>ls -tr</tt></td>
+      </tr>
+      <tr>
+        <td><b>cosh</b></td>
+        <td><tt>ls; [[stat; mtime get] 2 apply; <=>] sortp</tt></td>
+      </tr>
+    </table>
+  </div>
 
 Arithmetical operators and XML/JSON/CSV encoding/decoding functions
 reduce the number of times that it becomes necessary to use a more
 full-featured programming language or a third-party executable:
 
 - Increment floating-point numbers in file:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `sed 's/$/+10/' nums | bc`
-  - **cosh**: `nums f<; [chomp; 10 +] map;`
+
+  <div>
+    <table>
+      <tr>
+        <td><b>sh</b></td>
+        <td><tt>sed 's/$/+10/' nums | bc</tt></td>
+      </tr>
+      <tr>
+        <td><b>cosh</b></td>
+        <td><tt>nums f<; [chomp; 10 +] map</tt></td>
+      </tr>
+    </table>
+  </div>
 
 - Get the first value from the "zxcv" array member of a JSON file:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `jq .zxcv[0] test-data/json2`
-  - **cosh**: `test-data/json2 f<; from-json; zxcv get; 0 get`
+
+  <div>
+    <table>
+      <tr>
+        <td><b>sh</b></td>
+        <td><tt>jq .zxcv[0] test-data/json2</tt></td>
+      </tr>
+      <tr>
+        <td><b>cosh</b></td>
+        <td><tt>test-data/json2 f<; from-json; zxcv get; 0 get</tt></td>
+      </tr>
+    </table>
+  </div>
 
 It also integrates with external executable calls, where that is
 necessary:
 
 - Print certificate data:
-  - **bash**: ``for i in `find . -iname '*.pem'`; do openssl x509 -in $i -text -noout; done``
-  - **cosh**: `lsr; [pem$ m] grep; [{openssl x509 -in {} -text -noout}] map;`
+
+  <div>
+    <table>
+      <tr>
+        <td><b>bash</b></td>
+        <td><tt>for i in `find . -iname '*.pem'`; do openssl x509 -in $i -text -noout; done</tt></td>
+      </tr>
+      <tr>
+        <td><b>cosh</b></td>
+        <td><tt>lsr; [pem$ m] grep; [{openssl x509 -in {} -text -noout}] map;</tt></td>
+      </tr>
+    </table>
+  </div>
 
 See the full [documentation](./doc/all.md) for more details.
 

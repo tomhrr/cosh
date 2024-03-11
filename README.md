@@ -22,13 +22,13 @@ implemented as functions that return first-class values, as opposed to
 relying on executables that return text streams.  This makes working
 with the results simpler:
 
-- Find files matching a path, and search them for data:
+- Find file paths matching a string, and search those files for data:
   - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `find . -iname '*test*' -print0 | xargs -0 grep data`
   - **cosh**: `lsr; [test m] grep; [f<; [data m] grep] map`
 
-- Find the total size of all files in the current directory:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ls | xargs stat -c %s | awk '{s+=$1} END {print s}' -`
-  - **cosh**: `ls; [is-dir; not] grep; [stat; size get] map; sum`
+- Find all processes using more than 500M of memory:
+  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ps --no-headers aux | awk '$6>500000'`
+  - **cosh**: `ps; [mem get; 1000 1000 *; 500 *; >] grep;`
 
 A small set of versatile primitives means that less needs to be
 remembered when compared with typical shells (see e.g. the various
@@ -240,6 +240,63 @@ Print a path's modification time in a specific format:
     cosh$ test-data stat; mtime get; from-epoch; %F strftime;
     2023-01-20
     cosh$
+
+Find the ping times for a series of domain names, in parallel:
+
+    cosh$ (sourcehut.org github.com gitlab.com) [dup; A dig; answer.0.sdata.address get; 1 pingn; 0 get; 2 mlist] pmap;
+    v[channel-gen (
+	0: (
+	    0: gitlab.com
+	    1: h(
+		"icmp_seq": 1
+		"ttl":      58
+		"time_ms":  11.6
+	    )
+	)
+	1: (
+	    0: github.com
+	    1: h(
+		"icmp_seq": 1
+		"ttl":      115
+		"time_ms":  28.4
+	    )
+	)
+	2: (
+	    0: sourcehut.org
+	    1: h(
+		"icmp_seq": 1
+		"ttl":      52
+		"time_ms":  346
+	    )
+	)
+    )]
+    cosh$
+
+Get the total number of hosts in a set of IP address ranges:
+
+    cosh$ (1.0.0.0/24 2.0.0.0/14 3.0.0.0/8) [ip; ip.size] map; sum
+    17039616
+    cosh$
+
+Create a new SQLite database, add a table to the database, and add a
+record to the table:
+
+    cosh$ mydb touch
+    cosh$ mydb sqlite db.conn; c var; c !
+    cosh$ c @; "create table test (id, num)" db.prep; () db.exec
+    ()
+    cosh$ c @; "insert into test values (?, ?)" db.prep; (1 2) db.exec
+    ()
+    cosh$ c @; "select * from test" db.prep; () db.exec
+    (
+	0: h(
+	    "id":  1
+	    "num": 2
+	)
+    )
+    cosh$
+
+
 
 ### Documentation
 

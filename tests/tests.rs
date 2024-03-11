@@ -1666,3 +1666,15 @@ fn chain_get() {
 fn hash_list_retrieval() {
     basic_test("h(1 2 3 h(4 5)) (1 3) get", "(\n    0: 2\n    1: h(\n        \"4\": 5\n    )\n)");
 }
+
+#[test]
+fn is_file() {
+    basic_test("README.md is-file", ".t");
+    basic_test("src is-file", ".f");
+}
+
+#[test]
+fn is_dir() {
+    basic_test("README.md is-dir", ".f");
+    basic_test("src is-dir", ".t");
+}

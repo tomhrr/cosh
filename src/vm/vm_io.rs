@@ -414,6 +414,39 @@ impl VM {
         1
     }
 
+    /// Takes a path as its single argument.  Places a boolean onto
+    /// the stack indicating whether the path maps to a file.
+    pub fn core_is_file(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("is-file requires one argument");
+            return 0;
+        }
+
+        let path_rr = self.stack.pop().unwrap();
+        let path_str_opt: Option<&str>;
+        to_str!(path_rr, path_str_opt);
+
+        match path_str_opt {
+            Some(s) => {
+                let metadata_res = metadata(s);
+                match metadata_res {
+                    Ok(metadata) => {
+                        let is_file = metadata.is_file();
+                        self.stack.push(Value::Bool(is_file));
+                    }
+                    _ => {
+                        self.stack.push(Value::Bool(false));
+                    }
+                }
+            }
+            _ => {
+                self.print_error("is-file argument must be a string");
+                return 0;
+            }
+        }
+        1
+    }
+
     /// Puts a path and a FileReader on the stack for a new temporary
     /// file.
     pub fn opcode_tempfile(&mut self) -> i32 {

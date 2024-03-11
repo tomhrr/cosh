@@ -23,8 +23,17 @@ relying on executables that return text streams.  This makes working
 with the results simpler:
 
 - Find file paths matching a string, and search those files for data:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `find . -iname '*test*' -print0 | xargs -0 grep data`
-  - **cosh**: `lsr; [test m] grep; [f<; [data m] grep] map`
+
+<table>
+  <tr>
+    <td>**sh**</td>
+    <td>`find . -iname '*test*' -print0 | xargs -0 grep data`</td>
+  </tr>
+  <tr>
+    <td>**cosh**</td>
+    <td>`lsr; [test m] grep; [f<; [data m] grep] map`</td>
+  </tr>
+</table>
 
 - Find all processes using more than 500M of memory:
   - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ps --no-headers aux | awk '$6>500000'`
@@ -295,8 +304,6 @@ record to the table:
 	)
     )
     cosh$
-
-
 
 ### Documentation
 

@@ -22,18 +22,20 @@ implemented as functions that return first-class values, as opposed to
 relying on executables that return text streams.  This makes working
 with the results simpler:
 
-##### Find file paths matching a string, and search those files for data:
+- Find file paths matching a string, and search those files for data
 
-  <table>
-    <tr>
-      <td><b>sh</b></td>
-      <td><tt>find . -iname '*test*' -print0 | xargs -0 grep data</tt></td>
-    </tr>
-    <tr>
-      <td><b>cosh</b></td>
-      <td><tt>lsr; [test m] grep; [f<; [data m] grep] map</tt></td>
-    </tr>
-  </table>
+  <div>
+    <table>
+      <tr>
+        <td><b>sh</b></td>
+        <td><tt>find . -iname '*test*' -print0 | xargs -0 grep data</tt></td>
+      </tr>
+      <tr>
+        <td><b>cosh</b></td>
+        <td><tt>lsr; [test m] grep; [f<; [data m] grep] map</tt></td>
+      </tr>
+    </table>
+  </div>
 
 - Find all processes using more than 500M of memory:
   - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ps --no-headers aux | awk '$6>500000'`

@@ -38,8 +38,19 @@ with the results simpler:
   </div>
 
 - Find all processes using more than 500M of memory:
-  - **sh**:&nbsp;&nbsp;&nbsp;&nbsp; `ps --no-headers aux | awk '$6>500000'`
-  - **cosh**: `ps; [mem get; 1000 1000 *; 500 *; >] grep;`
+
+  <div>
+    <table>
+      <tr>
+        <td><b>sh</b></td>
+        <td><tt>ps --no-headers aux | awk '$6>500000'</tt></td>
+      </tr>
+      <tr>
+        <td><b>cosh</b></td>
+        <td><tt>ps; [mem get; 1000 1000 *; 500 *; &gt;] grep</tt></td>
+      </tr>
+    </table>
+  </div>
 
 A small set of versatile primitives means that less needs to be
 remembered when compared with typical shells (see e.g. the various

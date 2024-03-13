@@ -56,6 +56,43 @@ impl VM {
         1
     }
 
+    /// Takes a value that can be stringified as its single argument.
+    /// Removes the file corresponding to that path.  Unlike core_rm,
+    /// this will not report an error if the file does not exist.
+    pub fn core_rmf(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("rm requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+
+        match value_opt {
+            Some(s) => {
+                let ss = VM::expand_tilde(s);
+                let path = Path::new(&ss);
+                if path.exists() {
+		    let res = std::fs::remove_file(ss);
+		    match res {
+			Ok(_) => {}
+			Err(e) => {
+			    let err_str = format!("unable to remove file: {}", e);
+			    self.print_error(&err_str);
+			    return 0;
+			}
+		    }
+                }
+            }
+            _ => {
+                self.print_error("rm argument must be a string");
+                return 0;
+            }
+        }
+        1
+    }
+
     /// Takes two values that can be stringified as its arguments.
     /// Copies the file corresponding to the first path to the second
     /// path.

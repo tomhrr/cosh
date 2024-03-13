@@ -955,6 +955,8 @@ Other operations:
  - `is-files`: returns a boolean indicating whether the argument is a
    file.
  - `rm`: removes the argument file.
+ - `rmf`: removes the argument file, without reporting an error in the
+   event that the file doesn't exist.
  - `touch`: if the argument file doesn't exist, creates an empty file
    with the given name, otherwise updates the modification time of the
    existing file to be the current time.

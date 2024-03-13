@@ -1678,3 +1678,8 @@ fn is_dir() {
     basic_test("README.md is-dir", ".f");
     basic_test("src is-dir", ".t");
 }
+
+#[test]
+fn rmf() {
+    basic_test("asdf touch; asdf rm; asdf rmf; .t", ".t");
+}

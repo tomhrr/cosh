@@ -1683,3 +1683,8 @@ fn is_dir() {
 fn rmf() {
     basic_test("asdf touch; asdf rm; asdf rmf; .t", ".t");
 }
+
+#[test]
+fn rmrf() {
+    basic_test("asdfasdf mkdir; asdfasdf/asdf touch; asdfasdf rmrf; asdfasdf is-dir", ".f");
+}

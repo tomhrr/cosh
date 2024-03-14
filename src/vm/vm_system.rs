@@ -61,7 +61,7 @@ impl VM {
     /// this will not report an error if the file does not exist.
     pub fn core_rmf(&mut self) -> i32 {
         if self.stack.is_empty() {
-            self.print_error("rm requires one argument");
+            self.print_error("rmf requires one argument");
             return 0;
         }
 
@@ -86,7 +86,46 @@ impl VM {
                 }
             }
             _ => {
-                self.print_error("rm argument must be a string");
+                self.print_error("rmf argument must be a string");
+                return 0;
+            }
+        }
+        1
+    }
+
+    /// Takes a value that can be stringified as its single argument.
+    /// Removes the file/directory corresponding to that path.  If the
+    /// path maps to a directory, then the contents of the directory
+    /// will be removed as well.  Unlike core_rm, this will not report
+    /// an error if the file does not exist.
+    pub fn core_rmrf(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("rmrf requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+
+        match value_opt {
+            Some(s) => {
+                let ss = VM::expand_tilde(s);
+                let path = Path::new(&ss);
+                if path.exists() {
+		    let res = std::fs::remove_dir_all(ss);
+		    match res {
+			Ok(_) => {}
+			Err(e) => {
+			    let err_str = format!("unable to remove file/directory: {}", e);
+			    self.print_error(&err_str);
+			    return 0;
+			}
+		    }
+                }
+            }
+            _ => {
+                self.print_error("rmrf argument must be a string");
                 return 0;
             }
         }

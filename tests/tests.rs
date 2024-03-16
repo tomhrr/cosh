@@ -1168,7 +1168,18 @@ fn stat_test() {
 
 #[test]
 fn mv_test() {
-    basic_test("mvtest touch; mvtest mvtest2 rename; mvtest2 mvtest mv; mvtest stat; size get; 0 =; {rm -f mvtest}; take-all; {rm -f mvtest2}; take-all; drop; drop;", ".t");
+    basic_test("
+mvtest touch;
+mvtest mvtest2 rename;
+mvtest2 mvtest mv;
+mvtest stat;
+size get; 0 =;
+{rm -f mvtest};
+take-all;
+{rm -f mvtest2};
+take-all;
+drop;
+drop;", ".t");
 }
 
 #[test]

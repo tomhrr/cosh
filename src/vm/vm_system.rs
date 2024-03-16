@@ -6,6 +6,7 @@ use std::collections::VecDeque;
 use std::convert::TryFrom;
 use std::env;
 use std::fs;
+use std::io;
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
@@ -18,7 +19,6 @@ use num::FromPrimitive;
 use num_bigint::BigInt;
 use sysinfo::{PidExt, ProcessExt, SystemExt, CpuRefreshKind, UserExt};
 use utime::*;
-use std::io;
 
 use crate::chunk::Value;
 use crate::vm::*;
@@ -249,13 +249,73 @@ impl VM {
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
+                let srcs = VM::expand_tilde(src);
+                let dsts = VM::expand_tilde(dst);
+                let src_meta_opt = fs::metadata(&srcs);
+                let dst_meta_opt = fs::metadata(&dsts);
+                let dst_is_dir =
+                    !dst_meta_opt.is_err()
+                        && dst_meta_opt.unwrap().is_dir();
+
+                let dst_path = Path::new(&dsts);
+                let dst_path_exists = dst_path.exists();
+                let dsts_dev_str =
+                    if !dst_path_exists {
+                        match dst_path.parent() {
+                            Some(s) => {
+                                let ss = s.to_str().unwrap();
+                                if ss == "" {
+                                    ".".to_string()
+                                } else {
+                                    ss.to_string()
+                                }
+                            }
+                            _ => {
+                                ".".to_string()
+                            }
+                        }
+                    } else {
+                        dsts.clone()
+                    };
+                let dst_dev_meta_opt = fs::metadata(&dsts_dev_str);
+                if src_meta_opt.is_err() {
+                    self.print_error("unable to stat file");
+                    return 0;
+                }
+                if dst_dev_meta_opt.is_err() {
+                    self.print_error("unable to stat file");
+                    return 0;
+                }
+                let src_meta = src_meta_opt.unwrap();
+                let dst_dev_meta = dst_dev_meta_opt.unwrap();
+                if src_meta.dev() == dst_dev_meta.dev() {
+                    let real_dst;
+                    if dst_is_dir {
+                        let src_path = Path::new(&srcs);
+                        let file_name = src_path.file_name();
+                        real_dst =
+                            format!("{}/{}", dsts_dev_str,
+                                    file_name.unwrap().to_str().unwrap());
+                    } else {
+                        real_dst = dsts;
+                    }
+		    let res = std::fs::rename(srcs, real_dst);
+		    return match res {
+			Ok(_) => 1,
+			Err(e) => {
+			    let err_str = format!("unable to rename: {}", e);
+			    self.print_error(&err_str);
+			    0
+			}
+		    };
+                }
+
                 self.stack.push(new_string_value(src.to_string()));
                 self.stack.push(new_string_value(dst.to_string()));
                 let res = self.core_cp();
                 if res == 0 {
                     return 0;
                 }
-                let srcs = VM::expand_tilde(src);
 
                 let src_meta_opt = fs::metadata(&srcs);
                 match src_meta_opt {

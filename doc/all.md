@@ -963,8 +963,12 @@ Other operations:
  - `touch`: if the argument file doesn't exist, creates an empty file
    with the given name, otherwise updates the modification time of the
    existing file to be the current time.
- - `cp`: copies the file at the first path to the second path.
- - `mv`: moves the file at the first path to the second path.
+ - `cp`: copies the file/directory at the first path to the second
+   path.  If the second path is a directory, the source is copied into
+   that directory.
+ - `mv`: moves the file/directory at the first path to the second
+   path.  If the second path is a directory, the source is moved into
+   that directory.
  - `rename`: rename the file at the first path such that its path is
    the second path.
  - `stat`: returns a hash containing metadata about the argument file.

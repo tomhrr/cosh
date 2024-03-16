@@ -18,11 +18,27 @@ use num::FromPrimitive;
 use num_bigint::BigInt;
 use sysinfo::{PidExt, ProcessExt, SystemExt, CpuRefreshKind, UserExt};
 use utime::*;
+use std::io;
 
 use crate::chunk::Value;
 use crate::vm::*;
 
 impl VM {
+    /// From https://stackoverflow.com/a/65192210.
+    fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<u64> {
+	fs::create_dir_all(&dst)?;
+	for entry in fs::read_dir(src)? {
+	    let entry = entry?;
+	    let ty = entry.file_type()?;
+	    if ty.is_dir() {
+		VM::copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+	    } else {
+		std::fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+	    }
+	}
+	Ok(1)
+    }
+
     /// Takes a value that can be stringified as its single argument.
     /// Removes the file corresponding to that path.
     pub fn core_rm(&mut self) -> i32 {
@@ -153,6 +169,18 @@ impl VM {
             (Some(src), Some(dst)) => {
                 let srcs = VM::expand_tilde(src);
                 let dsts = VM::expand_tilde(dst);
+                let src_meta_opt = fs::metadata(&srcs);
+                let use_copy_dir =
+                    match src_meta_opt {
+                        Ok(src_meta) => {
+                            src_meta.is_dir()
+                        }
+                        _ => {
+                            self.print_error("unable to stat file");
+                            return 0;
+                        }
+                    };
+
                 let dst_meta_opt = fs::metadata(&dsts);
                 let dst_path =
                     if !dst_meta_opt.is_err() {
@@ -175,7 +203,12 @@ impl VM {
                     } else {
                         dsts.to_string()
                     };
-                let res = std::fs::copy(srcs, dst_path);
+                let res =
+                    if use_copy_dir {
+                        VM::copy_dir_all(srcs, dst_path)
+                    } else {
+                        std::fs::copy(srcs, dst_path)
+                    };
                 match res {
                     Ok(_) => {}
                     Err(e) => {
@@ -223,11 +256,27 @@ impl VM {
                     return 0;
                 }
                 let srcs = VM::expand_tilde(src);
-                let res = std::fs::remove_file(srcs);
-                match res {
-                    Ok(_) => 1,
+
+                let src_meta_opt = fs::metadata(&srcs);
+                match src_meta_opt {
+                    Ok(src_meta) => {
+                        let res =
+                            if src_meta.is_dir() {
+                                std::fs::remove_dir_all(srcs)
+                            } else {
+                                std::fs::remove_file(srcs)
+                            };
+                        match res {
+                            Ok(_) => 1,
+                            Err(e) => {
+                                let err_str = format!("unable to remove original file: {}", e);
+                                self.print_error(&err_str);
+                                0
+                            }
+                        }
+                    }
                     Err(e) => {
-                        let err_str = format!("unable to remove original file: {}", e);
+                        let err_str = format!("unable to stat file: {}", e);
                         self.print_error(&err_str);
                         0
                     }

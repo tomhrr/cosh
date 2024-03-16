@@ -1686,5 +1686,19 @@ fn rmf() {
 
 #[test]
 fn rmrf() {
-    basic_test("asdfasdf mkdir; asdfasdf/asdf touch; asdfasdf rmrf; asdfasdf is-dir", ".f");
+    basic_test("asdfasdf rmrf; asdfasdf mkdir; asdfasdf/asdf touch; asdfasdf rmrf; asdfasdf is-dir", ".f");
+}
+
+#[test]
+fn copy_dir() {
+    basic_test("
+qwerqwer rmrf;
+asdfasdf rmrf;
+asdfasdf mkdir; asdfasdf/asdf touch;
+asdfasdf qwerqwer cp;
+qwerqwer/asdf rm; qwerqwer rmdir;
+asdfasdf qwerqwer mv;
+qwerqwer/asdf rm;
+qwerqwer rmdir;
+.t", ".t");
 }

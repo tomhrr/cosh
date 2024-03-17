@@ -923,3 +923,38 @@
         then;
         .f until;
     ,,
+
+# Common commands and aliases.
+: vim depth; 0 =; if; vim exec; else; "vim {}" exec; then; ,,
+: ssh "ssh {}" fmt; exec; ,,
+: scp swap; "scp {} {}" fmt; exec; ,,
+
+: git.clone      "git clone {}"     fmt; exec; ,,
+: git.add        "git add {}"       fmt; exec; ,,
+: git.mv swap;   "git mv {} {}"     fmt; exec; ,,
+: git.rm         "git rm {}"        fmt; exec; ,,
+: git.diff swap; "git diff {} {}"   fmt; exec; ,,
+: git.log        "git log {}"       fmt; exec; ,,
+: git.show       "git show {}"      fmt; exec; ,,
+: git.status     "git status {}"    fmt; exec; ,,
+: git.commit     "git commit -m {}" fmt; exec; ,,
+
+: git.checkout
+    depth; 0 =; if;
+        "git checkout ." exec;
+    else; 
+        "git checkout {}" fmt; exec;
+    then; ,,
+
+: git.init
+    depth; 0 =; if;
+        "git init ." exec;
+    else; 
+        "git init {}" fmt; exec;
+    then; ,,
+
+: zathura     "zathura {}"     fmt; exec; ,,
+: libreoffice "libreoffice {}" fmt; exec; ,,
+: nano        "nano {}"        fmt; exec; ,,
+
+: gr "grep -ri {} ." fmt; exec; ,,

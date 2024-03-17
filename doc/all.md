@@ -1277,6 +1277,26 @@ for a standard shell:
         0: "Mon 26 Dec 2022 11:43:19 GMT\n"
     )]
 
+#### Default command aliases
+
+Aliases are defined for the following commands by default:
+
+ - `vim`
+ - `nano`
+ - `ssh`
+ - `scp`
+ - `git`
+ - `zathura`
+ - `libreoffice`
+ - `nano`
+
+In each case, the alias takes 0-2 arguments and passes them to the
+relevant executable as-is.  See
+https://github.com/tomhrr/cosh/blob/main/lib/rt.ch#L927 for the
+definitions.  There are some additional custom aliases:
+
+ - `gr`: maps to "grep -ri {} .".
+
 ### Miscellaneous
 
 Comments can be added by prefixing the comment line with `#`.

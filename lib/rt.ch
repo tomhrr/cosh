@@ -942,14 +942,14 @@
 : git.checkout
     depth; 0 =; if;
         "git checkout ." exec;
-    else; 
+    else;
         "git checkout {}" fmt; exec;
     then; ,,
 
 : git.init
     depth; 0 =; if;
         "git init ." exec;
-    else; 
+    else;
         "git init {}" fmt; exec;
     then; ,,
 

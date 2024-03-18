@@ -957,4 +957,4 @@
 : libreoffice "libreoffice {}" fmt; exec; ,,
 : nano        "nano {}"        fmt; exec; ,,
 
-: gr "grep -ri {} ." fmt; exec; ,,
+: gr {grep -ri {} .}; [chomp; "(.*?):(.*)" c; (1 2) get] map; ,,

@@ -17,7 +17,7 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use indexmap::IndexMap;
 use num::FromPrimitive;
 use num_bigint::BigInt;
-use sysinfo::{PidExt, ProcessExt, SystemExt, CpuRefreshKind, UserExt};
+use sysinfo::CpuRefreshKind;
 use utime::*;
 
 use crate::chunk::Value;
@@ -715,11 +715,14 @@ impl VM {
         let sysopt = &mut self.sys;
         let sys = &mut sysopt.as_mut().unwrap();
         sys.refresh_processes();
+        let usersopt = &mut self.users;
+        let users = &mut usersopt.as_mut().unwrap();
+        users.refresh_list();
 
         /* Using the same approach as in nushell for calculating CPU
          * usage. */
         sys.refresh_cpu_specifics(CpuRefreshKind::everything());
-        std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL * 2);
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL * 2);
         sys.refresh_cpu_specifics(CpuRefreshKind::new().with_cpu_usage());
 
         /* refresh_processes does not remove processes that have
@@ -754,7 +757,7 @@ impl VM {
                 "gid".to_string(),
                 Value::BigInt(BigInt::from_u32(*(process.group_id().unwrap())).unwrap()),
             );
-            match sys.get_user_by_id(process.user_id().unwrap()) {
+            match users.get_user_by_id(process.user_id().unwrap()) {
                 None => {}
                 Some(user) => {
                     map.insert(

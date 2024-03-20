@@ -16,7 +16,7 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
-use sysinfo::{System, SystemExt};
+use sysinfo::{System, Users};
 
 use crate::chunk::{print_error, new_string_value, Chunk, GeneratorObject,
                    StringTriple, Value, ValueLiteral};
@@ -36,6 +36,7 @@ mod vm_io;
 mod vm_ip;
 mod vm_json;
 mod vm_list;
+mod vm_net;
 mod vm_parallel;
 mod vm_print;
 mod vm_regex;
@@ -87,6 +88,8 @@ pub struct VM {
     pub readline: Option<Rc<RefCell<rustyline::Editor<RLHelper>>>>,
     /// A System object, for getting process information.
     sys: Option<System>,
+    /// A Users object, for getting user information.
+    users: Option<Users>,
     /// The local time zone.
     local_tz: chrono_tz::Tz,
     /// The UTC timezone.
@@ -257,6 +260,7 @@ lazy_static! {
         map.insert("pmap", VM::core_pmap as fn(&mut VM) -> i32);
         map.insert("pmapn", VM::core_pmapn as fn(&mut VM) -> i32);
         map.insert("expand-tilde", VM::core_expand_tilde as fn(&mut VM) -> i32);
+        map.insert("ifconfig", VM::core_ifconfig as fn(&mut VM) -> i32);
         map
     };
 
@@ -392,6 +396,7 @@ impl VM {
             chunk: Rc::new(RefCell::new(Chunk::new_standard("unused".to_string()))),
             i: 0,
             sys: None,
+            users: None,
             regexes: HashMap::new(),
             local_tz: chrono_tz::Tz::from_str(&ltz).unwrap(),
             utc_tz: chrono_tz::Tz::from_str("UTC").unwrap(),
@@ -404,6 +409,7 @@ impl VM {
         match self.sys {
             None => {
                 self.sys = Some(System::new_all());
+                self.users = Some(Users::new());
             }
             _ => {}
         }

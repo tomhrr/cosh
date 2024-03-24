@@ -261,6 +261,7 @@ lazy_static! {
         map.insert("pmapn", VM::core_pmapn as fn(&mut VM) -> i32);
         map.insert("expand-tilde", VM::core_expand_tilde as fn(&mut VM) -> i32);
         map.insert("ifconfig", VM::core_ifconfig as fn(&mut VM) -> i32);
+        map.insert("netstat", VM::core_netstat as fn(&mut VM) -> i32);
         map
     };
 

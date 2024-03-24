@@ -1130,6 +1130,12 @@ and `str` is defined for both IP objects and IP sets.
    name, hardware address, IP address and network, and flags for the
    interface.
 
+ - `netstat`: returns a list containing network connection
+   information.  Eac list entry is a hash comprising the port type
+   (either "tcp" or "udp"), the local address and port, the remote
+   address and port (for TCP), inode, UID, username, associated PIDs,
+   and connection state (for TCP).
+
 #### SQL databases
 
  - `db.conn`: takes a username, a password, a database name, a

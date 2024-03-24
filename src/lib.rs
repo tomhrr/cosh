@@ -19,6 +19,7 @@ extern crate iprange;
 extern crate lazy_static;
 extern crate memchr;
 extern crate md5;
+extern crate netstat2;
 extern crate nix;
 extern crate nonblock;
 extern crate num;

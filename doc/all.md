@@ -33,6 +33,7 @@ cosh is a concatenative command-line shell.
     * [SQL databases](#sql-databases)
     * [Miscellaneous functions](#miscellaneous-functions)
  * [External program execution](#external-program-execution)
+    * [Default command aliases](#default-command-aliases)
  * [Miscellaneous](#miscellaneous)
     * [Caveats and pitfalls](#caveats-and-pitfalls)
     * [Development](#development)
@@ -1123,6 +1124,11 @@ and `str` is defined for both IP objects and IP sets.
  - `digat`: takes a DNS record type, a DNS name, and a nameserver IP
    address or hostname.  Queries the nameserver and returns a response
    with the same format as `dig`.
+
+ - `ifconfig`: returns a list containing the network interface details
+   for the current host.  Each list entry is a hash comprising the
+   name, hardware address, IP address and network, and flags for the
+   interface.
 
 #### SQL databases
 

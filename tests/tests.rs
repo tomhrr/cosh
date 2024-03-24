@@ -1713,3 +1713,9 @@ qwerqwer/asdf rm;
 qwerqwer rmdir;
 .t", ".t");
 }
+
+#[test]
+fn ifconfig() {
+    /* Possibly not a safe assumption in all test environments. */
+    basic_test("ifconfig; len; 0 >", ".t");
+}

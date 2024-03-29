@@ -30,6 +30,7 @@ cosh is a concatenative command-line shell.
     * [Datetimes](#datetimes)
     * [IP addresses](#ip-addresses)
     * [Networking](#networking)
+    * [HTTP](#http)
     * [SQL databases](#sql-databases)
     * [Miscellaneous functions](#miscellaneous-functions)
  * [External program execution](#external-program-execution)
@@ -1135,6 +1136,13 @@ and `str` is defined for both IP objects and IP sets.
    (either "tcp" or "udp"), the local address and port, the remote
    address and port (for TCP), inode, UID, username, associated PIDs,
    and connection state (for TCP).
+
+#### HTTP
+
+ - `http.get`: takes a URL, makes a GET request to that URL, and
+   returns the response body as a string.  If the response has a JSON
+   content type, then the returned value will be a data structure per
+   `from-json`.
 
 #### SQL databases
 

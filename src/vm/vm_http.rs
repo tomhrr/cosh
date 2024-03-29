@@ -147,7 +147,13 @@ impl VM {
                         to_str!(url_val, url_str_opt);
                         match url_str_opt {
                             Some(url_str) => {
-                                let url_obj_opt = Url::parse(url_str);
+                                let url_obj_opt =
+                                    if !url_str.starts_with("http") {
+                                        let url_str2 = "https://".to_owned() + url_str;
+                                        Url::parse(&url_str2)
+                                    } else {
+                                        Url::parse(url_str)
+                                    };
                                 match url_obj_opt {
                                     Ok(url_obj) => {
                                         url = url_obj;
@@ -202,6 +208,7 @@ impl VM {
                                         }
                                         _ => {
                                             self.print_error("HTTP header value must be string");
+                                            return 0;
                                         }
                                     }
                                 }
@@ -254,10 +261,38 @@ impl VM {
                     _ => {}
                 }
 
+                let raw_val_opt = mapp.get("raw");
+                let mut raw = false;
+                match raw_val_opt {
+                    Some(raw_val) => {
+                        raw = raw_val.to_bool();
+                    }
+                    _ => {}
+                }
+
                 let response_res = rb.send();
                 match response_res {
                     Ok(response) => {
-                        self.process_response(response)
+                        if raw {
+                            let mut headers = IndexMap::new();
+                            for (k, v) in response.headers().iter() {
+                                headers.insert(k.to_string(),
+                                               new_string_value((*v).to_str().unwrap().to_string()));
+                            }
+                            let mut result = IndexMap::new();
+                            result.insert("headers".to_string(),
+                                          Value::Hash(Rc::new(RefCell::new(headers))));
+                            result.insert("code".to_string(),
+                                          Value::Int(response.status().as_u16() as i32));
+                            result.insert("body".to_string(),
+                                          new_string_value(response.text().unwrap()));
+                            let hv =
+                                Value::Hash(Rc::new(RefCell::new(result)));
+                            self.stack.push(hv);
+                        } else {
+                            self.process_response(response);
+                        }
+                        1
                     }
                     Err(e) => {
                         let err_str = format!("unable to send request: {}", e);

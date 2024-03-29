@@ -1150,6 +1150,9 @@ and `str` is defined for both IP objects and IP sets.
    value will be a data structure per `from-json`.  If the request
    content type is a JSON content type, then `to-json` will be used to
    convert the `body` into a string for the request.
+    - If the hash argument contains a `raw` entry with a true value,
+      then the response becomes a hash with keys for `code`, `headers`
+      (hash) and `body` (returned as-is).
 
 #### SQL databases
 

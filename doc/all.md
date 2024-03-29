@@ -1143,6 +1143,13 @@ and `str` is defined for both IP objects and IP sets.
    returns the response body as a string.  If the response has a JSON
    content type, then the returned value will be a data structure per
    `from-json`.
+ - `http`: takes a single hash argument, containing entries for the
+   `url`, `method`, `headers` (hash), and `body` for the request.
+   Submits the request and returns the response body as a string.  As
+   with `http.get`, for JSON content type responses, the returned
+   value will be a data structure per `from-json`.  If the request
+   content type is a JSON content type, then `to-json` will be used to
+   convert the `body` into a string for the request.
 
 #### SQL databases
 

@@ -605,6 +605,7 @@ dependencies = [
  "epoll",
  "futures",
  "getopts",
+ "http",
  "iana-time-zone",
  "indexmap 1.9.3",
  "ipnet",
@@ -641,6 +642,7 @@ dependencies = [
  "termion",
  "time",
  "unicode-segmentation",
+ "url",
  "utime",
  "xml-rs",
 ]

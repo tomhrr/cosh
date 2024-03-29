@@ -1,8 +1,6 @@
-use std::boxed::Box;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use futures::executor::block_on;
 use http::Method;
 use mime::Mime;
 use reqwest::blocking::{Client, Response};
@@ -13,6 +11,32 @@ use crate::chunk::{Value, new_string_value};
 use crate::vm::*;
 
 impl VM {
+    pub fn response_body_to_value(&mut self, response: Response) -> Value {
+        let bytes_res = response.bytes();
+        match bytes_res {
+            Ok(bytes) => {
+                let s_res = String::from_utf8(bytes.to_vec());
+                match s_res {
+                    Ok(s) => {
+                        return new_string_value(s);
+                    }
+                    _ => {
+			let mut lst = VecDeque::new();
+			for i in bytes {
+			    lst.push_back(Value::Byte(i));
+			}
+                        return Value::List(Rc::new(RefCell::new(lst)));
+                    }
+                }
+            }
+            Err(e) => {
+                let err_str = format!("unable to get response body: {}", e);
+                self.print_error(&err_str);
+                return Value::Null;
+            }
+        }
+    }
+
     pub fn process_response(&mut self, response: Response) -> i32 {
         let headers = response.headers();
         if let Some(content_type) = headers.get(CONTENT_TYPE) {
@@ -39,15 +63,13 @@ impl VM {
             }
         }
 
-        let text_res = response.text();
-        match text_res {
-            Ok(text) => {
-                self.stack.push(new_string_value(text));
-            }
-            Err(e) => {
-                let err_str = format!("unable to convert response to text: {}", e);
-                self.print_error(&err_str);
+        let value = self.response_body_to_value(response);
+        match value {
+            Value::Null => {
                 return 0;
+            }
+            _ => {
+                self.stack.push(value);
             }
         }
 
@@ -284,8 +306,8 @@ impl VM {
                                           Value::Hash(Rc::new(RefCell::new(headers))));
                             result.insert("code".to_string(),
                                           Value::Int(response.status().as_u16() as i32));
-                            result.insert("body".to_string(),
-                                          new_string_value(response.text().unwrap()));
+                            let value = self.response_body_to_value(response);
+                            result.insert("body".to_string(), value);
                             let hv =
                                 Value::Hash(Rc::new(RefCell::new(result)));
                             self.stack.push(hv);

@@ -1140,16 +1140,17 @@ and `str` is defined for both IP objects and IP sets.
 #### HTTP
 
  - `http.get`: takes a URL, makes a GET request to that URL, and
-   returns the response body as a string.  If the response has a JSON
-   content type, then the returned value will be a data structure per
-   `from-json`.
+   returns the response body as a string (or a list of bytes, for
+   binary data).  If the response has a JSON content type, then the
+   returned value will be a data structure per `from-json`.
  - `http`: takes a single hash argument, containing entries for the
    `url`, `method`, `headers` (hash), and `body` for the request.
-   Submits the request and returns the response body as a string.  As
-   with `http.get`, for JSON content type responses, the returned
-   value will be a data structure per `from-json`.  If the request
-   content type is a JSON content type, then `to-json` will be used to
-   convert the `body` into a string for the request.
+   Submits the request and returns the response body as a string or a
+   list of bytes.  As with `http.get`, for JSON content type
+   responses, the returned value will be a data structure per
+   `from-json`.  If the request content type is a JSON content type,
+   then `to-json` will be used to convert the `body` into a string for
+   the request.
     - If the hash argument contains a `raw` entry with a true value,
       then the response becomes a hash with keys for `code`, `headers`
       (hash) and `body` (returned as-is).

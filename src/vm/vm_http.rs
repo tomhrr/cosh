@@ -57,6 +57,20 @@ impl VM {
                                 }
                             }
                         }
+                        (mime::XML, _) | (_, Some(mime::XML)) => {
+                            let text_res = response.text();
+                            match text_res {
+                                Ok(text) => {
+                                    self.stack.push(new_string_value(text));
+                                    return self.core_from_xml();
+                                }
+                                Err(e) => {
+                                    let err_str = format!("unable to convert response to text: {}", e);
+                                    self.print_error(&err_str);
+                                    return 0;
+                                }
+                            }
+                        }
                         _ => {}
                     }
                 }
@@ -201,6 +215,7 @@ impl VM {
                 let client = Client::new();
                 let mut rb = client.request(method, url);
                 let mut is_json = false;
+                let mut is_xml  = false;
 
                 let headers_val_opt = mapp.get("headers");
                 match headers_val_opt {
@@ -214,13 +229,16 @@ impl VM {
                                     match v_str_opt {
                                         Some(v_str) => {
                                             rb = rb.header(k, v_str);
-                                            if k == "Content-Type" {
+                                            if k.to_ascii_lowercase() == "content-type" {
                                                 let ct_str_opt = Some(v_str);
                                                 if let Some(ct_str) = ct_str_opt {
                                                     if let Ok(mct) = Mime::from_str(ct_str) {
                                                         match (mct.subtype(), mct.suffix()) {
                                                             (mime::JSON, _) | (_, Some(mime::JSON)) => {
                                                                 is_json = true;
+                                                            }
+                                                            (mime::XML, _) | (_, Some(mime::XML)) => {
+                                                                is_xml = true;
                                                             }
                                                             _ => {}
                                                         }
@@ -250,6 +268,25 @@ impl VM {
                         if is_json {
                             self.stack.push(body_val.clone());
                             let res = self.core_to_json();
+                            if res == 0 {
+                                return res;
+                            }
+                            let body_val_encoded =
+                                self.stack.pop().unwrap();
+                            let body_str_opt: Option<&str>;
+                            to_str!(body_val_encoded, body_str_opt);
+                            match body_str_opt {
+                                Some(body_str) => {
+                                    rb = rb.body(body_str.to_string());
+                                }
+                                _ => {
+                                    self.print_error("unable to process body");
+                                    return 0;
+                                }
+                            }
+                        } else if is_xml {
+                            self.stack.push(body_val.clone());
+                            let res = self.core_to_xml();
                             if res == 0 {
                                 return res;
                             }

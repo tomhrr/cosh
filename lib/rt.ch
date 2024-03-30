@@ -1,3 +1,5 @@
+# Common functions and variables.
+
 : and if; if; .t else; .f then; else; drop; .f then; ,,
 : or if; drop; .t else; if; .t else; .f then; then; ,,
 : not if; .f else; .t then; ,,
@@ -636,6 +638,56 @@
         then;
         .f until; ,,
 
+: mlist
+    depth; 1 <; if;
+        "mlist requires at least one argument" error;
+    then;
+    n var; n !;
+    ()
+    begin;
+        n @; 0 <=; if;
+            leave;
+        then;
+        n @; 1 -; n !;
+        swap; push;
+        .f until;
+    reverse;
+    ,,
+
+: mset
+    depth; 1 <; if;
+        "mset requires at least one argument" error;
+    then;
+    mlist; s() swap; push for;
+    ,,
+
+: mhash
+    depth; 1 <; if;
+        "mhash requires at least one argument" error;
+    then;
+    2 *; mlist; lst var; lst !;
+    h()
+    begin;
+        lst @; len; 0 =; if;
+            leave;
+        then;
+        lst @; dup; shift; swap; shift; set;
+        .f until;
+    ,,
+
+: shift-all
+    depth; 1 <; if;
+        "shift-all requires one argument" error;
+    then;
+    obj var; obj !;
+    begin;
+        obj @; shift; dup; is-null; if;
+            drop;
+            leave;
+        then;
+        .f until;
+    ,,
+
 # ping and pingn are implemented by calling ping(1), to avoid needing
 # root privileges in the shell.
 : ping
@@ -665,6 +717,7 @@
      res @] map;
     ,,
 
+# dig and related functions.
 : _list-to-hash
     input var; input !;
     h() result var; result !;
@@ -874,56 +927,6 @@
     response @;
     ,,
 
-: mlist
-    depth; 1 <; if;
-        "mlist requires at least one argument" error;
-    then;
-    n var; n !;
-    ()
-    begin;
-        n @; 0 <=; if;
-            leave;
-        then;
-        n @; 1 -; n !;
-        swap; push;
-        .f until;
-    reverse;
-    ,,
-
-: mset
-    depth; 1 <; if;
-        "mset requires at least one argument" error;
-    then;
-    mlist; s() swap; push for;
-    ,,
-
-: mhash
-    depth; 1 <; if;
-        "mhash requires at least one argument" error;
-    then;
-    2 *; mlist; lst var; lst !;
-    h()
-    begin;
-        lst @; len; 0 =; if;
-            leave;
-        then;
-        lst @; dup; shift; swap; shift; set;
-        .f until;
-    ,,
-
-: shift-all
-    depth; 1 <; if;
-        "shift-all requires one argument" error;
-    then;
-    obj var; obj !;
-    begin;
-        obj @; shift; dup; is-null; if;
-            drop;
-            leave;
-        then;
-        .f until;
-    ,,
-
 # Common commands and aliases.
 : vim depth; 0 =; if; vim exec; else; "vim {}" exec; then; ,,
 : ssh "ssh {}" fmt; exec; ,,
@@ -958,3 +961,37 @@
 : nano        "nano {}"        fmt; exec; ,,
 
 : gr {grep -ri {} .}; [chomp; "(.*?):(.*)" c; (1 2) get] map; ,,
+
+# Storage-related functions for libraries.
+: make-xdg-env-var
+    XDG_ swap; uc; ++; _HOME ++; ,,
+
+: get-storage-dir
+    type var; type !;
+    lib var; lib !;
+
+    xdg-types var; h(data   .local/share
+                     config .config
+                     state  .local/state
+                     cache  .cache) xdg-types !;
+
+    xdg-types @; type @; get; dup; is-null; if;
+        drop;
+        "storage type is invalid" error;
+    then;
+    path-segment var; path-segment !;
+
+    type @; make-xdg-env-var; getenv;
+    dup; is-null; if;
+        drop;
+        HOME getenv;
+        dup; is-null; if;
+            drop;
+            "no home directory set" error;
+        then;
+        / ++;
+        path-segment @; ++;
+    then;
+    /cosh/ ++;
+    lib @; ++;
+    dup; "mkdir -p {}" exec; ,,

@@ -7,7 +7,8 @@
 
     https://data.iana.org/rdap/ filename @; ++; http.get;
     to-json; 1 mlist;
-    state-dir @; / ++; filename @; ++; f>; ,,
+    state-dir @; / ++; filename @; ++; f>;
+    ,,
 
 : rdap.file-is-current
     filename var; filename !;
@@ -22,14 +23,16 @@
     headers get; last-modified get;
     "%a, %d %b %Y %T %Z" strptime;
 
-    =; ,,
+    =;
+    ,,
 
 : rdap.fetch-file-if-not-current
     dup; rdap.file-is-current; not; if;
         rdap.fetch-file;
     else;
         drop;
-    then; ,,
+    then;
+    ,,
 
 : rdap.init
     (dns.json ipv4.json ipv6.json asn.json)
@@ -77,6 +80,38 @@
     then;
     ,,
 
+: rdap.domain-match
+    needle var; needle !;
+    domain var; domain !;
+    needle @; domain @; "$" ++; m; if;
+        domain @; "\./g" c; len; 1 +;
+    else;
+        0
+    then;
+    ,,
+
+: rdap.domain-service-match
+    dmnarg var; dmnarg !;
+    service var; service !;
+    service @; 1 get; 0 get; server var; server !;
+    service @; 0 get; clone; [ dmnarg @; rdap.domain-match ] map;
+    [ 0 > ] grep;
+    [ service @; 1 get; 0 get; 2 mlist ] map; r;
+    ,,
+
+: rdap.domain
+    dmnarg var; dmnarg !;
+    rdap state get-storage-dir; /dns.json ++; f<; from-json;
+    services get;
+    [ dmnarg @; rdap.domain-service-match ] map;
+    flatten;
+    [ [ 0 get ] 2 apply; <=> ] sortp; r; pop;
+    dup; is-null; if;
+    else;
+        1 get; domain/ ++; dmnarg @; ++; http.get;
+    then;
+    ,,
+
 : rdap
     dup; "^[0-9]+$" m; if;
         rdap.asn;
@@ -88,4 +123,5 @@
         rdap.ipv6;
     else;
         rdap.domain;
-    then; then; then; ,,
+    then; then; then;
+    ,,

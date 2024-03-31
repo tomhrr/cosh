@@ -7,6 +7,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::ops::Index;
 use std::ops::IndexMut;
+use std::path::Path;
 use std::rc::Rc;
 use std::str;
 use std::str::FromStr;
@@ -95,6 +96,8 @@ pub struct VM {
     local_tz: chrono_tz::Tz,
     /// The UTC timezone.
     utc_tz: chrono_tz::Tz,
+    /// The library directory.
+    libdir: &'static str,
 }
 
 lazy_static! {
@@ -384,6 +387,7 @@ impl VM {
         print_stack: bool,
         debug: bool,
         global_vars: Rc<RefCell<HashMap<String, Value>>>,
+        libdir: &'static str
     ) -> VM {
         let ltz = iana_time_zone::get_timezone().unwrap();
         VM {
@@ -405,6 +409,7 @@ impl VM {
             local_tz: chrono_tz::Tz::from_str(&ltz).unwrap(),
             utc_tz: chrono_tz::Tz::from_str("UTC").unwrap(),
             readline: None,
+            libdir,
         }
     }
 
@@ -524,8 +529,27 @@ impl VM {
         return 1;
     }
 
-    /// Import the functions from the specified path into the current
-    /// context.
+    fn find_library(libdir: &str, libname: &str) -> Option<String> {
+        let s = format!("{}/{}", libdir, libname);
+        if Path::new(&s).is_file() {
+            return Some(s);
+        }
+
+        let s2 = format!("{}/{}.chc", libdir, libname);
+        if Path::new(&s2).is_file() {
+            return Some(s2);
+        }
+
+        let s3 = format!("{}/{}.ch", libdir, libname);
+        if Path::new(&s3).is_file() {
+            return Some(s3);
+        }
+
+        return None;
+    }
+
+    /// Import the functions from the specified library into the
+    /// current context.
     pub fn opcode_import(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("import requires one argument");
@@ -538,8 +562,19 @@ impl VM {
 
         match lib_str_opt {
             Some(s) => {
+                let mut path_opt = VM::find_library(".", s);
+                if path_opt.is_none() {
+                    let libdir = format!("{}/{}", self.libdir, "cosh");
+                    path_opt = VM::find_library(&libdir, s);
+                }
+                if path_opt.is_none() {
+                    self.print_error("unable to open import path");
+                    return 0;
+                }
+                let path = path_opt.unwrap();
+
                 let mut compiler = Compiler::new();
-                let import_chunk_opt = compiler.deserialise(s);
+                let import_chunk_opt = compiler.deserialise(&path);
                 match import_chunk_opt {
                     Some(import_chunk) => {
                         for (k, v) in import_chunk.functions.iter() {
@@ -553,14 +588,14 @@ impl VM {
                         self.stack.clear();
                     }
                     None => {
-                        let file_res = std::fs::File::open(s);
+                        let file_res = std::fs::File::open(path.clone());
                         match file_res {
                             Ok(file) => {
                                 let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                                 let mut vm =
-                                    VM::new(true, false, Rc::new(RefCell::new(HashMap::new())));
+                                    VM::new(true, false, Rc::new(RefCell::new(HashMap::new())), self.libdir);
                                 let functions = Rc::new(RefCell::new(HashMap::new()));
-                                let chunk_opt = vm.interpret(functions, &mut bufread, s);
+                                let chunk_opt = vm.interpret(functions, &mut bufread, &path);
                                 match chunk_opt {
                                     Some(chunk) => {
                                         for (k, v) in chunk.borrow().functions.iter() {

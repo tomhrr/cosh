@@ -35,6 +35,8 @@ cosh is a concatenative command-line shell.
     * [Miscellaneous functions](#miscellaneous-functions)
  * [External program execution](#external-program-execution)
     * [Default command aliases](#default-command-aliases)
+ * [Libraries](#libraries)
+    * [rdap](#rdap)
  * [Miscellaneous](#miscellaneous)
     * [Caveats and pitfalls](#caveats-and-pitfalls)
     * [Development](#development)
@@ -69,6 +71,12 @@ To import and use a library:
     $ test-fn
     hello
     $
+
+Libraries are searched for first within the current directory,
+followed by the compile-time `libdir` directory (which defaults to the
+`lib` directory within the install prefix) with `/cosh` appended to
+it.  The unqualified filename is checked first, followed by
+`{filename}.chc`, then `{filename}.ch`.
 
 To run a script:
 
@@ -1329,6 +1337,12 @@ definitions.  There are some additional custom aliases:
 
  - `gr`: maps to "grep -ri {} .".
 
+### Libraries
+
+#### [rdap](rdap.md)
+
+A library for working with Registration Data Access Protocol [RDAP](https://about.rdap.org) queries.
+
 ### Miscellaneous
 
 Comments can be added by prefixing the comment line with `#`.
@@ -1382,9 +1396,42 @@ past simple line-based matching.  There are likely to be other cases
 where calling out to an executable will lead to faster processing when
 compared with relying on the shell language alone.
 
+It is relatively easy to have an anonymous function's environment go
+out of scope.  For example:
+
+    $ (1) [a var; a !; (1) [drop; a @; 2 *] map] map;
+    v[gen (
+    1:31: anonymous function environment has gone out of scope
+
+This happens because the inner `map` returns a generator that is not
+evaluated until the outer `map` has returned, such that the outer
+`map`'s `a` variable is no longer available.  This problem can be
+worked around by reifying the result of the inner `map`:
+
+    $ (1) [a var; a !; (1) [drop; a @; 2 *] map; r] map
+    v[gen (
+	0: (
+	    0: 2
+	)
+    )]
+    $
+
+or by declaring `a` at the top level:
+
+    $ a var; (1) [a !; (1) [drop; a @; 2 *] map] map
+    v[gen (
+	0: v[gen (
+	    0: 2
+	)]
+    )]
+    $
+
+But neither is an ideal solution.  It would be better if the inner
+`map` were a proper closure over its environment, or similar.
+
 There are likely to be many bugs and problems with the implementation
-here, and the performance isn't spectacular, even taking the previous
-paragraph into account.  The code could do with some tidying, too.
+here, and the performance isn't spectacular.  The code could do with
+some tidying, too.
 
 There are not currently any guarantees around stability of the
 language, or of the underlying bytecode schema.

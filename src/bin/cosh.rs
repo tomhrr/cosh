@@ -135,7 +135,7 @@ fn main() {
                 std::process::exit(1);
             }
             let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
-            let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())));
+            let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())), libdir);
             let mut functions = Vec::new();
             if !matches.opt_present("no-rt") {
                 let mut rtchunk_opt = compiler.deserialise(&rt_chc);
@@ -198,7 +198,7 @@ fn main() {
                     }
                 }
             } else {
-                let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())));
+                let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())), libdir);
                 let mut compiler = Compiler::new();
                 let global_functions = Rc::new(RefCell::new(HashMap::new()));
 
@@ -244,7 +244,7 @@ fn main() {
         }
 
         let global_vars = Rc::new(RefCell::new(HashMap::new()));
-        let mut vm = VM::new(true, debug, global_vars.clone());
+        let mut vm = VM::new(true, debug, global_vars.clone(), libdir);
 
         let running_clone = vm.running.clone();
         ctrlc::set_handler(move || {

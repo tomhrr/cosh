@@ -7,7 +7,7 @@
 
     https://data.iana.org/rdap/ filename @; ++; http.get;
     to-json; 1 mlist;
-    state-dir @; / ++; filename @; ++; f>;
+    state-dir @; / ++; filename @; ++; f>; .t
     ,,
 
 : rdap.file-is-current
@@ -30,16 +30,16 @@
     dup; rdap.file-is-current; not; if;
         rdap.fetch-file;
     else;
-        drop;
+        drop; .t
     then;
     ,,
 
 : rdap.init
-    (dns.json ipv4.json ipv6.json asn.json)
+    (dns.json ipv4.json ipv6.json asn.json object-tags.json)
         rdap.fetch-file pmap; r; drop; ,,
 
 : rdap.refetch
-    (dns.json ipv4.json ipv6.json asn.json)
+    (dns.json ipv4.json ipv6.json asn.json object-tags.json)
         [ rdap.fetch-file-if-not-current; 1 ] pmap; r; ,,
 
 : rdap.ip
@@ -112,6 +112,24 @@
     then;
     ,,
 
+: rdap.object-tag-match
+    entarg var; entarg !;
+    service var; service !;
+    service @; 1 get;
+    [ - swap; ++; "$" ++; entarg @; uc; swap; m ] grep; len; 0 >;
+    ,,
+
+: rdap.entity
+    entarg var; entarg !;
+    rdap state get-storage-dir; /object-tags.json ++; f<; from-json;
+    services get;
+    [ entarg @; rdap.object-tag-match ] first;
+    dup; is-null; if;
+    else;
+        2 get; 0 get; entity/ ++; entarg @; ++; http.get;
+    then;
+    ,,
+
 : rdap
     dup; "^[0-9]+$" m; if;
         rdap.asn;
@@ -122,6 +140,10 @@
     dup; "^[0-9a-fA-F:/]+$" m; if;
         rdap.ipv6;
     else;
+    dup; "-[a-zA-Z]+$" m; if;
+        # TLD labels do not contain dashes.
+        rdap.entity;
+    else;
         rdap.domain;
-    then; then; then;
+    then; then; then; then;
     ,,

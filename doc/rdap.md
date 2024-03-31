@@ -31,16 +31,16 @@ particular query.
 
 ### Functions
 
- - rdap.init
+ - `rdap.init`
     - Downloads the bootstrap files from the IANA server and stores
       them locally for later server lookup operations.
 
- - rdap.refetch
+ - `rdap.refetch`
     - Downloads any bootstrap file that has been updated since it was
       last downloaded.  This should be run periodically via a
       cronjob or similar.
 
- - rdap
+ - `rdap`
     - Takes a single IP address/range, or ASN, or domain name, and
       returns the RDAP result for the associated lookup operation as a
       hash.  If no server can be found for the argument, returns null.

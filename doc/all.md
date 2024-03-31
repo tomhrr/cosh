@@ -1341,7 +1341,8 @@ definitions.  There are some additional custom aliases:
 
 #### [rdap](rdap.md)
 
-A library for working with Registration Data Access Protocol [RDAP](https://about.rdap.org) queries.
+A library for working with Registration Data Access Protocol
+([RDAP](https://about.rdap.org)) queries.
 
 ### Miscellaneous
 

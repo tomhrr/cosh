@@ -92,7 +92,10 @@ impl VM {
 
     pub fn send_request(&mut self, url: &str) -> i32 {
         let client = Client::new();
-        let response_res = client.get(url).send();
+        let mut rb = client.request(Method::GET, url);
+        rb = rb.header("User-Agent",
+                       format!("cosh/{}", env!("CARGO_PKG_VERSION")));
+        let response_res = rb.send();
         match response_res {
             Ok(response) => {
                 self.process_response(response)
@@ -216,6 +219,9 @@ impl VM {
                 let mut rb = client.request(method, url);
                 let mut is_json = false;
                 let mut is_xml  = false;
+
+                rb = rb.header("User-Agent",
+                               format!("cosh/{}", env!("CARGO_PKG_VERSION")));
 
                 let headers_val_opt = mapp.get("headers");
                 match headers_val_opt {

@@ -85,6 +85,7 @@ fn main() {
     opts.optflag("", "no-rt", "run without loading runtime");
     opts.optflag("", "no-cosh-conf", "run without loading cosh.conf");
     opts.optflag("d", "debug", "show debug information");
+    opts.optopt("e", "", "run single expression", "EXPR");
     opts.optopt("o", "", "set output file name for compilation", "NAME");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -112,6 +113,7 @@ fn main() {
     let rt_chc = format!("{}/cosh/rt.chc", libdir);
 
     let debug = matches.opt_present("debug");
+    let expr_opt = matches.opt_str("e");
 
     if !matches.free.is_empty() {
         /* A path has been provided, so the user is attempting to run
@@ -223,6 +225,56 @@ fn main() {
                 vm.interpret(global_functions, &mut bufread, "(main)");
             }
         }
+    } else if !expr_opt.is_none() {
+        let expr = expr_opt.unwrap();
+        let file_res = tempfile();
+        match file_res {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("unable to create temporary file: {}", e);
+                std::process::exit(1);
+            }
+        }
+        let mut file = file_res.unwrap();
+        let res = file.write_all(expr.as_bytes());
+        match res {
+            Ok(_) => {}
+            Err(e) => {
+                eprintln!("unable to write content to temporary file: {}", e);
+                std::process::exit(1);
+            }
+        }
+        file.seek(SeekFrom::Start(0)).unwrap();
+
+        let mut compiler = Compiler::new();
+        let global_functions = Rc::new(RefCell::new(HashMap::new()));
+
+        if !matches.opt_present("no-rt") {
+            let mut rtchunk_opt = compiler.deserialise(&rt_chc);
+            if rtchunk_opt.is_none() {
+                rtchunk_opt = compiler.deserialise("./rt.chc");
+                if rtchunk_opt.is_none() {
+                    eprintln!("unable to deserialise runtime library");
+                    std::process::exit(1);
+                }
+            }
+            let rtchunk = rtchunk_opt.unwrap();
+            for (k, v) in rtchunk.functions.iter() {
+                global_functions.borrow_mut().insert(k.clone(), v.clone());
+            }
+        }
+        let global_vars = Rc::new(RefCell::new(HashMap::new()));
+        let mut vm = VM::new(true, debug, global_vars.clone(), libdir);
+        let running_clone = vm.running.clone();
+        ctrlc::set_handler(move || {
+            running_clone.store(false, Ordering::SeqCst);
+        })
+        .unwrap();
+        if !matches.opt_present("no-cosh-conf") {
+            import_cosh_conf(&mut vm, global_functions.clone());
+        }
+        let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
+        vm.interpret(global_functions.clone(), &mut bufread, "(main)");
     } else {
         /* A path has not been provided, so start the shell. */
         let mut compiler = Compiler::new();

@@ -36,11 +36,11 @@
 
 : rdap.init
     (dns.json ipv4.json ipv6.json asn.json object-tags.json)
-        rdap.fetch-file pmap; r; drop; ,,
+        rdap.fetch-file pfor; ,,
 
 : rdap.refetch
     (dns.json ipv4.json ipv6.json asn.json object-tags.json)
-        [ rdap.fetch-file-if-not-current; 1 ] pmap; r; ,,
+        rdap.fetch-file-if-not-current pfor; ,,
 
 : rdap.ip
     swap; iparg var; iparg !;

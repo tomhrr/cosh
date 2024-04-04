@@ -798,7 +798,7 @@ impl VM {
 
 	    let epoch64 = i64::try_from(process.start_time()).unwrap();
 	    let naive = NaiveDateTime::from_timestamp_opt(epoch64, 0).unwrap();
-	    let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
+	    let datetime: DateTime<Utc> = DateTime::from_naive_utc_and_offset(naive, Utc);
 	    let newdate = datetime.with_timezone(&tz);
             map.insert(
                 "start".to_string(),

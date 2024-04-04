@@ -884,6 +884,9 @@ additional process count argument:
     $ dt; 10 range; [1 sleep] 2  pmapn; r; drop; dt; swap; -
     5
 
+`pgrep`, `pgrepn`, `pfor`, and `pforn` work similarly for the `grep`
+and `for` functions.
+
 #### Sorting
 
 `sort` sorts a list or generator, where the values in the list are of

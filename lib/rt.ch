@@ -688,6 +688,36 @@
         .f until;
     ,,
 
+: pforn
+    pc var; pc !;
+    fn var; fn !;
+    [ fn @; funcall; .t ] pc @; pmapn; r; drop;
+    ,,
+
+: pfor 4 pforn; ,,
+
+:~ pgrepn 3 3
+    drop;
+    pc var; pc !;
+    fn var; fn !;
+    res var;
+    [ dup; clone; fn @; funcall; 2 mlist ] pc @; pmapn; res !;
+    begin;
+        res @; shift; dup; is-null; if;
+            drop;
+            leave;
+        else;
+            shift-all; if;
+                yield;
+            else;
+                drop;
+            then;
+        then;
+        .f until;
+    ,,
+
+: pgrep 4 pgrepn; ,,
+
 # ping and pingn are implemented by calling ping(1), to avoid needing
 # root privileges in the shell.
 : ping

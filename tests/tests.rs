@@ -1719,3 +1719,9 @@ fn ifconfig() {
     /* Possibly not a safe assumption in all test environments. */
     basic_test("ifconfig; len; 0 >", ".t");
 }
+
+#[test]
+fn pgrep() {
+    basic_test("10 range; [5 <] 10 pgrepn; sort; , join",
+               "0,1,2,3,4");
+}

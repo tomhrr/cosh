@@ -150,25 +150,30 @@ impl VM {
                                 }
                                 self.stack.push(v);
                                 let res = self.call(OpCode::Call, sp_fn_rr.clone());
-                                if !res {
+                                if !res || self.stack.is_empty() {
+                                    let vsd = value_to_valuesd(Value::Null);
+                                    write_valuesd(&mut ptt_tx, vsd);
                                     exit(0);
-                                }
-                                let nv = self.stack.pop().unwrap();
-                                match nv {
-                                    Value::Null => {
-                                        exit(0);
+                                } else {
+                                    let nv = self.stack.pop().unwrap();
+                                    match nv {
+                                        Value::Null => {
+                                            let vsd = value_to_valuesd(Value::Null);
+                                            write_valuesd(&mut ptt_tx, vsd);
+                                            exit(0);
+                                        }
+                                        _ => {}
                                     }
-                                    _ => {}
-                                }
-                                let vsd = value_to_valuesd(nv.clone());
-                                match (&vsd, nv) {
-                                    (&ValueSD::Null, Value::Null) => {}
-                                    (&ValueSD::Null, _) => {
-                                        self.print_error("unable to serialise value for pmap");
+                                    let vsd = value_to_valuesd(nv.clone());
+                                    match (&vsd, nv) {
+                                        (&ValueSD::Null, Value::Null) => {}
+                                        (&ValueSD::Null, _) => {
+                                            self.print_error("unable to serialise value for pmap");
+                                        }
+                                        _ => {}
                                     }
-                                    _ => {}
+                                    write_valuesd(&mut ptt_tx, vsd);
                                 }
-                                write_valuesd(&mut ptt_tx, vsd);
                             }
                         }
                         Err(e) => {
@@ -268,7 +273,12 @@ impl VM {
                                 let subprocess = &mut subprocesses.get_mut(i).unwrap();
 
                                 let mut size_buf = vec![0u8; 1];
-                                subprocess.reqvalue_rx.read_exact(&mut size_buf).unwrap();
+                                let read_res =
+                                    subprocess.reqvalue_rx.read_exact(&mut size_buf);
+                                if read_res.is_err() {
+                                    break 'done;
+                                }
+                                read_res.unwrap();
 
                                 let dup_res = self.opcode_dup();
                                 if dup_res == 0 {

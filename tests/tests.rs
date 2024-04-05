@@ -1725,3 +1725,9 @@ fn pgrep() {
     basic_test("10 range; [5 <] 10 pgrepn; sort; , join",
                "0,1,2,3,4");
 }
+
+#[test]
+fn pmap_empty_stack() {
+    basic_test("10 range; drop map",  "v[gen]");
+    basic_test("10 range; drop pmap", "v[channel-gen]");
+}

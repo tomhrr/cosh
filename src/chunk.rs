@@ -1081,12 +1081,16 @@ pub fn read_valuesd(file: &mut std::fs::File) -> ValueSD {
 }
 
 /// Write a ValueSD value to the specified file.
-pub fn write_valuesd(file: &mut std::fs::File, value: ValueSD) {
+pub fn write_valuesd(file: &mut std::fs::File, value: ValueSD) -> bool {
     let mut vec = bincode::serialize(&value).unwrap();
     let mut size_buf = vec![0u8; 4];
     i32_to_bytes(vec.len() as i32, &mut size_buf);
     size_buf.append(&mut vec);
-    file.write(&size_buf).unwrap();
+    let res = file.write(&size_buf);
+    match res {
+        Ok(_)  => { true }
+        Err(_) => { false }
+    }
 }
 
 /// Takes a chunk, an instruction index, and an error message as its

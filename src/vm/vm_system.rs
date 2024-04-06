@@ -749,23 +749,45 @@ impl VM {
                 "pid".to_string(),
                 Value::BigInt(BigInt::from_i32(pid.as_u32().try_into().unwrap()).unwrap()),
             );
-            map.insert(
-                "uid".to_string(),
-                Value::BigInt(BigInt::from_u32(**(process.user_id().unwrap())).unwrap()),
-            );
-            map.insert(
-                "gid".to_string(),
-                Value::BigInt(BigInt::from_u32(*(process.group_id().unwrap())).unwrap()),
-            );
-            match users.get_user_by_id(process.user_id().unwrap()) {
-                None => {}
-                Some(user) => {
+            let user_id_opt = process.user_id();
+            match user_id_opt {
+                Some(user_id) => {
                     map.insert(
-                        "user".to_string(),
-                        new_string_value(user.name().to_string())
+                        "uid".to_string(),
+                        Value::BigInt(BigInt::from_u32(**user_id).unwrap()),
+                    );
+                    match users.get_user_by_id(user_id) {
+                        None => {}
+                        Some(user) => {
+                            map.insert(
+                                "user".to_string(),
+                                new_string_value(user.name().to_string())
+                            );
+                        }
+                    };
+                }
+                None => {
+                    map.insert(
+                        "uid".to_string(),
+                        Value::Null,
                     );
                 }
-            };
+            }
+            let group_id_opt = process.group_id();
+            match group_id_opt {
+                Some(group_id) => {
+                    map.insert(
+                        "gid".to_string(),
+                        Value::BigInt(BigInt::from_u32(*group_id).unwrap()),
+                    );
+                }
+                None => {
+                    map.insert(
+                        "gid".to_string(),
+                        Value::Null,
+                    );
+                }
+            }
             map.insert(
                 "name".to_string(),
                 new_string_value(process.name().to_string())

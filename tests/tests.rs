@@ -1210,32 +1210,28 @@ fn bitwise_tests() {
     basic_test("10 10 &;", "10");
 }
 
-/* todo: Comment out temporarily, because it's failing in Github
- * Actions for some reason. */
-/*
 #[test]
 fn stdout_stderr_tests() {
-    basic_test("{perl test-misc/test.pl}; len; 3 =", ".t");
+    basic_test("{perl test-misc/test.pl}; len; 25 =", ".t");
 
-    basic_test("{perl test-misc/test.pl}/o; len; 3 =", ".t");
+    basic_test("{perl test-misc/test.pl}/o; len; 25 =", ".t");
     basic_test("{perl test-misc/test.pl}/o; [output m] all", ".t");
     basic_test("{perl test-misc/test.pl}/o; [error m; not] all", ".t");
 
-    basic_test("{perl test-misc/test.pl}/e; len; 3 =", ".t");
+    basic_test("{perl test-misc/test.pl}/e; len; 25 =", ".t");
     basic_test("{perl test-misc/test.pl}/e; [output m; not] all", ".t");
     basic_test("{perl test-misc/test.pl}/e; [error m] all", ".t");
 
-    basic_test("{perl test-misc/test.pl}/oe; len; 6 =", ".t");
-    basic_test("{perl test-misc/test.pl}/oe; [output m] grep; len", "3");
-    basic_test("{perl test-misc/test.pl}/oe; [error m] grep; len", "3");
+    basic_test("{perl test-misc/test.pl}/oe; len; 50 =", ".t");
+    basic_test("{perl test-misc/test.pl}/oe; [output m] grep; len", "25");
+    basic_test("{perl test-misc/test.pl}/oe; [error m] grep; len", "25");
 
-    basic_test("{perl test-misc/test.pl}/c; [0 nth; 1 =] grep; len", "3");
-    basic_test("{perl test-misc/test.pl}/c; [0 nth; 2 =] grep; len", "3");
-    basic_test("{perl test-misc/test.pl}/c; len;", "6");
-    basic_test("{perl test-misc/test.pl}/c; [0 nth; 1 =] grep; [1 nth] map; [output m] all", ".t");
-    basic_test("{perl test-misc/test.pl}/c; [0 nth; 2 =] grep; [1 nth] map; [error  m] all", ".t");
+    basic_test("{perl test-misc/test.pl}/c; [0 get; 1 =] grep; len", "25");
+    basic_test("{perl test-misc/test.pl}/c; [0 get; 2 =] grep; len", "25");
+    basic_test("{perl test-misc/test.pl}/c; len;", "50");
+    basic_test("{perl test-misc/test.pl}/c; [0 get; 1 =] grep; [1 get] map; [output m] all", ".t");
+    basic_test("{perl test-misc/test.pl}/c; [0 get; 2 =] grep; [1 get] map; [error  m] all", ".t");
 }
-*/
 
 #[test]
 fn append_generator_tests() {

@@ -497,6 +497,16 @@ impl CommandGenerator {
         }
     }
 
+    /// Determine whether standard output has been exhausted.
+    fn stdout_eof(&mut self) -> bool {
+        return self.stdout_buffer.is_empty() && self.stdout.is_eof();
+    }
+
+    /// Determine whether standard error has been exhausted.
+    fn stderr_eof(&mut self) -> bool {
+        return self.stderr_buffer.is_empty() && self.stderr.is_eof();
+    }
+
     /// Read a line from standard output (non-blocking).
     fn stdout_read_line_nb(&mut self) -> Option<String> {
         let mut index = self.stdout_buffer.iter().position(|&r| r == b'\n');
@@ -562,60 +572,55 @@ impl CommandGenerator {
     /// Read a line from standard output or standard error.  This
     /// blocks until one returns a line.
     pub fn read_line(&mut self) -> Option<String> {
-        let mut s = None;
-        while s.is_none() {
+        loop {
             if self.get_stdout {
-                s = self.stdout_read_line_nb();
+                let s = self.stdout_read_line_nb();
                 if s.is_some() {
                     return s;
-                } else if self.stdout.is_eof() && (!self.get_stderr || self.stderr.is_eof()) {
+                } else if self.stdout_eof() && (!self.get_stderr || self.stderr_eof()) {
                     return None;
                 }
             }
             if self.get_stderr {
-                s = self.stderr_read_line_nb();
+                let s = self.stderr_read_line_nb();
                 if s.is_some() {
                     return s;
-                } else if self.stderr.is_eof() && (!self.get_stdout || self.stdout.is_eof()) {
+                } else if self.stderr_eof() && (!self.get_stdout || self.stdout_eof()) {
                     return None;
                 }
             }
         }
-
-        None
     }
 
     /// Read a line from standard output or standard error, and return
     /// an identifier for the stream and the string.  This blocks
     /// until one returns a line.
     pub fn read_line_combined(&mut self) -> Option<(i32, String)> {
-        let mut s = None;
-        while s.is_none() {
-            s = self.stdout_read_line_nb();
-            match s {
+        loop {
+            let so = self.stdout_read_line_nb();
+            match so {
                 Some(ss) => {
                     return Some((1, ss));
                 }
                 _ => {
-                    if self.stdout.is_eof() && self.stderr.is_eof() {
+                    if self.stdout_eof() && self.stderr_eof() {
                         return None;
                     }
                 }
             }
 
-            s = self.stderr_read_line_nb();
-            match s {
+            let se = self.stderr_read_line_nb();
+            match se {
                 Some(ss) => {
                     return Some((2, ss));
                 }
                 _ => {
-                    if self.stderr.is_eof() && self.stdout.is_eof() {
+                    if self.stderr_eof() && self.stdout_eof() {
                         return None;
                     }
                 }
             }
         }
-        None
     }
 
     /// Read bytes from standard output and return the bytes as a

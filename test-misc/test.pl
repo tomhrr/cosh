@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 
-for (1..3) {
+for (1..25) {
     print STDOUT "standard output $_\n";
     print STDERR "standard error $_\n";
 }

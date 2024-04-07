@@ -1553,12 +1553,12 @@ fn list_generator_append_test() {
 fn no_zombies() {
     basic_test(
         "
-: zs ps; [status get; Zombie =] grep; [pid get] map; s() swap; push for; ,,
-zs; {ls}; drop; zs; swap; diff;
+: zs ps; [status get; Zombie =] grep; [name get; sleep|cosh m] grep; [pid get] map; s() swap; push for; ,,
+zs; {sleep 1}; drop; zs; swap; diff;
 ", "s()");
     basic_test(
         "
-: zs ps; [status get; Zombie =] grep; [pid get] map; s() swap; push for; ,,
+: zs ps; [status get; Zombie =] grep; [name get; sort|cosh m] grep; [pid get] map; s() swap; push for; ,,
 zs; 10 range; {sort -r} |; take-all; drop; zs; swap; diff;
 ", "s()");
 }

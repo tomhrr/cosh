@@ -1547,6 +1547,19 @@ impl VM {
                     let var_index: u8 = chunk.borrow().data[i];
                     let value_rr = self.stack.pop().unwrap();
 
+                    /* An inner function may have a local variable
+                     * stack that includes variables from outer
+                     * functions, but depending on how it is called,
+                     * SetLocalVar may not occur for those earlier
+                     * variables.  To deal with that, pad the local
+                     * variable stack with null when the required
+                     * index does not exist. */
+                    let mut padding = (var_index as i16) -
+                        self.local_var_stack.borrow().len() as i16;
+                    while padding > 0 {
+                        self.local_var_stack.borrow_mut().push(Value::Null);
+                        padding -= 1;
+                    }
                     if var_index == (self.local_var_stack.borrow().len() as u8) {
                         self.local_var_stack.borrow_mut().push(value_rr);
                     } else {

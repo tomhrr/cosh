@@ -1727,3 +1727,14 @@ fn pmap_empty_stack() {
     basic_test("10 range; drop map",  "v[gen]");
     basic_test("10 range; drop pmap", "v[channel-gen]");
 }
+
+#[test]
+fn inner_fn_delayed() {
+    basic_test("
+: testfn
+    thing var; 100 thing !;
+    (1) [ thing2 var; thing2 !; thing2 @ ] map;
+    ,,
+
+testfn; testfn; ++; r; sum", "2");
+}

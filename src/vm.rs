@@ -1557,7 +1557,7 @@ impl VM {
                     let mut padding = (var_index as i16) -
                         self.local_var_stack.borrow().len() as i16;
                     while padding > 0 {
-                        self.local_var_stack.borrow_mut().push(Value::Null);
+                        self.local_var_stack.borrow_mut().push(Value::ScopeError);
                         padding -= 1;
                     }
                     if var_index == (self.local_var_stack.borrow().len() as u8) {
@@ -1585,6 +1585,13 @@ impl VM {
                         .borrow()
                         .index(var_index as usize)
                         .clone();
+                    match value_rr {
+                        Value::ScopeError => {
+                            self.print_error("anonymous function environment has gone out of scope");
+                            return 0;
+                        }
+                        _ => {}
+                    }
                     self.stack.push(value_rr);
                 }
                 OpCode::GLVShift => {

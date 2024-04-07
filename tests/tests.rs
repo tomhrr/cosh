@@ -1738,3 +1738,19 @@ fn inner_fn_delayed() {
 
 testfn; testfn; ++; r; sum", "2");
 }
+
+#[test]
+fn anon_fn2_test() {
+    basic_error_test(
+        "
+: f
+    x var;
+    10 x !;
+    [y var; 10 y !; x @; 20 +;] ,,
+
+f;
+funcall;
+    ",
+        "5:21: anonymous function environment has gone out of scope",
+    );
+}

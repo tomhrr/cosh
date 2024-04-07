@@ -790,6 +790,9 @@ pub enum Value {
     DBConnectionSQLite(Rc<RefCell<DBConnectionSQLite>>),
     /// A SQLite database statement.
     DBStatementSQLite(Rc<RefCell<DBStatementSQLite>>),
+    /// A value that when accessed, indicates that a scope error has
+    /// occurred.
+    ScopeError
 }
 
 impl fmt::Debug for Value {
@@ -912,6 +915,9 @@ impl fmt::Debug for Value {
             }
             Value::ChannelGenerator(_) => {
                 write!(f, "((ChannelGenerator))")
+            }
+            Value::ScopeError => {
+                write!(f, "((ScopeError))")
             }
         }
     }
@@ -2050,6 +2056,7 @@ impl Value {
             Value::DBStatementPostgres(_) => self.clone(),
             Value::DBConnectionSQLite(_) => self.clone(),
             Value::DBStatementSQLite(_) => self.clone(),
+            Value::ScopeError => self.clone(),
         }
     }
 
@@ -2165,6 +2172,7 @@ impl Value {
             Value::DBStatementPostgres(..) => "db-statement",
             Value::DBConnectionSQLite(..) => "db-connection",
             Value::DBStatementSQLite(..) => "db-statement",
+            Value::ScopeError => "scope-error",
         };
         s.to_string()
     }

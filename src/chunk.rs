@@ -1188,6 +1188,17 @@ impl Chunk {
         (self.constants.len() - 1) as i32
     }
 
+    /// Add a constant to the current chunk, as well as the bytes for
+    /// the index.
+    pub fn add_constant_and_index(&mut self, value_rr: Value) -> i32 {
+        let i = self.add_constant(value_rr.clone());
+        let i_upper = (i >> 8) & 0xFF;
+        let i_lower = i & 0xFF;
+        self.add_byte(i_upper as u8);
+        self.add_byte(i_lower as u8);
+        return i;
+    }
+
     /// Get a constant from the current chunk.
     pub fn get_constant(&self, i: i32) -> Value {
         let value_sd = &self.constants[i as usize];

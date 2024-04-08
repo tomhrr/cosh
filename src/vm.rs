@@ -1108,9 +1108,9 @@ impl VM {
             }
             let op = to_opcode(chunk.borrow().data[i]);
             if self.debug {
-                eprintln!(">  Opcode: {:?}", op);
-                eprintln!(" > Stack:  {:?}", self.stack);
-                eprintln!(" > Index:  {:?}", i);
+                eprintln!(">   Opcode: {:?}", op);
+                eprintln!(" >  Stack:  {:?}", self.stack);
+                eprintln!(" >  Index:  {:?}", i);
             }
             let op_fn_opt = SIMPLE_OPS[op as usize];
             if let Some(op_fn) = op_fn_opt {
@@ -1130,24 +1130,46 @@ impl VM {
                     let i_lower = chunk.borrow().data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let mut done = false;
+                    if self.debug {
+                        eprintln!("  > Constant index: {:?}", i2);
+                    }
                     if chunk.borrow().has_constant_int(i2 as i32) {
                         let n = chunk.borrow().get_constant_int(i2 as i32);
+                        if self.debug {
+                            eprintln!("  > Has constant integer at that index: {}", n);
+                        }
                         let len = self.stack.len();
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
+                            if self.debug {
+                                eprintln!("  > Got integer from stack: {}", *n1);
+                            }
                             *n1 += n;
                             done = true;
-                        };
+                        } else {
+                            if self.debug {
+                                eprintln!("  > Did not find integer on stack");
+                            }
+                        }
                     }
                     if !done {
+                        if self.debug {
+                            eprintln!("  > Executing standard add (non-constant int)");
+                        }
                         let op_fn_opt = SIMPLE_OPS[OpCode::Add as usize];
                         self.stack.push(chunk.borrow().get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
                         self.i = i;
                         let res = op_fn(self);
                         if res == 0 {
+                            if self.debug {
+                                eprintln!("  > Addition failed");
+                            }
                             return 0;
                         } else {
+                            if self.debug {
+                                eprintln!("  > Addition succeeded");
+                            }
                             i += 1;
                             continue;
                         }
@@ -1160,24 +1182,46 @@ impl VM {
                     let i_lower = chunk.borrow().data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let mut done = false;
+                    if self.debug {
+                        eprintln!("  > Constant index: {:?}", i2);
+                    }
                     if chunk.borrow().has_constant_int(i2 as i32) {
                         let n = chunk.borrow().get_constant_int(i2 as i32);
+                        if self.debug {
+                            eprintln!("  > Has constant integer at that index: {}", n);
+                        }
                         let len = self.stack.len();
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
+                            if self.debug {
+                                eprintln!("  > Got integer from stack: {}", *n1);
+                            }
                             *n1 -= n;
                             done = true;
+                        } else {
+                            if self.debug {
+                                eprintln!("  > Did not find integer on stack");
+                            }
                         }
                     }
                     if !done {
+                        if self.debug {
+                            eprintln!("  > Executing standard subtraction (non-constant int)");
+                        }
                         let op_fn_opt = SIMPLE_OPS[OpCode::Subtract as usize];
                         self.stack.push(chunk.borrow().get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
                         self.i = i;
                         let res = op_fn(self);
                         if res == 0 {
+                            if self.debug {
+                                eprintln!("  > Subtraction failed");
+                            }
                             return 0;
                         } else {
+                            if self.debug {
+                                eprintln!("  > Subtraction succeeded");
+                            }
                             i += 1;
                             continue;
                         }
@@ -1190,24 +1234,46 @@ impl VM {
                     let i_lower = chunk.borrow().data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let mut done = false;
+                    if self.debug {
+                        eprintln!("  > Constant index: {:?}", i2);
+                    }
                     if chunk.borrow().has_constant_int(i2 as i32) {
                         let n = chunk.borrow().get_constant_int(i2 as i32);
+                        if self.debug {
+                            eprintln!("  > Has constant integer at that index: {}", n);
+                        }
                         let len = self.stack.len();
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
+                            if self.debug {
+                                eprintln!("  > Got integer from stack: {}", *n1);
+                            }
                             *n1 *= n;
                             done = true;
+                        } else {
+                            if self.debug {
+                                eprintln!("  > Did not find integer on stack");
+                            }
                         }
                     }
                     if !done {
+                        if self.debug {
+                            eprintln!("  > Executing standard multiplication (non-constant int)");
+                        }
                         let op_fn_opt = SIMPLE_OPS[OpCode::Multiply as usize];
                         self.stack.push(chunk.borrow().get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
                         self.i = i;
                         let res = op_fn(self);
                         if res == 0 {
+                            if self.debug {
+                                eprintln!("  > Multiplication failed");
+                            }
                             return 0;
                         } else {
+                            if self.debug {
+                                eprintln!("  > Multiplication succeeded");
+                            }
                             i += 1;
                             continue;
                         }
@@ -1220,24 +1286,46 @@ impl VM {
                     let i_lower = chunk.borrow().data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                     let mut done = false;
+                    if self.debug {
+                        eprintln!("  > Constant index: {:?}", i2);
+                    }
                     if chunk.borrow().has_constant_int(i2 as i32) {
                         let n = chunk.borrow().get_constant_int(i2 as i32);
+                        if self.debug {
+                            eprintln!("  > Has constant integer at that index: {}", n);
+                        }
                         let len = self.stack.len();
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
+                            if self.debug {
+                                eprintln!("  > Got integer from stack: {}", *n1);
+                            }
                             *n1 /= n;
                             done = true;
+                        } else {
+                            if self.debug {
+                                eprintln!("  > Did not find integer on stack");
+                            }
                         }
                     }
                     if !done {
+                        if self.debug {
+                            eprintln!("  > Executing standard division (non-constant int)");
+                        }
                         let op_fn_opt = SIMPLE_OPS[OpCode::Divide as usize];
                         self.stack.push(chunk.borrow().get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
                         self.i = i;
                         let res = op_fn(self);
                         if res == 0 {
+                            if self.debug {
+                                eprintln!("  > Division failed");
+                            }
                             return 0;
                         } else {
+                            if self.debug {
+                                eprintln!("  > Division succeeded");
+                            }
                             i += 1;
                             continue;
                         }
@@ -1249,23 +1337,42 @@ impl VM {
                     i += 1;
                     let i_lower = chunk.borrow().data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
+                    if self.debug {
+                        eprintln!("  > Constant index: {:?}", i2);
+                    }
                     let n = chunk.borrow().get_constant_int(i2 as i32);
+                    if self.debug {
+                        eprintln!("  > Has constant integer at that index: {}", n);
+                    }
 
                     let len = self.stack.len();
                     let v1_rr = self.stack.get_mut(len - 1).unwrap();
                     let mut done = false;
                     if let Value::Int(ref n1) = v1_rr {
+                        if self.debug {
+                            eprintln!("  > Got integer from stack: {}", *n1);
+                        }
                         self.stack[len - 1] = Value::Bool(*n1 == n);
                         done = true;
                     };
                     if !done {
+                        if self.debug {
+                            eprintln!("  > Executing standard equality (non-constant int)");
+                        }
                         let op_fn_opt = SIMPLE_OPS[OpCode::Eq as usize];
                         self.stack.push(chunk.borrow().get_constant(i2 as i32));
                         let op_fn = op_fn_opt.unwrap();
                         self.i = i;
                         let res = op_fn(self);
                         if res == 0 {
+                            if self.debug {
+                                eprintln!("  > Equality failed");
+                            }
                             return 0;
+                        } else {
+                            if self.debug {
+                                eprintln!("  > Equality succeeded");
+                            }
                         }
                     }
                 }
@@ -1325,7 +1432,7 @@ impl VM {
                                  * addresses or IP sets: users should
                                  * just use IP sets in those cases. */
                                 match value_rr {
-                                    Value::IpSet(_)
+                                      Value::IpSet(_)
                                     | Value::Ipv4(_)
                                     | Value::Ipv6(_)
                                     | Value::Ipv4Range(_)
@@ -1369,12 +1476,18 @@ impl VM {
                     i += 1;
                     let i_lower = chunk.borrow().data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
+                    if self.debug {
+                        eprintln!("  > Constant index: {:?}", i2);
+                    }
                     let value_rr = chunk.borrow().get_constant(i2 as i32);
                     let mut copy = false;
 
                     match value_rr {
                         Value::String(ref st) => {
                             let s = &st.borrow().string;
+                            if self.debug {
+                                eprintln!("  > Calling function: {}", s);
+                            }
                             let cfb = &chunk.borrow().constant_values;
                             match cfb.get(i2 as usize) {
                                 Some(Value::String(_)) => {
@@ -1431,20 +1544,23 @@ impl VM {
                     i += 1;
                     let i_lower = chunk.borrow().data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
+                    if self.debug {
+                        eprintln!("  > Constant index: {:?} ({}, {})", i2, i_upper, i_lower);
+                    }
                     let mut inst = false;
 
                     {
                         let cfb = &chunk.borrow().constant_values;
                         let iv = cfb.get(i2 as usize);
-                        if self.debug {
-                            eprintln!("CFP: {:?}", iv);
-                        }
                         match iv {
                             Some(Value::Null) => {
                                 inst = true;
                             }
                             Some(_) => {
                                 let value_rr = iv.unwrap().clone();
+                                if self.debug {
+                                    eprintln!("  > Constant: {:?}", value_rr);
+                                }
                                 self.stack.push(value_rr);
                             }
                             _ => {
@@ -1462,6 +1578,9 @@ impl VM {
                             .borrow_mut()
                             .constant_values
                             .insert(i2 as usize, value_rr.clone());
+                        if self.debug {
+                            eprintln!("  > Constant: {:?}", value_rr);
+                        }
                         self.stack.push(value_rr.clone());
                     }
                 }
@@ -1471,11 +1590,17 @@ impl VM {
                     i += 1;
                     let i_lower = chunk.borrow().data[i];
                     let i2 = (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
+                    if self.debug {
+                        eprintln!("  > Constant index: {:?}", i2);
+                    }
 
                     let value_sd = chunk.borrow().constants[i2 as usize].clone();
                     match value_sd {
                         ValueLiteral::String(st, _) => {
                             self.i = i;
+                            if self.debug {
+                                eprintln!("  > Constant: {:?}", st);
+                            }
 
                             /* todo: the two lookups here may be affecting
                              * performance. */
@@ -1516,6 +1641,9 @@ impl VM {
                     }
 
                     let function_rr = self.stack.pop().unwrap();
+                    if self.debug {
+                        eprintln!("  > Function to call: {:?}", function_rr);
+                    }
 
                     let res = self.call(op, function_rr);
                     if !res {
@@ -1532,6 +1660,10 @@ impl VM {
                         .index(var_index as usize)
                         .clone();
 
+                    if self.debug {
+                        eprintln!("  > Function to call: {:?}", function_rr);
+                    }
+
                     let res = self.call(OpCode::Call, function_rr);
                     if !res {
                         return 0;
@@ -1545,6 +1677,9 @@ impl VM {
 
                     i += 1;
                     let var_index: u8 = chunk.borrow().data[i];
+                    if self.debug {
+                        eprintln!("  > Variable index is {}", var_index);
+                    }
                     let value_rr = self.stack.pop().unwrap();
 
                     /* An inner function may have a local variable
@@ -1556,13 +1691,22 @@ impl VM {
                      * index does not exist. */
                     let mut padding = (var_index as i16) -
                         self.local_var_stack.borrow().len() as i16;
+                    if self.debug {
+                        eprintln!("  > Padding required: {}", padding);
+                    }
                     while padding > 0 {
                         self.local_var_stack.borrow_mut().push(Value::ScopeError);
                         padding -= 1;
                     }
                     if var_index == (self.local_var_stack.borrow().len() as u8) {
+                        if self.debug {
+                            eprintln!("  > Pushing new variable onto LVS");
+                        }
                         self.local_var_stack.borrow_mut().push(value_rr);
                     } else {
+                        if self.debug {
+                            eprintln!("  > Setting existing variable on LVS");
+                        }
                         let lvs_b = &mut self.local_var_stack.borrow_mut();
                         let existing_value_rr_ptr = lvs_b.index_mut(var_index as usize);
                         *existing_value_rr_ptr = value_rr;
@@ -1571,6 +1715,9 @@ impl VM {
                 OpCode::GetLocalVar => {
                     i += 1;
                     let var_index: u8 = chunk.borrow().data[i];
+                    if self.debug {
+                        eprintln!("  > Variable index is {}", var_index);
+                    }
 
                     if usize::from(var_index + 1) > self.local_var_stack.borrow().len() {
                         /* It's not impossible this is due to some
@@ -1598,6 +1745,9 @@ impl VM {
                     i += 1;
                     self.i = i;
                     let var_index: u8 = chunk.borrow().data[i];
+                    if self.debug {
+                        eprintln!("  > Variable index is {}", var_index);
+                    }
 
                     let mut pt = self
                         .local_var_stack
@@ -1650,6 +1800,9 @@ impl VM {
 
                     let mut last_scope =
                         self.scopes.last_mut().unwrap().borrow_mut();
+                    if self.debug {
+                        eprintln!("  > Adding variable with name {}", var_name.to_string());
+                    }
                     last_scope.insert(var_name.to_string(), Value::Int(0));
                 }
                 OpCode::SetVar => {
@@ -1732,6 +1885,10 @@ impl VM {
                     let b = value_rr.to_bool();
                     if !b {
                         i += jmp_len;
+                        if self.debug {
+                            eprintln!("  > Jumping by {} to {}",
+                                      jmp_len, i);
+                        }
                     }
                 }
                 OpCode::JumpNeR => {
@@ -1751,6 +1908,10 @@ impl VM {
                     let b = value_rr.to_bool();
                     if !b {
                         i -= jmp_len;
+                        if self.debug {
+                            eprintln!("  > Jumping in reverse by {} to {}",
+                                      jmp_len, i);
+                        }
                     }
                 }
                 OpCode::JumpNeREqC => {
@@ -1778,6 +1939,10 @@ impl VM {
                             Value::Int(n2) => {
                                 if cmp_rr != *n2 {
                                     i -= jmp_len;
+                                    if self.debug {
+                                        eprintln!("  > Jumping in reverse by {} to {}",
+                                                  jmp_len, i);
+                                    }
                                 };
                             }
                             _ => {
@@ -1810,6 +1975,10 @@ impl VM {
                     let i2: usize = chunk.borrow().data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
                     i += jmp_len;
+                    if self.debug {
+                        eprintln!("  > Jumping by {} to {}",
+                                  jmp_len, i);
+                    }
                 }
                 OpCode::JumpR => {
                     i += 1;
@@ -1818,6 +1987,10 @@ impl VM {
                     let i2: usize = chunk.borrow().data[i].try_into().unwrap();
                     let jmp_len: usize = (i1 << 8) | i2;
                     i -= jmp_len;
+                    if self.debug {
+                        eprintln!("  > Jumping in reverse by {} to {}",
+                                  jmp_len, i);
+                    }
                 }
                 OpCode::Error => {
                     if self.stack.is_empty() {

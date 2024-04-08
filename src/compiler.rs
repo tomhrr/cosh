@@ -800,12 +800,8 @@ impl Compiler {
                     }
                     let name_str_rr =
                         new_string_value(name_str.as_str().to_string());
-                    let i = chunk.add_constant(name_str_rr);
                     chunk.add_opcode(OpCode::Function);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(name_str_rr);
                     chunk
                         .functions
                         .insert(name_str, Rc::new(RefCell::new(function_chunk)));
@@ -829,48 +825,28 @@ impl Compiler {
                 }
                 TokenType::True => {
                     let value_rr = Value::Bool(true);
-                    let i = chunk.add_constant(value_rr);
                     chunk.add_opcode(OpCode::Constant);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(value_rr);
                 }
                 TokenType::False => {
                     let value_rr = Value::Bool(false);
-                    let i = chunk.add_constant(value_rr);
                     chunk.add_opcode(OpCode::Constant);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(value_rr);
                 }
                 TokenType::Int(n) => {
                     let value_rr = Value::Int(n);
-                    let i = chunk.add_constant(value_rr);
                     chunk.add_opcode(OpCode::Constant);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(value_rr);
                 }
                 TokenType::BigInt(n) => {
                     let value_rr = Value::BigInt(n);
-                    let i = chunk.add_constant(value_rr);
                     chunk.add_opcode(OpCode::Constant);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(value_rr);
                 }
                 TokenType::Float(n) => {
                     let value_rr = Value::Float(n);
-                    let i = chunk.add_constant(value_rr);
                     chunk.add_opcode(OpCode::Constant);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(value_rr);
                 }
                 TokenType::Word(s) | TokenType::WordImplicit(s) => {
                     if s == "+" {
@@ -992,12 +968,8 @@ impl Compiler {
                                 }
                             }
                             let value_rr = Value::Int(0);
-                            let i = chunk.add_constant(value_rr);
                             chunk.add_opcode(OpCode::Constant);
-                            let i_upper = (i >> 8) & 0xFF;
-                            let i_lower = i & 0xFF;
-                            chunk.add_byte(i_upper as u8);
-                            chunk.add_byte(i_lower as u8);
+                            chunk.add_constant_and_index(value_rr);
                             chunk.add_opcode(OpCode::SetLocalVar);
                             chunk.add_byte((self.locals.len() - 1) as u8);
                         }
@@ -1053,12 +1025,8 @@ impl Compiler {
                             }
                         }
                         if !success {
-                            let i = chunk.add_constant(last_constant_rr);
                             chunk.add_opcode(OpCode::Constant);
-                            let i_upper = (i >> 8) & 0xFF;
-                            let i_lower = i & 0xFF;
-                            chunk.add_byte(i_upper as u8);
-                            chunk.add_byte(i_lower as u8);
+                            chunk.add_constant_and_index(last_constant_rr);
                             chunk.add_opcode(OpCode::SetVar);
                         }
                     } else if s == "@" {
@@ -1113,12 +1081,8 @@ impl Compiler {
                             }
                         }
                         if !success {
-                            let i = chunk.add_constant(last_constant_rr);
                             chunk.add_opcode(OpCode::Constant);
-                            let i_upper = (i >> 8) & 0xFF;
-                            let i_lower = i & 0xFF;
-                            chunk.add_byte(i_upper as u8);
-                            chunk.add_byte(i_lower as u8);
+                            chunk.add_constant_and_index(last_constant_rr);
                             chunk.add_opcode(OpCode::GetVar);
                         }
                     } else if s == "@@" {
@@ -1174,12 +1138,8 @@ impl Compiler {
                             }
                         }
                         if !success {
-                            let i = chunk.add_constant(last_constant_rr);
                             chunk.add_opcode(OpCode::Constant);
-                            let i_upper = (i >> 8) & 0xFF;
-                            let i_lower = i & 0xFF;
-                            chunk.add_byte(i_upper as u8);
-                            chunk.add_byte(i_lower as u8);
+                            chunk.add_constant_and_index(last_constant_rr);
                             chunk.add_opcode(OpCode::GetVar);
                             chunk.add_opcode(OpCode::Clone);
                         }
@@ -1192,23 +1152,29 @@ impl Compiler {
                     } else if s == "drop" {
                         chunk.add_opcode(OpCode::Drop);
                     } else if s == "funcall" {
-                        let mut done = false;
+                        //let mut done = false;
+                        /* This doesn't distinguish opcodes from data
+                         * bytes. :S */
+                        /*
                         if let OpCode::GetLocalVar = chunk.get_second_last_opcode() {
                             chunk.set_second_last_opcode(OpCode::GLVCall);
                             done = true;
                         }
-                        if !done {
+                        */
+                        //if !done {
                             chunk.add_opcode(OpCode::Call);
-                        }
+                        //}
                     } else if s == "shift" {
-                        let mut done = false;
+                        //let mut done = false;
+                        /*
                         if let OpCode::GetLocalVar = chunk.get_second_last_opcode() {
                             chunk.set_second_last_opcode(OpCode::GLVShift);
                             done = true;
                         }
-                        if !done {
+                        */
+                        //if !done {
                             chunk.add_opcode(OpCode::Shift);
-                        }
+                        //}
                     } else if s == "yield" {
                         chunk.add_opcode(OpCode::Yield);
                     } else if s == "clear" {
@@ -1435,53 +1401,32 @@ impl Compiler {
                         let s_rr = Value::String(Rc::new(RefCell::new(
                             StringTriple::new_with_escaped(s_raw, s, None),
                         )));
-                        let i = chunk.add_constant(s_rr);
-
                         if is_implicit {
                             chunk.add_opcode(OpCode::CallImplicitConstant);
-                            let i_upper = (i >> 8) & 0xFF;
-                            let i_lower = i & 0xFF;
-                            chunk.add_byte(i_upper as u8);
-                            chunk.add_byte(i_lower as u8);
                         } else {
                             chunk.add_opcode(OpCode::CallConstant);
-                            let i_upper = (i >> 8) & 0xFF;
-                            let i_lower = i & 0xFF;
-                            chunk.add_byte(i_upper as u8);
-                            chunk.add_byte(i_lower as u8);
                         }
+                        chunk.add_constant_and_index(s_rr);
                     }
                 }
                 TokenType::Command(s, params) => {
                     let s_raw = unescape_string(&s);
                     let s_rr = Value::Command(Rc::new(s_raw), Rc::new(params));
-                    let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(s_rr);
                 }
                 TokenType::CommandUncaptured(s) => {
                     let s_raw = unescape_string(&s);
                     let s_rr = Value::CommandUncaptured(Rc::new(s_raw));
-                    let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(s_rr);
                     chunk.add_opcode(OpCode::Call);
                 }
                 TokenType::CommandExplicit(s, params) => {
                     let s_raw = unescape_string(&s);
                     let s_rr = Value::Command(Rc::new(s_raw), Rc::new(params));
-                    let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(s_rr);
                     chunk.add_opcode(OpCode::Call);
                 }
                 TokenType::String(s) => {
@@ -1489,20 +1434,12 @@ impl Compiler {
                     let s_rr = Value::String(Rc::new(RefCell::new(
                         StringTriple::new_with_escaped(s_raw, s, None),
                     )));
-                    let i = chunk.add_constant(s_rr);
                     chunk.add_opcode(OpCode::Constant);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(s_rr);
                 }
                 TokenType::Null => {
-                    let i = chunk.add_constant(Value::Null);
                     chunk.add_opcode(OpCode::Constant);
-                    let i_upper = (i >> 8) & 0xFF;
-                    let i_lower = i & 0xFF;
-                    chunk.add_byte(i_upper as u8);
-                    chunk.add_byte(i_lower as u8);
+                    chunk.add_constant_and_index(Value::Null);
                 }
                 _ => {
                     eprintln!(

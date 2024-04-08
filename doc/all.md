@@ -256,6 +256,13 @@ function's tokens.  It is executed using `funcall`:
 The last token in the list is treated as a function implicitly, if it is
 not followed by a semicolon.
 
+Anonymous functions close over their environment.  However, changes to
+value types within the scope of the anonymous function will only
+persist for calls to that anonymous function (i.e. variables with
+value types are effectively copied into the state of the anonymous
+function).  Changes to composite and other reference types will affect
+both the anonymous function state and the original state, though.
+
 #### Generators
 
 A function may be defined as a generator function.  When such a
@@ -802,12 +809,6 @@ Anonymous functions can be used inline in these calls:
         2: 4
         3: 5
     )
-
-Anonymous functions do not close over their environment.  If an
-anonymous function is returned by a function call, and it depends on
-variables that were only available within the environment of that
-function call, then calling that anonymous function will result in an
-error.
 
 Other higher-order functions:
 
@@ -1399,39 +1400,6 @@ because that executable typically implements various optimisations
 past simple line-based matching.  There are likely to be other cases
 where calling out to an executable will lead to faster processing when
 compared with relying on the shell language alone.
-
-It is relatively easy to have an anonymous function's environment go
-out of scope.  For example:
-
-    $ (1) [a var; a !; (1) [drop; a @; 2 *] map] map;
-    v[gen (
-    1:31: anonymous function environment has gone out of scope
-
-This happens because the inner `map` returns a generator that is not
-evaluated until the outer `map` has returned, such that the outer
-`map`'s `a` variable is no longer available.  This problem can be
-worked around by reifying the result of the inner `map`:
-
-    $ (1) [a var; a !; (1) [drop; a @; 2 *] map; r] map
-    v[gen (
-	0: (
-	    0: 2
-	)
-    )]
-    $
-
-or by declaring `a` at the top level:
-
-    $ a var; (1) [a !; (1) [drop; a @; 2 *] map] map
-    v[gen (
-	0: v[gen (
-	    0: 2
-	)]
-    )]
-    $
-
-But neither is an ideal solution.  It would be better if the inner
-`map` were a proper closure over its environment, or similar.
 
 There are likely to be many bugs and problems with the implementation
 here, and the performance isn't spectacular.  The code could do with

@@ -637,8 +637,21 @@ fn global_var_is_zero() {
 
 #[test]
 fn nested_function_vars() {
+    /* Now that anonymous functions capture their environment, the 'f
+     * @' calls here do not affect the n in the top function.  For the
+     * n in the top function to be affected, it needs to be part of a
+     * reference type, like a list. */
     basic_test(
-        ": ff n var; 10 n !; f var; [n @; 1 +; n !] f !; f @; funcall; f @; funcall; n @; ,, ff;",
+        "
+: ff n var; 10 n !; f var; [n @; 1 +; n !] f !; f @; funcall; f @; funcall; n @; ,,
+ff;
+",
+        "10",
+    );
+    basic_test(
+        "
+: ff n var; (10) n !; f var; [n @; dup; 0 get; 1 +; 0 swap; set; drop] f !; f @; funcall; f @; funcall; n @; ,, ff; 0 get;
+",
         "12",
     );
 }
@@ -772,7 +785,7 @@ drop;
 
 #[test]
 fn anon_fn_test() {
-    basic_error_test(
+    basic_test(
         "
 : f
     x var;
@@ -782,7 +795,7 @@ fn anon_fn_test() {
 f;
 funcall;
     ",
-        "5:6: anonymous function environment has gone out of scope",
+        "30",
     );
 }
 
@@ -1741,7 +1754,7 @@ testfn; testfn; ++; r; sum", "2");
 
 #[test]
 fn anon_fn2_test() {
-    basic_error_test(
+    basic_test(
         "
 : f
     x var;
@@ -1751,6 +1764,6 @@ fn anon_fn2_test() {
 f;
 funcall;
     ",
-        "5:21: anonymous function environment has gone out of scope",
+        "30",
     );
 }

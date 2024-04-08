@@ -1493,7 +1493,7 @@ impl VM {
                                 Some(Value::String(_)) => {
                                     self.stack.push(Value::AnonymousFunction(
                                         chunk.borrow().functions.get(s).unwrap().clone(),
-                                        self.local_var_stack.clone(),
+                                        Rc::new(RefCell::new(self.local_var_stack.borrow().clone())),
                                     ))
                                 }
                                 Some(_) => {
@@ -1529,7 +1529,7 @@ impl VM {
                                     .get(&st.borrow().string.to_string())
                                     .unwrap()
                                     .clone(),
-                                self.local_var_stack.clone(),
+                                Rc::new(RefCell::new(self.local_var_stack.borrow().clone())),
                             )),
                             _ => {
                                 eprintln!("unexpected function value!");

@@ -37,6 +37,7 @@ cosh is a concatenative command-line shell.
     * [Default command aliases](#default-command-aliases)
  * [Libraries](#libraries)
     * [rdap](#rdap)
+    * [rpkic](#rpkic)
  * [Miscellaneous](#miscellaneous)
     * [Caveats and pitfalls](#caveats-and-pitfalls)
     * [Development](#development)
@@ -1347,6 +1348,11 @@ definitions.  There are some additional custom aliases:
 
 A library for working with Registration Data Access Protocol
 ([RDAP](https://about.rdap.org)) queries.
+
+#### [rpkic](rpkic.md)
+
+A library that acts as a wrapper around
+[rpki-client](https://www.rpki-client.org).
 
 ### Miscellaneous
 

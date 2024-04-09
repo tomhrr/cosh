@@ -918,14 +918,19 @@ impl Compiler {
                     } else if s == "<" {
                         chunk.add_opcode(OpCode::Lt);
                     } else if s == "=" {
+                        /* More opcode/data issues. */
+                        /*
                         match chunk.get_third_last_opcode() {
                             OpCode::Constant => {
                                 chunk.set_third_last_opcode(OpCode::EqConstant);
                             }
                             _ => {
+                        */
                                 chunk.add_opcode(OpCode::Eq);
+                        /*
                             }
                         }
+                        */
                     } else if s == "var" {
                         if !chunk.has_constant() {
                             eprintln!(

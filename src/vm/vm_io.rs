@@ -134,6 +134,18 @@ impl VM {
                     }
                 }
             }
+            Value::TcpSocketReader(ref mut brwb) => {
+                let str_res = brwb.borrow_mut().readline();
+
+                match str_res {
+                    Some(v) => {
+                        self.stack.push(v);
+                    }
+                    _ => {
+                        return 0;
+                    }
+                }
+            }
             _ => {
                 self.print_error("readline argument must be a file reader");
                 return 0;
@@ -158,6 +170,17 @@ impl VM {
 
         match (file_reader_rr, bytes_opt) {
             (Value::FileReader(ref mut brwb), Some(n)) => {
+                let lst_res = brwb.borrow_mut().read(n as usize);
+                match lst_res {
+                    Some(lst) => {
+                        self.stack.push(lst);
+                    }
+                    None => {
+                        return 0;
+                    }
+                }
+            }
+            (Value::TcpSocketReader(ref mut brwb), Some(n)) => {
                 let lst_res = brwb.borrow_mut().read(n as usize);
                 match lst_res {
                     Some(lst) => {

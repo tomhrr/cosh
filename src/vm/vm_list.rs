@@ -457,6 +457,30 @@ impl VM {
                     cg.borrow_mut().finished = true;
                 }
             }
+            Value::FileReader(ref mut brwb) => {
+                let str_res = brwb.borrow_mut().readline();
+
+                match str_res {
+                    Some(v) => {
+                        self.stack.push(v);
+                    }
+                    _ => {
+                        self.stack.push(Value::Null);
+                    }
+                }
+            }
+            Value::TcpSocketReader(ref mut brwb) => {
+                let str_res = brwb.borrow_mut().readline();
+
+                match str_res {
+                    Some(v) => {
+                        self.stack.push(v);
+                    }
+                    _ => {
+                        self.stack.push(Value::Null);
+                    }
+                }
+            }
             _ => {
                 self.print_error("shift argument does not support shift");
                 return 0;

@@ -11,7 +11,7 @@ use std::io::BufReader;
 use std::io::BufWriter;
 use std::io::Read;
 use std::io::Write;
-use std::net::{Ipv4Addr, Ipv6Addr};
+use std::net::{Ipv4Addr, Ipv6Addr, TcpStream};
 use std::rc::Rc;
 use std::str::FromStr;
 
@@ -193,15 +193,15 @@ impl GeneratorObject {
 /// A file BufReader paired with an additional buffer, for dealing
 /// with calls to read.
 #[derive(Debug)]
-pub struct BufReaderWithBuffer {
-    pub reader: BufReader<File>,
+pub struct BufReaderWithBuffer<T: Read> {
+    pub reader: BufReader<T>,
     pub buffer: [u8; 1024],
     pub buffer_index: i32,
     pub buffer_limit: i32,
 }
 
-impl BufReaderWithBuffer {
-    pub fn new(reader: BufReader<File>) -> BufReaderWithBuffer {
+impl<T: Read> BufReaderWithBuffer<T> {
+    pub fn new(reader: BufReader<T>) -> BufReaderWithBuffer<T> {
         BufReaderWithBuffer {
             reader,
             buffer: [0; 1024],
@@ -752,7 +752,7 @@ pub enum Value {
     /// A generator over key-value pairs (lists) of a hash.
     EachGenerator(Rc<RefCell<HashWithIndex>>),
     /// A file reader value.
-    FileReader(Rc<RefCell<BufReaderWithBuffer>>),
+    FileReader(Rc<RefCell<BufReaderWithBuffer<File>>>),
     /// A file writer value.
     FileWriter(Rc<RefCell<BufWriter<File>>>),
     /// A directory handle.
@@ -792,7 +792,9 @@ pub enum Value {
     DBStatementSQLite(Rc<RefCell<DBStatementSQLite>>),
     /// A value that when accessed, indicates that a scope error has
     /// occurred.
-    ScopeError
+    ScopeError,
+    /// A TCP socket reader.
+    TcpSocketReader(Rc<RefCell<BufReaderWithBuffer<TcpStream>>>),
 }
 
 impl fmt::Debug for Value {
@@ -918,6 +920,9 @@ impl fmt::Debug for Value {
             }
             Value::ScopeError => {
                 write!(f, "((ScopeError))")
+            }
+            Value::TcpSocketReader(_) => {
+                write!(f, "((SocketReader))")
             }
         }
     }
@@ -2091,6 +2096,7 @@ impl Value {
             Value::DBConnectionSQLite(_) => self.clone(),
             Value::DBStatementSQLite(_) => self.clone(),
             Value::ScopeError => self.clone(),
+            Value::TcpSocketReader(_) => self.clone(),
         }
     }
 
@@ -2133,6 +2139,7 @@ impl Value {
             (Value::DBStatementPostgres(..), Value::DBStatementPostgres(..)) => true,
             (Value::DBConnectionSQLite(..), Value::DBConnectionSQLite(..)) => true,
             (Value::DBStatementSQLite(..), Value::DBStatementSQLite(..)) => true,
+            (Value::TcpSocketReader(..), Value::TcpSocketReader(..)) => true,
             (..) => false,
         }
     }
@@ -2151,6 +2158,7 @@ impl Value {
                 | Value::HistoryGenerator(..)
                 | Value::CommandGenerator(..)
                 | Value::ChannelGenerator(..)
+                | Value::TcpSocketReader(..)
         )
     }
 
@@ -2207,6 +2215,7 @@ impl Value {
             Value::DBConnectionSQLite(..) => "db-connection",
             Value::DBStatementSQLite(..) => "db-statement",
             Value::ScopeError => "scope-error",
+            Value::TcpSocketReader(..) => "socket-reader",
         };
         s.to_string()
     }

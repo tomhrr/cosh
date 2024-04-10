@@ -268,6 +268,7 @@ lazy_static! {
         map.insert("netstat", VM::core_netstat as fn(&mut VM) -> i32);
         map.insert("http.get", VM::core_http_get as fn(&mut VM) -> i32);
         map.insert("http", VM::core_http as fn(&mut VM) -> i32);
+        map.insert("nc", VM::core_nc as fn(&mut VM) -> i32);
         map
     };
 

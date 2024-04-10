@@ -1,4 +1,6 @@
 use std::cell::RefCell;
+use std::io::prelude::*;
+use std::net::TcpStream;
 use std::rc::Rc;
 
 use ipnetwork::IpNetwork::{V4, V6};
@@ -8,7 +10,8 @@ use num_bigint::BigInt;
 use pnet::datalink;
 use sysinfo::Uid;
 
-use crate::chunk::{Value, new_string_value};
+use crate::chunk::{Value, new_string_value,
+                   BufReaderWithBuffer};
 use crate::vm::*;
 
 impl VM {
@@ -197,5 +200,121 @@ impl VM {
         }
         self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
         1
+    }
+
+    pub fn core_nc(&mut self) -> i32 {
+        if self.stack.len() < 3 {
+            self.print_error("nc requires three arguments");
+            return 0;
+        }
+
+        let port_rr  = self.stack.pop().unwrap();
+        let host_rr  = self.stack.pop().unwrap();
+        let input_rr = self.stack.pop().unwrap();
+
+        let port_opt = port_rr.to_int();
+        let port_int;
+        match port_opt {
+            Some(port) => {
+                port_int = port;
+            }
+            _ => {
+                self.print_error("port number must be an integer");
+                return 0;
+            }
+        };
+
+	let host_str_opt: Option<&str>;
+	to_str!(host_rr.clone(), host_str_opt);
+        let host_str;
+	match host_str_opt {
+            Some(host) => {
+                host_str = host;
+            }
+            _ => {
+                self.print_error("host must be a string");
+                return 0;
+            }
+        }
+
+        let conn_str = format!("{}:{}", host_str, port_int);
+        let stream_opt = TcpStream::connect(conn_str);
+        let mut stream;
+        match stream_opt {
+            Ok(stream_value) => {
+                stream = stream_value;
+            }
+            Err(e) => {
+                let err_str = format!("unable to connect to host: {}", e);
+                self.print_error(&err_str);
+                return 0;
+            }
+        }
+
+        if input_rr.is_shiftable() {
+            self.stack.push(input_rr);
+            loop {
+                let dup_res = self.opcode_dup();
+                if dup_res == 0 {
+                    return 0;
+                }
+                let shift_res = self.opcode_shift();
+                if shift_res == 0 {
+                    return 0;
+                }
+                let element_rr = self.stack.pop().unwrap();
+                match element_rr {
+		    Value::Null => {
+			break;
+		    }
+                    _ => {
+                        let input_str_opt: Option<&str>;
+                        to_str!(element_rr.clone(), input_str_opt);
+                        match input_str_opt {
+                            Some(input_str) => {
+                                let res = stream.write(input_str.as_bytes());
+                                match res {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        let err_str = format!("unable to write to socket: {}", e);
+                                        self.print_error(&err_str);
+                                        return 0;
+                                    }
+                                }
+                            }
+                            _ => {
+                                self.print_error("input must be a string");
+                                return 0;
+                            }
+                        }
+                    }
+                }
+            };
+            self.stack.pop().unwrap();
+        } else {
+            let input_str_opt: Option<&str>;
+            to_str!(input_rr.clone(), input_str_opt);
+            match input_str_opt {
+                Some(input_str) => {
+                    let res = stream.write(input_str.as_bytes());
+                    match res {
+                        Ok(_) => {}
+                        Err(e) => {
+                            let err_str = format!("unable to write to socket: {}", e);
+                            self.print_error(&err_str);
+                            return 0;
+                        }
+                    }
+                }
+                _ => {
+                    self.print_error("input must be a string");
+                    return 0;
+                }
+            }
+        }
+
+        let tsr = Value::TcpSocketReader(Rc::new(RefCell::new(BufReaderWithBuffer::new(BufReader::new(stream)))));
+        self.stack.push(tsr);
+        return 1;
     }
 }

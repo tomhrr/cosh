@@ -402,7 +402,7 @@ impl VM {
                         index,
                     );
                 }
-                Value::FileWriter(_) | Value::FileReader(_) | Value::DirectoryHandle(_) => {
+                Value::FileWriter(_) | Value::DirectoryHandle(_) => {
                     last_stack.push(value_rr.clone());
                     let s = format!("v[{}]", &type_string);
                     lines_to_print = psv_helper(

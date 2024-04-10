@@ -20,7 +20,7 @@ use regex::{Regex, RegexBuilder};
 use sysinfo::{System, Users};
 
 use crate::chunk::{print_error, new_string_value, Chunk, GeneratorObject,
-                   StringTriple, Value, ValueLiteral};
+                   StringTriple, Value, ValueLiteral, Variable};
 use crate::compiler::Compiler;
 use crate::opcode::{to_opcode, OpCode};
 use crate::rl::RLHelper;
@@ -77,7 +77,7 @@ pub struct VM {
     /// The local variable stack.
     local_var_stack: Rc<RefCell<Vec<Value>>>,
     /// The scopes.
-    scopes: Vec<Rc<RefCell<HashMap<String, Value>>>>,
+    scopes: Vec<Rc<RefCell<HashMap<String, Variable>>>>,
     /// The global functions.
     global_functions: HashMap<String, Rc<RefCell<Chunk>>>,
     /// The call stack chunks.
@@ -386,7 +386,7 @@ impl VM {
     pub fn new(
         print_stack: bool,
         debug: bool,
-        global_vars: Rc<RefCell<HashMap<String, Value>>>,
+        global_vars: Rc<RefCell<HashMap<String, Variable>>>,
         libdir: &'static str
     ) -> VM {
         let ltz = iana_time_zone::get_timezone().unwrap();
@@ -1803,7 +1803,56 @@ impl VM {
                     if self.debug {
                         eprintln!("  > Adding variable with name {}", var_name.to_string());
                     }
-                    last_scope.insert(var_name.to_string(), Value::Int(0));
+                    last_scope.insert(var_name.to_string(),
+                                      Variable::new(Value::Int(0), true));
+                }
+                OpCode::VarM => {
+                    if self.stack.is_empty() {
+                        self.print_error("varm requires one argument");
+                        return 0;
+                    }
+
+                    let var_name;
+                    {
+                        let var_name_rr = self.stack.pop().unwrap();
+                        match var_name_rr {
+                            Value::String(st) => {
+                                var_name = st.borrow().string.clone().to_string();
+                            }
+                            _ => {
+                                self.print_error("variable name must be a string");
+                                return 0;
+                            }
+                        }
+                    }
+
+                    let var_name_ref = &var_name;
+                    let (has_existing_var, defined_with_var) = {
+                        let last_scope = self.scopes.last().unwrap().borrow();
+                        let existing_var = last_scope.get(var_name_ref);
+                        match existing_var {
+                            Some(v) => {
+                                (true, v.defined_with_var)
+                            }
+                            _       => {
+                                (false, false)
+                            }
+                        }
+                    };
+                    if has_existing_var && defined_with_var {
+                        self.print_error(
+                            "variable has already been declared with var in this scope"
+                        );
+                        return 0;
+                    }
+
+                    let mut last_scope =
+                        self.scopes.last_mut().unwrap().borrow_mut();
+                    if self.debug {
+                        eprintln!("  > Adding variable (varm) with name {}", var_name.to_string());
+                    }
+                    last_scope.insert(var_name.to_string(),
+                                      Variable::new(Value::Int(0), false));
                 }
                 OpCode::SetVar => {
                     if self.stack.len() < 2 {
@@ -1821,7 +1870,11 @@ impl VM {
 
                             for scope in self.scopes.iter_mut().rev() {
                                 if scope.borrow().contains_key(s) {
-                                    scope.borrow_mut().insert(s.to_string(), value_rr.clone());
+                                    let defined_with_var =
+                                        scope.borrow().get(s).unwrap().defined_with_var;
+                                    scope.borrow_mut().insert(s.to_string(),
+                                                              Variable::new(value_rr.clone(),
+                                                                            defined_with_var));
                                     done = true;
                                     break;
                                 }
@@ -1852,7 +1905,7 @@ impl VM {
 
                             for scope in self.scopes.iter().rev() {
                                 if scope.borrow().contains_key(s) {
-                                    self.stack.push(scope.borrow().get(s).unwrap().clone());
+                                    self.stack.push(scope.borrow().get(s).unwrap().value.clone());
                                     done = true;
                                     break;
                                 }

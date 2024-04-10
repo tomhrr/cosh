@@ -1767,3 +1767,20 @@ funcall;
         "30",
     );
 }
+
+#[test]
+fn varm_test() {
+    basic_test("a varm; 100 a !; a varm; 100 a !; a @", "100");
+    basic_error_test(
+        "a var; a varm",
+        "1:10: variable has already been declared with var in this scope"
+    );
+    basic_error_test(
+        "a varm; a var",
+        "1:11: variable has already been declared in this scope"
+    );
+    basic_error_test(
+        "[a varm; 1]",
+        "1:4: varm may only be used at the top level"
+    );
+}

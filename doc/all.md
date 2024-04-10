@@ -200,6 +200,14 @@ Variable definition and load/store operations are like so:
     $ x @; 1 +; x !; x @
     2
 
+At the top level, variables can also be defined using the form `varm`
+('var multiple').  With `var`, only one definition operation for a
+given name may appear at a given scope, whereas with `varm`,
+redefinition is permitted.  This is to facilitate the interactive use
+of variables, by avoiding the need for a user to define a variable in
+one command and then to make use of that variable in another command
+(or commands).
+
 #### Conditionals
 
 Conditional execution is handled by `if`.  False boolean values, zero

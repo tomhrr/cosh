@@ -17,7 +17,7 @@ use rustyline::{Context, Result};
 use rustyline_derive::Helper;
 use searchpath::search_path;
 
-use crate::chunk::{Chunk, Value};
+use crate::chunk::{Chunk, Variable};
 use crate::vm::{LIB_FORMS, SIMPLE_FORMS};
 
 // Most of the code through to 'impl Completer for ShellCompleter' is
@@ -225,7 +225,7 @@ fn internal_complete(
     break_chars: &[u8],
     quote: Quote,
     global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
-    global_vars: Rc<RefCell<HashMap<String, Value>>>,
+    global_vars: Rc<RefCell<HashMap<String, Variable>>>,
 ) -> Vec<Pair> {
     let mut entries: Vec<Pair> = Vec::new();
 
@@ -284,7 +284,7 @@ pub struct ShellCompleter {
     break_chars: &'static [u8],
     double_quotes_special_chars: &'static [u8],
     global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
-    global_vars: Rc<RefCell<HashMap<String, Value>>>,
+    global_vars: Rc<RefCell<HashMap<String, Variable>>>,
 }
 
 fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
@@ -334,7 +334,7 @@ impl ShellCompleter {
     /// Constructor
     pub fn new(
         global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
-        global_vars: Rc<RefCell<HashMap<String, Value>>>,
+        global_vars: Rc<RefCell<HashMap<String, Variable>>>,
     ) -> Self {
         Self {
             break_chars: &DEFAULT_BREAK_CHARS,

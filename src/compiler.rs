@@ -931,6 +931,24 @@ impl Compiler {
                             }
                         }
                         */
+                    } else if s == "varm" {
+                        if !chunk.has_constant() {
+                            eprintln!(
+                                "{}:{}: variable name must precede varm",
+                                token.line_number, token.column_number
+                            );
+                            return false;
+                        }
+                        if self.scope_depth == 0 {
+                            chunk.add_opcode(OpCode::VarM);
+                            has_vars = true;
+                        } else {
+                            eprintln!(
+                                "{}:{}: varm may only be used at the top level",
+                                token.line_number, token.column_number
+                            );
+                            return false;
+                        }
                     } else if s == "var" {
                         if !chunk.has_constant() {
                             eprintln!(

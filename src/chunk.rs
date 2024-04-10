@@ -1058,6 +1058,26 @@ pub fn value_to_valuesd(value: Value) -> ValueSD {
     }
 }
 
+/// A value along with a boolean indicating whether it was defined
+/// with 'var' or 'varm'.
+#[derive(Debug, Clone)]
+pub struct Variable {
+    pub value: Value,
+    pub defined_with_var: bool,
+}
+
+impl Variable {
+    pub fn new(
+        value: Value,
+        defined_with_var: bool
+    ) -> Variable {
+        Variable {
+            value,
+            defined_with_var,
+        }
+    }
+}
+
 pub fn new_string_value(s: String) -> Value {
     Value::String(Rc::new(RefCell::new(StringTriple::new(s, None))))
 }
@@ -1527,6 +1547,9 @@ impl Chunk {
                 }
                 OpCode::Var => {
                     println!("OP_VAR");
+                }
+                OpCode::VarM => {
+                    println!("OP_VARM");
                 }
                 OpCode::SetVar => {
                     println!("OP_SETVAR");

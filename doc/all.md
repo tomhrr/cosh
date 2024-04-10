@@ -972,7 +972,7 @@ list of bytes.  This make them suitable for handling binary data.
 Other operations:
 
  - `cd`: changes the current working directory.
- - `pwd`: returns the current working directory.
+ - `cwd`: returns the current working directory.
  - `is-dir`: returns a boolean indicating whether the argument is a
    directory.
  - `is-files`: returns a boolean indicating whether the argument is a

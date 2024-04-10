@@ -25,7 +25,7 @@
     ,,
 
 : rpkic.run
-    pwd; cwd var; cwd !;
+    cwd; cwd var; cwd !;
     rpkic state get-storage-dir; / ++; swap; ++; cd;
     tals ls; [-t{} fmt] map; ' ' join;
     {./rpki-client {} -d ./cache -c ./output}/c;
@@ -81,7 +81,7 @@
     ,,
 
 : rpkic.file-raw
-    pwd; cwd var; cwd !;
+    cwd; cwd var; cwd !;
     name var; name !;
     rpkic state get-storage-dir; / ++; name @; ++; cd;
     tals ls; [-t{} fmt] map; ' ' join;
@@ -90,7 +90,7 @@
     ,,
 
 : rpkic.file
-    pwd; cwd var; cwd !;
+    cwd; cwd var; cwd !;
     name var; name !;
     rpkic state get-storage-dir; / ++; name @; ++; cd;
     tals ls; [-t{} fmt] map; ' ' join;

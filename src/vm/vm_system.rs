@@ -516,7 +516,7 @@ impl VM {
 
     /// Puts the string representation of the current working
     /// directory onto the stack.
-    pub fn core_pwd(&mut self) -> i32 {
+    pub fn core_cwd(&mut self) -> i32 {
         let current_dir_res = std::env::current_dir();
         match current_dir_res {
             Ok(current_dir) => {
@@ -524,7 +524,7 @@ impl VM {
                     .push(new_string_value(current_dir.to_str().unwrap().to_string()));
             }
             Err(e) => {
-                let err_str = format!("unable to pwd: {}", e);
+                let err_str = format!("unable to cwd: {}", e);
                 self.print_error(&err_str);
                 return 0;
             }

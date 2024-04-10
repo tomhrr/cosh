@@ -149,7 +149,7 @@ lazy_static! {
         map.insert("mv", VM::core_mv as fn(&mut VM) -> i32);
         map.insert("rename", VM::core_rename as fn(&mut VM) -> i32);
         map.insert("cd", VM::core_cd as fn(&mut VM) -> i32);
-        map.insert("pwd", VM::core_pwd as fn(&mut VM) -> i32);
+        map.insert("cwd", VM::core_cwd as fn(&mut VM) -> i32);
         map.insert("touch", VM::core_touch as fn(&mut VM) -> i32);
         map.insert("stat", VM::core_stat as fn(&mut VM) -> i32);
         map.insert("lstat", VM::core_lstat as fn(&mut VM) -> i32);

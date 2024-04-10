@@ -1663,7 +1663,7 @@ td @; ls; rm for; td @; rmdir; file rm;
 fn space_escape_test() {
     basic_test(
         "
-mydir var; pwd; mydir !;
+mydir var; cwd; mydir !;
 tempdir; td var; td !; td @; cd;
 my\\ dir mkdir; my\\ dir cd; .. cd; my\\ dir/qwer touch;
 'my dir' ls; len; td @; cd; my\\ dir/qwer rm; . ls; rmdir for;

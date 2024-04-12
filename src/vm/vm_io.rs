@@ -5,6 +5,8 @@ use std::io::BufReader;
 use std::io::BufWriter;
 use std::io::Write;
 use std::rc::Rc;
+use std::thread;
+use std::time;
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -135,14 +137,23 @@ impl VM {
                 }
             }
             Value::TcpSocketReader(ref mut brwb) => {
-                let str_res = brwb.borrow_mut().readline();
+                loop {
+                    let str_res = brwb.borrow_mut().readline();
 
-                match str_res {
-                    Some(v) => {
-                        self.stack.push(v);
-                    }
-                    _ => {
-                        return 0;
+                    match str_res {
+                        Some(v) => {
+                            self.stack.push(v);
+                            return 1;
+                        }
+                        _ => {
+			    if !self.running.load(Ordering::SeqCst) {
+				self.running.store(true, Ordering::SeqCst);
+				self.stack.clear();
+				return 0;
+			    }
+                            let dur = time::Duration::from_secs_f64(0.05);
+                            thread::sleep(dur);
+                        }
                     }
                 }
             }
@@ -181,13 +192,23 @@ impl VM {
                 }
             }
             (Value::TcpSocketReader(ref mut brwb), Some(n)) => {
-                let lst_res = brwb.borrow_mut().read(n as usize);
-                match lst_res {
-                    Some(lst) => {
-                        self.stack.push(lst);
-                    }
-                    None => {
-                        return 0;
+                loop {
+                    let lst_res = brwb.borrow_mut().read(n as usize);
+
+                    match lst_res {
+                        Some(lst) => {
+                            self.stack.push(lst);
+                            return 1;
+                        }
+                        _ => {
+			    if !self.running.load(Ordering::SeqCst) {
+				self.running.store(true, Ordering::SeqCst);
+				self.stack.clear();
+				return 0;
+			    }
+                            let dur = time::Duration::from_secs_f64(0.05);
+                            thread::sleep(dur);
+                        }
                     }
                 }
             }

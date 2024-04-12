@@ -2,6 +2,9 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::mem;
 use std::rc::Rc;
+use std::sync::atomic::Ordering;
+use std::thread;
+use std::time;
 
 use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
@@ -470,14 +473,23 @@ impl VM {
                 }
             }
             Value::TcpSocketReader(ref mut brwb) => {
-                let str_res = brwb.borrow_mut().readline();
+                loop {
+                    let str_res = brwb.borrow_mut().readline();
 
-                match str_res {
-                    Some(v) => {
-                        self.stack.push(v);
-                    }
-                    _ => {
-                        self.stack.push(Value::Null);
+                    match str_res {
+                        Some(v) => {
+                            self.stack.push(v);
+                            return 1;
+                        }
+                        _ => {
+                            if !self.running.load(Ordering::SeqCst) {
+                                self.running.store(true, Ordering::SeqCst);
+                                self.stack.clear();
+                                return 0;
+                            }
+                            let dur = time::Duration::from_secs_f64(0.05);
+                            thread::sleep(dur);
+                        }
                     }
                 }
             }

@@ -250,6 +250,7 @@ impl VM {
                 return 0;
             }
         }
+        stream.set_nonblocking(true).unwrap();
 
         if input_rr.is_shiftable() {
             self.stack.push(input_rr);

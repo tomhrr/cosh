@@ -9,7 +9,6 @@ use std::fs::ReadDir;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::BufWriter;
-//use std::io::Error;
 use std::io::ErrorKind;
 use std::io::Read;
 use std::io::Write;
@@ -799,6 +798,8 @@ pub enum Value {
     ScopeError,
     /// A TCP socket reader.
     TcpSocketReader(Rc<RefCell<BufReaderWithBuffer<TcpStream>>>),
+    /// A TCP socket writer.
+    TcpSocketWriter(Rc<RefCell<BufWriter<TcpStream>>>),
 }
 
 impl fmt::Debug for Value {
@@ -927,6 +928,9 @@ impl fmt::Debug for Value {
             }
             Value::TcpSocketReader(_) => {
                 write!(f, "((SocketReader))")
+            }
+            Value::TcpSocketWriter(_) => {
+                write!(f, "((SocketWriter))")
             }
         }
     }
@@ -2122,6 +2126,7 @@ impl Value {
             Value::DBStatementSQLite(_) => self.clone(),
             Value::ScopeError => self.clone(),
             Value::TcpSocketReader(_) => self.clone(),
+            Value::TcpSocketWriter(_) => self.clone(),
         }
     }
 
@@ -2165,6 +2170,7 @@ impl Value {
             (Value::DBConnectionSQLite(..), Value::DBConnectionSQLite(..)) => true,
             (Value::DBStatementSQLite(..), Value::DBStatementSQLite(..)) => true,
             (Value::TcpSocketReader(..), Value::TcpSocketReader(..)) => true,
+            (Value::TcpSocketWriter(..), Value::TcpSocketWriter(..)) => true,
             (..) => false,
         }
     }
@@ -2241,6 +2247,7 @@ impl Value {
             Value::DBStatementSQLite(..) => "db-statement",
             Value::ScopeError => "scope-error",
             Value::TcpSocketReader(..) => "socket-reader",
+            Value::TcpSocketWriter(..) => "socket-writer",
         };
         s.to_string()
     }

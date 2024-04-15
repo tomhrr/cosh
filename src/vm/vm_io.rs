@@ -264,6 +264,20 @@ impl VM {
                             }
                         }
                     }
+                    Value::TcpSocketWriter(ref mut line_writer) => {
+                        let res =
+                            line_writer.borrow_mut().write_all(&bytes);
+                        match res {
+                            Ok(_) => {
+                                return 1;
+                            }
+                            Err(e) => {
+                                let err_str = format!("unable to write to socket: {}", e);
+                                self.print_error(&err_str);
+                                return 0;
+                            }
+                        }
+                    }
                     _ => {
                         self.print_error("first writeline argument must be a file writer");
                         return 0;
@@ -302,6 +316,19 @@ impl VM {
                                 }
                                 Err(e) => {
                                     let err_str = format!("unable to write to file: {}", e);
+                                    self.print_error(&err_str);
+                                    return 0;
+                                }
+                            }
+                        }
+                        Value::TcpSocketWriter(ref mut line_writer) => {
+                            let res = line_writer.borrow_mut().write_all(s.as_bytes());
+                            match res {
+                                Ok(_) => {
+                                    return 1;
+                                }
+                                Err(e) => {
+                                    let err_str = format!("unable to write to socket: {}", e);
                                     self.print_error(&err_str);
                                     return 0;
                                 }

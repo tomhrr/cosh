@@ -448,14 +448,29 @@ impl VM {
                     return 1;
                 }
                 let mut finished = false;
-                let vsd = read_valuesd(&mut cg.borrow_mut().rx);
-                match vsd {
-                    ValueSD::Null => {
-                        finished = true;
+                let mut vsd;
+                loop {
+                    vsd = read_valuesd(&mut cg.borrow_mut().rx);
+                    match vsd {
+                        None => {
+                            if !self.running.load(Ordering::SeqCst) {
+                                self.running.store(true, Ordering::SeqCst);
+                                self.stack.clear();
+                                return 0;
+                            }
+                            let dur = time::Duration::from_secs_f64(0.05);
+                            thread::sleep(dur);
+                        }
+                        Some(ValueSD::Null) => {
+                            finished = true;
+                            break;
+                        }
+                        _ => {
+                            break;
+                        }
                     }
-                    _ => {}
                 }
-                self.stack.push(valuesd_to_value(vsd));
+                self.stack.push(valuesd_to_value(vsd.unwrap()));
                 if finished {
                     cg.borrow_mut().finished = true;
                 }

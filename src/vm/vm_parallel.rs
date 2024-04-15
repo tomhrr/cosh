@@ -1,6 +1,7 @@
-use std::os::fd::{AsRawFd, FromRawFd};
+use std::os::fd::AsRawFd;
 use std::process::exit;
 use std::thread;
+use std::time;
 
 use epoll;
 use nix::sys::signal::Signal;
@@ -10,6 +11,9 @@ use signal_hook::{consts::SIGTERM, iterator::Signals};
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
+use nix::fcntl::fcntl;
+use nix::fcntl::FcntlArg::F_SETFL;
+use nix::fcntl::OFlag;
 
 use crate::chunk::{ChannelGenerator,
                    ValueSD,
@@ -41,8 +45,9 @@ fn make_pipe() -> Option<(std::fs::File, std::fs::File)> {
     let rx;
     match nix::unistd::pipe() {
         Ok((fd1, fd2)) => {
-            rx = unsafe { File::from_raw_fd(fd1) };
-            tx = unsafe { File::from_raw_fd(fd2) };
+            fcntl(fd1.as_raw_fd(), F_SETFL(OFlag::O_NONBLOCK)).unwrap();
+            rx = File::from(fd1);
+            tx = File::from(fd2);
         }
         Err(e) => {
             eprintln!("unable to create pipe: {}", e);
@@ -97,243 +102,253 @@ impl VM {
          * process). */
         let (mut ptt_tx, ptt_rx) = make_pipe().unwrap();
 
-        match fork() {
-            Ok(ForkResult::Parent { child }) => {
-                let cg_obj = ChannelGenerator::new(ptt_rx, child, gen_rr);
-                let cg =
-                    Value::ChannelGenerator(Rc::new(RefCell::new(cg_obj)));
-                self.stack.push(cg);
-                return 1;
-            }
-            Ok(ForkResult::Child) => {
-                let mut subprocesses = Vec::new();
+        unsafe {
+            match fork() {
+                Ok(ForkResult::Parent { child }) => {
+                    let cg_obj = ChannelGenerator::new(ptt_rx, child, gen_rr);
+                    let cg =
+                        Value::ChannelGenerator(Rc::new(RefCell::new(cg_obj)));
+                    self.stack.push(cg);
+                    return 1;
+                }
+                Ok(ForkResult::Child) => {
+                    let mut subprocesses = Vec::new();
 
-                for _ in 0..procs {
-                    let (value_tx, mut value_rx) =
-                        make_pipe().unwrap();
-                    let (mut reqvalue_tx, reqvalue_rx) =
-                        make_pipe().unwrap();
+                    for _ in 0..procs {
+                        let (value_tx, mut value_rx) =
+                            make_pipe().unwrap();
+                        let (mut reqvalue_tx, reqvalue_rx) =
+                            make_pipe().unwrap();
 
-                    match fork() {
-                        Ok(ForkResult::Parent { child }) => {
-                            subprocesses.push(
-                                Subprocess::new(
-                                    child,
-                                    value_tx,
-                                    reqvalue_rx
-                                )
-                            );
-                        }
-                        Ok(ForkResult::Child) => {
-                            let sp_fn_rr = fn_rr.clone();
-                            loop {
-                                /* The value used here doesn't matter,
-                                 * as long as it's one byte in length.
-                                 * */
-                                match reqvalue_tx.write(b"1") {
-                                    Ok(_) => {}
-                                    Err(_) => {
-                                        eprintln!("unable to send request byte");
-                                        exit(0);
-                                    }
-                                }
-
-                                let vsd = read_valuesd(&mut value_rx);
-                                let v;
-                                match vsd {
-                                    ValueSD::Null => {
-                                        exit(0);
-                                    }
-                                    _ => {
-                                        v = valuesd_to_value(vsd);
-                                    }
-                                }
-                                self.stack.push(v);
-                                let res = self.call(OpCode::Call, sp_fn_rr.clone());
-                                if !res || self.stack.is_empty() {
-                                    let vsd = value_to_valuesd(Value::Null);
-                                    write_valuesd(&mut ptt_tx, vsd);
-                                    exit(0);
-                                } else {
-                                    let nv = self.stack.pop().unwrap();
-                                    match nv {
-                                        Value::Null => {
-                                            let vsd = value_to_valuesd(Value::Null);
-                                            write_valuesd(&mut ptt_tx, vsd);
+                        match fork() {
+                            Ok(ForkResult::Parent { child }) => {
+                                subprocesses.push(
+                                    Subprocess::new(
+                                        child,
+                                        value_tx,
+                                        reqvalue_rx
+                                    )
+                                );
+                            }
+                            Ok(ForkResult::Child) => {
+                                let sp_fn_rr = fn_rr.clone();
+                                loop {
+                                    /* The value used here doesn't matter,
+                                    * as long as it's one byte in length.
+                                    * */
+                                    match reqvalue_tx.write(b"1") {
+                                        Ok(_) => {}
+                                        Err(_) => {
+                                            eprintln!("unable to send request byte");
                                             exit(0);
                                         }
-                                        _ => {}
                                     }
-                                    let vsd = value_to_valuesd(nv.clone());
-                                    match (&vsd, nv) {
-                                        (&ValueSD::Null, Value::Null) => {}
-                                        (&ValueSD::Null, _) => {
-                                            self.print_error("unable to serialise value for pmap");
+
+                                    let mut vsd_res;
+                                    let v;
+                                    loop {
+                                        vsd_res = read_valuesd(&mut value_rx);
+                                        match vsd_res {
+                                            None => {
+						let dur = time::Duration::from_secs_f64(0.05);
+						thread::sleep(dur); 
+                                            }
+                                            Some(ValueSD::Null) => {
+                                                exit(0);
+                                            }
+                                            _ => {
+                                                v = valuesd_to_value(vsd_res.unwrap());
+                                                break;
+                                            }
                                         }
-                                        _ => {}
                                     }
-                                    write_valuesd(&mut ptt_tx, vsd);
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            eprintln!("unable to fork: {}", e);
-                            exit(0);
-                        }
-                    }
-                }
-
-                let epoll_fd;
-                let epoll_fd_res = epoll::create(true);
-                match epoll_fd_res {
-                    Ok(epoll_fd_ok) => {
-                        epoll_fd = epoll_fd_ok;
-                    }
-                    Err(e) => {
-                        eprintln!("epoll create failed: {:?}", e);
-                        exit(0);
-                    }
-                }
-
-                for i in 0..procs {
-                    let fd = subprocesses.get(i).unwrap()
-                                .reqvalue_rx.as_raw_fd();
-                    let res =
-                        epoll::ctl(
-                            epoll_fd,
-                            epoll::ControlOptions::EPOLL_CTL_ADD,
-                            fd,
-                            epoll::Event::new(epoll::Events::EPOLLIN,
-                                              fd as u64)
-                        );
-                    match res {
-                        Err(e) => {
-                            eprintln!("epoll ctl failed: {:?}", e);
-                            exit(0);
-                        }
-                        _ => {}
-                    }
-                }
-
-                let mut signals = Signals::new(&[SIGTERM]).unwrap();
-                let pids = subprocesses.iter().map(|e| e.pid).collect::<Vec<_>>();
-
-                thread::spawn(move || {
-                    for _ in signals.forever() {
-                        for i in pids.clone() {
-                            let res = nix::sys::signal::kill(i, Signal::SIGTERM);
-                            match res {
-                                Ok(_) => {}
-                                Err(nix::Error::Sys(nix::errno::Errno::ESRCH)) => {}
-                                Err(e) => {
-                                    eprintln!("unable to kill process: {}", e);
-                                }
-                            }
-                        }
-                        for i in pids {
-                            let res = waitpid(i, None);
-                            match res {
-                                /* Termination by way of the normal
-                                 * process further down may have
-                                 * happened by this time, so ignore
-                                 * this error. */
-                                Err(nix::Error::Sys(nix::errno::Errno::ECHILD)) => {},
-                                Err(e) => {
-                                    eprintln!("unable to clean up process: {}", e);
-                                }
-                                _ => {}
-                            }
-                        }
-                        exit(0);
-                    }
-                });
-
-                self.stack.push(gen_rr);
-                let mut events =
-                    [epoll::Event::new(epoll::Events::empty(), 0); 50];
-                'done: loop {
-                    let res = epoll::wait(epoll_fd, -1, &mut events);
-                    let n;
-                    match res {
-                        Err(e) => {
-                            /* Assuming that "Interrupted" is due
-                             * to ctrl-c, in which case there's no
-                             * need to show an error message. */
-                            if !e.to_string().contains("Interrupted") {
-                                eprintln!("epoll wait failed: {:?}", e);
-                            }
-                            break 'done;
-                        }
-                        Ok(n_ok) => { n = n_ok; }
-                    }
-                    for i in 0..n {
-                        let event = events.get(i).unwrap();
-                        for i in 0..procs {
-                            if subprocesses.get(i).unwrap().reqvalue_rx.as_raw_fd() == event.data as i32 {
-                                let subprocess = &mut subprocesses.get_mut(i).unwrap();
-
-                                let mut size_buf = vec![0u8; 1];
-                                let read_res =
-                                    subprocess.reqvalue_rx.read_exact(&mut size_buf);
-                                if read_res.is_err() {
-                                    break 'done;
-                                }
-                                read_res.unwrap();
-
-                                let dup_res = self.opcode_dup();
-                                if dup_res == 0 {
-                                    break 'done;
-                                }
-                                let shift_res = self.opcode_shift();
-                                if shift_res == 0 {
-                                    break 'done;
-                                }
-                                let element_rr = self.stack.pop().unwrap();
-                                match element_rr {
-                                    Value::Null => {
-                                        break 'done;
-                                    }
-                                    _ => {
-                                        let vsd = value_to_valuesd(element_rr.clone());
-                                        match (&vsd, element_rr) {
+                                    self.stack.push(v);
+                                    let res = self.call(OpCode::Call, sp_fn_rr.clone());
+                                    if !res || self.stack.is_empty() {
+                                        let vsd = value_to_valuesd(Value::Null);
+                                        write_valuesd(&mut ptt_tx, vsd);
+                                        exit(0);
+                                    } else {
+                                        let nv = self.stack.pop().unwrap();
+                                        match nv {
+                                            Value::Null => {
+                                                let vsd = value_to_valuesd(Value::Null);
+                                                write_valuesd(&mut ptt_tx, vsd);
+                                                exit(0);
+                                            }
+                                            _ => {}
+                                        }
+                                        let vsd = value_to_valuesd(nv.clone());
+                                        match (&vsd, nv) {
                                             (&ValueSD::Null, Value::Null) => {}
                                             (&ValueSD::Null, _) => {
                                                 self.print_error("unable to serialise value for pmap");
                                             }
                                             _ => {}
                                         }
-                                        write_valuesd(&mut subprocess.value_tx, vsd);
+                                        write_valuesd(&mut ptt_tx, vsd);
                                     }
                                 }
-                                break;
+                            }
+                            Err(e) => {
+                                eprintln!("unable to fork: {}", e);
+                                exit(0);
                             }
                         }
                     }
-                }
-                self.stack.pop();
-                for i in 0..procs {
-                    write_valuesd(&mut subprocesses.get_mut(i).unwrap().value_tx, ValueSD::Null);
-                }
-                for i in 0..procs {
-                    let res =
-                        waitpid(subprocesses.get(i).unwrap().pid, None);
-                    match res {
-                        /* Termination by way of a signal may have
-                         * happened by this point, so ignore this
-                         * error. */
-                        Err(nix::Error::Sys(nix::errno::Errno::ECHILD)) => {},
-                        Err(e) => {
-                            eprintln!("unable to clean up process: {}", e);
+
+                    let epoll_fd;
+                    let epoll_fd_res = epoll::create(true);
+                    match epoll_fd_res {
+                        Ok(epoll_fd_ok) => {
+                            epoll_fd = epoll_fd_ok;
                         }
-                        _ => {}
+                        Err(e) => {
+                            eprintln!("epoll create failed: {:?}", e);
+                            exit(0);
+                        }
                     }
+
+                    for i in 0..procs {
+                        let fd = subprocesses.get(i).unwrap()
+                                    .reqvalue_rx.as_raw_fd();
+                        let res =
+                            epoll::ctl(
+                                epoll_fd,
+                                epoll::ControlOptions::EPOLL_CTL_ADD,
+                                fd,
+                                epoll::Event::new(epoll::Events::EPOLLIN,
+                                                fd as u64)
+                            );
+                        match res {
+                            Err(e) => {
+                                eprintln!("epoll ctl failed: {:?}", e);
+                                exit(0);
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    let mut signals = Signals::new(&[SIGTERM]).unwrap();
+                    let pids = subprocesses.iter().map(|e| e.pid).collect::<Vec<_>>();
+
+                    thread::spawn(move || {
+                        for _ in signals.forever() {
+                            for i in pids.clone() {
+                                let res = nix::sys::signal::kill(i, Signal::SIGTERM);
+                                match res {
+                                    Ok(_) => {}
+                                    Err(nix::errno::Errno::ESRCH) => {}
+                                    Err(e) => {
+                                        eprintln!("unable to kill process: {}", e);
+                                    }
+                                }
+                            }
+                            for i in pids {
+                                let res = waitpid(i, None);
+                                match res {
+                                    /* Termination by way of the normal
+                                    * process further down may have
+                                    * happened by this time, so ignore
+                                    * this error. */
+                                    Err(nix::errno::Errno::ECHILD) => {},
+                                    Err(e) => {
+                                        eprintln!("unable to clean up process: {}", e);
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            exit(0);
+                        }
+                    });
+
+                    self.stack.push(gen_rr);
+                    let mut events =
+                        [epoll::Event::new(epoll::Events::empty(), 0); 50];
+                    'done: loop {
+                        let res = epoll::wait(epoll_fd, -1, &mut events);
+                        let n;
+                        match res {
+                            Err(e) => {
+                                /* Assuming that "Interrupted" is due
+                                * to ctrl-c, in which case there's no
+                                * need to show an error message. */
+                                if !e.to_string().contains("Interrupted") {
+                                    eprintln!("epoll wait failed: {:?}", e);
+                                }
+                                break 'done;
+                            }
+                            Ok(n_ok) => { n = n_ok; }
+                        }
+                        for i in 0..n {
+                            let event = events.get(i).unwrap();
+                            for i in 0..procs {
+                                if subprocesses.get(i).unwrap().reqvalue_rx.as_raw_fd() == event.data as i32 {
+                                    let subprocess = &mut subprocesses.get_mut(i).unwrap();
+
+                                    let mut size_buf = vec![0u8; 1];
+                                    let read_res =
+                                        subprocess.reqvalue_rx.read_exact(&mut size_buf);
+                                    if read_res.is_err() {
+                                        break 'done;
+                                    }
+                                    read_res.unwrap();
+
+                                    let dup_res = self.opcode_dup();
+                                    if dup_res == 0 {
+                                        break 'done;
+                                    }
+                                    let shift_res = self.opcode_shift();
+                                    if shift_res == 0 {
+                                        break 'done;
+                                    }
+                                    let element_rr = self.stack.pop().unwrap();
+                                    match element_rr {
+                                        Value::Null => {
+                                            break 'done;
+                                        }
+                                        _ => {
+                                            let vsd = value_to_valuesd(element_rr.clone());
+                                            match (&vsd, element_rr) {
+                                                (&ValueSD::Null, Value::Null) => {}
+                                                (&ValueSD::Null, _) => {
+                                                    self.print_error("unable to serialise value for pmap");
+                                                }
+                                                _ => {}
+                                            }
+                                            write_valuesd(&mut subprocess.value_tx, vsd);
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    self.stack.pop();
+                    for i in 0..procs {
+                        write_valuesd(&mut subprocesses.get_mut(i).unwrap().value_tx, ValueSD::Null);
+                    }
+                    for i in 0..procs {
+                        let res =
+                            waitpid(subprocesses.get(i).unwrap().pid, None);
+                        match res {
+                            /* Termination by way of a signal may have
+                            * happened by this point, so ignore this
+                            * error. */
+                            Err(nix::errno::Errno::ECHILD) => {},
+                            Err(e) => {
+                                eprintln!("unable to clean up process: {}", e);
+                            }
+                            _ => {}
+                        }
+                    }
+                    write_valuesd(&mut ptt_tx, ValueSD::Null);
+                    exit(0);
                 }
-                write_valuesd(&mut ptt_tx, ValueSD::Null);
-                exit(0);
-            }
-            Err(e) => {
-                eprintln!("unable to fork: {}", e);
-                exit(0);
+                Err(e) => {
+                    eprintln!("unable to fork: {}", e);
+                    exit(0);
+                }
             }
         }
     }

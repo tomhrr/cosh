@@ -10,13 +10,12 @@ extern crate tempfile;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::env;
-use nix::fcntl::{flock, FlockArg};
+use nix::fcntl::{Flock, FlockArg};
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::io::{Seek, SeekFrom};
-use std::os::unix::io::AsRawFd;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
@@ -430,15 +429,13 @@ fn main() {
                 .append(true)
                 .open(&history_path)
                 .unwrap();
-            let history_fd = history_file.as_raw_fd();
-            flock(history_fd, FlockArg::LockExclusive).unwrap();
+            Flock::lock(history_file.try_clone().unwrap(),
+                        FlockArg::LockExclusive).unwrap();
 
             for i in history_start_len..history_end_len {
                 writeln!(history_file, "{}",
                          rl_rr.borrow().history().get(i).unwrap()).unwrap();
             }
-
-            drop(history_file);
         }
     }
 }

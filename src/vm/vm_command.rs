@@ -320,78 +320,80 @@ impl VM {
                             return 0;
                         }
                         let mut upstream_stdin = upstream_stdin_opt.unwrap();
-                        match fork() {
-                            Ok(ForkResult::Parent { child }) => {
-                                let input_value = self.stack.pop().unwrap();
-                                let upstream_stdout_opt = process.stdout.take();
-                                if upstream_stdout_opt.is_none() {
-                                    let err_str = "unable to get stdout from parent".to_string();
-                                    self.print_error(&err_str);
-                                    return 0;
-                                }
-                                let upstream_stdout = upstream_stdout_opt.unwrap();
-
-                                let upstream_stderr_opt = process.stderr.take();
-                                if upstream_stderr_opt.is_none() {
-                                    let err_str = "unable to get stderr from parent".to_string();
-                                    self.print_error(&err_str);
-                                    return 0;
-                                }
-                                let upstream_stderr = upstream_stderr_opt.unwrap();
-
-                                let cmd_generator = Value::CommandGenerator(Rc::new(RefCell::new(
-                                    CommandGenerator::new(
-                                        Some(child),
-                                        Some(nix::unistd::Pid::from_raw(pipe_pid as i32)),
-                                        Some(input_value),
-                                        NonBlockingReader::from_fd(upstream_stdout).unwrap(),
-                                        NonBlockingReader::from_fd(upstream_stderr).unwrap(),
-                                        true,
-                                        false,
-                                        false,
-                                        false,
-                                    ),
-                                )));
-                                self.stack.push(cmd_generator);
-                            }
-                            Ok(ForkResult::Child) => {
-                                loop {
-                                    let dup_res = self.opcode_dup();
-                                    if dup_res == 0 {
+                        unsafe {
+                            match fork() {
+                                Ok(ForkResult::Parent { child }) => {
+                                    let input_value = self.stack.pop().unwrap();
+                                    let upstream_stdout_opt = process.stdout.take();
+                                    if upstream_stdout_opt.is_none() {
+                                        let err_str = "unable to get stdout from parent".to_string();
+                                        self.print_error(&err_str);
                                         return 0;
                                     }
-                                    let shift_res = self.opcode_shift();
-                                    if shift_res == 0 {
+                                    let upstream_stdout = upstream_stdout_opt.unwrap();
+
+                                    let upstream_stderr_opt = process.stderr.take();
+                                    if upstream_stderr_opt.is_none() {
+                                        let err_str = "unable to get stderr from parent".to_string();
+                                        self.print_error(&err_str);
                                         return 0;
                                     }
-                                    let element_rr = self.stack.pop().unwrap();
-                                    if let Value::Null = element_rr {
-                                        break;
-                                    }
-                                    let element_str_opt: Option<&str>;
-                                    to_str!(element_rr, element_str_opt);
+                                    let upstream_stderr = upstream_stderr_opt.unwrap();
 
-                                    match element_str_opt {
-                                        Some(s) => {
-                                            let res = upstream_stdin.write(s.as_bytes());
-                                            match res {
-                                                Ok(_) => {}
-                                                _ => {
-                                                    eprintln!("unable to write to parent process!");
-                                                    std::process::abort();
-                                                }
-                                            }
+                                    let cmd_generator = Value::CommandGenerator(Rc::new(RefCell::new(
+                                        CommandGenerator::new(
+                                            Some(child),
+                                            Some(nix::unistd::Pid::from_raw(pipe_pid as i32)),
+                                            Some(input_value),
+                                            NonBlockingReader::from_fd(upstream_stdout).unwrap(),
+                                            NonBlockingReader::from_fd(upstream_stderr).unwrap(),
+                                            true,
+                                            false,
+                                            false,
+                                            false,
+                                        ),
+                                    )));
+                                    self.stack.push(cmd_generator);
+                                }
+                                Ok(ForkResult::Child) => {
+                                    loop {
+                                        let dup_res = self.opcode_dup();
+                                        if dup_res == 0 {
+                                            return 0;
                                         }
-                                        _ => {
+                                        let shift_res = self.opcode_shift();
+                                        if shift_res == 0 {
+                                            return 0;
+                                        }
+                                        let element_rr = self.stack.pop().unwrap();
+                                        if let Value::Null = element_rr {
                                             break;
                                         }
+                                        let element_str_opt: Option<&str>;
+                                        to_str!(element_rr, element_str_opt);
+
+                                        match element_str_opt {
+                                            Some(s) => {
+                                                let res = upstream_stdin.write(s.as_bytes());
+                                                match res {
+                                                    Ok(_) => {}
+                                                    _ => {
+                                                        eprintln!("unable to write to parent process!");
+                                                        std::process::abort();
+                                                    }
+                                                }
+                                            }
+                                            _ => {
+                                                break;
+                                            }
+                                        }
                                     }
+                                    std::process::exit(0);
                                 }
-                                std::process::exit(0);
-                            }
-                            _ => {
-                                eprintln!("unexpected fork result!");
-                                std::process::abort();
+                                _ => {
+                                    eprintln!("unexpected fork result!");
+                                    std::process::abort();
+                                }
                             }
                         }
                     }

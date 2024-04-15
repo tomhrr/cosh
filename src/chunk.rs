@@ -9,11 +9,15 @@ use std::fs::ReadDir;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::BufWriter;
+//use std::io::Error;
+use std::io::ErrorKind;
 use std::io::Read;
 use std::io::Write;
 use std::net::{Ipv4Addr, Ipv6Addr, TcpStream};
 use std::rc::Rc;
 use std::str::FromStr;
+use std::thread;
+use std::time;
 
 use chrono::format::{parse, Parsed, StrftimeItems};
 use chrono::prelude::*;
@@ -691,7 +695,7 @@ impl Drop for ChannelGenerator {
         let res = nix::sys::signal::kill(p, Signal::SIGTERM);
         match res {
             Ok(_) => {}
-            Err(nix::Error::Sys(nix::errno::Errno::ESRCH)) => {}
+            Err(nix::errno::Errno::ESRCH) => {}
             Err(e) => {
                 eprintln!("unable to kill process: {}", e);
             }
@@ -1106,21 +1110,42 @@ pub fn i32_to_bytes(n: i32, bytes: &mut Vec<u8>) {
 }
 
 /// Read a ValueSD value from the specified file.
-pub fn read_valuesd(file: &mut std::fs::File) -> ValueSD {
+pub fn read_valuesd(file: &mut std::fs::File) -> Option<ValueSD> {
     let mut size_buf = vec![0u8; 4];
-    file.read_exact(&mut size_buf).unwrap();
-    let n = bytes_to_i32(&size_buf);
-    let mut content_buf = vec![0u8; n as usize];
-    file.read_exact(&mut content_buf).unwrap();
-    let vsd = bincode::deserialize(&content_buf).unwrap();
-    return vsd;
+    let read_res = file.read_exact(&mut size_buf);
+    match read_res {
+        Ok(_) => {
+            let n = bytes_to_i32(&size_buf);
+            let mut content_buf = vec![0u8; n as usize];
+            loop {
+                let read_res2 = file.read_exact(&mut content_buf);
+                match read_res2 {
+                    Ok(_) => {
+                        let vsd: ValueSD = bincode::deserialize(&content_buf).unwrap();
+                        return Some(vsd);
+                    }
+                    Err(e) if e.kind() == ErrorKind::WouldBlock => {
+                        let dur = time::Duration::from_secs_f64(0.05);
+                        thread::sleep(dur);
+                    }
+                    Err(_) => {
+                        return None;
+                    }
+                }
+            }
+        }
+        Err(_) => {
+            return None;
+        }
+    }
 }
 
 /// Write a ValueSD value to the specified file.
 pub fn write_valuesd(file: &mut std::fs::File, value: ValueSD) -> bool {
     let mut vec = bincode::serialize(&value).unwrap();
     let mut size_buf = vec![0u8; 4];
-    i32_to_bytes(vec.len() as i32, &mut size_buf);
+    let len = vec.len() as i32;
+    i32_to_bytes(len, &mut size_buf);
     size_buf.append(&mut vec);
     let res = file.write(&size_buf);
     match res {

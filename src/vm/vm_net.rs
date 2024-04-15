@@ -257,4 +257,59 @@ impl VM {
         self.stack.push(tsw);
         return 1;
     }
+
+    pub fn core_nc(&mut self) -> i32 {
+        if self.stack.len() < 3 {
+            self.print_error("nc requires three arguments");
+            return 0;
+        }
+
+        let res = self.core_socket();
+        if res == 0 {
+            return 0;
+        }
+
+        let tsw_rr   = self.stack.pop().unwrap();
+        let tsr_rr   = self.stack.pop().unwrap();
+        let input_rr = self.stack.pop().unwrap();
+
+        if input_rr.is_shiftable() {
+            self.stack.push(input_rr);
+            loop {
+                let dup_res = self.opcode_dup();
+                if dup_res == 0 {
+                    return 0;
+                }
+                let shift_res = self.opcode_shift();
+                if shift_res == 0 {
+                    return 0;
+                }
+                let element_rr = self.stack.pop().unwrap();
+                match element_rr {
+                    Value::Null => {
+                        break;
+                    }
+                    _ => {
+                        self.stack.push(tsw_rr.clone());
+                        self.stack.push(element_rr);
+                        let res = self.core_writeline();
+                        if res == 0 {
+                            return 0;
+                        }
+                    }
+                }
+            };
+            self.stack.pop().unwrap();
+        } else {
+            self.stack.push(tsw_rr);
+            self.stack.push(input_rr);
+            let res = self.core_writeline();
+            if res == 0 {
+                return 0;
+            }
+        }
+
+        self.stack.push(tsr_rr);
+        return 1;
+    }
 }

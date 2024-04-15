@@ -279,13 +279,13 @@ impl VM {
                         }
                     }
                     _ => {
-                        self.print_error("first writeline argument must be a file writer");
+                        self.print_error("first write argument must be a file writer");
                         return 0;
                     }
                 }
             }
             _ => {
-                self.print_error("second writeline argument must be a string");
+                self.print_error("second write argument must be a string");
                 return 0;
             }
         };

@@ -1147,6 +1147,12 @@ and `str` is defined for both IP objects and IP sets.
    address or hostname.  Queries the nameserver and returns a response
    with the same format as `dig`.
 
+ - `socket`: takes a server name/address and a port, and returns
+   socket reader and socket writer objects.
+ - `nc`: takes a string or a list of strings, a server name/address,
+   and a port, and returns a generator over the response from the
+   server.
+
  - `ifconfig`: returns a list containing the network interface details
    for the current host.  Each list entry is a hash comprising the
    name, hardware address, IP address and network, and flags for the

@@ -3,8 +3,12 @@ use std::rc::Rc;
 
 use http::Method;
 use mime::Mime;
-use reqwest::blocking::{Client, Response};
+use reqwest::blocking::{Client, Response, RequestBuilder};
 use reqwest::header::CONTENT_TYPE;
+use std::sync::mpsc;
+use std::sync::mpsc::TryRecvError;
+use std::thread;
+use std::time;
 use url::Url;
 
 use crate::chunk::{Value, new_string_value};
@@ -90,22 +94,55 @@ impl VM {
         return 1;
     }
 
-    pub fn send_request(&mut self, url: &str) -> i32 {
+    pub fn send_request_simple(&mut self, url: &str) -> i32 {
         let client = Client::new();
-        let mut rb = client.request(Method::GET, url);
-        rb = rb.header("User-Agent",
-                       format!("cosh/{}", env!("CARGO_PKG_VERSION")));
-        let response_res = rb.send();
-        match response_res {
-            Ok(response) => {
-                self.process_response(response)
+        let rb = client.request(Method::GET, url);
+        let res = self.send_request(rb);
+        match res {
+            Some(response) => {
+                return self.process_response(response);
             }
-            Err(e) => {
-                let err_str = format!("unable to send request: {}", e);
-                self.print_error(&err_str);
-                0
+            _ => {
+                return 0;
             }
         }
+    }
+
+    pub fn send_request(&mut self, mut rb: RequestBuilder) -> Option<Response> {
+        rb = rb.header("User-Agent",
+                       format!("cosh/{}", env!("CARGO_PKG_VERSION")));
+        let (tx, rx) = mpsc::channel();
+        thread::spawn(move || {
+            let response_res = rb.send();
+            let _ = tx.send(response_res);
+        });
+        loop {
+            let response_recv_res = rx.try_recv();
+            match response_recv_res {
+                Ok(Ok(response)) => {
+                    return Some(response);
+                }
+                Ok(Err(e)) => {
+                    let err_str = format!("unable to send request: {}", e);
+                    self.print_error(&err_str);
+                    return None;
+                }
+                Err(TryRecvError::Disconnected) => {
+                    let err_str = format!("unable to send request: disconnected");
+                    self.print_error(&err_str);
+                    return None;
+                }
+                Err(TryRecvError::Empty) => {
+		    if !self.running.load(Ordering::SeqCst) {
+			self.running.store(true, Ordering::SeqCst);
+			self.stack.clear();
+			return None;
+		    }
+		    let dur = time::Duration::from_secs_f64(0.05);
+		    thread::sleep(dur);
+                }
+            }
+        };
     }
 
     pub fn core_http_get(&mut self) -> i32 {
@@ -122,9 +159,9 @@ impl VM {
             Some(s) => {
                 if !s.starts_with("http") {
                     let s2 = "https://".to_owned() + s;
-                    self.send_request(&s2)
+                    self.send_request_simple(&s2)
                 } else {
-                    self.send_request(s)
+                    self.send_request_simple(s)
                 }
             }
             _ => {
@@ -335,9 +372,9 @@ impl VM {
                     _ => {}
                 }
 
-                let response_res = rb.send();
+                let response_res = self.send_request(rb);
                 match response_res {
-                    Ok(response) => {
+                    Some(response) => {
                         if raw {
                             let mut headers = IndexMap::new();
                             for (k, v) in response.headers().iter() {
@@ -359,9 +396,7 @@ impl VM {
                         }
                         1
                     }
-                    Err(e) => {
-                        let err_str = format!("unable to send request: {}", e);
-                        self.print_error(&err_str);
+                    _ => {
                         0
                     }
                 }

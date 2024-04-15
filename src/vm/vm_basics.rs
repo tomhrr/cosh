@@ -878,10 +878,22 @@ impl VM {
         let value_rr = self.stack.pop().unwrap();
         let value_opt = value_rr.to_float();
         match value_opt {
-            Some(f) => {
-                let dur = time::Duration::from_secs_f64(f);
-                thread::sleep(dur);
-                1
+            Some(mut f) => {
+                loop {
+                    let to_sleep =
+                        if f < 0.05 { f } else { 0.05 };
+                    f = f - to_sleep;
+		    let dur = time::Duration::from_secs_f64(to_sleep);
+		    thread::sleep(dur);
+                    if f == 0.0 {
+                        return 1;
+                    }
+		    if !self.running.load(Ordering::SeqCst) {
+			self.running.store(true, Ordering::SeqCst);
+			self.stack.clear();
+			return 0;
+		    }
+                }
             }
             _ => {
                 self.print_error("sleep argument must be float");

@@ -38,6 +38,7 @@ cosh is a concatenative command-line shell.
  * [Libraries](#libraries)
     * [rdap](#rdap)
     * [rpkic](#rpkic)
+    * [rpsl](#rpsl)
  * [Miscellaneous](#miscellaneous)
     * [Caveats and pitfalls](#caveats-and-pitfalls)
     * [Development](#development)
@@ -1367,6 +1368,11 @@ A library for working with Registration Data Access Protocol
 
 A library that acts as a wrapper around
 [rpki-client](https://www.rpki-client.org).
+
+#### [rpsl](rpsl.md)
+
+A library for working with Routing Policy Specification Language
+(RPSL) objects.
 
 ### Miscellaneous
 

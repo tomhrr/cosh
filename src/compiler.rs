@@ -1139,8 +1139,8 @@ impl Compiler {
                                             let local = &self.locals[i];
                                             if local.name.eq(&st.borrow().string) {
                                                 chunk.add_opcode(OpCode::GetLocalVar);
-                                                chunk.add_opcode(OpCode::Clone);
                                                 chunk.add_byte(i as u8);
+                                                chunk.add_opcode(OpCode::Clone);
                                                 success = true;
                                                 break;
                                             }

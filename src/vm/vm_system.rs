@@ -1070,4 +1070,25 @@ impl VM {
             }
         }
     }
+
+    /// Exits the program/shell.
+    pub fn core_exit(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("exit requires one argument");
+            return 0;
+        }
+
+        let exit_code_rr = self.stack.pop().unwrap();
+        let exit_code_int_opt = exit_code_rr.to_int();
+
+        match exit_code_int_opt {
+            Some(exit_code) => {
+                std::process::exit(exit_code)
+            }
+            _ => {
+                self.print_error("exit argument must be integer");
+                0
+            }
+        }
+    }
 }

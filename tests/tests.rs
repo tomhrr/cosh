@@ -1784,3 +1784,10 @@ fn varm_test() {
         "1:4: varm may only be used at the top level"
     );
 }
+
+#[test]
+fn scope_close_test() {
+    basic_error_test(",,",        "1:1: attempting to close scope at top level");
+    basic_error_test("]",         "1:1: attempting to close scope at top level");
+    basic_error_test("end-scope", "1:1: attempting to close scope at top level");
+}

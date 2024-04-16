@@ -16,7 +16,7 @@ use crate::chunk::{Chunk, StringTriple, Value, new_string_value};
 use crate::opcode::OpCode;
 
 /// The various token types used by the compiler.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TokenType {
     True,
     False,
@@ -58,7 +58,7 @@ pub enum TokenType {
 
 /// The token struct, which includes the line and column number where
 /// the token begins.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     token_type: TokenType,
     column_number: u32,
@@ -635,16 +635,19 @@ impl Compiler {
     /// Decreases the scope depth.  This adds appropriate pop opcodes
     /// for dealing with local variables that will no longer be in use
     /// after the scope depth is decreased.
-    fn decrease_scope_depth(&mut self, chunk: &mut Chunk) {
+    fn decrease_scope_depth(&mut self, chunk: &mut Chunk, ln: u32, cn: u32) -> bool {
         while !self.locals.is_empty() && (self.locals.last().unwrap().depth == self.scope_depth) {
             chunk.add_opcode(OpCode::PopLocalVar);
             self.locals.pop();
         }
         if self.scope_depth == 0 {
-            eprintln!("scope depth is already zero!");
-            std::process::abort();
+            eprintln!(
+                "{}:{}: attempting to close scope at top level", ln, cn
+            );
+            return false;
         }
         self.scope_depth -= 1;
+        return true;
     }
 
     /// Takes a scanner and a chunk as its arguments.  Reads tokens by
@@ -778,7 +781,12 @@ impl Compiler {
                         .insert(name_str, Rc::new(RefCell::new(function_chunk)));
                 }
                 TokenType::EndFunction => {
-                    self.decrease_scope_depth(chunk);
+                    let res = self.decrease_scope_depth(chunk,
+                                                        token.line_number,
+                                                        token.column_number);
+                    if !res {
+                        return false;
+                    }
                     chunk.add_opcode(OpCode::EndFn);
                     if !has_vars {
                         chunk.has_vars = false;
@@ -816,7 +824,12 @@ impl Compiler {
                             }
                         }
                     }
-                    self.decrease_scope_depth(chunk);
+                    let res = self.decrease_scope_depth(chunk,
+                                                        token.line_number,
+                                                        token.column_number);
+                    if !res {
+                        return false;
+                    }
                     chunk.add_opcode(OpCode::EndFn);
                     if !has_vars {
                         chunk.has_vars = false;
@@ -1242,7 +1255,12 @@ impl Compiler {
                     } else if s == "begin-scope" {
                         self.increase_scope_depth();
                     } else if s == "end-scope" {
-                        self.decrease_scope_depth(chunk);
+                        let res = self.decrease_scope_depth(chunk,
+                                                            token.line_number,
+                                                            token.column_number);
+                        if !res {
+                            return false;
+                        }
                     } else if s == "push" {
                         chunk.add_opcode(OpCode::Push);
                     } else if s == "pop" {

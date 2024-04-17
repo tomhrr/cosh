@@ -46,6 +46,7 @@ mod vm_sort;
 mod vm_string;
 mod vm_system;
 mod vm_xml;
+mod vm_yaml;
 
 /// For dealing with the EndList opcode, which also supports ending a
 /// hash.
@@ -177,6 +178,8 @@ lazy_static! {
         map.insert("to-json", VM::core_to_json as fn(&mut VM) -> i32);
         map.insert("from-xml", VM::core_from_xml as fn(&mut VM) -> i32);
         map.insert("to-xml", VM::core_to_xml as fn(&mut VM) -> i32);
+        map.insert("from-yaml", VM::core_from_yaml as fn(&mut VM) -> i32);
+        map.insert("to-yaml", VM::core_to_yaml as fn(&mut VM) -> i32);
         map.insert("bool", VM::opcode_bool as fn(&mut VM) -> i32);
         map.insert("byte", VM::opcode_byte as fn(&mut VM) -> i32);
         map.insert("str", VM::opcode_str as fn(&mut VM) -> i32);

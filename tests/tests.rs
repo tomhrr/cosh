@@ -1821,3 +1821,24 @@ fn escaped_braces_test() {
 {grep -ri \"\\{\\}\" src}; r; len; +; +; 100 >;", ".t"
     )
 }
+
+#[test]
+fn yaml_test() {
+    basic_test("test-data/yaml1.yml f<; from-yaml; str get", "asdf");
+    basic_test("test-data/yaml1.yml f<; from-yaml; int get", "1");
+    basic_test("test-data/yaml1.yml f<; from-yaml; flt get", "1.1");
+    basic_test("test-data/yaml1.yml f<; from-yaml; bl1 get", ".t");
+    basic_test("test-data/yaml1.yml f<; from-yaml; bl2 get", ".f");
+    basic_test("test-data/yaml1.yml f<; from-yaml; lst1.3 get", "asdf");
+    basic_test("test-data/yaml1.yml f<; from-yaml; lst2.1.2 get", "8");
+    basic_test("test-data/yaml1.yml f<; from-yaml; map1.second get", "b");
+
+    basic_test("test-data/yaml1.yml f<; from-yaml; to-yaml; from-yaml; str get", "asdf");
+    basic_test("test-data/yaml1.yml f<; from-yaml; to-yaml; from-yaml; int get", "1");
+    basic_test("test-data/yaml1.yml f<; from-yaml; to-yaml; from-yaml; flt get", "1.1");
+    basic_test("test-data/yaml1.yml f<; from-yaml; to-yaml; from-yaml; bl1 get", ".t");
+    basic_test("test-data/yaml1.yml f<; from-yaml; to-yaml; from-yaml; bl2 get", ".f");
+    basic_test("test-data/yaml1.yml f<; from-yaml; to-yaml; from-yaml; lst1.3 get", "asdf");
+    basic_test("test-data/yaml1.yml f<; from-yaml; to-yaml; from-yaml; lst2.1.2 get", "8");
+    basic_test("test-data/yaml1.yml f<; from-yaml; to-yaml; from-yaml; map1.second get", "b");
+}

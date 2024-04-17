@@ -1,0 +1,13 @@
+---
+str: "asdf"
+int: 1
+flt: 1.1
+bl1: true
+bl2: false
+lst1: [1, 2, 3, "asdf", "qwer"]
+lst2:
+  - 1
+  - [2, 5, 8.0]
+map1:
+  first: "a"
+  second: b

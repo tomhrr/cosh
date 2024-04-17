@@ -26,7 +26,7 @@ cosh is a concatenative command-line shell.
     * [Sorting](#sorting)
     * [Filesystem operations](#filesystem-operations)
     * [Environment variables](#environment-variables)
-    * [JSON/XML Parsing](#jsonxml-parsing)
+    * [JSON/XML/YAML Parsing](#jsonxmlyaml-parsing)
     * [Datetimes](#datetimes)
     * [IP addresses](#ip-addresses)
     * [Networking](#networking)
@@ -1058,10 +1058,11 @@ that variable, or null if the variable does not exist.
 `setenv` takes an environment variable name and a value, and set that
 environment variable as having that value.
 
-#### JSON/XML Parsing
+#### JSON/XML/YAML Parsing
 
-JSON and XML can be serialised and deserialised using the
-`from-json`, `to-json`, `from-xml` and `to-xml` functions.
+JSON, XML, and YAML can be serialised and deserialised using the
+`from-json`, `to-json`, `from-xml`, `to-xml`, `from-yaml`, and
+`to-yaml` functions.
 
 #### Datetimes
 

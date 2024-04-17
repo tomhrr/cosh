@@ -86,9 +86,9 @@ flags for `cut(1)`), though some commands may be longer as a result:
     </table>
   </div>
 
-Arithmetical operators and XML/JSON/CSV encoding/decoding functions
-reduce the number of times that it becomes necessary to use a more
-full-featured programming language or a third-party executable:
+Arithmetical operators and XML/JSON/YAML/CSV encoding/decoding
+functions reduce the number of times that it becomes necessary to use
+a more full-featured programming language or a third-party executable:
 
 - Increment floating-point numbers in file:
 
@@ -174,12 +174,16 @@ List files in a specified directory:
 
     cosh$ test-data ls
     v[gen (
-        0: test-data/json-bigint
-        1: test-data/json2
-        2: test-data/json1
-        3: test-data/readfile
-        4: test-data/csv
-        5: test-data/split
+        0: test-data/cert.der
+        1: test-data/json-bigint
+        2: test-data/json2
+        3: test-data/json1
+        4: test-data/readfile
+        5: test-data/yaml1.yml
+        6: test-data/test.ch
+        7: test-data/csv
+        8: test-data/split
+        9: test-data/readlines
     )]
     cosh$
 
@@ -187,12 +191,16 @@ Sort files alphabetically in a specified directory:
 
     cosh$ test-data ls; sort
     (
-        0: test-data/csv
-        1: test-data/json-bigint
-        2: test-data/json1
-        3: test-data/json2
-        4: test-data/readfile
-        5: test-data/split
+        0: test-data/cert.der
+        1: test-data/csv
+        2: test-data/json-bigint
+        3: test-data/json1
+        4: test-data/json2
+        5: test-data/readfile
+        6: test-data/readlines
+        7: test-data/split
+        8: test-data/test.ch
+        9: test-data/yaml1.yml
     )
     cosh$
 
@@ -322,30 +330,30 @@ Find the ping times for a series of domain names, in parallel:
 
     cosh$ (sourcehut.org github.com gitlab.com) [dup; A dig; answer.0.sdata.address get; 1 pingn; 0 get; 2 mlist] pmap;
     v[channel-gen (
-	0: (
-	    0: gitlab.com
-	    1: h(
-		"icmp_seq": 1
-		"ttl":      58
-		"time_ms":  11.6
-	    )
-	)
-	1: (
-	    0: github.com
-	    1: h(
-		"icmp_seq": 1
-		"ttl":      115
-		"time_ms":  28.4
-	    )
-	)
-	2: (
-	    0: sourcehut.org
-	    1: h(
-		"icmp_seq": 1
-		"ttl":      52
-		"time_ms":  346
-	    )
-	)
+        0: (
+            0: gitlab.com
+            1: h(
+                "icmp_seq": 1
+                "ttl":      58
+                "time_ms":  11.6
+            )
+        )
+        1: (
+            0: github.com
+            1: h(
+                "icmp_seq": 1
+                "ttl":      115
+                "time_ms":  28.4
+            )
+        )
+        2: (
+            0: sourcehut.org
+            1: h(
+                "icmp_seq": 1
+                "ttl":      52
+                "time_ms":  346
+            )
+        )
     )]
     cosh$
 
@@ -366,10 +374,10 @@ record to the table:
     ()
     cosh$ c @; "select * from test" db.prep; () db.exec
     (
-	0: h(
-	    "id":  1
-	    "num": 2
-	)
+        0: h(
+            "id":  1
+            "num": 2
+        )
     )
     cosh$
 

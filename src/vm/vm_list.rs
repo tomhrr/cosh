@@ -7,8 +7,6 @@ use std::thread;
 use std::time;
 
 use indexmap::IndexMap;
-use ipnet::{Ipv4Net, Ipv6Net};
-use iprange::IpRange;
 
 use crate::chunk::{IpSet, Value, ValueSD,
                    valuesd_to_value, read_valuesd,
@@ -243,34 +241,7 @@ impl VM {
                 }
             }
             Value::IpSet(ref mut ipset) => {
-                /* todo: not sure how else to implement this, since
-                 * the IP range object doesn't order by address.
-                 * Could serialise to a vector in the IPSet object,
-                 * but that might make other operations less
-                 * efficient. */
-                let mut ipranges = ipset.borrow().ipv4.iter().collect::<Vec<Ipv4Net>>();
-                ipranges.sort_by_key(|a| a.network());
-                let next = ipranges.first();
-                if let Some(next_value) = next {
-                    let mut next_range = IpRange::new();
-                    next_range.add(*next_value);
-                    let new_set = ipset.borrow().ipv4.exclude(&next_range);
-                    ipset.borrow_mut().ipv4 = new_set;
-                    self.stack.push(Value::Ipv4(*next_value));
-                    return 1;
-                }
-                let mut ipranges2 = ipset.borrow().ipv6.iter().collect::<Vec<Ipv6Net>>();
-                ipranges2.sort_by_key(|a| a.network());
-                let next2 = ipranges2.first();
-                if let Some(next2_value) = next2 {
-                    let mut next2_range = IpRange::new();
-                    next2_range.add(*next2_value);
-                    let new_set = ipset.borrow().ipv6.exclude(&next2_range);
-                    ipset.borrow_mut().ipv6 = new_set;
-                    self.stack.push(Value::Ipv6(*next2_value));
-                    return 1;
-                }
-                self.stack.push(Value::Null);
+                self.stack.push(ipset.borrow_mut().shift());
                 return 1;
             }
             Value::CommandGenerator(ref mut command_generator) => {

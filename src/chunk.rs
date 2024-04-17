@@ -364,6 +364,50 @@ impl IpSet {
     pub fn new(ipv4: IpRange<Ipv4Net>, ipv6: IpRange<Ipv6Net>) -> IpSet {
         IpSet { ipv4, ipv6 }
     }
+
+    pub fn shift(&mut self) -> Value {
+	/* todo: not sure how else to implement this, since
+	 * the IP range object doesn't order by address.
+	 * Could serialise to a vector in the IPSet object,
+	 * but that might make other operations less
+	 * efficient. */
+	let mut ipranges = self.ipv4.iter().collect::<Vec<Ipv4Net>>();
+	ipranges.sort_by_key(|a| a.network());
+	let next = ipranges.first();
+	if let Some(next_value) = next {
+	    let mut next_range = IpRange::new();
+	    next_range.add(*next_value);
+	    let new_set = self.ipv4.exclude(&next_range);
+	    self.ipv4 = new_set;
+	    return Value::Ipv4(*next_value);
+	}
+	let mut ipranges2 = self.ipv6.iter().collect::<Vec<Ipv6Net>>();
+	ipranges2.sort_by_key(|a| a.network());
+	let next2 = ipranges2.first();
+	if let Some(next2_value) = next2 {
+	    let mut next2_range = IpRange::new();
+	    next2_range.add(*next2_value);
+	    let new_set = self.ipv6.exclude(&next2_range);
+	    self.ipv6 = new_set;
+	    return Value::Ipv6(*next2_value);
+	}
+        return Value::Null;
+    }
+
+    pub fn get(&self, n: usize) -> Value {
+	let mut ipranges = self.ipv4.iter().collect::<Vec<Ipv4Net>>();
+        if ipranges.len() >= n + 1 {
+            ipranges.sort_by_key(|a| a.network());
+            return Value::Ipv4(*ipranges.get(n).unwrap());
+        }
+        let ipv6_index = n - ipranges.len();
+	let mut ipranges2 = self.ipv6.iter().collect::<Vec<Ipv6Net>>();
+        if ipranges2.len() >= ipv6_index + 1 {
+            ipranges2.sort_by_key(|a| a.network());
+            return Value::Ipv6(*ipranges2.get(ipv6_index).unwrap());
+        }
+        return Value::Null;
+    }
 }
 
 /// MySQL database objects.
@@ -2184,7 +2228,6 @@ impl Value {
                 | Value::EachGenerator(..)
                 | Value::FileReader(..)
                 | Value::DirectoryHandle(..)
-                | Value::IpSet(..)
                 | Value::MultiGenerator(..)
                 | Value::HistoryGenerator(..)
                 | Value::CommandGenerator(..)
@@ -2201,6 +2244,7 @@ impl Value {
             self,
             Value::List(_)
                 | Value::Set(_)
+                | Value::IpSet(_)
         )
     }
 

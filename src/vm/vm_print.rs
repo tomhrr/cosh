@@ -219,6 +219,7 @@ impl VM {
         last_stack: &mut Vec<Value>,
     ) -> i32 {
         let type_string = value_rr.type_string();
+        let mut shiftable_fallback = false;
         {
             match value_rr {
                 Value::Ipv4(_) | Value::Ipv4Range(_) | Value::Ipv6(_) | Value::Ipv6Range(_) => {
@@ -754,11 +755,11 @@ impl VM {
                     }
                 }
                 _ => {
-                    /* todo: Handle this in some way. */
+                    shiftable_fallback = true;
                 }
             }
         }
-        if value_rr.is_generator() {
+        if shiftable_fallback && value_rr.is_shiftable() {
             let mut has_elements = false;
             self.stack.push(value_rr.clone());
             let mut element_index = 0;

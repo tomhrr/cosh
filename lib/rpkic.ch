@@ -60,11 +60,11 @@
     name var; name !;
     asn var; asn !;
     pfx var; ips; pfx !;
-    pfx @; clone; 0 get; ip.len; pfl var; pfl !;
+    pfx @; 0 get; ip.len; pfl var; pfl !;
 
     name @;
     rpkic.vrps;
-    [1 get; ips; dup; clone; pfx @; clone; union; =] grep; r;
+    [1 get; ips; dup; pfx @; union; =] grep; r;
     dup; len; 0 =; if;
         drop;
         unknown

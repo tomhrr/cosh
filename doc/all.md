@@ -653,6 +653,11 @@ beginning of the set and places it on the stack:
     $ s(1 2 3) 2 exists;
     .t
 
+`get` retrieves an element by index:
+
+    $ s(1 2 3) 2 get;
+    3
+
 `union` combines two sets:
 
     $ s(1 2 3) s(2 3 4) union;
@@ -1391,11 +1396,11 @@ generator over the shell's history.  When not running interactively,
 the `history` function will return an empty generator.
 
 The `clone` form can be used to get a deep copy of certain types of
-values: lists, hashes, user-defined generator objects, and the
+values: lists, hashes, sets, user-defined generator objects, and the
 generators returned by the `keys`, `values`, and `each` calls.  For
 all other value types, `clone` has the same effect as `dup`: this is
 fine in most cases, but it's important to be aware that `dup` for
-file/directory read/write generators is a shallow copy, and
+file/directory/socket read/write generators is a shallow copy, and
 reads/writes against one value will affect cloned values as well.
 
 `@@` works in the same way as `@`, except that it also `clone`s the

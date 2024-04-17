@@ -458,6 +458,11 @@ fn regex_tests() {
 fn get_test() {
     basic_test("(1 2 3) 1 get", "2");
     basic_test("(1 2 3) 1 100 set", "(\n    0: 1\n    1: 100\n    2: 3\n)");
+    basic_test("s(1 2 3) 1 get", "2");
+    basic_test("s(1 2 3 4 5) (0 4 5) get", "(\n    0: 1\n    1: 5\n    2: null\n)");
+    basic_test("(1.2.3.4) ips; 0 get", "v[ip 1.2.3.4]");
+    basic_test("(1.2.3.4 2000::) ips; 1 get", "v[ip 2000::]");
+    basic_test("(1.2.3.4 2000::) ips; 2 get", "null");
 }
 
 #[test]

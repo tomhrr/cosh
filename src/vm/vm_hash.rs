@@ -198,8 +198,99 @@ impl VM {
                     }
                 }
             }
+            (Value::Set(set), _) => {
+		let num_int_opt = specifier_rr.to_int();
+                if let Some(n) = num_int_opt {
+                    if let Some(s) = specifier_opt {
+                        let pos = s.chars().position(|c| c == '.');
+                        if pos.is_none() {
+                            if set.borrow().len() <= (n as usize) {
+                                self.stack.push(Value::Null);
+                                return 1;
+                            }
+                            let element = set.borrow()[n as usize].clone();
+                            self.stack.push(element);
+                            return 1;
+                        }
+                    }
+                }
+                match specifier_rr {
+                    Value::List(ilst) => {
+                        let setb = set.borrow();
+                        let mut results = VecDeque::new();
+                        for e in ilst.borrow().iter() {
+                            let e_opt = e.to_int();
+                            if let Some(n) = e_opt {
+                                if setb.len() <= (n as usize) {
+                                    results.push_back(Value::Null);
+                                } else {
+                                    results.push_back(setb[n as usize].clone());
+                                }
+                            } else {
+                                self.stack.push(object_rr.clone());
+                                self.stack.push(e.clone());
+                                let res = self.core_get();
+                                if res == 1 {
+                                    results.push_back(self.stack.pop().unwrap());
+                                } else {
+                                    return 0;
+                                }
+                            }
+                        }
+                        let newlst =
+                            Value::List(Rc::new(RefCell::new(results)));
+                        self.stack.push(newlst);
+                        return 1;
+                    }
+                    _ => {
+                        self.print_error("second get argument must be field specifier");
+                        return 0;
+                    }
+                }
+            }
+            (Value::IpSet(set), _) => {
+		let num_int_opt = specifier_rr.to_int();
+                if let Some(n) = num_int_opt {
+                    if let Some(s) = specifier_opt {
+                        let pos = s.chars().position(|c| c == '.');
+                        if pos.is_none() {
+                            self.stack.push(set.borrow().get(n as usize));
+                            return 1;
+                        }
+                    }
+                }
+                match specifier_rr {
+                    Value::List(ilst) => {
+                        let setb = set.borrow();
+                        let mut results = VecDeque::new();
+                        for e in ilst.borrow().iter() {
+                            let e_opt = e.to_int();
+                            if let Some(n) = e_opt {
+                                self.stack.push(setb.get(n as usize));
+                            } else {
+                                self.stack.push(object_rr.clone());
+                                self.stack.push(e.clone());
+                                let res = self.core_get();
+                                if res == 1 {
+                                    results.push_back(self.stack.pop().unwrap());
+                                } else {
+                                    return 0;
+                                }
+                            }
+                        }
+                        let newlst =
+                            Value::List(Rc::new(RefCell::new(results)));
+                        self.stack.push(newlst);
+                        return 1;
+                    }
+                    _ => {
+                        self.print_error("second get argument must be field specifier");
+                        return 0;
+                    }
+                }
+            }
             _ => {
-                self.print_error("first get argument must be list/hash");
+                self.print_error("first get argument must be list/hash/set");
                 return 0;
             }
         }

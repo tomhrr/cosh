@@ -269,6 +269,7 @@ impl VM {
                             line_writer.borrow_mut().write_all(&bytes);
                         match res {
                             Ok(_) => {
+                                line_writer.borrow_mut().flush().unwrap();
                                 return 1;
                             }
                             Err(e) => {
@@ -325,6 +326,7 @@ impl VM {
                             let res = line_writer.borrow_mut().write_all(s.as_bytes());
                             match res {
                                 Ok(_) => {
+                                    line_writer.borrow_mut().flush().unwrap();
                                     return 1;
                                 }
                                 Err(e) => {

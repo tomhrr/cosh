@@ -1009,7 +1009,7 @@
 : libreoffice "libreoffice {}" fmt; exec; ,,
 : nano        "nano {}"        fmt; exec; ,,
 
-: gr {grep -ri {} .}; [chomp; "(.*?):(.*)" c; (1 2) get] map; ,,
+: gr {grep -ri "{}" .}; [chomp; "(.*?):(.*)" c; (1 2) get] map; ,,
 
 # Storage-related functions for libraries.
 : make-xdg-env-var

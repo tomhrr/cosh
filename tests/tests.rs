@@ -1812,3 +1812,12 @@ fn dirname_test() {
     basic_test("/asdf1/asdf2 dirname", "/asdf1");
     basic_test("/asdf1/asdf2/ dirname", "/asdf1");
 }
+
+#[test]
+fn escaped_braces_test() {
+    basic_test("
+{grep -ri \"\\{\" src}; r; len;
+{grep -ri \"\\}\" src}; r; len;
+{grep -ri \"\\{\\}\" src}; r; len; +; +; 100 >;", ".t"
+    )
+}

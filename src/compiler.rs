@@ -381,21 +381,28 @@ impl<'a> Scanner<'a> {
                      * used for value substitution, which is why there is
                      * extra processing here.  Commands may also have
                      * parameters attached to the end of them. */
-                    if buffer[0] as char == '{' {
-                        brace_count += 1;
-                    } else if buffer[0] as char == '}' {
-                        brace_count -= 1;
-                    }
-                    if brace_count < 0 {
-                        in_string = false;
-                        done = true;
-                        let params_opt = self.scan_parameters();
-                        if let Some(po) = params_opt {
-                            params = po;
-                        }
-                    } else {
+                    if result_index >= 1
+                            && result[result_index - 1] as char == '\\'
+                            && !last_escaped {
                         result[result_index] = buffer[0];
                         result_index += 1;
+                    } else {
+                        if buffer[0] as char == '{' {
+                            brace_count += 1;
+                        } else if buffer[0] as char == '}' {
+                            brace_count -= 1;
+                        }
+                        if brace_count < 0 {
+                            in_string = false;
+                            done = true;
+                            let params_opt = self.scan_parameters();
+                            if let Some(po) = params_opt {
+                                params = po;
+                            }
+                        } else {
+                            result[result_index] = buffer[0];
+                            result_index += 1;
+                        }
                     }
                 } else if string_delimiter == '$' {
                     /* Uncaptured commands do not need to include a
@@ -489,8 +496,10 @@ impl<'a> Scanner<'a> {
                 return self.get_token(TokenType::CommandUncaptured(s.to_string()));
             } else {
                 eprintln!(
-                    "{}:{}: unterminated string literal",
-                    self.token_line_number, self.token_column_number
+                    "{}:{}: unterminated string literal '{}'",
+                    self.token_line_number,
+                    self.token_column_number,
+                    string_delimiter
                 );
                 return self.get_token(TokenType::Error);
             }

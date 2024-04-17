@@ -343,75 +343,116 @@ impl VM {
 
         match str_opt {
             Some(s) => {
-                let captures = CAPTURE_NUM.captures_iter(s);
-                let mut final_s = s.to_string();
-                for capture in captures {
-                    let capture_str = capture.get(1).unwrap().as_str();
-                    let capture_num_res = capture_str.parse::<usize>();
-                    let capture_num = match capture_num_res {
-                        Ok(n) => n,
-                        Err(_) => {
-                            self.print_error("fmt string contains invalid stack element reference");
-                            return 0;
+                let mut updated_str = String::new();
+                let mut escaping = false;
+                let mut in_substitution = false;
+                let mut substitution_index: Option<usize> = None;
+                let mut stack_cache = Vec::<Option<String>>::new();
+                for c in s.chars() {
+                    if c == '\\' {
+                        if escaping {
+                            updated_str.push('\\');
+                            escaping = false;
+                        } else {
+                            escaping = true;
                         }
-                    };
-
-                    if capture_num >= self.stack.len() {
-                        self.print_error("fmt string contains invalid stack element reference");
-                        return 0;
-                    }
-
-                    let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - capture_num);
-                    match capture_el_rr_opt {
-                        Some(capture_el_rr) => {
-                            let capture_el_str_opt: Option<&str>;
-                            to_str!(capture_el_rr, capture_el_str_opt);
-
-                            match capture_el_str_opt {
-                                Some(capture_el_str) => {
-                                    let capture_str_with_brackets =
-                                        format!("\\{{{}\\}}", capture_str);
-                                    let cswb_regex =
-                                        Regex::new(&capture_str_with_brackets).unwrap();
-                                    final_s = cswb_regex
-                                        .replace_all(&final_s, capture_el_str)
-                                        .to_string();
+                    } else if c == '{' {
+                        if escaping {
+                            updated_str.push('{');
+                            escaping = false;
+                        } else if in_substitution {
+                            self.print_error("1 fmt string contains invalid element reference");
+                            return 0;
+                        } else {
+                            in_substitution = true;
+                        }
+                    } else if c == '}' {
+                        if escaping {
+                            updated_str.push('}');
+                            escaping = false;
+                        } else if !in_substitution {
+                            self.print_error("2 fmt string contains invalid element reference");
+                            return 0;
+                        } else {
+                            in_substitution = false;
+                            match substitution_index {
+                                Some(n) => {
+                                    if n >= self.stack.len() {
+                                        self.print_error("fmt string contains invalid stack element reference");
+                                        return 0;
+                                    }
+                                    let sc_opt = stack_cache.get(n);
+                                    match sc_opt {
+                                        Some(Some(sc)) => {
+                                            updated_str.push_str(sc);
+                                        }
+                                        _ => {
+                                            let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - n);
+                                            match capture_el_rr_opt {
+                                                Some(capture_el_rr) => {
+                                                    let capture_el_str_opt: Option<&str>;
+                                                    to_str!(capture_el_rr, capture_el_str_opt);
+                                                    match capture_el_str_opt {
+                                                        Some(capture_el_str) => {
+                                                            stack_cache.resize(n as usize, None);
+                                                            stack_cache.insert(n as usize, Some(capture_el_str.to_string()));
+                                                            updated_str.push_str(capture_el_str);
+                                                        }
+                                                        _ => {
+                                                            self.print_error("fmt string is not able to be parsed");
+                                                            return 0;
+                                                        }
+                                                    }
+                                                }
+                                                None => {
+                                                    self.print_error("fmt string contains invalid stack element reference");
+                                                    return 0;
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                                 _ => {
-                                    self.print_error("fmt string is not able to be parsed");
-                                    return 0;
+                                    if self.stack.is_empty() {
+                                        self.print_error("fmt string has exhausted stack");
+                                        return 0;
+                                    }
+                                    let value_rr = self.stack.pop().unwrap();
+                                    let value_opt: Option<&str>;
+                                    to_str!(value_rr, value_opt);
+
+                                    match value_opt {
+                                        Some(s) => {
+                                            updated_str.push_str(s);
+                                        }
+                                        _ => {
+                                            self.print_error("fmt string is not able to be parsed");
+                                            return 0;
+                                        }
+                                    }
                                 }
                             }
                         }
-                        None => {
-                            self.print_error("fmt string contains invalid stack element reference");
-                            return 0;
+                    } else if in_substitution {
+                        let digit_opt = c.to_digit(10);
+                        match digit_opt {
+                            Some(n) => {
+                                substitution_index = Some(n as usize);
+                            }
+                            _ => {
+                                self.print_error("fmt index is not able to be parsed");
+                                return 0;
+                            }
                         }
+                    } else {
+                        if escaping {
+                            updated_str.push('\\');
+                        }
+                        updated_str.push(c);
+                        escaping = false;
                     }
                 }
-
-                while CAPTURE_WITHOUT_NUM.is_match(&final_s) {
-                    if self.stack.is_empty() {
-                        self.print_error("fmt string has exhausted stack");
-                        return 0;
-                    }
-
-                    let value_rr = self.stack.pop().unwrap();
-                    let value_opt: Option<&str>;
-                    to_str!(value_rr, value_opt);
-
-                    match value_opt {
-                        Some(s) => {
-                            final_s = CAPTURE_WITHOUT_NUM.replace(&final_s, s).to_string();
-                        }
-                        _ => {
-                            self.print_error("fmt string is not able to be parsed");
-                            return 0;
-                        }
-                    }
-                }
-
-                self.stack.push(new_string_value(final_s));
+                self.stack.push(new_string_value(updated_str));
                 1
             }
             _ => {

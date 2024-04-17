@@ -1842,3 +1842,8 @@ fn yaml_test() {
     basic_test("test-data/yaml1.yml f<; from-yaml; to-yaml; from-yaml; lst2.1.2 get", "8");
     basic_test("test-data/yaml1.yml f<; from-yaml; to-yaml; from-yaml; map1.second get", "b");
 }
+
+#[test]
+fn ss_test() {
+    basic_test("1 2 3 4 .ss; clear;", "4");
+}

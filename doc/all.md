@@ -1235,6 +1235,9 @@ object will then be quicker than using it on the original string.
 `exit` takes an exit code as its single argument, and exits the
 program/shell.
 
+`.ss`. is similar to `.s`, except that it prints only the top element
+from the stack.
+
 When running interactively, `last` takes the previous stack (i.e. as
 at the conclusion of the last line that was executed) and adds those
 elements on to the current stack.  Any generators that were on the

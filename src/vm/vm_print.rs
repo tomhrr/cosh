@@ -205,7 +205,7 @@ impl VM {
     /// number of lines that can be printed without waiting for user
     /// input.
     #[allow(clippy::too_many_arguments)]
-    fn print_stack_value(
+    pub fn print_stack_value(
         &mut self,
         value_rr: &Value,
         chunk: Rc<RefCell<Chunk>>,
@@ -891,7 +891,7 @@ impl VM {
     pub fn print_stack(&mut self, chunk: Rc<RefCell<Chunk>>, i: usize,
                        no_remove: bool) -> bool {
         if self.printing_stack {
-            self.print_error("cannot call .s recursively");
+            self.print_error("cannot call .s/.ss recursively");
             return false;
         }
         self.printing_stack = true;

@@ -274,6 +274,7 @@ lazy_static! {
         map.insert("socket", VM::core_socket as fn(&mut VM) -> i32);
         map.insert("nc", VM::core_nc as fn(&mut VM) -> i32);
         map.insert("exit", VM::core_exit as fn(&mut VM) -> i32);
+        map.insert(".ss", VM::core_printstacksingle as fn(&mut VM) -> i32);
         map
     };
 
@@ -466,6 +467,45 @@ impl VM {
         } else {
             0
         }
+    }
+
+    /// Prints a single element from the stack.
+    pub fn core_printstacksingle(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error(".ss requires non-empty stack");
+            return 0;
+        }
+        if self.printing_stack {
+            self.print_error("cannot call .s/.ss recursively");
+            return 0;
+        }
+        self.printing_stack = true;
+        let mut window_width:  i32 = 0;
+        let mut window_height: i32 = 0;
+        let dim_opt = term_size::dimensions();
+        if let Some((w, h)) = dim_opt {
+            window_width  = w.try_into().unwrap();
+            window_height = h.try_into().unwrap();
+        }
+        let lines_to_print = window_height - 1;
+        let mut last_stack = Vec::new();
+        let value_rr = self.stack.get(self.stack.len() - 1).unwrap().clone();
+        let chunk = self.chunk.clone();
+        let i = self.i;
+        self.print_stack_value(
+            &value_rr,
+            chunk,
+            i,
+            0,
+            false,
+            window_height,
+            window_width,
+            lines_to_print,
+            None,
+            &mut last_stack
+        );
+        self.printing_stack = false;
+        return 1;
     }
 
     /// Converts a callable (e.g. a string) into a function object.
@@ -693,19 +733,19 @@ impl VM {
     /// Takes a path, and replaces any ~ characters with the user's home
     /// directory (if available).
     pub fn expand_tilde(input_s: &str) -> String {
-	let homedir_res = std::env::var("HOME");
-	let final_s;
-	match homedir_res {
-	    Ok(homedir) => {
-		let s = "".to_owned() + &homedir;
-		final_s = RE_HOME_DIR_TILDE.replace_all(input_s, &*s).to_string();
-	    }
-	    _ => {
-		final_s = input_s.to_string();
-	    }
-	}
+        let homedir_res = std::env::var("HOME");
+        let final_s;
+        match homedir_res {
+            Ok(homedir) => {
+                let s = "".to_owned() + &homedir;
+                final_s = RE_HOME_DIR_TILDE.replace_all(input_s, &*s).to_string();
+            }
+            _ => {
+                final_s = input_s.to_string();
+            }
+        }
 
-	final_s
+        final_s
     }
 
     /// Takes a string and converts it into a regex.

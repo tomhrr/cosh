@@ -718,6 +718,25 @@
 
 : pgrep 4 pgrepn; ,,
 
+: basename \/$ '' s; .*\/ '' s; ,,
+
+: dirname
+    dup; / =; if;
+        return;
+    then;
+    \/$ '' s; "(.*)/" c;
+    dup; len; 0 =; if;
+        drop;
+        .
+    else;
+        dup; 0 get; / =; if;
+            0 get;
+        else;
+            1 get;
+        then;
+    then;
+    ,,
+
 # ping and pingn are implemented by calling ping(1), to avoid needing
 # root privileges in the shell.
 : ping

@@ -1033,6 +1033,8 @@ Other operations:
  - `readdir`: reads the next entry for a directory handle object.
  - `no-upwards`: takes a directory name as its argument and returns a
    boolean indicating whether that name is not either "." or "..".
+ - `basename`: takes a file path and returns the file's name.
+ - `dirname`: takes a file path and returns the file's directory.
 
 Core input/output operations:
 

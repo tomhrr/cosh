@@ -1796,3 +1796,19 @@ fn scope_close_test() {
     basic_error_test("]",         "1:1: attempting to close scope at top level");
     basic_error_test("end-scope", "1:1: attempting to close scope at top level");
 }
+
+#[test]
+fn basename_test() {
+    basic_test("/ basename", "\"\"");
+    basic_test("/asdf basename", "asdf");
+    basic_test("/asdf1/asdf2 basename", "asdf2");
+    basic_test("/asdf1/asdf2/ basename", "asdf2");
+}
+
+#[test]
+fn dirname_test() {
+    basic_test("/ dirname", "/");
+    basic_test("/asdf dirname", "/");
+    basic_test("/asdf1/asdf2 dirname", "/asdf1");
+    basic_test("/asdf1/asdf2/ dirname", "/asdf1");
+}

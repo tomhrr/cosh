@@ -39,6 +39,7 @@ cosh is a concatenative command-line shell.
     * [rdap](#rdap)
     * [rpkic](#rpkic)
     * [rpsl](#rpsl)
+    * [ssh-agent](#ssh-agent)
  * [Miscellaneous](#miscellaneous)
     * [Caveats and pitfalls](#caveats-and-pitfalls)
     * [Development](#development)
@@ -1381,6 +1382,10 @@ A library that acts as a wrapper around
 
 A library for working with Routing Policy Specification Language
 (RPSL) objects.
+
+#### [ssh-agent](ssh-agent.md)
+
+Utility functions for initialising `ssh-agent`.
 
 ### Miscellaneous
 

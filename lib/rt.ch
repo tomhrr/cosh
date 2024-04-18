@@ -737,6 +737,8 @@
     then;
     ,,
 
+: pse /proc/{} fmt; is-dir; ,,
+
 # ping and pingn are implemented by calling ping(1), to avoid needing
 # root privileges in the shell.
 : ping

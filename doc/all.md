@@ -1013,8 +1013,11 @@ Other operations:
    a percentage of the total number of available CPUs), the time the
    process was started, the number of seconds for which the process
    has been running, and the process's status.
- - `kill`: takes a PID and a signal name (e.g. "term", "kill"), and
-   sends the specified signal to the process.
+ - `kill`: takes a PID and a signal name ("hup", "int", "term",
+   "kill", "usr1", "usr2", "cont", or "stop"), and sends the specified
+   signal to the process.
+ - `pse`: takes a PID and returns a boolean indicating whether the
+   specified process exists.
  - `chmod`: takes a path and a numeric mode, and updates the path's
    mode accordingly.  (`oct` may be useful for mode conversions.)
  - `chown`: takes a path, a user name, and a group name, and updates

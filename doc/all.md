@@ -1360,6 +1360,9 @@ for a standard shell:
         0: "Mon 26 Dec 2022 11:43:19 GMT\n"
     )]
 
+External calls that do not produce generators support `&&` for
+sequencing multiple commands, in the same way as for a standard shell.
+
 #### Default command aliases
 
 Aliases are defined for the following commands by default:

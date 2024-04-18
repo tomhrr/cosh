@@ -254,30 +254,38 @@ impl VM {
     /// As per `core_command`, except that the output isn't captured
     /// and nothing is placed onto the stack.
     pub fn core_command_uncaptured(&mut self, cmd: &str) -> i32 {
-        let prepared_cmd_opt = self.prepare_and_split_command(cmd);
-        if prepared_cmd_opt.is_none() {
-            return 0;
-        }
-        let (executable, args, env, del_env) = prepared_cmd_opt.unwrap();
+        let separator = Regex::new(r"\s+&&\s+").unwrap();
+        let cmds: Vec<_> = separator.split(cmd).into_iter().collect();
+        for cmd in cmds {
+            let prepared_cmd_opt = self.prepare_and_split_command(cmd);
+            if prepared_cmd_opt.is_none() {
+                return 0;
+            }
+            let (executable, args, env, del_env) = prepared_cmd_opt.unwrap();
 
-        let process_res = Command::new(executable).args(args).spawn();
-        restore_env(env, del_env);
-        match process_res {
-            Ok(mut process) => {
-                let res = process.wait();
-                match res {
-                    Ok(_) => {}
-                    Err(e) => {
-                        let err_str = format!("command execution failed: {}", e);
-                        self.print_error(&err_str);
-                        return 0;
+            let process_res = Command::new(executable).args(args).spawn();
+            restore_env(env, del_env);
+            match process_res {
+                Ok(mut process) => {
+                    let res = process.wait();
+                    match res {
+                        Ok(es) => {
+                            if !es.success() {
+                                break;
+                            }
+                        }
+                        Err(e) => {
+                            let err_str = format!("command execution failed: {}", e);
+                            self.print_error(&err_str);
+                            return 0;
+                        }
                     }
                 }
-            }
-            Err(e) => {
-                let err_str = format!("unable to execute command: {}", e);
-                self.print_error(&err_str);
-                return 0;
+                Err(e) => {
+                    let err_str = format!("unable to execute command: {}", e);
+                    self.print_error(&err_str);
+                    return 0;
+                }
             }
         }
         1

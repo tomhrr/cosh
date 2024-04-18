@@ -1847,3 +1847,8 @@ fn yaml_test() {
 fn ss_test() {
     basic_test("1 2 3 4 .ss; clear;", "4");
 }
+
+#[test]
+fn long_json_test() {
+    basic_test("test-data/long.json f<; from-json; asdf get; len", "4012");
+}

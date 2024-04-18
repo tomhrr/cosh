@@ -1414,6 +1414,14 @@ When running interactively, the `history` function will return a
 generator over the shell's history.  When not running interactively,
 the `history` function will return an empty generator.
 
+A `sudo` form is available when running interactively.  When that form
+appears as the final form in the input, then a separate instance of
+`cosh` will be run using `sudo`, with the remainder of the input being
+passed in as the command to that instance.  (This does mean that
+variables and related state are not available in the separate
+instance, and state changes that happen in the separate instance do
+not register in the original instance.)
+
 The `clone` form can be used to get a deep copy of certain types of
 values: lists, hashes, sets, user-defined generator objects, and the
 generators returned by the `keys`, `values`, and `each` calls.  For

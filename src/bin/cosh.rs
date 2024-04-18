@@ -308,7 +308,6 @@ fn main() {
         }
 
         let config = Config::builder()
-            .history_ignore_space(true)
             .completion_type(CompletionType::List)
             .edit_mode(EditMode::Emacs)
             .output_stream(OutputStreamType::Stdout)
@@ -372,11 +371,17 @@ fn main() {
             let readline_res = rl_rr.borrow_mut().readline(&prompt);
             match readline_res {
                 Ok(mut line) => {
+                    let original_line = line.clone();
                     if line.is_empty() {
                         continue;
                     }
                     if line.starts_with(' ') {
                         line = "$".to_owned() + &line;
+                    }
+                    if line.ends_with("; sudo") || line.ends_with("; sudo;") {
+                        let sudo_re = Regex::new(r" sudo;?$").unwrap();
+                        line = sudo_re.replace(&line, "").to_string();
+                        line = format!("$ sudo {} -e '{}'", program, line);
                     }
                     line = line.trim().to_string();
                     let file_res = tempfile();
@@ -399,7 +404,7 @@ fn main() {
                     file.seek(SeekFrom::Start(0)).unwrap();
 
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                    rl_rr.borrow_mut().add_history_entry(line.as_str());
+                    rl_rr.borrow_mut().add_history_entry(original_line.as_str());
                     let chunk_opt = vm.interpret(global_functions.clone(), &mut bufread, "(main)");
                     match chunk_opt {
                         Some(chunk) => {

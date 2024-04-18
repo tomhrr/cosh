@@ -19,7 +19,9 @@ use std::io::{Seek, SeekFrom};
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
+use std::time::{SystemTime, UNIX_EPOCH};
 
+use cpu_time::ProcessTime;
 use getopts::Options;
 use regex::Regex;
 use rustyline::config::OutputStreamType;
@@ -383,6 +385,16 @@ fn main() {
                         line = sudo_re.replace(&line, "").to_string();
                         line = format!("$ sudo {} -e '{}'", program, line);
                     }
+                    let timing =
+                        if line.ends_with("; time") || line.ends_with("; time;") {
+                            let time_re = Regex::new(r" time;?$").unwrap();
+                            line = time_re.replace(&line, "").to_string();
+                            Some((ProcessTime::try_now().unwrap(),
+                                  SystemTime::now()))
+                        } else {
+                            None
+                        };
+
                     line = line.trim().to_string();
                     let file_res = tempfile();
                     match file_res {
@@ -415,6 +427,30 @@ fn main() {
                             }
                         }
                         None => {}
+                    }
+
+                    match timing {
+                        Some((ct, rt_start)) => {
+                            let ct_dur = ct.try_elapsed().unwrap();
+                            let rt_end = SystemTime::now();
+
+                            let rt_start_dur = rt_start.duration_since(UNIX_EPOCH).unwrap();
+                            let rt_end_dur   = rt_end.duration_since(UNIX_EPOCH).unwrap();
+                            let rt_dur       = rt_end_dur - rt_start_dur;
+
+                            let rt_min = rt_dur.as_secs() / 60;
+                            let rt_sec = rt_dur.as_secs() % 60;
+                            let rt_ms  = rt_dur.subsec_millis();
+
+                            let ct_min = ct_dur.as_secs() / 60;
+                            let ct_sec = ct_dur.as_secs() % 60;
+                            let ct_ms  = ct_dur.subsec_millis();
+
+                            eprintln!("");
+                            eprintln!("real    {}m{}.{:03}s", rt_min, rt_sec, rt_ms);
+                            eprintln!("cpu     {}m{}.{:03}s", ct_min, ct_sec, ct_ms);
+                        }
+                        _ => {}
                     }
                 }
                 Err(ReadlineError::Interrupted) => {}

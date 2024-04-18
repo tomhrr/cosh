@@ -1405,6 +1405,19 @@ Utility functions for initialising `ssh-agent`.
 
 Comments can be added by prefixing the comment line with `#`.
 
+The `clone` form can be used to get a deep copy of certain types of
+values: lists, hashes, sets, user-defined generator objects, and the
+generators returned by the `keys`, `values`, and `each` calls.  For
+all other value types, `clone` has the same effect as `dup`: this is
+fine in most cases, but it's important to be aware that `dup` for
+file/directory/socket read/write generators is a shallow copy, and
+reads/writes against one value will affect cloned values as well.
+
+`@@` works in the same way as `@`, except that it also `clone`s the
+variable's value.  In conjunction with reification (via `r`), this can
+be useful when there's a need to generate, store, and refer to a value
+repeatedly, and generation of that value is time-consuming.
+
 On starting the shell for interactive use or when running a script,
 the `cosh.conf` file in the current user's configuration directory
 (typically `~/.config`) will be run.  The `--no-cosh-conf` option can
@@ -1422,18 +1435,10 @@ variables and related state are not available in the separate
 instance, and state changes that happen in the separate instance do
 not register in the original instance.)
 
-The `clone` form can be used to get a deep copy of certain types of
-values: lists, hashes, sets, user-defined generator objects, and the
-generators returned by the `keys`, `values`, and `each` calls.  For
-all other value types, `clone` has the same effect as `dup`: this is
-fine in most cases, but it's important to be aware that `dup` for
-file/directory/socket read/write generators is a shallow copy, and
-reads/writes against one value will affect cloned values as well.
-
-`@@` works in the same way as `@`, except that it also `clone`s the
-variable's value.  In conjunction with reification (via `r`), this can
-be useful when there's a need to generate, store, and refer to a value
-repeatedly, and generation of that value is time-consuming.
+A `time` form is available when running interactively.  When that form
+appears as the final form in the input, then real and CPU time will be
+tracked for the input, and printed to standard error once processing
+is complete.
 
 By default, the shell starts in 'transient' mode, unless it is being
 used to run a script, in which case it starts in 'persistent' mode.

@@ -599,6 +599,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "chronoutil",
+ "cpu-time",
  "csv",
  "ctrlc",
  "dirs 5.0.1",
@@ -646,6 +647,16 @@ dependencies = [
  "url",
  "utime",
  "xml-rs",
+]
+
+[[package]]
+name = "cpu-time"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9e393a7668fe1fad3075085b86c781883000b4ede868f43627b34a87c8b7ded"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]

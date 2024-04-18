@@ -59,3 +59,4 @@ reqwest = { version = "0.12.1", features = [ "blocking" ] }
 mime = "0.3.17"
 http = "1.1.0"
 url = "2.5.0"
+cpu-time = "1.0.0"

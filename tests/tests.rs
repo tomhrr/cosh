@@ -1852,3 +1852,18 @@ fn ss_test() {
 fn long_json_test() {
     basic_test("test-data/long.json f<; from-json; asdf get; len", "4012");
 }
+
+#[test]
+fn file_predicate_test() {
+    basic_test("src is-r", ".t");
+    basic_test("src is-w", ".t");
+    basic_test("src is-x", ".t");
+    basic_test("/etc/shadow is-r", ".f");
+    basic_test("/etc/shadow is-w", ".f");
+    basic_test("/etc/shadow is-x", ".f");
+    basic_test(
+        "
+tempdir; td var; td !; file touch; file td @; link; td @; /file ++; is-link;
+td @; ls; rm for; td @; rmdir; file rm;
+", ".t");
+}

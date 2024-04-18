@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::fs::metadata;
+use std::fs::symlink_metadata;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufWriter;
@@ -9,6 +10,7 @@ use std::thread;
 use std::time;
 
 use lazy_static::lazy_static;
+use nix::unistd::AccessFlags;
 use regex::Regex;
 use tempfile::{NamedTempFile, TempDir};
 
@@ -514,6 +516,117 @@ impl VM {
             }
             _ => {
                 self.print_error("is-file argument must be a string");
+                return 0;
+            }
+        }
+        1
+    }
+
+    /// Takes a path as its single argument.  Places a boolean onto
+    /// the stack indicating whether the path maps to a symbolic link.
+    pub fn core_is_link(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("is-link requires one argument");
+            return 0;
+        }
+
+        let path_rr = self.stack.pop().unwrap();
+        let path_str_opt: Option<&str>;
+        to_str!(path_rr, path_str_opt);
+
+        match path_str_opt {
+            Some(s) => {
+                let metadata_res = symlink_metadata(s);
+                match metadata_res {
+                    Ok(metadata) => {
+                        let is_link = metadata.is_symlink();
+                        self.stack.push(Value::Bool(is_link));
+                    }
+                    _ => {
+                        self.stack.push(Value::Bool(false));
+                    }
+                }
+            }
+            _ => {
+                self.print_error("is-link argument must be a string");
+                return 0;
+            }
+        }
+        1
+    }
+
+    /// Takes a path as its single argument.  Places a boolean onto
+    /// the stack indicating whether the path is readable.
+    pub fn core_is_r(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("is-r requires one argument");
+            return 0;
+        }
+
+        let path_rr = self.stack.pop().unwrap();
+        let path_str_opt: Option<&str>;
+        to_str!(path_rr, path_str_opt);
+
+        match path_str_opt {
+            Some(s) => {
+                let is_readable =
+                    nix::unistd::access(s, AccessFlags::R_OK).is_ok();
+                self.stack.push(Value::Bool(is_readable));
+            }
+            _ => {
+                self.print_error("is-r argument must be a string");
+                return 0;
+            }
+        }
+        1
+    }
+
+    /// Takes a path as its single argument.  Places a boolean onto
+    /// the stack indicating whether the path is writable.
+    pub fn core_is_w(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("is-w requires one argument");
+            return 0;
+        }
+
+        let path_rr = self.stack.pop().unwrap();
+        let path_str_opt: Option<&str>;
+        to_str!(path_rr, path_str_opt);
+
+        match path_str_opt {
+            Some(s) => {
+                let is_writable =
+                    nix::unistd::access(s, AccessFlags::W_OK).is_ok();
+                self.stack.push(Value::Bool(is_writable));
+            }
+            _ => {
+                self.print_error("is-w argument must be a string");
+                return 0;
+            }
+        }
+        1
+    }
+
+    /// Takes a path as its single argument.  Places a boolean onto
+    /// the stack indicating whether the path is executable.
+    pub fn core_is_x(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("is-x requires one argument");
+            return 0;
+        }
+
+        let path_rr = self.stack.pop().unwrap();
+        let path_str_opt: Option<&str>;
+        to_str!(path_rr, path_str_opt);
+
+        match path_str_opt {
+            Some(s) => {
+                let is_executable =
+                    nix::unistd::access(s, AccessFlags::X_OK).is_ok();
+                self.stack.push(Value::Bool(is_executable));
+            }
+            _ => {
+                self.print_error("is-x argument must be a string");
                 return 0;
             }
         }

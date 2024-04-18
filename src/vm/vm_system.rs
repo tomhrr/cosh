@@ -415,7 +415,16 @@ impl VM {
 
         match (src_opt, dst_opt) {
             (Some(src), Some(dst)) => {
-                let srcs = VM::expand_tilde(src);
+                let mut srcs = VM::expand_tilde(src);
+                if !srcs.starts_with("/") {
+		    let current_dir_res = std::env::current_dir();
+		    match current_dir_res {
+			Ok(current_dir) => {
+                            srcs = format!("{}/{}", current_dir.to_str().unwrap(), srcs);
+			}
+			_ => {}
+		    }
+                }
                 let dsts = VM::expand_tilde(dst);
                 let dst_meta_opt = fs::metadata(&dsts);
                 let dst_path =

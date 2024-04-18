@@ -167,6 +167,10 @@ lazy_static! {
         map.insert("empty", VM::core_empty as fn(&mut VM) -> i32);
         map.insert("is-dir", VM::core_is_dir as fn(&mut VM) -> i32);
         map.insert("is-file", VM::core_is_file as fn(&mut VM) -> i32);
+        map.insert("is-link", VM::core_is_link as fn(&mut VM) -> i32);
+        map.insert("is-r", VM::core_is_r as fn(&mut VM) -> i32);
+        map.insert("is-w", VM::core_is_w as fn(&mut VM) -> i32);
+        map.insert("is-x", VM::core_is_x as fn(&mut VM) -> i32);
         map.insert("split", VM::core_split as fn(&mut VM) -> i32);
         map.insert("splitr", VM::core_splitr as fn(&mut VM) -> i32);
         map.insert("get", VM::core_get as fn(&mut VM) -> i32);

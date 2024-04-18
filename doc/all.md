@@ -982,8 +982,10 @@ Other operations:
  - `cwd`: returns the current working directory.
  - `is-dir`: returns a boolean indicating whether the argument is a
    directory.
- - `is-files`: returns a boolean indicating whether the argument is a
-   file.
+ - `is-file`: returns a boolean indicating whether the argument is a
+   plain file.
+ - `is-link`: returns a boolean indicating whether the argument is a
+   link.
  - `rm`: removes the argument file.
  - `rmf`: removes the argument file, without reporting an error in the
    event that the file doesn't exist.
@@ -1035,6 +1037,12 @@ Other operations:
    boolean indicating whether that name is not either "." or "..".
  - `basename`: takes a file path and returns the file's name.
  - `dirname`: takes a file path and returns the file's directory.
+ - `is-r`: takes a file path and returns a boolean indicating whether
+   the file is readable by the current user.
+ - `is-w`: takes a file path and returns a boolean indicating whether
+   the file is writable by the current user.
+ - `is-x`: takes a file path and returns a boolean indicating whether
+   the file is executable by the current user.
 
 Core input/output operations:
 

@@ -1881,7 +1881,7 @@ fn digest_test() {
 
 #[test]
 fn jobs_test() {
-    basic_test("{sleep 0.5}; n var; n !; jobs; 0.complete get; jobs; 0.pid get; term kill", ".f");
-    basic_test("{sleep 0.5}; n var; n !; jobs; len; 1 =; 0.5 sleep; jobs; len; 1 =; jobs; len; 0 =; and; and;", ".t");
-    basic_test("(1 2) [0.5 sleep] 2 pmapn; n var; n !; jobs; len; 1 =; 0.5 sleep; jobs; len; 1 =; jobs; len; 0 =; and; and;", ".t");
+    basic_test("{sleep 2}; n var; n !; jobs; 0.complete get; jobs; 0.pid get; term kill", ".f");
+    basic_test("{sleep 2}; n var; n !; jobs; len; 1 =; 3 sleep; jobs; len; 1 =; jobs; len; 0 =; and; and;", ".t");
+    basic_test("(1 2) [2 sleep] 2 pmapn; n var; n !; jobs; len; 1 =; 3 sleep; jobs; len; 1 =; jobs; len; 0 =; and; and;", ".t");
 }

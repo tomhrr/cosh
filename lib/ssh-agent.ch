@@ -25,8 +25,13 @@ ssh-env-path var; ssh-env-path !;
 : ssh-agent.start-if-required
     ssh-env-path @; is-file; if;
         ssh-agent.set-vars;
-        SSH_AGENT_PID getenv; pse; not; if;
+        SSH_AGENT_PID getenv; dup; pse; not; if;
+            drop;
             ssh-agent.start;
+        else;
+            pss; cmd get; ssh-agent m; not; if;
+                ssh-agent.start;
+            then;
         then;
     else;
         ssh-agent.start;

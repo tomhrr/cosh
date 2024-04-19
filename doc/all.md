@@ -93,6 +93,13 @@ To run a script:
     user@host:/$ ./script2.ch
     2
 
+Scripts may accept command-line arguments:
+
+    user@host:/$ cat script.ch
+    +;
+    user@host:/$ cosh script.ch 1 1
+    2
+
 ### Core
 
 #### Types

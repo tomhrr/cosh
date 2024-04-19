@@ -31,13 +31,13 @@ use rustyline::{
 };
 use tempfile::tempfile;
 
-use cosh::chunk::Chunk;
+use cosh::chunk::{Chunk, new_string_value};
 use cosh::compiler::Compiler;
 use cosh::vm::VM;
 use cosh::rl::{RLHelper, ShellCompleter};
 
 fn print_usage(program: &str, opts: Options) {
-    let brief = format!("Usage: {} [options] file", program);
+    let brief = format!("Usage: {} [options] [file] [args]", program);
     print!("{}", opts.usage(&brief));
 }
 
@@ -221,6 +221,9 @@ fn main() {
                 }
                 if !matches.opt_present("no-cosh-conf") {
                     import_cosh_conf(&mut vm, global_functions.clone());
+                }
+                for arg in &matches.free[1..] {
+                    vm.stack.push(new_string_value(arg.to_string()));
                 }
 
                 vm.interpret(global_functions, &mut bufread, "(main)");

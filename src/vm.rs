@@ -62,7 +62,7 @@ pub struct VM {
     /// running.
     debug: bool,
     /// The stack.
-    stack: Vec<Value>,
+    pub stack: Vec<Value>,
     /// The last stack, i.e. the (possibly partially) reified state of
     /// the stack as at the conclusion of the last call.
     last_stack: Vec<Value>,

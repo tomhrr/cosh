@@ -1878,3 +1878,10 @@ fn digest_test() {
     basic_test("password sha256; hex", "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8");
     basic_test("password sha512; hex", "b109f3bbbc244eb82441917ed06d618b9008dd09b3befd1b5e07394c706a8bb980b1d7785e5976ec049b46df5f1326af5a2ea6d103fd07c95385ffab0cacbc86");
 }
+
+#[test]
+fn jobs_test() {
+    basic_test("{sleep 0.5}; n var; n !; jobs; 0.complete get; jobs; 0.pid get; term kill", ".f");
+    basic_test("{sleep 0.5}; n var; n !; jobs; len; 1 =; 0.5 sleep; jobs; len; 1 =; jobs; len; 0 =; and; and;", ".t");
+    basic_test("(1 2) [0.5 sleep] 2 pmapn; n var; n !; jobs; len; 1 =; 0.5 sleep; jobs; len; 1 =; jobs; len; 0 =; and; and;", ".t");
+}

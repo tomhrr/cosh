@@ -217,6 +217,7 @@ impl VM {
         restore_env(env, del_env);
         match process_res {
             Ok(mut process) => {
+                self.child_processes.insert(process.id(), cmd.to_string());
                 let upstream_stdout = process.stdout.take().unwrap();
                 let upstream_stderr = process.stderr.take().unwrap();
                 let noblock_stdout = NonBlockingReader::from_fd(upstream_stdout).unwrap();
@@ -320,6 +321,7 @@ impl VM {
                 restore_env(env, del_env);
                 match process_ {
                     Ok(mut process) => {
+                        self.child_processes.insert(process.id(), s.to_string());
                         let pipe_pid = process.id();
                         let upstream_stdin_opt = process.stdin;
                         if upstream_stdin_opt.is_none() {

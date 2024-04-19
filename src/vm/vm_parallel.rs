@@ -109,6 +109,8 @@ impl VM {
                     let cg =
                         Value::ChannelGenerator(Rc::new(RefCell::new(cg_obj)));
                     self.stack.push(cg);
+                    self.child_processes.insert(child.as_raw() as u32,
+                                                "parallel-operation".to_string());
                     return 1;
                 }
                 Ok(ForkResult::Child) => {

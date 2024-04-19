@@ -1378,6 +1378,36 @@ for a standard shell:
 External calls that do not produce generators support `&&` for
 sequencing multiple commands, in the same way as for a standard shell.
 
+The `jobs` form can be used to get information about background
+processes.  When it is called, it will also check for jobs that are
+complete, and remove them from the job list, as with a standard shell:
+
+    $ {sleep 1}; m varm; m !; jobs
+    (
+        0: h(
+            "pid":      924429
+            "desc":     "sleep 1"
+            "complete": .f
+        )
+    )
+    $ 1 sleep
+    $ jobs
+    (
+        0: h(
+            "pid":      924429
+            "desc":     "sleep 1"
+            "complete": .t
+        )
+    )
+    $ jobs
+    ()
+    $
+
+Each [parallel processing](#parallel-processing) operation involves a
+co-ordinator process that manages the remaining processes that
+actually do the work.  That co-ordinator process will also be included
+in the jobs list.
+
 #### Default command aliases
 
 Aliases are defined for the following commands by default:

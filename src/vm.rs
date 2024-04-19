@@ -99,8 +99,8 @@ pub struct VM {
     utc_tz: chrono_tz::Tz,
     /// The library directory.
     libdir: &'static str,
-    // Child process details.
-    // child_processes: IndexMap<u32, String>
+    /// Child process details.
+    child_processes: IndexMap<u32, String>
 }
 
 lazy_static! {
@@ -284,6 +284,7 @@ lazy_static! {
         map.insert("nc", VM::core_nc as fn(&mut VM) -> i32);
         map.insert("exit", VM::core_exit as fn(&mut VM) -> i32);
         map.insert(".ss", VM::core_printstacksingle as fn(&mut VM) -> i32);
+        map.insert("jobs", VM::core_jobs as fn(&mut VM) -> i32);
         map
     };
 
@@ -426,7 +427,7 @@ impl VM {
             utc_tz: chrono_tz::Tz::from_str("UTC").unwrap(),
             readline: None,
             libdir,
-            // child_processes: IndexMap::new(),
+            child_processes: IndexMap::new(),
         }
     }
 
@@ -515,6 +516,45 @@ impl VM {
             &mut last_stack
         );
         self.printing_stack = false;
+        return 1;
+    }
+
+    /// Puts a job list on the stack.
+    pub fn core_jobs(&mut self) -> i32 {
+        self.instantiate_sys();
+        let sysopt = &mut self.sys;
+        let sys = &mut sysopt.as_mut().unwrap();
+        let mut to_remove = Vec::new();
+
+        let mut lst = VecDeque::new();
+        for (pid_int, cmd) in &self.child_processes {
+	    let pid = sysinfo::Pid::from(*pid_int as usize);
+	    let mut res = sys.refresh_process(pid);
+	    if res {
+                let pid = sysinfo::Pid::from(*pid_int as usize);
+                let process = sys.process(pid).unwrap();
+                /* Zombie processes are currently reaped by Drop
+                 * implementations. */
+                if process.status() == sysinfo::ProcessStatus::Zombie {
+                    res = false;
+                }
+            }
+            if !res {
+                to_remove.push(*pid_int);
+            }
+
+            let mut map = IndexMap::new();
+            map.insert("pid".to_string(), Value::Int(*pid_int as i32));
+            map.insert("desc".to_string(), new_string_value(cmd.to_string()));
+            map.insert("complete".to_string(), Value::Bool(!res));
+            lst.push_back(Value::Hash(Rc::new(RefCell::new(map))));
+        }
+
+        for pid_int in to_remove {
+            self.child_processes.shift_remove(&pid_int);
+        }
+
+        self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
         return 1;
     }
 

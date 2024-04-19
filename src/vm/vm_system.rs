@@ -714,12 +714,142 @@ impl VM {
         self.stat_inner(true)
     }
 
+    fn convert_process(tz: &chrono_tz::Tz,
+                       users: &sysinfo::Users,
+                       process: &sysinfo::Process) -> IndexMap<String, Value> {
+        let pid = process.pid();
+        let mut map = IndexMap::new();
+        map.insert(
+            "pid".to_string(),
+            Value::BigInt(BigInt::from_i32(pid.as_u32().try_into().unwrap()).unwrap()),
+        );
+        let user_id_opt = process.user_id();
+        match user_id_opt {
+            Some(user_id) => {
+                map.insert(
+                    "uid".to_string(),
+                    Value::BigInt(BigInt::from_u32(**user_id).unwrap()),
+                );
+                match users.get_user_by_id(user_id) {
+                    None => {}
+                    Some(user) => {
+                        map.insert(
+                            "user".to_string(),
+                            new_string_value(user.name().to_string())
+                        );
+                    }
+                };
+            }
+            None => {
+                map.insert(
+                    "uid".to_string(),
+                    Value::Null,
+                );
+            }
+        }
+        let group_id_opt = process.group_id();
+        match group_id_opt {
+            Some(group_id) => {
+                map.insert(
+                    "gid".to_string(),
+                    Value::BigInt(BigInt::from_u32(*group_id).unwrap()),
+                );
+            }
+            None => {
+                map.insert(
+                    "gid".to_string(),
+                    Value::Null,
+                );
+            }
+        }
+        map.insert(
+            "name".to_string(),
+            new_string_value(process.name().to_string())
+        );
+        map.insert(
+            "cmd".to_string(),
+            new_string_value(process.cmd().join(" "))
+        );
+        map.insert(
+            "cpu".to_string(),
+            Value::Float(process.cpu_usage().into())
+        );
+        map.insert(
+            "mem".to_string(),
+            Value::BigInt(BigInt::from_u64(process.memory().into()).unwrap())
+        );
+        map.insert(
+            "vmem".to_string(),
+            Value::BigInt(BigInt::from_u64(process.virtual_memory().into()).unwrap())
+        );
+        map.insert(
+            "runtime".to_string(),
+            Value::BigInt(BigInt::from_u64(process.run_time()).unwrap())
+        );
+        let s = format!("{}", process.status());
+        map.insert(
+            "status".to_string(),
+            new_string_value(s)
+        );
+
+        let epoch64 = i64::try_from(process.start_time()).unwrap();
+        let naive = NaiveDateTime::from_timestamp_opt(epoch64, 0).unwrap();
+        let datetime: DateTime<Utc> = DateTime::from_naive_utc_and_offset(naive, Utc);
+        let newdate = datetime.with_timezone(tz);
+        map.insert(
+            "start".to_string(),
+            Value::DateTimeNT(newdate)
+        );
+
+        return map;
+    }
+
+    /// Puts the process information for a single process onto the
+    /// stack.  Each hash has elements for "uid", "user" (if
+    /// available), "gid", "name", "cmd", "cpu", "mem", "vmem",
+    /// "runtime", "status", and "start".
+    pub fn core_pss(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("pss requires one argument");
+            return 0;
+        }
+
+        self.instantiate_sys();
+        let sysopt = &mut self.sys;
+        let sys = &mut sysopt.as_mut().unwrap();
+        let usersopt = &mut self.users;
+        let users = &mut usersopt.as_mut().unwrap();
+        users.refresh_list();
+
+        let pid_rr = self.stack.pop().unwrap();
+        let pid_int_opt = pid_rr.to_int();
+
+        match pid_int_opt {
+            Some(pid_int) => {
+                let pid = sysinfo::Pid::from(pid_int as usize);
+                let res = sys.refresh_process(pid);
+                if !res {
+                    self.print_error("unable to find process");
+                    return 0;
+                }
+                let process = sys.process(pid).unwrap();
+                let tz = self.local_tz;
+                let map = VM::convert_process(&tz, users, &process);
+                self.stack.push(Value::Hash(Rc::new(RefCell::new(map))));
+                return 1;
+            }
+            _ => {
+                self.print_error("pss argument must be pid");
+                return 0;
+            }
+        }
+    }
+
     /// Puts current process information onto the stack, in the form
     /// of a list of hashes.  Each hash has elements for "pid", "uid",
     /// and "name".
     #[allow(unused_variables)]
     pub fn core_ps(&mut self) -> i32 {
-        let tz = self.local_tz;
         self.instantiate_sys();
         let sysopt = &mut self.sys;
         let sys = &mut sysopt.as_mut().unwrap();
@@ -753,89 +883,8 @@ impl VM {
             if !actual_pids.contains(pid) {
                 continue;
             }
-            let mut map = IndexMap::new();
-            map.insert(
-                "pid".to_string(),
-                Value::BigInt(BigInt::from_i32(pid.as_u32().try_into().unwrap()).unwrap()),
-            );
-            let user_id_opt = process.user_id();
-            match user_id_opt {
-                Some(user_id) => {
-                    map.insert(
-                        "uid".to_string(),
-                        Value::BigInt(BigInt::from_u32(**user_id).unwrap()),
-                    );
-                    match users.get_user_by_id(user_id) {
-                        None => {}
-                        Some(user) => {
-                            map.insert(
-                                "user".to_string(),
-                                new_string_value(user.name().to_string())
-                            );
-                        }
-                    };
-                }
-                None => {
-                    map.insert(
-                        "uid".to_string(),
-                        Value::Null,
-                    );
-                }
-            }
-            let group_id_opt = process.group_id();
-            match group_id_opt {
-                Some(group_id) => {
-                    map.insert(
-                        "gid".to_string(),
-                        Value::BigInt(BigInt::from_u32(*group_id).unwrap()),
-                    );
-                }
-                None => {
-                    map.insert(
-                        "gid".to_string(),
-                        Value::Null,
-                    );
-                }
-            }
-            map.insert(
-                "name".to_string(),
-                new_string_value(process.name().to_string())
-            );
-            map.insert(
-                "cmd".to_string(),
-                new_string_value(process.cmd().join(" "))
-            );
-            map.insert(
-                "cpu".to_string(),
-                Value::Float(process.cpu_usage().into())
-            );
-            map.insert(
-                "mem".to_string(),
-                Value::BigInt(BigInt::from_u64(process.memory().into()).unwrap())
-            );
-            map.insert(
-                "vmem".to_string(),
-                Value::BigInt(BigInt::from_u64(process.virtual_memory().into()).unwrap())
-            );
-            map.insert(
-                "runtime".to_string(),
-                Value::BigInt(BigInt::from_u64(process.run_time()).unwrap())
-            );
-            let s = format!("{}", process.status());
-            map.insert(
-                "status".to_string(),
-                new_string_value(s)
-            );
-
-	    let epoch64 = i64::try_from(process.start_time()).unwrap();
-	    let naive = NaiveDateTime::from_timestamp_opt(epoch64, 0).unwrap();
-	    let datetime: DateTime<Utc> = DateTime::from_naive_utc_and_offset(naive, Utc);
-	    let newdate = datetime.with_timezone(&tz);
-            map.insert(
-                "start".to_string(),
-                Value::DateTimeNT(newdate)
-            );
-
+            let tz = self.local_tz;
+            let map = VM::convert_process(&tz, users, process);
             lst.push_back(Value::Hash(Rc::new(RefCell::new(map))))
         }
         self.stack.push(Value::List(Rc::new(RefCell::new(lst))));

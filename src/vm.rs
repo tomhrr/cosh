@@ -99,6 +99,8 @@ pub struct VM {
     utc_tz: chrono_tz::Tz,
     /// The library directory.
     libdir: &'static str,
+    // Child process details.
+    // child_processes: IndexMap<u32, String>
 }
 
 lazy_static! {
@@ -155,6 +157,7 @@ lazy_static! {
         map.insert("stat", VM::core_stat as fn(&mut VM) -> i32);
         map.insert("lstat", VM::core_lstat as fn(&mut VM) -> i32);
         map.insert("ps", VM::core_ps as fn(&mut VM) -> i32);
+        map.insert("pss", VM::core_pss as fn(&mut VM) -> i32);
         map.insert("kill", VM::core_kill as fn(&mut VM) -> i32);
         map.insert("m", VM::core_m as fn(&mut VM) -> i32);
         map.insert("s", VM::core_s as fn(&mut VM) -> i32);
@@ -423,6 +426,7 @@ impl VM {
             utc_tz: chrono_tz::Tz::from_str("UTC").unwrap(),
             readline: None,
             libdir,
+            // child_processes: IndexMap::new(),
         }
     }
 

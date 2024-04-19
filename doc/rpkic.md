@@ -12,11 +12,11 @@ A library that acts as a wrapper around
     $ rpkic.run;
     $ apnic rpkic.vrps; shift;
     (
-	0: 13335
-	1: v[ip 1.0.0.0/24]
-	2: 24
-	3: apnic
-	4: v[datetime 2024-04-15 14:17:53 UTC]
+        0: 13335
+        1: v[ip 1.0.0.0/24]
+        2: 24
+        3: apnic
+        4: v[datetime 2024-04-15 14:17:53 UTC]
     )
     $ 1.0.0.0/25 13335 apnic rpkic.rov
     valid

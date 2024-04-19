@@ -20,7 +20,11 @@ impl VM {
         match str_opt {
             Some(s) => {
                 let digest = md5::compute(s.as_bytes());
-                self.stack.push(new_string_value(format!("{:x}", digest)));
+                let mut byte_list = VecDeque::new();
+                for byte in digest.into_iter() {
+                    byte_list.push_back(Value::Byte(byte));
+                }
+                self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
             }
             _ => {
                 self.print_error("md5 argument must be string");
@@ -47,7 +51,11 @@ impl VM {
                 let mut hasher = Sha1::new();
                 hasher.update(s.as_bytes());
                 let digest = hasher.finalize();
-                self.stack.push(new_string_value(format!("{:x}", digest)));
+                let mut byte_list = VecDeque::new();
+                for byte in digest.into_iter() {
+                    byte_list.push_back(Value::Byte(byte));
+                }
+                self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
             }
             _ => {
                 self.print_error("sha1 argument must be string");
@@ -74,7 +82,11 @@ impl VM {
                 let mut hasher = Sha256::new();
                 hasher.update(s.as_bytes());
                 let digest = hasher.finalize();
-                self.stack.push(new_string_value(format!("{:x}", digest)));
+                let mut byte_list = VecDeque::new();
+                for byte in digest.into_iter() {
+                    byte_list.push_back(Value::Byte(byte));
+                }
+                self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
             }
             _ => {
                 self.print_error("sha1 argument must be string");
@@ -101,7 +113,11 @@ impl VM {
                 let mut hasher = Sha512::new();
                 hasher.update(s.as_bytes());
                 let digest = hasher.finalize();
-                self.stack.push(new_string_value(format!("{:x}", digest)));
+                let mut byte_list = VecDeque::new();
+                for byte in digest.into_iter() {
+                    byte_list.push_back(Value::Byte(byte));
+                }
+                self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
             }
             _ => {
                 self.print_error("sha1 argument must be string");

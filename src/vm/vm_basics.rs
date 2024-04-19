@@ -691,17 +691,51 @@ impl VM {
         1
     }
 
-    /// Converts a hex string into an integer or bigint.
+    /// Converts an integer or bigint into a hex string.
     pub fn core_hex(&mut self) -> i32 {
         if self.stack.is_empty() {
             self.print_error("hex requires one argument");
+            return 0;
+        }
+        let n_rr = self.stack.pop().unwrap();
+        let n_int_opt = n_rr.to_int();
+        if let Some(n) = n_int_opt {
+            self.stack.push(new_string_value(format!("{:x}", n)));
+            return 1;
+        }
+        let n_bi_opt = n_rr.to_bigint();
+        if let Some(n) = n_bi_opt {
+            self.stack.push(new_string_value(format!("{:x}", n)));
+            return 1;
+        }
+        if let Value::List(lst) = n_rr {
+            let mut results = Vec::new();
+            for el_rr in lst.borrow().iter() {
+                if let Value::Byte(b) = el_rr {
+                    results.push(format!("{:02x}", b));
+                } else {
+                    self.print_error("hex list argument element must be byte");
+                    return 0;
+                }
+            }
+            self.stack.push(new_string_value(results.join("")));
+            return 1;
+        }
+        self.print_error("hex argument must be integer");
+        0
+    }
+
+    /// Converts a hex string into an integer or bigint.
+    pub fn core_unhex(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("unhex requires one argument");
             return 0;
         }
         let value_rr = self.stack.pop().unwrap();
         let value_opt: Option<&str>;
         to_str!(value_rr, value_opt);
         if value_opt.is_none() {
-            self.print_error("hex argument must be string");
+            self.print_error("unhex argument must be string");
             return 0;
         }
         let value_str = value_opt.unwrap().replace("0x", "");
@@ -715,21 +749,41 @@ impl VM {
             self.stack.push(Value::BigInt(bi));
             return 1;
         }
-        self.print_error("hex argument must be hexadecimal string");
+        self.print_error("unhex argument must be hexadecimal string");
+        0
+    }
+
+    pub fn core_oct(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("oct requires one argument");
+            return 0;
+        }
+        let n_rr = self.stack.pop().unwrap();
+        let n_int_opt = n_rr.to_int();
+        if let Some(n) = n_int_opt {
+            self.stack.push(new_string_value(format!("{:o}", n)));
+            return 1;
+        }
+        let n_bi_opt = n_rr.to_bigint();
+        if let Some(n) = n_bi_opt {
+            self.stack.push(new_string_value(format!("{:o}", n)));
+            return 1;
+        }
+        self.print_error("oct argument must be integer");
         0
     }
 
     /// Converts an octal string into an integer or bigint.
-    pub fn core_oct(&mut self) -> i32 {
+    pub fn core_unoct(&mut self) -> i32 {
         if self.stack.is_empty() {
-            self.print_error("oct requires one argument");
+            self.print_error("unoct requires one argument");
             return 0;
         }
         let value_rr = self.stack.pop().unwrap();
         let value_opt: Option<&str>;
         to_str!(value_rr, value_opt);
         if value_opt.is_none() {
-            self.print_error("oct argument must be string");
+            self.print_error("unoct argument must be string");
             return 0;
         }
         let value_str = value_opt.unwrap();
@@ -743,7 +797,7 @@ impl VM {
             self.stack.push(Value::BigInt(bi));
             return 1;
         }
-        self.print_error("oct argument must be string");
+        self.print_error("unoct argument must be string");
         0
     }
 

@@ -457,8 +457,10 @@ string ends in a newline:
 associated with that input.  `ord` takes a character and returns the
 integer or bigint associated with that character.
 
-`hex` takes a number as a hexadecimal string and returns the number as
-an integer or bigint.  `oct` does the same for octal strings.
+`hex` takes an integer or bigint and returns the number as a
+hexadecimal string, with `unhex` performing the reverse operation.
+`oct` and `unoct` work in the same way, but for octal strings.  `hex`
+also supports conversion of a byte list into a hexadecimal string.
 
 `lc` takes a string, converts all characters to lowercase, and returns
 the updated string.  `lcfirst` takes a string, converts the first
@@ -1232,7 +1234,8 @@ number of seconds.
 
 `md5`, `sha1`, `sha256` and `sha512` each take a single string
 argument and return the corresponding cryptographic hash for that
-input.
+input as a list of bytes.  (See `hex` for conversion of that output
+into a hexadecimal string.)
 
 `range` takes an integer and returns a generator over the integers
 from zero to that integer, minus one.

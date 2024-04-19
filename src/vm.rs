@@ -233,7 +233,9 @@ lazy_static! {
         map.insert("chr", VM::core_chr as fn(&mut VM) -> i32);
         map.insert("ord", VM::core_ord as fn(&mut VM) -> i32);
         map.insert("hex", VM::core_hex as fn(&mut VM) -> i32);
+        map.insert("unhex", VM::core_unhex as fn(&mut VM) -> i32);
         map.insert("oct", VM::core_oct as fn(&mut VM) -> i32);
+        map.insert("unoct", VM::core_unoct as fn(&mut VM) -> i32);
         map.insert("lc", VM::core_lc as fn(&mut VM) -> i32);
         map.insert("lcfirst", VM::core_lcfirst as fn(&mut VM) -> i32);
         map.insert("uc", VM::core_uc as fn(&mut VM) -> i32);

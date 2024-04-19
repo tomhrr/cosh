@@ -1072,15 +1072,18 @@ fn ord_test() {
 
 #[test]
 fn hex_test() {
-    basic_test("5353 hex;", "21331");
-    basic_test("0x5353 hex;", "21331");
-    basic_test("0x5353535353535353 hex;", "6004234345560363859");
-    basic_error_test("asdf hex;", "1:6: hex argument must be hexadecimal string");
+    basic_test("5353 unhex;", "21331");
+    basic_test("5353 unhex; hex;", "5353");
+    basic_test("5353 unhex; hex; unhex", "21331");
+    basic_test("0x5353 unhex;", "21331");
+    basic_test("0x5353535353535353 unhex;", "6004234345560363859");
+    basic_error_test("asdf unhex;", "1:6: unhex argument must be hexadecimal string");
 }
 
 #[test]
 fn oct_test() {
-    basic_test("777 oct;", "511");
+    basic_test("777 unoct;", "511");
+    basic_test("777 unoct; oct;", "777");
 }
 
 #[test]
@@ -1165,7 +1168,7 @@ fn exists_test() {
 #[test]
 fn chmod_test() {
     basic_test(
-        "() asdf f>; asdf 700 oct; chmod; {stat -f '%p' asdf}; shift; chomp; 700 m; asdf rm",
+        "() asdf f>; asdf 700 unoct; chmod; {stat -f '%p' asdf}; shift; chomp; 700 m; asdf rm",
         ".t",
     );
 }
@@ -1174,7 +1177,7 @@ fn chmod_test() {
 #[test]
 fn chmod_test() {
     basic_test(
-        "() asdf f>; asdf 700 oct; chmod; {stat -c '%a' asdf}; shift; chomp; 700 m; asdf rm",
+        "() asdf f>; asdf 700 unoct; chmod; {stat -c '%a' asdf}; shift; chomp; 700 m; asdf rm",
         ".t",
     );
 }
@@ -1866,4 +1869,12 @@ fn file_predicate_test() {
 tempdir; td var; td !; file touch; file td @; link; td @; /file ++; is-link;
 td @; ls; rm for; td @; rmdir; file rm;
 ", ".t");
+}
+
+#[test]
+fn digest_test() {
+    basic_test("password md5; hex", "5f4dcc3b5aa765d61d8327deb882cf99");
+    basic_test("password sha1; hex", "5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8");
+    basic_test("password sha256; hex", "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8");
+    basic_test("password sha512; hex", "b109f3bbbc244eb82441917ed06d618b9008dd09b3befd1b5e07394c706a8bb980b1d7785e5976ec049b46df5f1326af5a2ea6d103fd07c95385ffab0cacbc86");
 }

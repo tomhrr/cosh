@@ -1521,6 +1521,12 @@ be switched using `toggle-mode`:
 All conversions to string (e.g. `str`, `readline`, `f<`) will replace
 invalid UTF-8 sequences with `U+FFFD REPLACEMENT CHARACTER`.
 
+For using as a shell within Vim, the following configuration options
+should help:
+
+    set shellcmdflag=-e
+    set noshelltemp
+
 #### Caveats and pitfalls
 
 Opening a file and using regular expression matching to find a

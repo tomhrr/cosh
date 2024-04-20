@@ -100,6 +100,14 @@ Scripts may accept command-line arguments:
     user@host:/$ cosh script.ch 1 1
     2
 
+To source a script (run the script within the existing context):
+
+    user@host:/$ cat test.ch
+    1 +;
+    user@host:/$ cosh
+    $ 1 test.ch source;
+    2
+
 ### Core
 
 #### Types

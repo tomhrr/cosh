@@ -24,7 +24,9 @@ use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
 use nix::{sys::signal::Signal,
-          sys::wait::waitpid};
+          sys::wait::waitpid,
+          sys::wait::WaitPidFlag,
+          sys::wait::WaitStatus};
 use nonblock::NonBlockingReader;
 use num::FromPrimitive;
 use num::ToPrimitive;
@@ -703,12 +705,18 @@ impl Drop for CommandGenerator {
     fn drop(&mut self) {
         match self.pid {
             Some(p) => {
-                let res = nix::sys::signal::kill(p, Signal::SIGTERM);
+                let res = waitpid(p, Some(WaitPidFlag::WNOHANG));
                 match res {
-                    Ok(_) => {}
-                    Err(e) => {
-                        eprintln!("unable to kill process: {}", e);
+                    Ok(WaitStatus::StillAlive) => {
+                        let res = nix::sys::signal::kill(p, Signal::SIGTERM);
+                        match res {
+                            Ok(_) => {}
+                            Err(e) => {
+                                eprintln!("unable to kill process: {}", e);
+                            }
+                        }
                     }
+                    _ => {}
                 }
                 waitpid(p, None);
             }
@@ -716,12 +724,18 @@ impl Drop for CommandGenerator {
         }
         match self.pid2 {
             Some(p) => {
-                let res = nix::sys::signal::kill(p, Signal::SIGTERM);
+                let res = waitpid(p, Some(WaitPidFlag::WNOHANG));
                 match res {
-                    Ok(_) => {}
-                    Err(e) => {
-                        eprintln!("unable to kill process: {}", e);
+                    Ok(WaitStatus::StillAlive) => {
+                        let res = nix::sys::signal::kill(p, Signal::SIGTERM);
+                        match res {
+                            Ok(_) => {}
+                            Err(e) => {
+                                eprintln!("unable to kill process: {}", e);
+                            }
+                        }
                     }
+                    _ => {}
                 }
                 waitpid(p, None);
             }
@@ -735,13 +749,18 @@ impl Drop for ChannelGenerator {
     #[allow(unused_must_use)]
     fn drop(&mut self) {
         let p = self.pid;
-        let res = nix::sys::signal::kill(p, Signal::SIGTERM);
+        let res = waitpid(p, Some(WaitPidFlag::WNOHANG));
         match res {
-            Ok(_) => {}
-            Err(nix::errno::Errno::ESRCH) => {}
-            Err(e) => {
-                eprintln!("unable to kill process: {}", e);
+            Ok(WaitStatus::StillAlive) => {
+                let res = nix::sys::signal::kill(p, Signal::SIGTERM);
+                match res {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("unable to kill process: {}", e);
+                    }
+                }
             }
+            _ => {}
         }
         waitpid(p, None);
     }

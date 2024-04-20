@@ -380,7 +380,8 @@ fn main() {
                     if line.is_empty() {
                         continue;
                     }
-                    if line.starts_with(' ') {
+                    let starts_with_space = line.starts_with(' ');
+                    if starts_with_space {
                         line = "$".to_owned() + &line;
                     }
                     if line.ends_with("; sudo") || line.ends_with("; sudo;") {
@@ -430,6 +431,9 @@ fn main() {
                             }
                         }
                         None => {}
+                    }
+                    if starts_with_space && !vm.stack.is_empty() {
+                        vm.stack.pop().unwrap();
                     }
 
                     match timing {

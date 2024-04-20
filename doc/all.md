@@ -1284,8 +1284,11 @@ It's also possible to treat a string as an external call:
     $ ls exec
     bin     eg      LICENSE     ...
 
-A form wrapped in braces operates in the same way, except that
-the result is a generator:
+For `exec`, the exit status for the command will be placed on the
+stack after completion.
+
+A form wrapped in braces is handled similarly, except that the result
+is a generator:
 
     $ {ls}; take-all;
     (
@@ -1301,6 +1304,10 @@ generator output:
         "bin\n"
         ...
     )
+
+For braces and `cmd`, the exit status can be got by calling `status`
+with the resulting generator as its single argument.  `status` will
+also kill any associated processes, if they are still running.
 
 Values can be substituted into external program calls, either by
 popping values from the stack, or by indexing into the stack (0 is the

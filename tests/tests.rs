@@ -594,7 +594,7 @@ fn xml_test() {
 
 #[test]
 fn external_command_test() {
-    basic_test("$ls tests", "tests.rs");
+    basic_test("$ls tests", "tests.rs\n0");
 }
 
 #[test]
@@ -1422,7 +1422,7 @@ fn newline_command_test() {
 #[test]
 fn exec_test() {
     basic_test(
-        "'ls doc/all.md' exec",
+        "'ls doc/all.md' exec; drop",
         "doc/all.md"
     );
 }

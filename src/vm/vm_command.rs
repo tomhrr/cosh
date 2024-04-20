@@ -271,8 +271,17 @@ impl VM {
                     let res = process.wait();
                     match res {
                         Ok(es) => {
-                            if !es.success() {
-                                break;
+                            let code = es.code();
+                            match code {
+                                Some(n) => {
+                                    self.stack.push(Value::Int(n));
+                                    return 1;
+                                }
+                                _ => {
+                                    let err_str = format!("command execution failed");
+                                    self.print_error(&err_str);
+                                    return 0;
+                                }
                             }
                         }
                         Err(e) => {
@@ -419,6 +428,28 @@ impl VM {
             }
         }
         1
+    }
+
+    /// Takes a command generator as its single argument, and returns
+    /// the exit status, terminating the process if required.
+    pub fn core_status(&mut self) -> i32 {
+        if self.stack.len() < 1 {
+            self.print_error("status requires one argument");
+            return 0;
+        }
+
+        let mut cg_rr = self.stack.pop().unwrap();
+        match cg_rr {
+            Value::CommandGenerator(ref mut cg) => {
+                cg.borrow_mut().cleanup();
+                self.stack.push(cg.borrow().status());
+                return 1;
+            }
+            _ => {
+                self.print_error("status argument must be command generator");
+                return 0;
+            }
+        }
     }
 
     /// Takes a string as its single argument, and runs the string as

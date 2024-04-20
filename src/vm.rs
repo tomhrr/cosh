@@ -285,6 +285,7 @@ lazy_static! {
         map.insert("exit", VM::core_exit as fn(&mut VM) -> i32);
         map.insert(".ss", VM::core_printstacksingle as fn(&mut VM) -> i32);
         map.insert("jobs", VM::core_jobs as fn(&mut VM) -> i32);
+        map.insert("status", VM::core_status as fn(&mut VM) -> i32);
         map
     };
 
@@ -1131,6 +1132,8 @@ impl VM {
                 let i2 = self.core_command_uncaptured(&s);
                 if i2 == 0 {
                     return false;
+                } else if !self.stack.is_empty() {
+                    self.stack.pop().unwrap();
                 }
             }
             Value::CoreFunction(cf) => {

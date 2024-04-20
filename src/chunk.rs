@@ -517,6 +517,8 @@ pub struct CommandGenerator {
     get_stderr: bool,
     pub get_combined: bool,
     pub get_bytes: bool,
+    pub status: Option<i32>,
+    dropped: bool,
 }
 
 impl CommandGenerator {
@@ -543,6 +545,8 @@ impl CommandGenerator {
             get_stderr,
             get_combined,
             get_bytes,
+            status: None,
+            dropped: false
         }
     }
 
@@ -697,16 +701,28 @@ impl CommandGenerator {
             }
         }
     }
-}
 
-impl Drop for CommandGenerator {
-    /// Kill the associated processes when this is dropped.
+    pub fn status(&self) -> Value {
+        match self.status {
+            Some(n) => { Value::Int(n) }
+            _       => { Value::Null   }
+        }
+    }
+
+    /// Clean up the associated processes and store the exit code.
     #[allow(unused_must_use)]
-    fn drop(&mut self) {
+    pub fn cleanup(&mut self) {
+        eprintln!("cleanup");
+        if self.dropped {
+            return;
+        }
         match self.pid {
             Some(p) => {
                 let res = waitpid(p, Some(WaitPidFlag::WNOHANG));
                 match res {
+                    Ok(WaitStatus::Exited(_, n)) => {
+                        self.status = Some(n);
+                    }
                     Ok(WaitStatus::StillAlive) => {
                         let res = nix::sys::signal::kill(p, Signal::SIGTERM);
                         match res {
@@ -718,7 +734,15 @@ impl Drop for CommandGenerator {
                     }
                     _ => {}
                 }
-                waitpid(p, None);
+                if self.status.is_none() {
+                    let es_res = waitpid(p, None);
+                    match es_res {
+                        Ok(WaitStatus::Exited(_, n)) => {
+                            self.status = Some(n);
+                        }
+                        _ => {}
+                    }
+                }
             }
             _ => {}
         }
@@ -741,6 +765,13 @@ impl Drop for CommandGenerator {
             }
             _ => {}
         }
+        self.dropped = true;
+    }
+}
+
+impl Drop for CommandGenerator {
+    fn drop(&mut self) {
+        self.cleanup();
     }
 }
 

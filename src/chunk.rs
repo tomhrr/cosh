@@ -712,7 +712,6 @@ impl CommandGenerator {
     /// Clean up the associated processes and store the exit code.
     #[allow(unused_must_use)]
     pub fn cleanup(&mut self) {
-        eprintln!("cleanup");
         if self.dropped {
             return;
         }

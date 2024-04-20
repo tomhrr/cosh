@@ -594,7 +594,7 @@ fn xml_test() {
 
 #[test]
 fn external_command_test() {
-    basic_test("$ls tests", "tests.rs\n0");
+    basic_test("$ls tests", "tests.rs");
 }
 
 #[test]
@@ -1884,4 +1884,10 @@ fn jobs_test() {
     basic_test("{sleep 2}; n var; n !; jobs; 0.complete get; jobs; 0.pid get; term kill", ".f");
     basic_test("{sleep 2}; n var; n !; jobs; len; 1 =; 3 sleep; jobs; len; 1 =; jobs; len; 0 =; and; and;", ".t");
     basic_test("(1 2) [2 sleep] 2 pmapn; n var; n !; jobs; len; 1 =; 3 sleep; jobs; len; 1 =; jobs; len; 0 =; and; and;", ".t");
+}
+
+#[test]
+fn status_test() {
+    basic_test("{ls}; dup; r; drop; 0.1 sleep; status", "0");
+    basic_test("{ls zzzzzzz}; dup; r; drop; 0.1 sleep; status", "2");
 }

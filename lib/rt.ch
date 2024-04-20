@@ -979,37 +979,37 @@
     ,,
 
 # Common commands and aliases.
-: vim depth; 0 =; if; vim exec; else; "vim {}" exec; then; ,,
-: ssh "ssh {}" fmt; exec; ,,
-: scp swap; "scp {} {}" fmt; exec; ,,
+: vim depth; 0 =; if; vim exec; else; "vim {}" exec; drop; then; ,,
+: ssh "ssh {}" fmt; exec; drop; ,,
+: scp swap; "scp {} {}" fmt; exec; drop; ,,
 
-: git.clone      "git clone {}"     fmt; exec; ,,
-: git.add        "git add {}"       fmt; exec; ,,
-: git.mv swap;   "git mv {} {}"     fmt; exec; ,,
-: git.rm         "git rm {}"        fmt; exec; ,,
-: git.diff swap; "git diff {} {}"   fmt; exec; ,,
-: git.log        "git log {}"       fmt; exec; ,,
-: git.show       "git show {}"      fmt; exec; ,,
-: git.status     "git status {}"    fmt; exec; ,,
-: git.commit     "git commit -m {}" fmt; exec; ,,
+: git.clone      "git clone {}"     fmt; exec; drop; ,,
+: git.add        "git add {}"       fmt; exec; drop; ,,
+: git.mv swap;   "git mv {} {}"     fmt; exec; drop; ,,
+: git.rm         "git rm {}"        fmt; exec; drop; ,,
+: git.diff swap; "git diff {} {}"   fmt; exec; drop; ,,
+: git.log        "git log {}"       fmt; exec; drop; ,,
+: git.show       "git show {}"      fmt; exec; drop; ,,
+: git.status     "git status {}"    fmt; exec; drop; ,,
+: git.commit     "git commit -m {}" fmt; exec; drop; ,,
 
 : git.checkout
     depth; 0 =; if;
-        "git checkout ." exec;
+        "git checkout ." exec; drop;
     else;
-        "git checkout {}" fmt; exec;
+        "git checkout {}" fmt; exec; drop;
     then; ,,
 
 : git.init
     depth; 0 =; if;
-        "git init ." exec;
+        "git init ." exec; drop;
     else;
-        "git init {}" fmt; exec;
+        "git init {}" fmt; exec; drop;
     then; ,,
 
-: zathura     "zathura {}"     fmt; exec; ,,
-: libreoffice "libreoffice {}" fmt; exec; ,,
-: nano        "nano {}"        fmt; exec; ,,
+: zathura     "zathura {}"     fmt; exec; drop; ,,
+: libreoffice "libreoffice {}" fmt; exec; drop; ,,
+: nano        "nano {}"        fmt; exec; drop; ,,
 
 : gr {grep -ri "{}" .}; [chomp; "(.*?):(.*)" c; (1 2) get] map; ,,
 
@@ -1045,4 +1045,4 @@
     then;
     /cosh/ ++;
     lib @; ++;
-    dup; "mkdir -p {}" exec; ,,
+    dup; "mkdir -p {}" exec; drop; ,,

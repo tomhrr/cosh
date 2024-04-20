@@ -286,6 +286,7 @@ lazy_static! {
         map.insert(".ss", VM::core_printstacksingle as fn(&mut VM) -> i32);
         map.insert("jobs", VM::core_jobs as fn(&mut VM) -> i32);
         map.insert("status", VM::core_status as fn(&mut VM) -> i32);
+        map.insert("source", VM::core_source as fn(&mut VM) -> i32);
         map
     };
 
@@ -529,9 +530,9 @@ impl VM {
 
         let mut lst = VecDeque::new();
         for (pid_int, cmd) in &self.child_processes {
-	    let pid = sysinfo::Pid::from(*pid_int as usize);
-	    let mut res = sys.refresh_process(pid);
-	    if res {
+            let pid = sysinfo::Pid::from(*pid_int as usize);
+            let mut res = sys.refresh_process(pid);
+            if res {
                 let pid = sysinfo::Pid::from(*pid_int as usize);
                 let process = sys.process(pid).unwrap();
                 /* Zombie processes are currently reaped by Drop
@@ -719,6 +720,66 @@ impl VM {
             }
             _ => {
                 self.print_error("import argument must be a string");
+                return 0;
+            }
+        }
+        1
+    }
+
+    /// Run the specified file within the current context.
+    pub fn core_source(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("source requires one argument");
+            return 0;
+        }
+
+        let path_rr = self.stack.pop().unwrap();
+        let path_str_opt: Option<&str>;
+        to_str!(path_rr, path_str_opt);
+
+        match path_str_opt {
+            Some(s) => {
+                let path = s;
+
+                let mut compiler = Compiler::new();
+                let import_chunk_opt = compiler.deserialise(&path);
+                match import_chunk_opt {
+                    Some(import_chunk) => {
+                        for (k, v) in import_chunk.functions.iter() {
+                            if !k.starts_with("anon") {
+                                self.global_functions.insert(k.clone(), v.clone());
+                            }
+                        }
+                        /* The main reason for running the chunk is so
+                         * that global variables are introduced. */
+                        self.run(Rc::new(RefCell::new(import_chunk)));
+                    }
+                    None => {
+                        let file_res = std::fs::File::open(path);
+                        match file_res {
+                            Ok(file) => {
+                                let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
+                                let mut compiler = Compiler::new();
+                                let chunk_opt = compiler.compile(&mut bufread, path);
+                                if chunk_opt.is_none() {
+                                    return 0;
+                                }
+                                let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
+                                let print_stack = self.print_stack;
+                                self.print_stack = false;
+                                self.run(chunk.clone());
+                                self.print_stack = print_stack;
+                            }
+                            Err(_) => {
+                                self.print_error("unable to open source path");
+                                return 0;
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {
+                self.print_error("source argument must be a string");
                 return 0;
             }
         }
@@ -1238,6 +1299,10 @@ impl VM {
                             eprintln!("  > Has constant integer at that index: {}", n);
                         }
                         let len = self.stack.len();
+                        if len == 0 {
+                            self.print_error("+ requires two arguments");
+                            return 0;
+                        }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
                             if self.debug {
@@ -1290,6 +1355,10 @@ impl VM {
                             eprintln!("  > Has constant integer at that index: {}", n);
                         }
                         let len = self.stack.len();
+                        if len == 0 {
+                            self.print_error("- requires two arguments");
+                            return 0;
+                        }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
                             if self.debug {
@@ -1342,6 +1411,10 @@ impl VM {
                             eprintln!("  > Has constant integer at that index: {}", n);
                         }
                         let len = self.stack.len();
+                        if len == 0 {
+                            self.print_error("* requires two arguments");
+                            return 0;
+                        }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
                             if self.debug {
@@ -1394,6 +1467,10 @@ impl VM {
                             eprintln!("  > Has constant integer at that index: {}", n);
                         }
                         let len = self.stack.len();
+                        if len == 0 {
+                            self.print_error("/ requires two arguments");
+                            return 0;
+                        }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
                             if self.debug {
@@ -1445,6 +1522,10 @@ impl VM {
                     }
 
                     let len = self.stack.len();
+                    if len == 0 {
+                        self.print_error("= requires two arguments");
+                        return 0;
+                    }
                     let v1_rr = self.stack.get_mut(len - 1).unwrap();
                     let mut done = false;
                     if let Value::Int(ref n1) = v1_rr {

@@ -1891,3 +1891,8 @@ fn status_test() {
     basic_test("{ls}; dup; r; drop; 0.1 sleep; status", "0");
     basic_test("{ls zzzzzzz}; dup; r; drop; 0.1 sleep; status", "2");
 }
+
+#[test]
+fn source_test() {
+    basic_test(": plus +; ,, 1 test-data/s1.ch source; test-data/s1.ch source; 1 plus;", "4");
+}

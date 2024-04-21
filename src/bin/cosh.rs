@@ -76,7 +76,17 @@ fn import_cosh_conf(vm: &mut VM, global_functions: Rc<RefCell<HashMap<String, Rc
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let program = args[0].clone();
+    let mut program = args[0].clone();
+    let mut program_done = false;
+    let md_opt = fs::metadata(&program);
+    if let Ok(md) = md_opt {
+        if md.is_file() {
+            program_done = true;
+        }
+    }
+    if !program_done {
+        program = format!("/proc/{}/exe", std::process::id());
+    }
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");

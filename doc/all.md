@@ -1469,12 +1469,11 @@ Utility functions for initialising `ssh-agent`.
 Comments can be added by prefixing the comment line with `#`.
 
 The `clone` form can be used to get a deep copy of certain types of
-values: lists, hashes, sets, user-defined generator objects, and the
-generators returned by the `keys`, `values`, and `each` calls.  For
-all other value types, `clone` has the same effect as `dup`: this is
-fine in most cases, but it's important to be aware that `dup` for
-file/directory/socket read/write generators is a shallow copy, and
-reads/writes against one value will affect cloned values as well.
+values: lists, hashes, sets, and the generators returned by the
+`keys`, `values`, and `each` calls.  For all other value types,
+`clone` has the same effect as `dup`: this is fine in most cases, but
+it's important to be aware that `shift` on a shallow copy of a
+generator affects the original generator value as well.
 
 `@@` works in the same way as `@`, except that it also `clone`s the
 variable's value.  In conjunction with reification (via `r`), this can

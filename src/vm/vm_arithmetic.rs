@@ -140,8 +140,11 @@ impl VM {
         if let (Value::Int(n1), Value::Int(ref mut n2)) =
             (&v1_rr, self.stack.get_mut(len - 2).unwrap())
         {
-            *n2 += n1;
-            done = true;
+            let v3 = add_ints(*n1, *n2);
+            if let Value::Int(n3) = v3 {
+                *n2 = n3;
+                done = true;
+            }
         }
 
         if !done {
@@ -221,8 +224,11 @@ impl VM {
         if let (Value::Int(n1), Value::Int(ref mut n2)) =
             (&v1_rr, self.stack.get_mut(len - 2).unwrap())
         {
-            *n2 -= n1;
-            done = true;
+            let v3 = subtract_ints(*n1, *n2);
+            if let Value::Int(n3) = v3 {
+                *n2 = n3;
+                done = true;
+            }
         }
 
         if !done {
@@ -303,8 +309,11 @@ impl VM {
         if let (Value::Int(n1), Value::Int(ref mut n2)) =
             (&v1_rr, self.stack.get_mut(len - 2).unwrap())
         {
-            *n2 *= n1;
-            done = true;
+            let v3 = multiply_ints(*n1, *n2);
+            if let Value::Int(n3) = v3 {
+                *n2 = n3;
+                done = true;
+            }
         }
 
         if !done {
@@ -381,8 +390,11 @@ impl VM {
         if let (Value::Int(n1), Value::Int(ref mut n2)) =
             (&v1_rr, self.stack.get_mut(len - 2).unwrap())
         {
-            *n2 /= n1;
-            done = true;
+            let v3 = divide_ints(*n1, *n2);
+            if let Value::Int(n3) = v3 {
+                *n2 = n3;
+                done = true;
+            }
         }
 
         if !done {
@@ -448,8 +460,11 @@ impl VM {
         if let (Value::Int(n1), Value::Int(ref mut n2)) =
             (&v1_rr, self.stack.get_mut(len - 2).unwrap())
         {
-            *n2 %= n1;
-            done = true;
+            let v3 = remainder_ints(*n1, *n2);
+            if let Value::Int(n3) = v3 {
+                *n2 = n3;
+                done = true;
+            }
         }
 
         if !done {

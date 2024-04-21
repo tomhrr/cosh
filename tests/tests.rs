@@ -1896,3 +1896,10 @@ fn status_test() {
 fn source_test() {
     basic_test(": plus +; ,, 1 test-data/s1.ch source; test-data/s1.ch source; 1 plus;", "4");
 }
+
+#[test]
+fn overflow_test() {
+    basic_test("70000 range; sum;", "2449965000");
+    basic_test("70000 range; 0 - foldl;", "-2449965000");
+    basic_test("20 range; dup; shift; drop; product;", "121645100408832000");
+}

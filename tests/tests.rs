@@ -2007,3 +2007,49 @@ drop;
         }
     }
 }
+
+#[test]
+fn sqlite_basic_test() {
+    basic_test("
+tempdir; td var; td !;
+td @; /sqlite-db ++; dup; touch; dbf var; dbf !;
+dbf @; sqlite db.conn; dbc var; dbc !;
+: runp dbc @; swap; db.prep; () db.exec; ,,
+'CREATE TABLE test (id integer PRIMARY KEY)' runp; drop;
+'INSERT INTO test (id) VALUES (1)' runp; drop;
+'SELECT * FROM test' runp;
+shift; id get; 1 =;
+", ".t");
+}
+
+#[test]
+fn sqlite_fields_test() {
+    basic_test("
+tempdir; td var; td !;
+td @; /sqlite-db ++; dup; touch; dbf var; dbf !;
+dbf @; sqlite db.conn; dbc var; dbc !;
+: runp dbc @; swap; db.prep; () db.exec; ,,
+'CREATE TABLE test (
+    id integer PRIMARY KEY,
+    fld1 text,
+    fld2 blob,
+    fld3 real,
+    fld4 numeric
+)' runp; drop;
+'INSERT INTO test (
+    id,
+    fld1,
+    fld2,
+    fld3,
+    fld4
+) VALUES (
+    1,
+    \"asdf\",
+    \"qwer\",
+    1.0,
+    50
+)' runp; drop;
+'SELECT * FROM test' runp; drop;
+.t
+", ".t");
+}

@@ -361,7 +361,7 @@ impl VM {
                             updated_str.push('{');
                             escaping = false;
                         } else if in_substitution {
-                            self.print_error("1 fmt string contains invalid element reference");
+                            self.print_error("fmt string contains invalid element reference");
                             return 0;
                         } else {
                             in_substitution = true;
@@ -371,7 +371,7 @@ impl VM {
                             updated_str.push('}');
                             escaping = false;
                         } else if !in_substitution {
-                            self.print_error("2 fmt string contains invalid element reference");
+                            self.print_error("fmt string contains invalid element reference");
                             return 0;
                         } else {
                             in_substitution = false;
@@ -399,7 +399,7 @@ impl VM {
                                                             updated_str.push_str(capture_el_str);
                                                         }
                                                         _ => {
-                                                            self.print_error("fmt string is not able to be parsed");
+                                                            self.print_error("fmt string argument cannot be convered to string");
                                                             return 0;
                                                         }
                                                     }
@@ -426,7 +426,7 @@ impl VM {
                                             updated_str.push_str(s);
                                         }
                                         _ => {
-                                            self.print_error("fmt string is not able to be parsed");
+                                            self.print_error("fmt string argument cannot be convered to string");
                                             return 0;
                                         }
                                     }

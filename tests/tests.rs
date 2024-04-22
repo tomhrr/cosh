@@ -1909,6 +1909,7 @@ fn overflow_test() {
 fn postgres_basic_test() {
     match env::var("COSH_TEST_POSTGRES") {
         Ok(_) => {
+            eprintln!("Postgres tests enabled (postgres_basic_test).");
             basic_test("
 postgres password postgres COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
@@ -1922,7 +1923,9 @@ postgres password test_basic 127.0.0.1 postgresql db.conn; dbc varm; dbc !;
 shift; id get; 1 =;
 ", ".t");
         }
-        _ => {}
+        _ => {
+            eprintln!("Postgres tests disabled (postgres_basic_test).");
+        }
     }
 }
 
@@ -1930,6 +1933,7 @@ shift; id get; 1 =;
 fn postgres_fields_test() {
     match env::var("COSH_TEST_POSTGRES") {
         Ok(_) => {
+            eprintln!("Postgres tests enabled (postgres_fields_test).");
             basic_test("
 postgres password postgres COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
@@ -1998,6 +2002,8 @@ drop;
 .t
 ", ".t");
         }
-        _ => {}
+        _ => {
+            eprintln!("Postgres tests disabled (postgres_fields_test).");
+        }
     }
 }

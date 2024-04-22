@@ -29,7 +29,7 @@ target/release/cosh:
 	libdir=$(libdir) cargo build --release
 
 test:
-	cargo test --release
+	cargo test --release -- --nocapture
 
 install: rt.chc
 	$(INSTALL) -D -m 755 target/release/cosh $(bindir)/cosh

@@ -2060,12 +2060,12 @@ fn mysql_basic_test() {
         Ok(_) => {
             eprintln!("MySQL tests enabled (mysql_basic_test).");
             basic_test("
-root password mysql COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+root root mysql COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
 'DROP DATABASE IF EXISTS test_basic' runp; drop;
 'CREATE DATABASE test_basic' runp; drop;
 null dbc !;
-root password test_basic COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+root root test_basic COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
 'CREATE TABLE test (id integer PRIMARY KEY)' runp; drop;
 'INSERT INTO test (id) VALUES (1)' runp; drop;
 'SELECT * FROM test' runp;
@@ -2084,12 +2084,12 @@ fn mysql_fields_test() {
         Ok(_) => {
             eprintln!("MySQL tests enabled (mysql_fields_test).");
             basic_test("
-root password mysql COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+root root mysql COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
 'DROP DATABASE IF EXISTS test_fields' runp; drop;
 'CREATE DATABASE test_fields' runp; drop;
 null dbc !;
-root password test_fields COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+root root test_fields COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
 'CREATE TABLE test (
     id integer PRIMARY KEY,
     fld1 integer,

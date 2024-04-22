@@ -1176,16 +1176,13 @@ and `str` is defined for both IP objects and IP sets.
    time it took to receive the response.  The generator will return
    results as they are received.
 
- - `dig`: takes a DNS record type and a DNS name, and returns the DNS
+ - `dns`: takes a DNS name and a record type, and returns the DNS
    response for that query.  The result from the call is a hash,
-   including separate entries for the header, question, answer, and
-   authority sections from the DNS response.
- - `dig/t`: like `dig +trace`, so the result from the call is a
-   generator over a series of hashes, where each hash contains the
-   answer from the next level of the hierarchy, starting at the root.
- - `digat`: takes a DNS record type, a DNS name, and a nameserver IP
-   address or hostname.  Queries the nameserver and returns a response
-   with the same format as `dig`.
+   including separate entries for the header, question, answer,
+   authority, and additional sections from the DNS response.
+ - `dnsat`: takes a nameserver IP address, a DNS name, and a DNS
+   record type.  Queries the nameserver and returns a response
+   with the same format as `dns`.
 
  - `socket`: takes a server name/address and a port, and returns
    socket reader and socket writer objects.

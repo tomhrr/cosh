@@ -17,6 +17,7 @@ use std::sync::Arc;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
+use resolv_conf::ScopedIp;
 use sysinfo::{System, Users};
 
 use crate::chunk::{print_error, new_string_value, Chunk, GeneratorObject,
@@ -31,6 +32,7 @@ mod vm_command;
 mod vm_datetime;
 mod vm_db;
 mod vm_digest;
+mod vm_dns;
 mod vm_env;
 mod vm_hash;
 mod vm_http;
@@ -100,7 +102,9 @@ pub struct VM {
     /// The library directory.
     libdir: &'static str,
     /// Child process details.
-    child_processes: IndexMap<u32, String>
+    child_processes: IndexMap<u32, String>,
+    /// Local nameserver addresses.
+    dns_servers: Vec<ScopedIp>
 }
 
 lazy_static! {
@@ -287,6 +291,8 @@ lazy_static! {
         map.insert("jobs", VM::core_jobs as fn(&mut VM) -> i32);
         map.insert("status", VM::core_status as fn(&mut VM) -> i32);
         map.insert("source", VM::core_source as fn(&mut VM) -> i32);
+        map.insert("dnsat", VM::core_dnsat as fn(&mut VM) -> i32);
+        map.insert("dns", VM::core_dns as fn(&mut VM) -> i32);
         map
     };
 
@@ -409,6 +415,9 @@ impl VM {
         libdir: &'static str
     ) -> VM {
         let ltz = iana_time_zone::get_timezone().unwrap();
+	let contents = std::fs::read_to_string("/etc/resolv.conf").expect("Failed to open resolv.conf");
+	let config = resolv_conf::Config::parse(&contents).unwrap();
+
         VM {
             debug,
             stack: Vec::new(),
@@ -430,6 +439,7 @@ impl VM {
             readline: None,
             libdir,
             child_processes: IndexMap::new(),
+            dns_servers: config.nameservers
         }
     }
 

@@ -60,3 +60,5 @@ mime = "0.3.17"
 http = "1.1.0"
 url = "2.5.0"
 cpu-time = "1.0.0"
+hickory-client = { version = "0.24.1", features = [ "dnssec" ] }
+resolv-conf = "0.7.0"

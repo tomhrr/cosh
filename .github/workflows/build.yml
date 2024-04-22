@@ -3,6 +3,21 @@ on: push
 jobs:
   build:
     runs-on: ubuntu-20.04
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - uses: actions/checkout@v1
       - run: sudo apt-get update && sudo apt-get install build-essential gcc rustc cargo dc && make && make test
+        env:
+          COSH_TEST_POSTGRES: 1
+          COSH_TEST_POSTGRES_HOST: postgres

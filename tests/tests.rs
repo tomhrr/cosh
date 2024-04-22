@@ -1910,7 +1910,7 @@ fn postgres_basic_test() {
     match env::var("COSH_TEST_POSTGRES") {
         Ok(_) => {
             basic_test("
-postgres password postgres 127.0.0.1 postgresql db.conn; dbc varm; dbc !;
+postgres password postgres COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
 'DROP DATABASE IF EXISTS test_basic' runp; drop;
 'CREATE DATABASE test_basic' runp; drop;
@@ -1931,7 +1931,7 @@ fn postgres_fields_test() {
     match env::var("COSH_TEST_POSTGRES") {
         Ok(_) => {
             basic_test("
-postgres password postgres 127.0.0.1 postgresql db.conn; dbc varm; dbc !;
+postgres password postgres COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
 'DROP DATABASE IF EXISTS test_fields' runp; drop;
 'CREATE DATABASE test_fields' runp; drop;

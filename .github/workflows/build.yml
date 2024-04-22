@@ -20,4 +20,4 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install build-essential gcc rustc cargo dc && make && make test
         env:
           COSH_TEST_POSTGRES: 1
-          COSH_TEST_POSTGRES_HOST: postgres
+          COSH_TEST_POSTGRES_HOST: localhost

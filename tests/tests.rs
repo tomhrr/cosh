@@ -1916,7 +1916,7 @@ postgres password postgres COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; d
 'DROP DATABASE IF EXISTS test_basic' runp; drop;
 'CREATE DATABASE test_basic' runp; drop;
 null dbc !;
-postgres password test_basic 127.0.0.1 postgresql db.conn; dbc varm; dbc !;
+postgres password test_basic COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
 'CREATE TABLE test (id integer PRIMARY KEY)' runp; drop;
 'INSERT INTO test (id) VALUES (1)' runp; drop;
 'SELECT * FROM test' runp;
@@ -1940,7 +1940,7 @@ postgres password postgres COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; d
 'DROP DATABASE IF EXISTS test_fields' runp; drop;
 'CREATE DATABASE test_fields' runp; drop;
 null dbc !;
-postgres password test_fields 127.0.0.1 postgresql db.conn; dbc varm; dbc !;
+postgres password test_fields COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
 'CREATE TABLE test (
     id integer PRIMARY KEY,
     fld1 bigint,
@@ -2052,4 +2052,116 @@ dbf @; sqlite db.conn; dbc var; dbc !;
 'SELECT * FROM test' runp; drop;
 .t
 ", ".t");
+}
+
+#[test]
+fn mysql_basic_test() {
+    match env::var("COSH_TEST_MYSQL") {
+        Ok(_) => {
+            eprintln!("MySQL tests enabled (mysql_basic_test).");
+            basic_test("
+root password mysql COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+: runp dbc @; swap; db.prep; () db.exec; ,,
+'DROP DATABASE IF EXISTS test_basic' runp; drop;
+'CREATE DATABASE test_basic' runp; drop;
+null dbc !;
+root password test_basic COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+'CREATE TABLE test (id integer PRIMARY KEY)' runp; drop;
+'INSERT INTO test (id) VALUES (1)' runp; drop;
+'SELECT * FROM test' runp;
+shift; id get; 1 =;
+", ".t");
+        }
+        _ => {
+            eprintln!("MySQL tests disabled (mysql_basic_test).");
+        }
+    }
+}
+
+#[test]
+fn mysql_fields_test() {
+    match env::var("COSH_TEST_MYSQL") {
+        Ok(_) => {
+            eprintln!("MySQL tests enabled (mysql_fields_test).");
+            basic_test("
+root password mysql COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+: runp dbc @; swap; db.prep; () db.exec; ,,
+'DROP DATABASE IF EXISTS test_fields' runp; drop;
+'CREATE DATABASE test_fields' runp; drop;
+null dbc !;
+root password test_fields COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+'CREATE TABLE test (
+    id integer PRIMARY KEY,
+    fld1 integer,
+    fld2 smallint,
+    fld3 decimal,
+    fld4 numeric,
+    fld5 float,
+    fld6 real,
+    fld7 double,
+    fld8 date,
+    fld9 time,
+    fld10 datetime,
+    fld11 timestamp,
+    fld12 char(10),
+    fld13 varchar(10),
+    fld14 binary(8),
+    fld15 varbinary(8),
+    fld16 blob,
+    fld17 text,
+    fld18 enum(\"a\", \"b\", \"c\"),
+    fld19 json
+)' runp; drop;
+dbc @;
+'INSERT INTO test (
+    id,
+    fld1,
+    fld2,
+    fld3,
+    fld4,
+    fld5,
+    fld6,
+    fld7,
+    fld8,
+    fld9,
+    fld10,
+    fld11,
+    fld12,
+    fld13,
+    fld14,
+    fld15,
+    fld16,
+    fld17,
+    fld18,
+    fld19
+) VALUES (
+    1,
+    1,
+    1,
+    1.0,
+    50.0,
+    51.0,
+    52.0,
+    53.0,
+    \"2000-01-01\",
+    \"00:00:00\",
+    \"2000-01-01 00:00:00\",
+    \"2000-01-01 00:00:00\",
+    \"asdf\",
+    \"asdf\",
+    \"asdf\",
+    \"asdf\",
+    \"asdf\",
+    \"asdf\",
+    \"a\",
+    ?
+)' db.prep; 10 range; r; to-json; 1 mlist; db.exec; drop;
+'SELECT * FROM test' runp; drop;
+.t
+", ".t");
+        }
+        _ => {
+            eprintln!("MySQL tests disabled (mysql_fields_test).");
+        }
+    }
 }

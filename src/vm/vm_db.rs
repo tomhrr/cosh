@@ -610,6 +610,30 @@ impl VM {
                                     }
                                 }
                             }
+                            "JSON" => {
+                                let final_value_res =
+                                    raw_record.get::<Option<serde_json::Value>, usize>(index);
+                                match final_value_res {
+                                    None => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            Value::Null
+                                        );
+                                    }
+                                    Some(s) => {
+                                        self.stack.push(new_string_value(s.to_string()));
+                                        let res = self.core_from_json();
+                                        if res == 1 {
+                                            ret_record.insert(
+                                                name.to_string(),
+                                                self.stack.pop().unwrap()
+                                            );
+                                        } else {
+                                            return 0;
+                                        }
+                                    }
+                                }
+                            }
                             _ => {
                                 let err_str = format!("unable to process database field type '{}'", type_info.name());
                                 self.print_error(&err_str);

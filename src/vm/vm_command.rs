@@ -257,6 +257,7 @@ impl VM {
     pub fn core_command_uncaptured(&mut self, cmd: &str) -> i32 {
         let separator = Regex::new(r"\s+&&\s+").unwrap();
         let cmds: Vec<_> = separator.split(cmd).into_iter().collect();
+        let mut last_status = 0;
         for cmd in cmds {
             let prepared_cmd_opt = self.prepare_and_split_command(cmd);
             if prepared_cmd_opt.is_none() {
@@ -274,8 +275,10 @@ impl VM {
                             let code = es.code();
                             match code {
                                 Some(n) => {
-                                    self.stack.push(Value::Int(n));
-                                    return 1;
+                                    last_status = n;
+                                    if last_status != 0 {
+                                        break;
+                                    }
                                 }
                                 _ => {
                                     let err_str = format!("command execution failed");
@@ -298,6 +301,7 @@ impl VM {
                 }
             }
         }
+        self.stack.push(Value::Int(last_status));
         1
     }
 

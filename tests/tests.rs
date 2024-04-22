@@ -2165,3 +2165,9 @@ dbc @;
         }
     }
 }
+
+#[test]
+fn sequence_test() {
+    basic_test("'ls Cargo.toml && ls Cargo.toml' exec; drop",
+               "Cargo.toml\nCargo.toml");
+}

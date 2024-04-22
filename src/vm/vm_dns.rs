@@ -1,6 +1,10 @@
 use std::cell::RefCell;
 use std::net::SocketAddr;
 use std::rc::Rc;
+use std::sync::mpsc;
+use std::sync::mpsc::TryRecvError;
+use std::thread;
+use std::time;
 
 use hickory_client::client::Client;
 use hickory_client::client::SyncClient;
@@ -217,117 +221,145 @@ impl VM {
                         }
                     };
 
-                let client = SyncClient::new(
-                    UdpClientConnection::new(addr_to_use).unwrap()
+                let query_so = query.to_string();
+                let type_str_so = type_str.to_string();
+
+		let (tx, rx) = mpsc::channel();
+		thread::spawn(move || {
+		    let client = SyncClient::new(
+			UdpClientConnection::new(addr_to_use).unwrap()
+		    );
+		    let name =
+			hickory_client::rr::Name::from_ascii(query_so).unwrap();
+		    let uc_type_str = type_str_so.to_uppercase();
+		    let record_type =
+			hickory_client::rr::RecordType::from_str(&uc_type_str).unwrap();
+		    let res = client.query(
+			&name,
+			hickory_client::rr::DNSClass::IN,
+			record_type
+		    );
+		    let _ = tx.send(res);
+		});
+                let resp;
+		loop {
+		    let response_recv_res = rx.try_recv();
+		    match response_recv_res {
+			Ok(Ok(response)) => {
+                            resp = response;
+                            break;
+			}
+			Ok(Err(e)) => {
+			    let err_str = format!("unable to send request: {}", e);
+			    self.print_error(&err_str);
+			    return 0;
+			}
+			Err(TryRecvError::Disconnected) => {
+			    let err_str = format!("unable to send request: disconnected");
+			    self.print_error(&err_str);
+			    return 0;
+			}
+			Err(TryRecvError::Empty) => {
+			    if !self.running.load(Ordering::SeqCst) {
+				self.running.store(true, Ordering::SeqCst);
+				self.stack.clear();
+				return 0;
+			    }
+			    let dur = time::Duration::from_secs_f64(0.05);
+			    thread::sleep(dur);
+			}
+		    }
+                }
+
+                let mut header_map = IndexMap::new();
+                header_map.insert(
+                    "opcode".to_string(),
+                    new_string_value(resp.op_code().to_string().to_uppercase())
                 );
-                let name =
-                    hickory_client::rr::Name::from_ascii(query).unwrap();
-                let uc_type_str = type_str.to_uppercase();
-                let record_type =
-                    hickory_client::rr::RecordType::from_str(&uc_type_str).unwrap();
-                let res = client.query(
-                    &name,
-                    hickory_client::rr::DNSClass::IN,
-                    record_type
+                let status_str =
+                    match resp.response_code() {
+                        ResponseCode::NoError  => "NOERROR",
+                        ResponseCode::FormErr  => "FORMERR",
+                        ResponseCode::ServFail => "SERVFAIL",
+                        ResponseCode::NXDomain => "NXDOMAIN",
+                        ResponseCode::NotImp   => "NOTIMP",
+                        ResponseCode::Refused  => "REFUSED",
+                        ResponseCode::YXDomain => "YXDOMAIN",
+                        ResponseCode::YXRRSet  => "YXRRSET",
+                        ResponseCode::NXRRSet  => "NXRRSET",
+                        ResponseCode::NotAuth  => "NOTAUTH",
+                        ResponseCode::NotZone  => "NOTZONE",
+                        _ => "UNKNOWN"
+                    };
+                header_map.insert(
+                    "status".to_string(),
+                    new_string_value(status_str.to_string())
                 );
-                match res {
-                    Ok(resp) => {
-                        let mut header_map = IndexMap::new();
-                        header_map.insert(
-                            "opcode".to_string(),
-                            new_string_value(resp.op_code().to_string().to_uppercase())
-                        );
-                        let status_str =
-                            match resp.response_code() {
-                                ResponseCode::NoError  => "NOERROR",
-                                ResponseCode::FormErr  => "FORMERR",
-                                ResponseCode::ServFail => "SERVFAIL",
-                                ResponseCode::NXDomain => "NXDOMAIN",
-                                ResponseCode::NotImp   => "NOTIMP",
-                                ResponseCode::Refused  => "REFUSED",
-                                ResponseCode::YXDomain => "YXDOMAIN",
-                                ResponseCode::YXRRSet  => "YXRRSET",
-                                ResponseCode::NXRRSet  => "NXRRSET",
-                                ResponseCode::NotAuth  => "NOTAUTH",
-                                ResponseCode::NotZone  => "NOTZONE",
-                                _ => "UNKNOWN"
-                            };
-                        header_map.insert(
-                            "status".to_string(),
-                            new_string_value(status_str.to_string())
-                        );
-                        header_map.insert(
-                            "id".to_string(),
-                            Value::Int(resp.id() as i32)
-                        );
+                header_map.insert(
+                    "id".to_string(),
+                    Value::Int(resp.id() as i32)
+                );
 
-                        let mut question_map = IndexMap::new();
-                        question_map.insert(
-                            "name".to_string(),
-                            new_string_value(query.to_string())
-                        );
-                        question_map.insert(
-                            "type".to_string(),
-                            new_string_value("IN".to_string())
-                        );
-                        question_map.insert(
-                            "class".to_string(),
-                            new_string_value(record_type.to_string())
-                        );
+                let mut question_map = IndexMap::new();
+                question_map.insert(
+                    "name".to_string(),
+                    new_string_value(query.to_string())
+                );
+                question_map.insert(
+                    "type".to_string(),
+                    new_string_value("IN".to_string())
+                );
+                question_map.insert(
+                    "class".to_string(),
+                    new_string_value(type_str.to_string())
+                );
 
-                        let mut answer_lst = VecDeque::new();
-                        for record in resp.answers() {
-                            answer_lst.push_back(self.record_to_value(&record));
-                        }
+                let mut answer_lst = VecDeque::new();
+                for record in resp.answers() {
+                    answer_lst.push_back(self.record_to_value(&record));
+                }
 
-                        let mut authority_lst = VecDeque::new();
-                        for record in resp.name_servers() {
-                            if record.record_type() == RecordType::SOA {
-                                authority_lst.push_back(self.record_to_value(&record));
-                            }
-                        }
-
-                        let mut additional_lst = VecDeque::new();
-                        for record in resp.additionals() {
-                            additional_lst.push_back(self.record_to_value(&record));
-                        }
-
-                        let mut res_map = IndexMap::new();
-                        res_map.insert(
-                            "header".to_string(),
-                            Value::Hash(Rc::new(RefCell::new(header_map)))
-                        );
-                        res_map.insert(
-                            "question".to_string(),
-                            Value::Hash(Rc::new(RefCell::new(question_map)))
-                        );
-                        if answer_lst.len() > 0 {
-                            res_map.insert(
-                                "answer".to_string(),
-                                Value::List(Rc::new(RefCell::new(answer_lst)))
-                            );
-                        }
-                        if authority_lst.len() > 0 {
-                            res_map.insert(
-                                "authority".to_string(),
-                                Value::List(Rc::new(RefCell::new(authority_lst)))
-                            );
-                        }
-                        if additional_lst.len() > 0 {
-                            res_map.insert(
-                                "additional".to_string(),
-                                Value::List(Rc::new(RefCell::new(additional_lst)))
-                            );
-                        }
-                        self.stack.push(Value::Hash(Rc::new(RefCell::new(res_map))));
-                        return 1;
-                    }
-                    Err(e) => {
-                        let err_str = format!("unable to execute DNS query: {}", e);
-                        self.print_error(&err_str);
-                        return 0;
+                let mut authority_lst = VecDeque::new();
+                for record in resp.name_servers() {
+                    if record.record_type() == RecordType::SOA {
+                        authority_lst.push_back(self.record_to_value(&record));
                     }
                 }
+
+                let mut additional_lst = VecDeque::new();
+                for record in resp.additionals() {
+                    additional_lst.push_back(self.record_to_value(&record));
+                }
+
+                let mut res_map = IndexMap::new();
+                res_map.insert(
+                    "header".to_string(),
+                    Value::Hash(Rc::new(RefCell::new(header_map)))
+                );
+                res_map.insert(
+                    "question".to_string(),
+                    Value::Hash(Rc::new(RefCell::new(question_map)))
+                );
+                if answer_lst.len() > 0 {
+                    res_map.insert(
+                        "answer".to_string(),
+                        Value::List(Rc::new(RefCell::new(answer_lst)))
+                    );
+                }
+                if authority_lst.len() > 0 {
+                    res_map.insert(
+                        "authority".to_string(),
+                        Value::List(Rc::new(RefCell::new(authority_lst)))
+                    );
+                }
+                if additional_lst.len() > 0 {
+                    res_map.insert(
+                        "additional".to_string(),
+                        Value::List(Rc::new(RefCell::new(additional_lst)))
+                    );
+                }
+                self.stack.push(Value::Hash(Rc::new(RefCell::new(res_map))));
+                return 1;
             }
             _ => {
                 self.print_error("dns requires two string arguments");

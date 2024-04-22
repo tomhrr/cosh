@@ -4,6 +4,7 @@ use crate::chunk::{DBConnectionMySQL, DBStatementMySQL,
                    Value};
 use crate::vm::*;
 use chrono::Utc;
+use ipnet::{Ipv4Net, Ipv6Net};
 use num_bigint::BigInt;
 use num_traits::FromPrimitive;
 use std::future::Future;
@@ -12,6 +13,9 @@ use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 use std::time;
 use std::thread;
 use sqlx::{Column, Row, TypeInfo};
+use sqlx::types::ipnetwork::IpNetwork::{V4, V6};
+use sqlx::types::mac_address;
+use sqlx::types::uuid;
 
 fn wake(_data: *const ()) {}
 fn noop(_data: *const ()) {}
@@ -401,7 +405,7 @@ impl VM {
                                     Some(final_value) => {
                                         ret_record.insert(
                                             name.to_string(),
-                                    new_string_value(final_value.to_string())
+                                            new_string_value(final_value.to_string())
                                         );
                                     }
                                 }
@@ -601,13 +605,14 @@ impl VM {
                                     Some(final_value) => {
                                         ret_record.insert(
                                             name.to_string(),
-                                    new_string_value(final_value.to_string())
+                                            new_string_value(final_value.to_string())
                                         );
                                     }
                                 }
                             }
                             _ => {
-                                self.print_error("unable to process database field type");
+                                let err_str = format!("unable to process database field type '{}'", type_info.name());
+                                self.print_error(&err_str);
                                 return 0;
                             }
                         }
@@ -858,8 +863,169 @@ impl VM {
                                     }
                                 }
                             }
+                            "BIT" => {
+                                let final_value_res =
+                                    raw_record.get::<Option<sqlx::types::BitVec>, usize>(index);
+                                match final_value_res {
+                                    None => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            Value::Null
+                                        );
+                                    }
+                                    Some(final_value) => {
+                                        let bytes = final_value.to_bytes();
+                                        let mut byte_list = VecDeque::new();
+                                        for b in bytes {
+                                            byte_list.push_back(Value::Byte(b));
+                                        }
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            Value::List(Rc::new(RefCell::new(byte_list)))
+                                        );
+                                    }
+                                }
+                            }
+                            "CIDR" | "INET" => {
+                                let final_value_res =
+                                    raw_record.get::<Option<sqlx::types::ipnetwork::IpNetwork>, usize>(index);
+                                match final_value_res {
+                                    None => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            Value::Null
+                                        );
+                                    }
+                                    Some(final_value) => {
+                                        match final_value {
+                                            V4(ipv4) => {
+                                                ret_record.insert(
+                                                    name.to_string(),
+                                                    Value::Ipv4(Ipv4Net::new(ipv4.ip(), ipv4.prefix()).unwrap())
+                                                );
+                                            }
+                                            V6(ipv6) => {
+                                                ret_record.insert(
+                                                    name.to_string(),
+                                                    Value::Ipv6(Ipv6Net::new(ipv6.ip(), ipv6.prefix()).unwrap())
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            "INTERVAL" => {
+                                let final_value_res =
+                                    raw_record.get::<Option<sqlx::postgres::types::PgInterval>, usize>(index);
+                                match final_value_res {
+                                    None => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            Value::Null
+                                        );
+                                    }
+                                    Some(final_value) => {
+                                        let mut map = IndexMap::new();
+                                        map.insert(
+                                            "months".to_string(),
+                                            Value::Int(final_value.months)
+                                        );
+                                        map.insert(
+                                            "days".to_string(),
+                                            Value::Int(final_value.days)
+                                        );
+                                        map.insert(
+                                            "microseconds".to_string(),
+                                            Value::BigInt(final_value.microseconds.into())
+                                        );
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            Value::Hash(Rc::new(RefCell::new(map)))
+                                        );
+                                    }
+                                }
+                            }
+                            "JSON" => {
+                                let final_value_res =
+                                    raw_record.get::<Option<serde_json::Value>, usize>(index);
+                                match final_value_res {
+                                    None => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            Value::Null
+                                        );
+                                    }
+                                    Some(s) => {
+                                        self.stack.push(new_string_value(s.to_string()));
+                                        let res = self.core_from_json();
+                                        if res == 1 {
+                                            ret_record.insert(
+                                                name.to_string(),
+                                                self.stack.pop().unwrap()
+                                            );
+                                        } else {
+                                            return 0;
+                                        }
+                                    }
+                                }
+                            }
+                            "MACADDR" => {
+                                let final_value_res =
+                                    raw_record.get::<Option<mac_address::MacAddress>, usize>(index);
+                                match final_value_res {
+                                    None => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            Value::Null
+                                        );
+                                    }
+                                    Some(s) => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            new_string_value(s.to_string())
+                                        );
+                                    }
+                                }
+                            }
+                            "MONEY" => {
+                                let final_value_res =
+                                    raw_record.get::<Option<sqlx::postgres::types::PgMoney>, usize>(index);
+                                match final_value_res {
+                                    None => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            Value::Null
+                                        );
+                                    }
+                                    Some(s) => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            new_string_value(s.to_decimal(2).to_string())
+                                        );
+                                    }
+                                }
+                            }
+                            "UUID" => {
+                                let final_value_res =
+                                    raw_record.get::<Option<uuid::Uuid>, usize>(index);
+                                match final_value_res {
+                                    None => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            Value::Null
+                                        );
+                                    }
+                                    Some(s) => {
+                                        ret_record.insert(
+                                            name.to_string(),
+                                            new_string_value(s.to_string())
+                                        );
+                                    }
+                                }
+                            }
                             _ => {
-                                self.print_error("unable to process database field type");
+                                let err_str = format!("unable to process database field type '{}'", type_info.name());
+                                self.print_error(&err_str);
                                 return 0;
                             }
                         }
@@ -1129,7 +1295,8 @@ impl VM {
                                 }
                             }
                             _ => {
-                                self.print_error("unable to process database field type");
+                                let err_str = format!("unable to process database field type '{}'", type_info.name());
+                                self.print_error(&err_str);
                                 return 0;
                             }
                         }

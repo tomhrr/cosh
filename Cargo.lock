@@ -364,6 +364,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bit-vec"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -610,7 +616,7 @@ dependencies = [
  "iana-time-zone",
  "indexmap 1.9.3",
  "ipnet",
- "ipnetwork",
+ "ipnetwork 0.20.0",
  "iprange",
  "lazy_static",
  "md5",
@@ -1502,6 +1508,12 @@ dependencies = [
 
 [[package]]
 name = "ipnetwork"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02c3eaab3ac0ede60ffa41add21970a7df7d91772c03383aac6c2c3d53cc716b"
+
+[[package]]
+name = "ipnetwork"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf466541e9d546596ee94f9f69590f89473455f88372423e0008fc1a7daf100e"
@@ -1627,6 +1639,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mac_address"
+version = "1.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4863ee94f19ed315bf3bc00299338d857d4b5bc856af375cc97d237382ad3856"
+dependencies = [
+ "nix 0.23.2",
+ "winapi",
+]
+
+[[package]]
 name = "md-5"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1647,6 +1669,15 @@ name = "memchr"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "523dc4f511e55ab87b694dc30d0f820d60906ef06413f93d4d7a1385599cc149"
+
+[[package]]
+name = "memoffset"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
+dependencies = [
+ "autocfg",
+]
 
 [[package]]
 name = "mime"
@@ -1722,6 +1753,19 @@ dependencies = [
  "cc",
  "cfg-if 0.1.10",
  "libc",
+]
+
+[[package]]
+name = "nix"
+version = "0.23.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f3790c00a0150112de0f4cd161e3d7fc4b2d8a5542ffc35f099a2562aecb35c"
+dependencies = [
+ "bitflags 1.3.2",
+ "cc",
+ "cfg-if 1.0.0",
+ "libc",
+ "memoffset",
 ]
 
 [[package]]
@@ -2143,7 +2187,7 @@ version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "130c5b738eeda2dc5796fe2671e49027e6935e817ab51b930a36ec9e6a206a64"
 dependencies = [
- "ipnetwork",
+ "ipnetwork 0.20.0",
  "pnet_base",
  "pnet_datalink",
  "pnet_packet",
@@ -2166,7 +2210,7 @@ version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad5854abf0067ebbd3967f7d45ebc8976ff577ff0c7bd101c4973ae3c70f98fe"
 dependencies = [
- "ipnetwork",
+ "ipnetwork 0.20.0",
  "libc",
  "pnet_base",
  "pnet_sys",
@@ -2570,7 +2614,7 @@ dependencies = [
  "rkyv_derive",
  "seahash",
  "tinyvec",
- "uuid",
+ "uuid 1.7.0",
 ]
 
 [[package]]
@@ -2969,6 +3013,7 @@ dependencies = [
  "ahash",
  "atoi",
  "base64 0.13.1",
+ "bit-vec",
  "bitflags 1.3.2",
  "byteorder",
  "bytes",
@@ -2991,10 +3036,12 @@ dependencies = [
  "hkdf",
  "hmac",
  "indexmap 1.9.3",
+ "ipnetwork 0.17.0",
  "itoa",
  "libc",
  "libsqlite3-sys",
  "log",
+ "mac_address",
  "md-5",
  "memchr",
  "num-bigint",
@@ -3014,6 +3061,7 @@ dependencies = [
  "stringprep",
  "thiserror",
  "url",
+ "uuid 0.8.2",
  "whoami",
 ]
 
@@ -3029,6 +3077,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
+ "serde_json",
  "sha2",
  "sqlx-core",
  "sqlx-rt",
@@ -3450,6 +3499,12 @@ dependencies = [
  "libc",
  "winapi",
 ]
+
+[[package]]
+name = "uuid"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
 
 [[package]]
 name = "uuid"

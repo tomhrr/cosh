@@ -3,6 +3,7 @@ extern crate cosh;
 extern crate tempfile;
 
 use assert_cmd::Command;
+use std::env;
 use std::fs;
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -1902,4 +1903,101 @@ fn overflow_test() {
     basic_test("70000 range; sum;", "2449965000");
     basic_test("70000 range; 0 - foldl;", "-2449965000");
     basic_test("20 range; dup; shift; drop; product;", "121645100408832000");
+}
+
+#[test]
+fn postgres_basic_test() {
+    match env::var("COSH_TEST_POSTGRES") {
+        Ok(_) => {
+            basic_test("
+postgres password postgres 127.0.0.1 postgresql db.conn; dbc varm; dbc !;
+: runp dbc @; swap; db.prep; () db.exec; ,,
+'DROP DATABASE IF EXISTS test_basic' runp; drop;
+'CREATE DATABASE test_basic' runp; drop;
+null dbc !;
+postgres password test_basic 127.0.0.1 postgresql db.conn; dbc varm; dbc !;
+'CREATE TABLE test (id integer PRIMARY KEY)' runp; drop;
+'INSERT INTO test (id) VALUES (1)' runp; drop;
+'SELECT * FROM test' runp;
+shift; id get; 1 =;
+", ".t");
+        }
+        _ => {}
+    }
+}
+
+#[test]
+fn postgres_fields_test() {
+    match env::var("COSH_TEST_POSTGRES") {
+        Ok(_) => {
+            basic_test("
+postgres password postgres 127.0.0.1 postgresql db.conn; dbc varm; dbc !;
+: runp dbc @; swap; db.prep; () db.exec; ,,
+'DROP DATABASE IF EXISTS test_fields' runp; drop;
+'CREATE DATABASE test_fields' runp; drop;
+null dbc !;
+postgres password test_fields 127.0.0.1 postgresql db.conn; dbc varm; dbc !;
+'CREATE TABLE test (
+    id integer PRIMARY KEY,
+    fld1 bigint,
+    fld2 bigserial,
+    fld3 bit(8),
+    fld4 bool,
+    fld5 bytea,
+    fld6 cidr,
+    fld7 inet,
+    fld8 date,
+    fld9 float8,
+    fld10 int,
+    fld11 interval,
+    fld12 json,
+    fld13 macaddr,
+    fld14 money,
+    fld15 float4,
+    fld16 uuid
+)' runp; drop;
+\"INSERT INTO test (
+    id,
+    fld1,
+    fld2,
+    fld3,
+    fld4,
+    fld5,
+    fld6,
+    fld7,
+    fld8,
+    fld9,
+    fld10,
+    fld11,
+    fld12,
+    fld13,
+    fld14,
+    fld15,
+    fld16
+) VALUES (
+    1,
+    1,
+    1,
+    B'10111011',
+    true,
+    '\\xDEADBEEF'::bytea,
+    '127.0.0.0/8',
+    '127.0.0.1/8',
+    '2024-01-01',
+    1.0,
+    100,
+    interval '1 hour',
+    '{\\\"a\\\":1234}',
+    '12:34:12:12:34:12',
+    10.10,
+    123.123,
+    \'db200fca-68f1-4079-af13-d8526f3ea271\'
+)\" runp; drop;
+'SELECT * FROM test' runp;
+drop;
+.t
+", ".t");
+        }
+        _ => {}
+    }
 }

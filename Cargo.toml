@@ -46,7 +46,7 @@ md5 = "0.7.0"
 sha1 = "0.10.1"
 sha2 = "0.10.2"
 atty = "0.2.14"
-sqlx = { version = "0.5", features = [ "runtime-async-std-native-tls", "mysql", "chrono", "decimal", "postgres", "sqlite" ] }
+sqlx = { version = "0.5", features = [ "runtime-async-std-native-tls", "mysql", "chrono", "bit-vec", "decimal", "postgres", "sqlite", "ipnetwork", "json", "mac_address", "uuid" ] }
 rust_decimal = "1.29.1"
 futures = "0.3"
 epoll = "4.3.3"

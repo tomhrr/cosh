@@ -224,6 +224,15 @@ impl VM {
                 let query_so = query.to_string();
                 let type_str_so = type_str.to_string();
 
+		let uc_type_str = type_str_so.to_uppercase();
+                let record_type_opt =
+                    hickory_client::rr::RecordType::from_str(&uc_type_str);
+                if let Err(_) = record_type_opt {
+                    self.print_error("invalid DNS record type");
+                    return 0;
+                }
+                let record_type = record_type_opt.unwrap();
+
 		let (tx, rx) = mpsc::channel();
 		thread::spawn(move || {
 		    let client = SyncClient::new(
@@ -231,9 +240,6 @@ impl VM {
 		    );
 		    let name =
 			hickory_client::rr::Name::from_ascii(query_so).unwrap();
-		    let uc_type_str = type_str_so.to_uppercase();
-		    let record_type =
-			hickory_client::rr::RecordType::from_str(&uc_type_str).unwrap();
 		    let res = client.query(
 			&name,
 			hickory_client::rr::DNSClass::IN,

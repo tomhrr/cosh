@@ -755,6 +755,28 @@
         0 until;
         ,,
 
+: lr
+    pst-index var; pst-index !;
+    fn var; fn !;
+    pre-index var; pre-index !;
+    lst var; lst !;
+
+    lst @; pre-index @; get;
+    fn @; funcall;
+    lst @; pst-index @; rot; set;
+    ,,
+
+: hr
+    pst-index var; pst-index !;
+    fn var; fn !;
+    pre-index var; pre-index !;
+    hsh var; hsh !;
+
+    hsh @; pre-index @; get;
+    fn @; funcall;
+    hsh @; pst-index @; rot; set;
+    ,,
+
 # ping and pingn are implemented by calling ping(1), to avoid needing
 # root privileges in the shell.
 : ping

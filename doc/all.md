@@ -660,6 +660,12 @@ generator each time it is called could be confusing.)
 `mlist` takes an integer argument, removes that number of elements
 from the stack, and returns a list containing those elements.
 
+`lr` takes a list, an initial index argument, a function, and a final
+index argument, and takes the value at the initial index from the
+list, calls the function on that value, and sets the result as the
+value of the final index in the list.  The list is left on the stack
+at the end of the call.
+
 #### Set functions
 
 When called with a set argument, `shift` removes one element from the
@@ -794,6 +800,12 @@ the previous generator discussion in this document.)
 `mhash` takes an integer argument, removes that number of element
 pairs from the stack, and returns a hash containing each of those
 pairs, where the first element is the key and the second is the value.
+
+`hr` takes a hash, an initial index argument, a function, and a final
+index argument, and takes the value at the initial index from the
+hash, calls the function on that value, and sets the result as the
+value of the final index in the hash.  The hash is left on the stack
+at the end of the call.
 
 #### Higher-order functions (map, grep, for, etc.)
 

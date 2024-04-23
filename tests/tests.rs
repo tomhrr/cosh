@@ -2179,3 +2179,11 @@ fn dns_test() {
     basic_test("google.com A dns; header.status get; NOERROR =", ".t");
     basic_test("brtiortuhbioruthbronibtoinr.com A dns; header.status get; NXDOMAIN =", ".t");
 }
+
+#[test]
+fn lrhr_test() {
+    basic_test("10 range; r; 5 [2 *] 6 lr; (5 6 7) get",
+               "(\n    0: 5\n    1: 10\n    2: 7\n)");
+    basic_test("h(1 2 3 4 5 6) 3 [2 *] 5 hr; (1 3 5) get",
+               "(\n    0: 2\n    1: 4\n    2: 8\n)");
+}

@@ -841,6 +841,38 @@
 
 : gr {grep -ri "{}" .}; [chomp; "(.*?):(.*)" c; (1 2) get] map; ,,
 
+: _docker.created-at-map
+    [CreatedAt [' [A-Z]*$' '' s; '%F %T %z' strptime] CreatedAt hr] map;
+    ,,
+: docker.cp swap; "docker cp {} {}" fmtq; exec; drop; ,,
+: docker.ps
+    {docker ps --no-trunc --format '\{\{json .\}\}'};
+    from-json map; _docker.created-at-map;
+    ,,
+: docker.psa
+    {docker ps -a --no-trunc --format '\{\{json .\}\}'};
+    from-json map; _docker.created-at-map;
+    ,,
+: docker.images
+    {docker images --no-trunc --format '\{\{json .\}\}'};
+    from-json map; _docker.created-at-map;
+    ,,
+: docker.volume
+    {docker volume ls --format '\{\{json .\}\}'};
+    from-json map;
+    ,,
+: docker.rm    "docker rm    {}" fmtq; exec; drop; ,,
+: docker.kill  "docker kill  {}" fmtq; exec; drop; ,,
+: docker.rmi   "docker rmi   {}" fmtq; exec; drop; ,,
+: docker.start "docker start {}" fmtq; exec; drop; ,,
+: docker.stop  "docker stop  {}" fmtq; exec; drop; ,,
+
+: docker.volume-rm "docker volume rm {}" fmtq; exec; drop; ,,
+: docker.volume-inspect
+    {docker volume inspect {}}; '' join; from-json;
+    [CreatedAt ['%FT%T%z' strptime] CreatedAt hr] map;
+    ,,
+
 # Storage-related functions for libraries.
 : make-xdg-env-var
     XDG_ swap; uc; ++; _HOME ++; ,,

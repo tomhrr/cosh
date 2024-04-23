@@ -218,6 +218,12 @@ impl VM {
         index: Option<i32>,
         last_stack: &mut Vec<Value>,
     ) -> i32 {
+        if !self.running.load(Ordering::SeqCst) {
+            self.running.store(true, Ordering::SeqCst);
+            self.stack.clear();
+            return -1;
+        }
+
         let type_string = value_rr.type_string();
         let mut shiftable_fallback = false;
         {
@@ -711,7 +717,6 @@ impl VM {
                             let next = iter.next();
                             match next {
                                 Some((k, v)) => {
-
                                     lines_to_print = self.print_stack_value(
                                         v,
                                         chunk.clone(),

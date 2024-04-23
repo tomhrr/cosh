@@ -329,14 +329,7 @@ impl VM {
         1
     }
 
-    /// Takes a format string as its argument, and substitutes into
-    /// that string values from the stack, as required.
-    pub fn core_fmt(&mut self) -> i32 {
-        if self.stack.is_empty() {
-            self.print_error("fmt requires one argument");
-            return 0;
-        }
-
+    pub fn fmt(&mut self, quoted: bool) -> i32 {
         let str_rr = self.stack.pop().unwrap();
         let str_opt: Option<&str>;
         to_str!(str_rr, str_opt);
@@ -396,7 +389,13 @@ impl VM {
                                                         Some(capture_el_str) => {
                                                             stack_cache.resize(n as usize, None);
                                                             stack_cache.insert(n as usize, Some(capture_el_str.to_string()));
-                                                            updated_str.push_str(capture_el_str);
+                                                            if quoted && capture_el_str.contains(char::is_whitespace) {
+                                                                updated_str.push_str("\"");
+                                                                updated_str.push_str(capture_el_str);
+                                                                updated_str.push_str("\"");
+                                                            } else {
+                                                                updated_str.push_str(capture_el_str);
+                                                            }
                                                         }
                                                         _ => {
                                                             self.print_error("fmt string argument cannot be convered to string");
@@ -423,7 +422,13 @@ impl VM {
 
                                     match value_opt {
                                         Some(s) => {
-                                            updated_str.push_str(s);
+                                            if quoted && s.contains(char::is_whitespace) {
+                                                updated_str.push_str("\"");
+                                                updated_str.push_str(s);
+                                                updated_str.push_str("\"");
+                                            } else {
+                                                updated_str.push_str(s);
+                                            }
                                         }
                                         _ => {
                                             self.print_error("fmt string argument cannot be convered to string");
@@ -460,5 +465,28 @@ impl VM {
                 0
             }
         }
+
+    }
+
+    /// Takes a format string as its argument, and substitutes into
+    /// that string values from the stack, as required.
+    pub fn core_fmt(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("fmt requires one argument");
+            return 0;
+        }
+
+        return self.fmt(false);
+    }
+
+    /// Takes a format string as its argument, and substitutes into
+    /// that string quoted values from the stack, as required.
+    pub fn core_fmtq(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("fmtq requires one argument");
+            return 0;
+        }
+
+        return self.fmt(true);
     }
 }

@@ -1346,7 +1346,9 @@ element most recently pushed onto the stack):
     6
 
 This behaviour is available for standard strings as well, by way of
-the `fmt` function.
+the `fmtq` function.  There is also a `fmt` function that works
+similarly, except that it doesn't surround values that contain
+whitespace with quotation marks.
 
 The output of a generator can also be piped to a command:
 

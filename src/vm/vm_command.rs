@@ -129,7 +129,7 @@ impl VM {
     fn prepare_command(&mut self, s: &str) -> Option<String> {
         let st = StringTriple::new(s.to_string(), None);
         self.stack.push(Value::String(Rc::new(RefCell::new(st))));
-        let res = self.core_fmt();
+        let res = self.core_fmtq();
         if res == 0 {
             return None;
         }

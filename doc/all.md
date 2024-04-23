@@ -1534,6 +1534,12 @@ past simple line-based matching.  There are likely to be other cases
 where calling out to an executable will lead to faster processing when
 compared with relying on the shell language alone.
 
+Floating-point numbers are parsed as strings, so that chained
+accessors function as expected with `get`.  Strings will be converted
+to floating-point numbers as required anyway, but `float` can be used
+to convert strings to actual floating-point numbers if that is
+necessary for some reason.
+
 There are likely to be many bugs and problems with the implementation
 here, and the performance isn't spectacular.  The code could do with
 some tidying, too.

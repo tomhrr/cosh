@@ -104,7 +104,6 @@ pub struct Scanner<'a> {
 
 lazy_static! {
     static ref INT: Regex = Regex::new(r"^-?\d+$").unwrap();
-    static ref FLOAT: Regex = Regex::new(r"^-?\d+\.\d+$").unwrap();
 }
 
 impl<'a> Scanner<'a> {
@@ -552,8 +551,6 @@ impl<'a> Scanner<'a> {
                                 TokenType::BigInt(n)
                             }
                         }
-                    } else if FLOAT.is_match(s) {
-                        TokenType::Float(s.to_string().parse::<f64>().unwrap())
                     } else if is_explicit_word {
                         TokenType::Word(s.to_string())
                     } else if is_implicit_word {

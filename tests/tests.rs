@@ -1039,7 +1039,7 @@ fn predicate_test() {
     basic_test("s(1 2 3) is-str;", ".f");
 
     basic_test("1 is-float;", ".f");
-    basic_test("1.0 is-float;", ".t");
+    basic_test("1.0 float; is-float;", ".t");
     basic_test("asdf is-float;", ".f");
     basic_test("\"1.0\" is-float;", ".f");
 }

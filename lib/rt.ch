@@ -807,14 +807,14 @@
 : make-xdg-env-var
     XDG_ swap; uc; ++; _HOME ++; ,,
 
+xdg-types var; h(data   .local/share
+                 config .config
+                 state  .local/state
+                 cache  .cache) xdg-types !;
+
 : get-storage-dir
     type var; type !;
     lib var; lib !;
-
-    xdg-types var; h(data   .local/share
-                     config .config
-                     state  .local/state
-                     cache  .cache) xdg-types !;
 
     xdg-types @; type @; get; dup; is-null; if;
         drop;

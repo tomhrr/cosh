@@ -212,21 +212,13 @@ fn main() {
                 }
             } else {
                 let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())), libdir);
-                let mut compiler = Compiler::new();
                 let global_functions = Rc::new(RefCell::new(HashMap::new()));
 
                 if !matches.opt_present("no-rt") {
-                    let mut rtchunk_opt = compiler.deserialise(&rt_chc);
-                    if rtchunk_opt.is_none() {
-                        rtchunk_opt = compiler.deserialise("./rt.chc");
-                        if rtchunk_opt.is_none() {
-                            eprintln!("unable to deserialise runtime library");
-                            std::process::exit(1);
-                        }
-                    }
-                    let rtchunk = rtchunk_opt.unwrap();
-                    for (k, v) in rtchunk.functions.iter() {
-                        global_functions.borrow_mut().insert(k.clone(), v.clone());
+                    vm.stack.push(new_string_value("rt".to_string()));
+                    let res = vm.opcode_import();
+                    if res == 0 {
+                        std::process::exit(1);
                     }
                 }
                 if !matches.opt_present("no-cosh-conf") {
@@ -260,25 +252,17 @@ fn main() {
         }
         file.seek(SeekFrom::Start(0)).unwrap();
 
-        let mut compiler = Compiler::new();
         let global_functions = Rc::new(RefCell::new(HashMap::new()));
-
-        if !matches.opt_present("no-rt") {
-            let mut rtchunk_opt = compiler.deserialise(&rt_chc);
-            if rtchunk_opt.is_none() {
-                rtchunk_opt = compiler.deserialise("./rt.chc");
-                if rtchunk_opt.is_none() {
-                    eprintln!("unable to deserialise runtime library");
-                    std::process::exit(1);
-                }
-            }
-            let rtchunk = rtchunk_opt.unwrap();
-            for (k, v) in rtchunk.functions.iter() {
-                global_functions.borrow_mut().insert(k.clone(), v.clone());
-            }
-        }
         let global_vars = Rc::new(RefCell::new(HashMap::new()));
         let mut vm = VM::new(true, debug, global_vars.clone(), libdir);
+
+        if !matches.opt_present("no-rt") {
+            vm.stack.push(new_string_value("rt".to_string()));
+            let res = vm.opcode_import();
+            if res == 0 {
+                std::process::exit(1);
+            }
+        }
         let running_clone = vm.running.clone();
         ctrlc::set_handler(move || {
             running_clone.store(false, Ordering::SeqCst);
@@ -291,26 +275,17 @@ fn main() {
         vm.interpret(global_functions.clone(), &mut bufread, "(main)");
     } else {
         /* A path has not been provided, so start the shell. */
-        let mut compiler = Compiler::new();
         let global_functions = Rc::new(RefCell::new(HashMap::new()));
-
-        if !matches.opt_present("no-rt") {
-            let mut rtchunk_opt = compiler.deserialise(&rt_chc);
-            if rtchunk_opt.is_none() {
-                rtchunk_opt = compiler.deserialise("./rt.chc");
-                if rtchunk_opt.is_none() {
-                    eprintln!("unable to deserialise runtime library");
-                    std::process::exit(1);
-                }
-            }
-            let rtchunk = rtchunk_opt.unwrap();
-            for (k, v) in rtchunk.functions.iter() {
-                global_functions.borrow_mut().insert(k.clone(), v.clone());
-            }
-        }
-
         let global_vars = Rc::new(RefCell::new(HashMap::new()));
         let mut vm = VM::new(true, debug, global_vars.clone(), libdir);
+
+        if !matches.opt_present("no-rt") {
+            vm.stack.push(new_string_value("rt".to_string()));
+            let res = vm.opcode_import();
+            if res == 0 {
+                std::process::exit(1);
+            }
+        }
 
         let running_clone = vm.running.clone();
         ctrlc::set_handler(move || {

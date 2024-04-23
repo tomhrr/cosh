@@ -82,7 +82,7 @@ pub struct VM {
     /// The scopes.
     scopes: Vec<Rc<RefCell<HashMap<String, Variable>>>>,
     /// The global functions.
-    global_functions: HashMap<String, Rc<RefCell<Chunk>>>,
+    global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
     /// The call stack chunks.
     pub call_stack_chunks: Vec<(Rc<RefCell<Chunk>>, usize)>,
     /// A flag for interrupting execution.
@@ -411,6 +411,7 @@ impl VM {
     pub fn new(
         print_stack: bool,
         debug: bool,
+        global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
         global_vars: Rc<RefCell<HashMap<String, Variable>>>,
         libdir: &'static str
     ) -> VM {
@@ -426,7 +427,7 @@ impl VM {
             print_stack,
             printing_stack: false,
             scopes: vec![global_vars],
-            global_functions: HashMap::new(),
+            global_functions: global_functions,
             call_stack_chunks: Vec::new(),
             running: Arc::new(AtomicBool::new(true)),
             chunk: Rc::new(RefCell::new(Chunk::new_standard("unused".to_string()))),
@@ -687,7 +688,7 @@ impl VM {
                     Some(import_chunk) => {
                         for (k, v) in import_chunk.functions.iter() {
                             if !k.starts_with("anon") {
-                                self.global_functions.insert(k.clone(), v.clone());
+                                self.global_functions.borrow_mut().insert(k.clone(), v.clone());
                             }
                         }
                         /* The main reason for running the chunk is so
@@ -701,14 +702,14 @@ impl VM {
                             Ok(file) => {
                                 let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                                 let mut vm =
-                                    VM::new(true, false, Rc::new(RefCell::new(HashMap::new())), self.libdir);
-                                let functions = Rc::new(RefCell::new(HashMap::new()));
-                                let chunk_opt = vm.interpret(functions, &mut bufread, &path);
+                                    VM::new(true, false, Rc::new(RefCell::new(HashMap::new())),
+                                            Rc::new(RefCell::new(HashMap::new())), self.libdir);
+                                let chunk_opt = vm.interpret(&mut bufread, &path);
                                 match chunk_opt {
                                     Some(chunk) => {
                                         for (k, v) in chunk.borrow().functions.iter() {
                                             if !k.starts_with("anon") {
-                                                self.global_functions.insert(k.clone(), v.clone());
+                                                self.global_functions.borrow_mut().insert(k.clone(), v.clone());
                                             }
                                         }
                                         self.run(chunk);
@@ -757,7 +758,7 @@ impl VM {
                     Some(import_chunk) => {
                         for (k, v) in import_chunk.functions.iter() {
                             if !k.starts_with("anon") {
-                                self.global_functions.insert(k.clone(), v.clone());
+                                self.global_functions.borrow_mut().insert(k.clone(), v.clone());
                             }
                         }
                         /* The main reason for running the chunk is so
@@ -1091,8 +1092,8 @@ impl VM {
                 }
             }
         }
-        if call_chunk_opt.is_none() && self.global_functions.contains_key(s) {
-            global_function = self.global_functions.get(s).unwrap().clone();
+        if call_chunk_opt.is_none() && self.global_functions.borrow().contains_key(s) {
+            global_function = self.global_functions.borrow().get(s).unwrap().clone();
             call_chunk_opt = Some(global_function);
         }
         if let Some(call_chunk) = call_chunk_opt {
@@ -2309,19 +2310,14 @@ impl VM {
         i + 1
     }
 
-    /// Takes the global functions and the file to read the program
-    /// code from as its arguments.  Compiles the program code and
-    /// executes it, returning the chunk (if compiled successfully).
+    /// Takes the file to read the program code from as its arguments.
+    /// Compiles the program code and executes it, returning the chunk
+    /// (if compiled successfully).
     pub fn interpret(
         &mut self,
-        global_functions: Rc<RefCell<HashMap<String, Rc<RefCell<Chunk>>>>>,
         fh: &mut Box<dyn BufRead>,
         name: &str,
     ) -> Option<Rc<RefCell<Chunk>>> {
-        for (k, v) in global_functions.borrow().iter() {
-            self.global_functions.insert(k.clone(), v.clone());
-        }
-
         let mut compiler = Compiler::new();
         let chunk_opt = compiler.compile(fh, name);
         if chunk_opt.is_none() {

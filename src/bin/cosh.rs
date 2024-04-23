@@ -59,7 +59,7 @@ fn import_cosh_conf(vm: &mut VM, global_functions: Rc<RefCell<HashMap<String, Rc
                 let file_res = fs::File::open(new_path);
                 if let Ok(file) = file_res {
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-                    let chunk_opt = vm.interpret(global_functions.clone(), &mut bufread, "cosh.conf");
+                    let chunk_opt = vm.interpret(&mut bufread, "cosh.conf");
                     if let Some(chunk) = chunk_opt {
                         for (k, v) in chunk.borrow().functions.iter() {
                             if !k.starts_with("anon") {
@@ -148,7 +148,8 @@ fn main() {
                 std::process::exit(1);
             }
             let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
-            let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())), libdir);
+            let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())),
+                                 Rc::new(RefCell::new(HashMap::new())), libdir);
             let mut functions = Vec::new();
             if !matches.opt_present("no-rt") {
                 let mut rtchunk_opt = compiler.deserialise(&rt_chc);
@@ -211,7 +212,8 @@ fn main() {
                     }
                 }
             } else {
-                let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())), libdir);
+                let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())),
+                                     Rc::new(RefCell::new(HashMap::new())), libdir);
                 let global_functions = Rc::new(RefCell::new(HashMap::new()));
 
                 if !matches.opt_present("no-rt") {
@@ -228,7 +230,7 @@ fn main() {
                     vm.stack.push(new_string_value(arg.to_string()));
                 }
 
-                vm.interpret(global_functions, &mut bufread, "(main)");
+                vm.interpret(&mut bufread, "(main)");
             }
         }
     } else if !expr_opt.is_none() {
@@ -254,7 +256,8 @@ fn main() {
 
         let global_functions = Rc::new(RefCell::new(HashMap::new()));
         let global_vars = Rc::new(RefCell::new(HashMap::new()));
-        let mut vm = VM::new(true, debug, global_vars.clone(), libdir);
+        let mut vm = VM::new(true, debug, global_functions.clone(),
+                             global_vars.clone(), libdir);
 
         if !matches.opt_present("no-rt") {
             vm.stack.push(new_string_value("rt".to_string()));
@@ -272,12 +275,13 @@ fn main() {
             import_cosh_conf(&mut vm, global_functions.clone());
         }
         let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
-        vm.interpret(global_functions.clone(), &mut bufread, "(main)");
+        vm.interpret(&mut bufread, "(main)");
     } else {
         /* A path has not been provided, so start the shell. */
         let global_functions = Rc::new(RefCell::new(HashMap::new()));
         let global_vars = Rc::new(RefCell::new(HashMap::new()));
-        let mut vm = VM::new(true, debug, global_vars.clone(), libdir);
+        let mut vm = VM::new(true, debug, global_functions.clone(),
+                             global_vars.clone(), libdir);
 
         if !matches.opt_present("no-rt") {
             vm.stack.push(new_string_value("rt".to_string()));
@@ -406,7 +410,7 @@ fn main() {
 
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                     rl_rr.borrow_mut().add_history_entry(original_line.as_str());
-                    let chunk_opt = vm.interpret(global_functions.clone(), &mut bufread, "(main)");
+                    let chunk_opt = vm.interpret(&mut bufread, "(main)");
                     match chunk_opt {
                         Some(chunk) => {
                             for (k, v) in chunk.borrow().functions.iter() {

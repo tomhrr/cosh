@@ -2,7 +2,9 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::env;
+use std::fs::File;
 use std::io::Write;
+use std::os::fd::FromRawFd;
 use std::rc::Rc;
 use std::str;
 
@@ -16,17 +18,19 @@ use crate::chunk::{CommandGenerator, Value};
 use crate::vm::*;
 
 lazy_static! {
-    static ref START_DOUBLE_QUOTE: Regex = Regex::new(r#"^\s*""#).unwrap();
-    static ref END_DOUBLE_QUOTE: Regex = Regex::new(r#""\s*$"#).unwrap();
-    static ref START_SINGLE_QUOTE: Regex = Regex::new(r#"^\s*'"#).unwrap();
-    static ref END_SINGLE_QUOTE: Regex = Regex::new(r#"'\s*$"#).unwrap();
-    static ref END_SLASH_EXTRA: Regex = Regex::new(r#".*\\$"#).unwrap();
-    static ref END_SLASH: Regex = Regex::new(r#"\\$"#).unwrap();
-    static ref CAPTURE_NUM: Regex = Regex::new("\\{(\\d+)\\}").unwrap();
-    static ref CAPTURE_WITHOUT_NUM: Regex = Regex::new("\\{\\}").unwrap();
-    static ref HOME_DIR_TILDE: Regex = Regex::new("\\s~").unwrap();
-    static ref LEADING_WS: Regex = Regex::new("^\\s*").unwrap();
-    static ref ENV_VAR: Regex = Regex::new("^(.*)=(.*)$").unwrap();
+    static ref START_DOUBLE_QUOTE:  Regex = Regex ::new(r#"^\s*""#).unwrap();
+    static ref END_DOUBLE_QUOTE:    Regex = Regex ::new(r#""\s*$"#).unwrap();
+    static ref START_SINGLE_QUOTE:  Regex = Regex ::new(r#"^\s*'"#).unwrap();
+    static ref END_SINGLE_QUOTE:    Regex = Regex ::new(r#"'\s*$"#).unwrap();
+    static ref END_SLASH_EXTRA:     Regex = Regex ::new(r#".*\\$"#).unwrap();
+    static ref END_SLASH:           Regex = Regex ::new(r#"\\$"#).unwrap();
+    static ref CAPTURE_NUM:         Regex = Regex ::new("\\{(\\d+)\\}").unwrap();
+    static ref CAPTURE_WITHOUT_NUM: Regex = Regex ::new("\\{\\}").unwrap();
+    static ref HOME_DIR_TILDE:      Regex = Regex ::new("\\s~").unwrap();
+    static ref LEADING_WS:          Regex = Regex ::new("^\\s*").unwrap();
+    static ref ENV_VAR:             Regex = Regex ::new("^(.*)=(.*)$").unwrap();
+    static ref STDOUT_REDIRECT:     Regex = Regex ::new("^1?>(.*)$").unwrap();
+    static ref STDERR_REDIRECT:     Regex = Regex ::new("^2>(.*)$").unwrap();
 }
 
 /// Splits a string on whitespace, taking into account quoted values
@@ -36,8 +40,21 @@ fn split_command(s: &str) -> Option<VecDeque<String>> {
     let mut final_elements = Vec::new();
     let mut buffer = Vec::new();
     let mut delimiter = '"';
+    let mut add_to_next_opt: Option<String> = None;
     for e in elements {
-        let e_str = e.to_string();
+        let mut e_str = e.to_string();
+        match add_to_next_opt {
+            Some(add_to_next) => {
+                e_str = add_to_next + &e_str;
+                add_to_next_opt = None;
+            }
+            _ => {
+                if e_str == ">" || e_str == "2>" || e_str == "1>" {
+                    add_to_next_opt = Some(e_str);
+                    continue;
+                }
+            }
+        }
         if !buffer.is_empty() {
             if !e_str.is_empty() {
                 if e_str.chars().last().unwrap() == delimiter {
@@ -145,7 +162,13 @@ impl VM {
     fn prepare_and_split_command(
         &mut self,
         cmd: &str,
-    ) -> Option<(String, Vec<String>, HashMap<String, String>, HashSet<String>)> {
+        accept_redirects: bool
+    ) -> Option<(String,
+                 Vec<String>,
+                 HashMap<String, String>,
+                 HashSet<String>,
+                 Option<String>,
+                 Option<String>)> {
         let prepared_cmd_opt = self.prepare_command(cmd);
         if prepared_cmd_opt.is_none() {
             return None;
@@ -186,6 +209,36 @@ impl VM {
             }
         }
 
+        let mut stdout_redirect = None;
+        let mut stderr_redirect = None;
+        if accept_redirects {
+            while !elements.is_empty() {
+                let len = elements.len();
+                let element = elements.get(len - 1).unwrap();
+                let mut captures = STDOUT_REDIRECT.captures_iter(element);
+                match captures.next() {
+                    Some(capture) => {
+                        let output = capture.get(1).unwrap().as_str();
+                        stdout_redirect = Some(output.to_string());
+                        elements.pop_back();
+                        continue;
+                    }
+                    _ => {}
+                }
+                captures = STDERR_REDIRECT.captures_iter(element);
+                match captures.next() {
+                    Some(capture) => {
+                        let output = capture.get(1).unwrap().as_str();
+                        stderr_redirect = Some(output.to_string());
+                        elements.pop_back();
+                        continue;
+                    }
+                    _ => {}
+                }
+                break;
+            }
+        }
+
         let mut element_iter = elements.iter();
         let executable_opt = element_iter.next();
         if executable_opt.is_none() {
@@ -195,7 +248,8 @@ impl VM {
         let executable = executable_opt.unwrap();
         let executable_final = LEADING_WS.replace_all(executable, "").to_string();
         let args = element_iter.map(|v| v.to_string()).collect::<Vec<_>>();
-        Some((executable_final, args, prev_env, del_env))
+        Some((executable_final, args, prev_env, del_env,
+              stdout_redirect, stderr_redirect))
     }
 
     /// Takes a command string and a set of parameters as its
@@ -203,11 +257,12 @@ impl VM {
     /// command, and places a generator over the standard output/error
     /// (depends on parameters) of the command onto the stack.
     pub fn core_command(&mut self, cmd: &str, params: HashSet<char>) -> i32 {
-        let prepared_cmd_opt = self.prepare_and_split_command(cmd);
+        let prepared_cmd_opt = self.prepare_and_split_command(cmd, false);
         if prepared_cmd_opt.is_none() {
             return 0;
         }
-        let (executable, args, env, del_env) = prepared_cmd_opt.unwrap();
+        let (executable, args, env, del_env, _, _) =
+            prepared_cmd_opt.unwrap();
 
         let process_res = Command::new(executable)
             .args(args)
@@ -259,13 +314,90 @@ impl VM {
         let cmds: Vec<_> = separator.split(cmd).into_iter().collect();
         let mut last_status = 0;
         for cmd in cmds {
-            let prepared_cmd_opt = self.prepare_and_split_command(cmd);
+            let prepared_cmd_opt =
+                self.prepare_and_split_command(cmd, true);
             if prepared_cmd_opt.is_none() {
                 return 0;
             }
-            let (executable, args, env, del_env) = prepared_cmd_opt.unwrap();
+            let (executable, args, env, del_env,
+                 stdout_redirect_opt, stderr_redirect_opt) =
+                prepared_cmd_opt.unwrap();
 
-            let process_res = Command::new(executable).args(args).spawn();
+            let mut process_cmd = Command::new(executable);
+            let mut process_im = process_cmd.args(args);
+
+            let mut stdout_file_opt = None;
+            let mut stdout_to_stderr = false;
+            if let Some(stdout_redirect) = stdout_redirect_opt {
+                if stdout_redirect == "&2" {
+                    stdout_to_stderr = true;
+                } else {
+                    let stdout_file_res = File::create(stdout_redirect);
+                    match stdout_file_res {
+                        Ok(stdout_file_arg) => {
+                            stdout_file_opt = Some(stdout_file_arg.try_clone().unwrap());
+                            process_im = process_im.stdout(stdout_file_arg);
+                        }
+                        Err(e) => {
+                            let err_str = format!("unable to open stdout redirect file: {}", e);
+                            self.print_error(&err_str);
+                            return 0;
+                        }
+                    }
+                }
+            }
+
+            let mut stderr_file_opt = None;
+            let mut stderr_to_stdout = false;
+            if let Some(stderr_redirect) = stderr_redirect_opt {
+                if stderr_redirect == "&1" {
+                    stderr_to_stdout = true;
+                } else {
+                    let stderr_file_res = File::create(stderr_redirect);
+                    match stderr_file_res {
+                        Ok(stderr_file_arg) => {
+                            stderr_file_opt = Some(stderr_file_arg.try_clone().unwrap());
+                            process_im = process_im.stderr(stderr_file_arg);
+                        }
+                        Err(e) => {
+                            let err_str = format!("unable to open stderr redirect file: {}", e);
+                            self.print_error(&err_str);
+                            return 0;
+                        }
+                    }
+                }
+            }
+
+            if stdout_to_stderr {
+                match stderr_file_opt {
+                    Some(stderr_file) => {
+                        process_im =
+                            process_im.stdout(stderr_file.try_clone().unwrap());
+                    }
+                    _ => {
+                        unsafe {
+                            process_im =
+                                process_im.stdout(Stdio::from_raw_fd(2));
+                        }
+                    }
+                }
+            }
+            if stderr_to_stdout {
+                match stdout_file_opt {
+                    Some(stdout_file) => {
+                        process_im =
+                            process_im.stderr(stdout_file.try_clone().unwrap());
+                    }
+                    _ => {
+                        unsafe {
+                            process_im =
+                                process_im.stderr(Stdio::from_raw_fd(1));
+                        }
+                    }
+                }
+            }
+
+            let process_res = process_im.spawn();
             restore_env(env, del_env);
             match process_res {
                 Ok(mut process) => {
@@ -319,11 +451,13 @@ impl VM {
 
         match cmd_rr {
             Value::Command(s, _) => {
-                let prepared_cmd_opt = self.prepare_and_split_command(&s);
+                let prepared_cmd_opt =
+                    self.prepare_and_split_command(&s, false);
                 if prepared_cmd_opt.is_none() {
                     return 0;
                 }
-                let (executable, args, env, del_env) = prepared_cmd_opt.unwrap();
+                let (executable, args, env, del_env, _, _) =
+                    prepared_cmd_opt.unwrap();
 
                 let process_ = Command::new(executable)
                     .args(args)

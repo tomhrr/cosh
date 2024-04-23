@@ -2187,3 +2187,23 @@ fn lrhr_test() {
     basic_test("h(1 2 3 4 5 6) 3 [2 *] 5 hr; (1 3 5) get",
                "(\n    0: 2\n    1: 4\n    2: 8\n)");
 }
+
+#[test]
+fn redirect_test() {
+    basic_test("redtest rmf; 'ls >redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    basic_test("redtest rmf; 'ls > redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+
+    basic_test("redtest rmf; 'ls notexists 2>redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    basic_test("redtest rmf; 'ls notexists 2> redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+
+    basic_test("redtest rmf; 'ls 2>redtest 1>/dev/null' exec; drop; redtest f<; len; 0 =; redtest rmf", ".t");
+    basic_test("redtest rmf; 'ls 2> redtest 1>/dev/null' exec; drop; redtest f<; len; 0 =; redtest rmf", ".t");
+
+    basic_test("redtest rmf; 'ls notexists 1>redtest 2>/dev/null' exec; drop; redtest f<; len; 0 =; redtest rmf", ".t");
+    basic_test("redtest rmf; 'ls notexists 1> redtest 2>/dev/null' exec; drop; redtest f<; len; 0 =; redtest rmf", ".t");
+
+    basic_test("redtest rmf; 'ls 2>redtest 1>&2' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    basic_test("redtest rmf; 'ls 1>redtest 2>&1' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    basic_test("redtest rmf; 'ls notexists 2>redtest 1>&2' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    basic_test("redtest rmf; 'ls notexists 1>redtest 2>&1' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+}

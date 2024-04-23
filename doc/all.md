@@ -1402,7 +1402,9 @@ for a standard shell:
     )]
 
 External calls that do not produce generators support `&&` for
-sequencing multiple commands, in the same way as for a standard shell.
+sequencing multiple commands, `>` for redirecting standard output, and
+`2>` for redirecting standard error, in the same way as for a standard
+shell.
 
 The `jobs` form can be used to get information about background
 processes.  When it is called, it will also check for jobs that are

@@ -824,10 +824,10 @@ impl Compiler {
                         .insert(name_str, Rc::new(RefCell::new(function_chunk)));
                 }
                 TokenType::RightBracket => {
-                    if let OpCode::Constant = chunk.get_second_last_opcode() {
+                    if let Some(OpCode::Constant) = chunk.get_second_last_opcode() {
                         match chunk.get_last_opcode() {
-                            OpCode::Call => {}
-                            OpCode::CallImplicit => {}
+                            Some(OpCode::Call) => {}
+                            Some(OpCode::CallImplicit) => {}
                             _ => {
                                 chunk.add_opcode(OpCode::CallImplicit);
                             }
@@ -873,7 +873,7 @@ impl Compiler {
                 TokenType::Word(s) | TokenType::WordImplicit(s) => {
                     if s == "+" {
                         match chunk.get_third_last_opcode() {
-                            OpCode::Constant => {
+                            Some(OpCode::Constant) => {
                                 let mlen = chunk.data.len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
@@ -888,7 +888,7 @@ impl Compiler {
                         }
                     } else if s == "-" {
                         match chunk.get_third_last_opcode() {
-                            OpCode::Constant => {
+                            Some(OpCode::Constant) => {
                                 let mlen = chunk.data.len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
@@ -903,7 +903,7 @@ impl Compiler {
                         }
                     } else if s == "*" {
                         match chunk.get_third_last_opcode() {
-                            OpCode::Constant => {
+                            Some(OpCode::Constant) => {
                                 let mlen = chunk.data.len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
@@ -918,7 +918,7 @@ impl Compiler {
                         }
                     } else if s == "/" {
                         match chunk.get_third_last_opcode() {
-                            OpCode::Constant => {
+                            Some(OpCode::Constant) => {
                                 let mlen = chunk.data.len() - 1;
                                 chunk.set_previous_point(
                                     mlen,
@@ -940,19 +940,14 @@ impl Compiler {
                     } else if s == "<" {
                         chunk.add_opcode(OpCode::Lt);
                     } else if s == "=" {
-                        /* More opcode/data issues. */
-                        /*
                         match chunk.get_third_last_opcode() {
-                            OpCode::Constant => {
+                            Some(OpCode::Constant) => {
                                 chunk.set_third_last_opcode(OpCode::EqConstant);
                             }
                             _ => {
-                        */
                                 chunk.add_opcode(OpCode::Eq);
-                        /*
                             }
                         }
-                        */
                     } else if s == "varm" {
                         if !chunk.has_constant() {
                             eprintln!(
@@ -987,15 +982,26 @@ impl Compiler {
                             chunk.pop_byte();
                             chunk.pop_byte();
                             let last_opcode = chunk.get_last_opcode();
-                            let not_constant = !matches!(last_opcode, OpCode::Constant);
-                            if not_constant {
+                            chunk.pop_byte();
+
+                            let is_error;
+                            match last_opcode {
+                                Some(last_opcode) => {
+                                    let not_constant = !matches!(last_opcode, OpCode::Constant);
+                                    is_error = not_constant;
+                                }
+                                _ => {
+                                    is_error = true;
+                                }
+                            }
+                            if is_error {
                                 eprintln!(
                                     "{}:{}: variable name must precede var",
                                     token.line_number, token.column_number
                                 );
                                 return false;
                             }
-                            chunk.pop_byte();
+
                             match last_constant_rr {
                                 Value::String(st) => {
                                     let local = Local::new(
@@ -1030,15 +1036,25 @@ impl Compiler {
                         chunk.pop_byte();
                         chunk.pop_byte();
                         let last_opcode = chunk.get_last_opcode();
-                        let not_constant = !matches!(last_opcode, OpCode::Constant);
-                        if not_constant {
+                        chunk.pop_byte();
+                        let is_error;
+                        match last_opcode {
+                            Some(last_opcode) => {
+                                let not_constant = !matches!(last_opcode, OpCode::Constant);
+                                is_error = not_constant;
+                            }
+                            _ => {
+                                is_error = true;
+                            }
+                        }
+                        if is_error {
                             eprintln!(
                                 "{}:{}: variable name must precede !",
                                 token.line_number, token.column_number
                             );
                             return false;
                         }
-                        chunk.pop_byte();
+
                         let mut success = false;
                         {
                             match last_constant_rr {
@@ -1087,8 +1103,17 @@ impl Compiler {
                         chunk.pop_byte();
                         let last_opcode = chunk.get_last_opcode();
                         chunk.pop_byte();
-                        let not_constant = !matches!(last_opcode, OpCode::Constant);
-                        if not_constant {
+                        let is_error;
+                        match last_opcode {
+                            Some(last_opcode) => {
+                                let not_constant = !matches!(last_opcode, OpCode::Constant);
+                                is_error = not_constant;
+                            }
+                            _ => {
+                                is_error = true;
+                            }
+                        }
+                        if is_error {
                             eprintln!(
                                 "{}:{}: variable name must precede @",
                                 token.line_number, token.column_number
@@ -1141,10 +1166,19 @@ impl Compiler {
                         let last_constant_rr = chunk.get_last_constant();
                         chunk.pop_byte();
                         chunk.pop_byte();
-                        let last_opcode = chunk.get_last_opcode();
+                        let last_opcode_opt = chunk.get_last_opcode();
                         chunk.pop_byte();
-                        let not_constant = !matches!(last_opcode, OpCode::Constant);
-                        if not_constant {
+                        let is_error;
+                        match last_opcode_opt {
+                            Some(last_opcode) => {
+                                let not_constant = !matches!(last_opcode, OpCode::Constant);
+                                is_error = not_constant;
+                            }
+                            _ => {
+                                is_error = true;
+                            }
+                        }
+                        if is_error {
                             eprintln!(
                                 "{}:{}: variable name must precede @@",
                                 token.line_number, token.column_number
@@ -1197,29 +1231,23 @@ impl Compiler {
                     } else if s == "drop" {
                         chunk.add_opcode(OpCode::Drop);
                     } else if s == "funcall" {
-                        //let mut done = false;
-                        /* This doesn't distinguish opcodes from data
-                         * bytes. :S */
-                        /*
-                        if let OpCode::GetLocalVar = chunk.get_second_last_opcode() {
+                        let mut done = false;
+                        if let Some(OpCode::GetLocalVar) = chunk.get_second_last_opcode() {
                             chunk.set_second_last_opcode(OpCode::GLVCall);
                             done = true;
                         }
-                        */
-                        //if !done {
+                        if !done {
                             chunk.add_opcode(OpCode::Call);
-                        //}
+                        }
                     } else if s == "shift" {
-                        //let mut done = false;
-                        /*
-                        if let OpCode::GetLocalVar = chunk.get_second_last_opcode() {
+                        let mut done = false;
+                        if let Some(OpCode::GetLocalVar) = chunk.get_second_last_opcode() {
                             chunk.set_second_last_opcode(OpCode::GLVShift);
                             done = true;
                         }
-                        */
-                        //if !done {
+                        if !done {
                             chunk.add_opcode(OpCode::Shift);
-                        //}
+                        }
                     } else if s == "yield" {
                         chunk.add_opcode(OpCode::Yield);
                     } else if s == "clear" {
@@ -1236,7 +1264,7 @@ impl Compiler {
                         chunk.add_opcode(OpCode::Over);
                     } else if s == "is-null" {
                         match chunk.get_last_opcode() {
-                            OpCode::Dup => {
+                            Some(OpCode::Dup) => {
                                 chunk.set_last_opcode(OpCode::DupIsNull);
                             }
                             _ => {
@@ -1366,13 +1394,13 @@ impl Compiler {
                         match begin_index {
                             Some(n) => {
                                 let mut done = false;
-                                if let (OpCode::EqConstant, OpCode::Dup) = (
+                                if let (Some(OpCode::EqConstant), Some(OpCode::Dup)) = (
                                     chunk.get_third_last_opcode(),
                                     chunk.get_fourth_last_opcode(),
                                 ) {
                                     chunk.set_fourth_last_opcode(OpCode::JumpNeREqC);
-                                    let cb1 = chunk.get_second_last_byte();
-                                    let cb2 = chunk.get_last_byte();
+                                    let cb1 = chunk.get_second_last_byte().unwrap();
+                                    let cb2 = chunk.get_last_byte().unwrap();
                                     let i3 = (((cb1 as u16) << 8) & 0xFF00) | (cb2 as u16);
                                     if chunk.has_constant_int(i3 as i32) {
                                         let jmp_len = chunk.data.len() - n + 1;
@@ -1389,9 +1417,9 @@ impl Compiler {
                                 };
                                 if !done {
                                     let mut done2 = false;
-                                    if let OpCode::Constant = chunk.get_third_last_opcode() {
-                                        let i_upper = chunk.get_second_last_byte();
-                                        let i_lower = chunk.get_last_byte();
+                                    if let Some(OpCode::Constant) = chunk.get_third_last_opcode() {
+                                        let i_upper = chunk.get_second_last_byte().unwrap();
+                                        let i_lower = chunk.get_last_byte().unwrap();
                                         let constant_i =
                                             (((i_upper as u16) << 8) & 0xFF00) | (i_lower as u16);
                                         let v = chunk.get_constant(constant_i.into());

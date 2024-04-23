@@ -49,6 +49,8 @@ pub struct Chunk {
     pub name: String,
     /// The bytecode for the chunk.
     pub data: Vec<u8>,
+    /// Whether the byte at this position in data is an opcode.
+    pub is_opcode: Vec<bool>,
     /// The line and column number information for the chunk.  The
     /// entries in this vector correspond to the entries in the
     /// bytecode vector.
@@ -1280,6 +1282,7 @@ impl Chunk {
         Chunk {
             name,
             data: Vec::new(),
+            is_opcode: Vec::new(),
             points: Vec::new(),
             constants: Vec::new(),
             functions: HashMap::new(),
@@ -1298,6 +1301,7 @@ impl Chunk {
         Chunk {
             name,
             data: Vec::new(),
+            is_opcode: Vec::new(),
             points: Vec::new(),
             constants: Vec::new(),
             functions: HashMap::new(),
@@ -1399,61 +1403,54 @@ impl Chunk {
     /// Add an opcode to the current chunk's data.
     pub fn add_opcode(&mut self, opcode: OpCode) {
         self.data.push(opcode as u8);
+        self.is_opcode.push(true);
     }
 
-    /// Get the last opcode from the current chunk's data.
-    pub fn get_last_opcode(&self) -> OpCode {
-        return to_opcode(*self.data.last().unwrap());
+    /// If the last byte in the data is an opcode, return that opcode.
+    pub fn get_last_opcode(&self) -> Option<OpCode> {
+        if *self.is_opcode.last().unwrap() {
+            Some(to_opcode(*self.data.last().unwrap()))
+        } else {
+            None
+        }
     }
 
-    /// Get the second-last opcode from the current chunk's data.
-    /// Defaults to `OpCode::Call`, if the chunk does not have at
-    /// least two opcodes.  Used for adding implicit call opcodes, if
-    /// required.
-    pub fn get_second_last_opcode(&self) -> OpCode {
+    /// If the second-last byte in the data is an opcode, return that
+    /// opcode.
+    pub fn get_second_last_opcode(&self) -> Option<OpCode> {
         if self.data.len() < 2 {
-            return OpCode::Call;
+            return None;
         }
-        return to_opcode(*self.data.get(self.data.len() - 2).unwrap());
+        if *self.is_opcode.get(self.is_opcode.len() - 2).unwrap() {
+            Some(to_opcode(*self.data.get(self.data.len() - 2).unwrap()))
+        } else {
+            None
+        }
     }
 
-    /// Get the third-last opcode from the current chunk's data.
-    pub fn get_third_last_opcode(&self) -> OpCode {
+    /// If the third-last byte in the data is an opcode, return that
+    /// opcode.
+    pub fn get_third_last_opcode(&self) -> Option<OpCode> {
         if self.data.len() < 3 {
-            return OpCode::Call;
+            return None;
         }
-        return to_opcode(*self.data.get(self.data.len() - 3).unwrap());
+        if *self.is_opcode.get(self.is_opcode.len() - 3).unwrap() {
+            Some(to_opcode(*self.data.get(self.data.len() - 3).unwrap()))
+        } else {
+            None
+        }
     }
 
-    /// Get the fourth-last opcode from the current chunk's data.
-    pub fn get_fourth_last_opcode(&self) -> OpCode {
+    /// If the fourth-last byte in the data is an opcode, return that
+    /// opcode.
+    pub fn get_fourth_last_opcode(&self) -> Option<OpCode> {
         if self.data.len() < 4 {
-            return OpCode::Call;
+            return None;
         }
-        return to_opcode(*self.data.get(self.data.len() - 4).unwrap());
-    }
-
-    /// Set the second-last opcode for the current chunk's data.
-    pub fn set_second_last_opcode(&mut self, opcode: OpCode) {
-        let len = self.data.len();
-        if let Some(el) = self.data.get_mut(len - 2) {
-            *el = opcode as u8;
-        }
-    }
-
-    /// Set the third-last opcode for the current chunk's data.
-    pub fn set_third_last_opcode(&mut self, opcode: OpCode) {
-        let len = self.data.len();
-        if let Some(el) = self.data.get_mut(len - 3) {
-            *el = opcode as u8;
-        }
-    }
-
-    /// Set the fourth-last opcode for the current chunk's data.
-    pub fn set_fourth_last_opcode(&mut self, opcode: OpCode) {
-        let len = self.data.len();
-        if let Some(el) = self.data.get_mut(len - 4) {
-            *el = opcode as u8;
+        if *self.is_opcode.get(self.is_opcode.len() - 4).unwrap() {
+            Some(to_opcode(*self.data.get(self.data.len() - 4).unwrap()))
+        } else {
+            None
         }
     }
 
@@ -1462,61 +1459,117 @@ impl Chunk {
         let len = self.data.len();
         if let Some(el) = self.data.get_mut(len - 1) {
             *el = opcode as u8;
+            let io = self.is_opcode.get_mut(len - 1).unwrap();
+            *io = true;
+        }
+    }
+
+    /// Set the second-last opcode for the current chunk's data.
+    pub fn set_second_last_opcode(&mut self, opcode: OpCode) {
+        let len = self.data.len();
+        if let Some(el) = self.data.get_mut(len - 2) {
+            *el = opcode as u8;
+            let io = self.is_opcode.get_mut(len - 2).unwrap();
+            *io = true;
+        }
+    }
+
+    /// Set the third-last opcode for the current chunk's data.
+    pub fn set_third_last_opcode(&mut self, opcode: OpCode) {
+        let len = self.data.len();
+        if let Some(el) = self.data.get_mut(len - 3) {
+            *el = opcode as u8;
+            let io = self.is_opcode.get_mut(len - 3).unwrap();
+            *io = true;
+        }
+    }
+
+    /// Set the fourth-last opcode for the current chunk's data.
+    pub fn set_fourth_last_opcode(&mut self, opcode: OpCode) {
+        let len = self.data.len();
+        if let Some(el) = self.data.get_mut(len - 4) {
+            *el = opcode as u8;
+            let io = self.is_opcode.get_mut(len - 4).unwrap();
+            *io = true;
         }
     }
 
     /// Add a raw byte to the current chunk's data.
     pub fn add_byte(&mut self, byte: u8) {
         self.data.push(byte);
+        self.is_opcode.push(false);
     }
 
     /// Remove the last byte from the current chunk's data.
     pub fn pop_byte(&mut self) {
         self.data.pop();
+        self.is_opcode.pop();
     }
 
-    /// Get the last byte from the current chunk's data.
-    pub fn get_last_byte(&self) -> u8 {
-        return *self.data.last().unwrap();
+    /// If the last byte in the data is a raw byte, return that byte.
+    pub fn get_last_byte(&self) -> Option<u8> {
+        if !*self.is_opcode.last().unwrap() {
+            Some(*self.data.last().unwrap())
+        } else {
+            None
+        }
     }
 
-    /// Get the second-last byte from the current chunk's data.
-    pub fn get_second_last_byte(&self) -> u8 {
+    /// If the second-last byte in the data is a raw byte, return that
+    /// byte.
+    pub fn get_second_last_byte(&self) -> Option<u8> {
         if self.data.len() < 2 {
-            return 0;
+            return None;
         }
-        return *self.data.get(self.data.len() - 2).unwrap();
+        if !*self.is_opcode.get(self.is_opcode.len() - 2).unwrap() {
+            Some(*self.data.get(self.data.len() - 2).unwrap())
+        } else {
+            None
+        }
     }
 
-    /// Get the third-last byte from the current chunk's data.
-    pub fn get_third_last_byte(&self) -> u8 {
+    /// If the third-last byte in the data is a raw byte, return that
+    /// byte.
+    pub fn get_third_last_byte(&self) -> Option<u8> {
         if self.data.len() < 3 {
-            return 0;
+            return None;
         }
-        return *self.data.get(self.data.len() - 3).unwrap();
+        if !*self.is_opcode.get(self.is_opcode.len() - 3).unwrap() {
+            Some(*self.data.get(self.data.len() - 3).unwrap())
+        } else {
+            None
+        }
     }
 
-    /// Set the last byte for the current chunk's data.
+    /// Set the last byte for the current chunk's data as a raw byte.
     pub fn set_last_byte(&mut self, byte: u8) {
         let len = self.data.len();
         if let Some(el) = self.data.get_mut(len - 1) {
             *el = byte;
+            let io = self.is_opcode.get_mut(len - 1).unwrap();
+            *io = false;
         }
     }
 
-    /// Set the second-last byte for the current chunk's data.
+    /// Set the second-last byte for the current chunk's data as a raw
+    /// byte.
     pub fn set_second_last_byte(&mut self, byte: u8) {
         let len = self.data.len();
         if let Some(el) = self.data.get_mut(len - 2) {
             *el = byte;
+            let io = self.is_opcode.get_mut(len - 2).unwrap();
+            *io = false;
         }
     }
 
-    /// Set the third-last byte for the current chunk's data.
+    /// Set the third-last byte for the current chunk's data as a raw
+    /// byte.
     pub fn set_third_last_byte(&mut self, byte: u8) {
         let len = self.data.len();
         if let Some(el) = self.data.get_mut(len - 3) {
             *el = byte;
+            let io = self.is_opcode.get_mut(len - 3).unwrap();
+            *io = false;
         }
     }
 

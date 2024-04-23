@@ -17,7 +17,7 @@ ssh-env-path var; ssh-env-path !;
 
 : ssh-agent.start
     {/usr/bin/ssh-agent}; [^echo #echo s] map; ssh-env-path @; f>;
-    ssh-env-path @; 600 oct; chmod;
+    ssh-env-path @; 600 unoct; chmod;
     ssh-agent.set-vars;
     /usr/bin/ssh-add exec; drop;
     ,,

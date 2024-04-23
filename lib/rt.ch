@@ -739,6 +739,22 @@
 
 : pse /proc/{} fmt; is-dir; ,,
 
+: joinr
+    sep var; sep !;
+    gen var; gen !;
+    "" res var; res !;
+    begin;
+        gen @; shift;
+        dup; is-null; if;
+            drop;
+            res @;
+            leave;
+        else;
+            res @; swap; sep @; ++; swap; ++; res !;
+        then;
+        0 until;
+        ,,
+
 # ping and pingn are implemented by calling ping(1), to avoid needing
 # root privileges in the shell.
 : ping

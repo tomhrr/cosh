@@ -643,7 +643,9 @@ Both `split` and `join` handle quoting of values that contain either
 the delimiter, or a quotation mark.
 
 `splitr` splits a string based on a delimiter regex.  It does not
-handle quoting of values, though.
+handle quoting of values, though.  `joinr` joins a list of strings
+together using a delimiter string, also without handling quoting of
+values.
 
 `len` returns the length of a string.  This function also works for
 sets, hashes, strings, and generators.

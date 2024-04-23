@@ -89,13 +89,7 @@
     from-json;
     ,,
 
-: rpkic.file
-    cwd; cwd var; cwd !;
-    name var; name !;
-    rpkic state get-storage-dir; / ++; name @; ++; cd;
-    tals ls; [-t{} fmt] map; ' ' join;
-    {./rpki-client {} -d ./cache -f {} -j}/o;
-    from-json;
+: rpkic.file-annotate
     dup; valid_since exists; if;
         dup; valid_since get; from-epoch; valid_since swap; set;
     then;
@@ -138,3 +132,42 @@
         revoked_certs swap; set;
     then;
     ,,
+
+: rpkic.file
+    rpkic.file-raw;
+    rpkic.file-annotate;
+    ,,
+
+:~ rpkic.files 2 2
+    drop;
+    cwd; cwd var; cwd !;
+    name var; name !;
+    files var; files !;
+    rpkic state get-storage-dir; / ++; name @; ++; cd;
+    tals ls; [-t{} fmt] map; ' ' join; talstr var; talstr !;
+    begin;
+        files @; 100 take; r;
+        dup; len; 0 =; if;
+            leave;
+        else;
+            dup; len; range; [drop; "-f {}"] map; ' ' joinr;
+            talstr @;
+            "./rpki-client {} -d ./cache {} -j" fmt; cmdstr var; cmdstr !;
+            shift-all; cmdstr @; fmt;
+            cmd; res var; res !;
+            begin;
+                res @;
+                ["^}\n" m] before; r;
+                dup; len; 0 =; if;
+                    drop;
+                    leave;
+                else;
+                    "}\n" push; '' join;
+                    from-json;
+                    rpkic.file-annotate;
+                    yield;
+                then;
+                0 until;
+        then;
+        0 until;
+        ,,

@@ -95,3 +95,11 @@ A library that acts as a wrapper around
       returns data for the specified cache path per the `-f` option to
       `rpki-client` (with field values converted to native data types
       where possible).
+
+ - `rpkic.files`
+    - Takes a list of cache paths and an instance name as its
+      arguments, and returns a generator over the data for the
+      specified cache paths per the `-f` option to `rpki-client` (with
+      field values converted to native data types where possible).
+      (This function calls `rpki-client` with multiple paths each
+      time, which means that it's faster than `rpkic.file`.)

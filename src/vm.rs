@@ -1603,11 +1603,23 @@ impl VM {
                         ListType::Hash => {
                             let mut map = IndexMap::new();
                             while self.stack.len() > list_index {
+                                if self.stack.len() < 2 {
+                                    self.print_error("expected even number of elements for hash");
+                                    return 0;
+                                }
                                 let value_rr = self.stack.pop().unwrap();
                                 let key_rr = self.stack.pop().unwrap();
                                 let key_str_opt: Option<&str>;
                                 to_str!(key_rr, key_str_opt);
-                                map.insert(key_str_opt.unwrap().to_string(), value_rr);
+                                match key_str_opt {
+                                    Some(s) => {
+                                        map.insert(s.to_string(), value_rr);
+                                    }
+                                    None => {
+                                        self.print_error("expected string for hash key");
+                                        return 0;
+                                    }
+                                }
                             }
                             self.stack.push(Value::Hash(Rc::new(RefCell::new(map))));
                         }

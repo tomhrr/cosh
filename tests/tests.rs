@@ -2207,3 +2207,9 @@ fn redirect_test() {
     basic_test("redtest rmf; 'ls notexists 2>redtest 1>&2' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
     basic_test("redtest rmf; 'ls notexists 1>redtest 2>&1' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
 }
+
+#[test]
+fn hash_literal_test() {
+    basic_error_test("h(1)", "1:5: expected even number of elements for hash");
+    basic_error_test("h(h(1 2) 3)", "1:13: expected string for hash key");
+}

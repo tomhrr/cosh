@@ -233,19 +233,25 @@ impl VM {
                 }
                 let record_type = record_type_opt.unwrap();
 
+                let name_opt =
+                    hickory_client::rr::Name::from_ascii(query_so);
+                if let Err(_) = name_opt {
+                    self.print_error("invalid DNS name");
+                    return 0;
+                }
+                let name = name_opt.unwrap();
+
 		let (tx, rx) = mpsc::channel();
 		thread::spawn(move || {
 		    let client = SyncClient::new(
 			UdpClientConnection::new(addr_to_use).unwrap()
 		    );
-		    let name =
-			hickory_client::rr::Name::from_ascii(query_so).unwrap();
-		    let res = client.query(
-			&name,
-			hickory_client::rr::DNSClass::IN,
-			record_type
-		    );
-		    let _ = tx.send(res);
+                    let res = client.query(
+                        &name,
+                        hickory_client::rr::DNSClass::IN,
+                        record_type
+                    );
+                    let _ = tx.send(res);
 		});
                 let resp;
 		loop {

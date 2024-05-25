@@ -776,10 +776,16 @@ impl VM {
                                 if chunk_opt.is_none() {
                                     return 0;
                                 }
-                                let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));
+                                let chunk = chunk_opt.unwrap();
+                                for (k, v) in chunk.functions.iter() {
+                                    if !k.starts_with("anon") {
+                                        self.global_functions.borrow_mut().insert(k.clone(), v.clone());
+                                    }
+                                }
+                                let chunk_rc = Rc::new(RefCell::new(chunk));
                                 let print_stack = self.print_stack;
                                 self.print_stack = false;
-                                self.run(chunk.clone());
+                                self.run(chunk_rc.clone());
                                 self.print_stack = print_stack;
                             }
                             Err(_) => {

@@ -44,6 +44,12 @@ fn pager_input(window_height: i32,
                  * pressed. */
                 lines_to_print = i32::MAX;
             }
+            Ok(termion::event::Key::Ctrl('f')) => {
+                lines_to_print += window_height - 1;
+            }
+            Ok(termion::event::Key::Char('G')) => {
+                lines_to_print = i32::MAX;
+            }
             /* The default behaviour for these two might be
              * confusing, so make them no-ops. */
             Ok(termion::event::Key::Home) => {

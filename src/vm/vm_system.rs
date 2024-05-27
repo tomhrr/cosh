@@ -1149,4 +1149,40 @@ impl VM {
             }
         }
     }
+
+    /// Takes a symbolic link path as its single argument, and returns
+    /// the link target.
+    pub fn core_readlink(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("readlink requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+
+        match value_opt {
+            Some(s) => {
+                let ss = VM::expand_tilde(s);
+                let res = std::fs::read_link(ss);
+                match res {
+                    Ok(ts) => {
+                        self.stack.push(
+                            new_string_value(ts.to_str().unwrap().to_string()));
+                    }
+                    Err(e) => {
+                        let err_str = format!("unable to read link: {}", e);
+                        self.print_error(&err_str);
+                        return 0;
+                    }
+                }
+            }
+            _ => {
+                self.print_error("readlink argument must be a string");
+                return 0;
+            }
+        }
+        1
+    }
 }

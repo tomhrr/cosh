@@ -1037,6 +1037,8 @@ Other operations:
  - `stat`: returns a hash containing metadata about the argument file.
  - `lstat`: like stat, but if the argument is a symbolic link, returns
    metadata about the link itself, instead of its target.
+ - `readlink`: takes a symbolic link path, and returns the link
+   target.
  - `ps`: returns a list containing details on the currently-running
    processes, where each process has a separate hash containing the
    PID, UID, username, GID, process name, full command, memory usage

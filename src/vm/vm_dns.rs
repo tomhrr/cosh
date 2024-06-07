@@ -390,6 +390,7 @@ impl VM {
         let type_rr = self.stack.pop().unwrap();
         let query_rr = self.stack.pop().unwrap();
 
+        self.refresh_dns_servers_if_necessary();
         let server_addr = self.dns_servers.get(0);
         if let None = server_addr {
             self.print_error("unable to find default server for dns");

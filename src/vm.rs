@@ -13,6 +13,7 @@ use std::str;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::SystemTime;
 
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
@@ -103,6 +104,8 @@ pub struct VM {
     libdir: &'static str,
     /// Child process details.
     child_processes: IndexMap<u32, String>,
+    /// The modification time of the nameserver file.
+    dns_mtime: SystemTime,
     /// Local nameserver addresses.
     dns_servers: Vec<ScopedIp>
 }
@@ -442,6 +445,8 @@ impl VM {
             readline: None,
             libdir,
             child_processes: IndexMap::new(),
+            dns_mtime: std::fs::metadata("/etc/resolv.conf").unwrap()
+                                                            .modified().unwrap(),
             dns_servers: config.nameservers
         }
     }
@@ -454,6 +459,19 @@ impl VM {
                 self.users = Some(Users::new());
             }
             _ => {}
+        }
+    }
+
+    /// Refresh the VM's DNS servers, if necessary.
+    pub fn refresh_dns_servers_if_necessary(&mut self) {
+        let current_mtime =
+            std::fs::metadata("/etc/resolv.conf").unwrap()
+                                                 .modified().unwrap();
+        if current_mtime != self.dns_mtime {
+            self.dns_mtime = current_mtime;
+            let contents = std::fs::read_to_string("/etc/resolv.conf").expect("Failed to open resolv.conf");
+            let config = resolv_conf::Config::parse(&contents).unwrap();
+            self.dns_servers = config.nameservers;
         }
     }
 

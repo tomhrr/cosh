@@ -2218,3 +2218,9 @@ fn hash_literal_test() {
 fn avg_test() {
     basic_test("10 range; avg", "4.5");
 }
+
+#[test]
+fn single_address_range() {
+    basic_test("1.1.1.1-1.1.1.1 ip", "v[ip 1.1.1.1]");
+    basic_test("::-:: ip", "v[ip ::]");
+}

@@ -173,15 +173,19 @@ impl VM {
 
                         match (ipv4_fst, ipv4_snd) {
                             (Ok(ipv4_fst_obj), Ok(ipv4_snd_obj)) => {
-                                if ipv4_fst_obj >= ipv4_snd_obj {
+                                if ipv4_fst_obj == ipv4_snd_obj {
+                                    self.stack.push(Value::Ipv4(ipv4_fst_obj));
+                                    return 1;
+                                } else if ipv4_fst_obj > ipv4_snd_obj {
                                     self.print_error("ip argument must be valid IP address string");
                                     return 0;
+                                } else {
+                                    self.stack.push(Value::Ipv4Range(Ipv4Range::new(
+                                        ipv4_fst_obj.network(),
+                                        ipv4_snd_obj.network(),
+                                    )));
+                                    return 1;
                                 }
-                                self.stack.push(Value::Ipv4Range(Ipv4Range::new(
-                                    ipv4_fst_obj.network(),
-                                    ipv4_snd_obj.network(),
-                                )));
-                                1
                             }
                             (_, _) => {
                                 self.print_error("ip argument must be valid IP address string");
@@ -253,15 +257,19 @@ impl VM {
 
                     match (ipv6_fst, ipv6_snd) {
                         (Ok(ipv6_fst_obj), Ok(ipv6_snd_obj)) => {
-                            if ipv6_fst_obj >= ipv6_snd_obj {
+                            if ipv6_fst_obj == ipv6_snd_obj {
+                                self.stack.push(Value::Ipv6(ipv6_fst_obj));
+                                return 1;
+                            } else if ipv6_fst_obj > ipv6_snd_obj {
                                 self.print_error("ip argument must be valid IP address string");
                                 return 0;
+                            } else {
+                                self.stack.push(Value::Ipv6Range(Ipv6Range::new(
+                                    ipv6_fst_obj.network(),
+                                    ipv6_snd_obj.network(),
+                                )));
+                                return 1;
                             }
-                            self.stack.push(Value::Ipv6Range(Ipv6Range::new(
-                                ipv6_fst_obj.network(),
-                                ipv6_snd_obj.network(),
-                            )));
-                            1
                         }
                         (_, _) => {
                             self.print_error("ip argument must be valid IP address string");

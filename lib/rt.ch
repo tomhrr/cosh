@@ -638,6 +638,25 @@
         then;
         .f until; ,,
 
+: avg
+    gen var; gen !;
+    0 total var; total !;
+    0 count var; count !;
+    begin;
+        gen @; shift; dup; is-null; if;
+            drop;
+            leave;
+        then;
+        total @; +; total !;
+        count @; 1 +; count !;
+        0 until;
+    count @; 0 =; if;
+        0
+    else;
+        total @; 0.0 +; count @; /;
+    then;
+    ,,
+
 : mlist
     depth; 1 <; if;
         "mlist requires at least one argument" error;

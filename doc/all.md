@@ -1270,6 +1270,9 @@ into a hexadecimal string.)
 `range` takes an integer and returns a generator over the integers
 from zero to that integer, minus one.
 
+`avg` takes a generator and returns the average of the values in that
+generator.
+
 `to-function` takes a callable string (e.g. a function name) and
 converts it into a function object.  Using `funcall` on the function
 object will then be quicker than using it on the original string.

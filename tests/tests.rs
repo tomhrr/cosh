@@ -2213,3 +2213,8 @@ fn hash_literal_test() {
     basic_error_test("h(1)", "1:5: expected even number of elements for hash");
     basic_error_test("h(h(1 2) 3)", "1:13: expected string for hash key");
 }
+
+#[test]
+fn avg_test() {
+    basic_test("10 range; avg", "4.5");
+}

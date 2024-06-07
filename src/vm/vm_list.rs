@@ -182,18 +182,18 @@ impl VM {
                         }
                     }
 
-                    /* todo: need a generator-specific run function,
-                     * to avoid the stuffing around here. */
-                    let local_vars_stack = generator_object.local_vars_stack.clone();
-                    let chunk = generator_object.chunk.clone();
-                    let call_stack_chunks = &mut generator_object.call_stack_chunks;
-                    mem::swap(call_stack_chunks, &mut self.call_stack_chunks);
-
                     let current_index = index;
-                    if current_index == chunk.borrow().data.len() {
+                    if current_index == generator_object.chunk.borrow().data.len() {
                         /* At end of function: push null. */
                         self.stack.push(Value::Null);
                     } else {
+                        /* todo: need a generator-specific run function,
+                         * to avoid the stuffing around here. */
+                        let local_vars_stack = generator_object.local_vars_stack.clone();
+                        let chunk = generator_object.chunk.clone();
+                        let call_stack_chunks = &mut generator_object.call_stack_chunks;
+                        mem::swap(call_stack_chunks, &mut self.call_stack_chunks);
+
                         let plvs_stack = self.local_var_stack.clone();
                         self.local_var_stack = local_vars_stack;
                         let backup_chunk = self.chunk.clone();

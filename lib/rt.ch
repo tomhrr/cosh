@@ -892,6 +892,8 @@
     [CreatedAt ['%FT%T%z' strptime] CreatedAt hr] map;
     ,,
 
+: docker.logs {docker logs {}}; ,,
+
 # Storage-related functions for libraries.
 : make-xdg-env-var
     XDG_ swap; uc; ++; _HOME ++; ,,

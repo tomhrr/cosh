@@ -1459,7 +1459,7 @@ Aliases are defined for the following commands by default:
 
 In each case, the alias takes 0-2 arguments and passes them to the
 relevant executable as-is.  See
-https://github.com/tomhrr/cosh/blob/main/lib/rt.ch#L809 for the
+https://github.com/tomhrr/cosh/blob/main/lib/rt.ch#L828 for the
 definitions.  There are some additional custom aliases:
 
  - `gr`: maps to "grep -ri {} .".

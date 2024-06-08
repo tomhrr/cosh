@@ -858,6 +858,8 @@
         "git init {}" fmtq; exec; drop;
     then; ,,
 
+: git.push "git push" exec; drop; ,,
+
 :~ git.log 1 0
     0 =; if;
         .
@@ -891,9 +893,18 @@
     then;
     {git status --porcelain {}};
     [h() res var; res !;
-     \s+ splitr; reverse;
-     dup; pop; res @; swap; state swap; set; drop;
-          pop; res @; swap; path  swap; set] map;
+     "(.)(.)\s(.*)" c; dup; shift; drop;
+     reverse;
+     dup; pop; res @; swap; state1 swap; set; drop;
+     dup; pop; res @; swap; state2 swap; set; drop;
+          pop; dup; \s+ m; if;
+              " ->" '' s;
+              \s+ splitr; reverse;
+              dup; pop; res @; swap; from-path swap; set; drop;
+                   pop; res @; swap; path swap; set;
+          else;
+              res @; swap; path swap; set;
+          then; ] map;
     ,,
 
 : zathura     "zathura {}"     fmtq; exec; drop; ,,

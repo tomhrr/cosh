@@ -835,7 +835,6 @@
 : git.mv swap;   "git mv {} {}"     fmtq; exec; drop; ,,
 : git.rm         "git rm {}"        fmtq; exec; drop; ,,
 : git.diff swap; "git diff {} {}"   fmtq; exec; drop; ,,
-: git.log        "git log {}"       fmtq; exec; drop; ,,
 : git.show       "git show {}"      fmtq; exec; drop; ,,
 : git.status     "git status {}"    fmtq; exec; drop; ,,
 : git.commit     "git commit -m {}" fmtq; exec; drop; ,,
@@ -853,6 +852,33 @@
     else;
         "git init {}" fmtq; exec; drop;
     then; ,,
+
+:~ git.log 1 0
+    0 =; if;
+        .
+    then;
+    {git log --format=%H,"%P","%an","%ae",%at,"%cn","%ce",%ct,"%s","%b" {}}/oe;
+    gl var; gl !;
+    begin;
+        gl @; shift; dup; is-null; if;
+            drop;
+            leave;
+        else;
+            h() res var; res !;
+            chomp; , split; reverse; entry var; entry !;
+            (hash parents
+             author-name author-email author-time
+             committer-name committer-email committer-time
+             subject body)
+            [entry @; pop; res @; rot; rot; set; drop] for;
+            res @;
+            parents [\s+ splitr] parents hr;
+            author-time from-epoch author-time hr;
+            committer-time from-epoch committer-time hr;
+            yield;
+        then;
+        0 until;
+        ,,
 
 : zathura     "zathura {}"     fmtq; exec; drop; ,,
 : libreoffice "libreoffice {}" fmtq; exec; drop; ,,

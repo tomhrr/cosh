@@ -913,25 +913,60 @@
 
 : gr {grep -ri "{}" .}; [chomp; "(.*?):(.*)" c; (1 2) get] map; ,,
 
+: _combined-to-lists
+    () stdout var; stdout !;
+    () stderr var; stderr !;
+    [dup; 1 get; swap; 0 get; 1 =; if;
+        stdout @;
+     else;
+        stderr @;
+     then;
+     swap; push; drop] for;
+    stdout @; stderr @; ,,
+
 : _docker.created-at-map
     [CreatedAt [' [A-Z]*$' '' s; '%F %T %z' strptime] CreatedAt hr] map;
     ,,
 : docker.cp swap; "docker cp {} {}" fmtq; exec; drop; ,,
 : docker.ps
-    {docker ps --no-trunc --format '\{\{json .\}\}'};
-    from-json map; _docker.created-at-map;
+    {docker ps --no-trunc --format '\{\{json .\}\}'}/c;
+    _combined-to-lists;
+    dup; len; 0 =; if;
+        drop;
+        from-json map; _docker.created-at-map;
+    else;
+        swap; drop; "" join; chomp; error;
+    then;
     ,,
 : docker.psa
-    {docker ps -a --no-trunc --format '\{\{json .\}\}'};
-    from-json map; _docker.created-at-map;
+    {docker ps -a --no-trunc --format '\{\{json .\}\}'}/c;
+    _combined-to-lists;
+    dup; len; 0 =; if;
+        drop;
+        from-json map; _docker.created-at-map;
+    else;
+        swap; drop; "" join; chomp; error;
+    then;
     ,,
 : docker.images
-    {docker images --no-trunc --format '\{\{json .\}\}'};
-    from-json map; _docker.created-at-map;
+    {docker images --no-trunc --format '\{\{json .\}\}'}/c;
+    _combined-to-lists;
+    dup; len; 0 =; if;
+        drop;
+        from-json map; _docker.created-at-map;
+    else;
+        swap; drop; "" join; chomp; error;
+    then;
     ,,
 : docker.volume
-    {docker volume ls --format '\{\{json .\}\}'};
-    from-json map;
+    {docker volume ls --format '\{\{json .\}\}'}/c;
+    _combined-to-lists;
+    dup; len; 0 =; if;
+        drop;
+        from-json map;
+    else;
+        swap; drop; "" join; chomp; error;
+    then;
     ,,
 : docker.rm    "docker rm    {}" fmtq; exec; drop; ,,
 : docker.kill  "docker kill  {}" fmtq; exec; drop; ,,
@@ -941,11 +976,26 @@
 
 : docker.volume-rm "docker volume rm {}" fmtq; exec; drop; ,,
 : docker.volume-inspect
-    {docker volume inspect {}}; '' join; from-json;
-    [CreatedAt ['%FT%T%z' strptime] CreatedAt hr] map;
+    {docker volume inspect {}}/c;
+    _combined-to-lists;
+    dup; len; 0 =; if;
+        drop;
+        '' join; from-json;
+        [CreatedAt ['%FT%T%z' strptime] CreatedAt hr] map;
+    else;
+        swap; drop; "" join; chomp; error;
+    then;
     ,,
 
-: docker.logs {docker logs {}}; ,,
+: docker.logs
+    {docker logs {}}/c;
+    _combined-to-lists;
+    dup; len; 0 =; if;
+        drop;
+    else;
+        swap; drop; "" join; chomp; error;
+    then;
+    ,,
 
 # Storage-related functions for libraries.
 : make-xdg-env-var

@@ -130,10 +130,23 @@ fn convert_to_xml(v: &Value) -> Option<String> {
                 return None;
             }
 
-            let text_opt = vmm.get("text");
-            if let Some(Value::String(st)) = text_opt {
-                text = st.borrow().string.to_string();
-            };
+            if vmm.contains_key("text") {
+                let t = vmm.get("text").unwrap();
+                if let Value::String(ts) = t {
+                    text = ts.borrow().string.clone();
+                } else {
+                    let s_opt = t.to_string();
+                    match s_opt {
+                        Some(s) => {
+                            text = s;
+                        }
+                        None => {
+                            let type_str = v.type_string();
+                            text = format!("v[{}]", type_str);
+                        }
+                    }
+                }
+            }
             Some(format!(
                 "{}{}{}{}{}{}{}",
                 begin_open_element,

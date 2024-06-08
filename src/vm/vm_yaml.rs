@@ -83,7 +83,19 @@ fn convert_to_yaml(v: &Value) -> String {
                 .join(",");
             format!("{{{}}}", s)
         }
-        _ => "".to_string(),
+        _ => {
+            let s_opt = v.to_string();
+            match s_opt {
+                Some(s) => {
+                    format!("\"{}\"", s)
+                }
+                None => {
+                    let type_str = v.type_string();
+                    let s = format!("\"v[{}]\"", type_str);
+                    s
+                }
+            }
+        }
     }
 }
 

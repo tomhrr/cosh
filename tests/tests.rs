@@ -2226,7 +2226,11 @@ fn single_address_range() {
 }
 
 #[test]
-fn to_json_unhandled() {
+fn to_format_unhandled() {
     basic_test("(1.1.1.1 ip; README.md f<;) to-json; println",
                "[\"1.1.1.1\",\"v[gen]\"]");
+    basic_test("h(key a text 1.1.1.1 ip;) to-xml; println",
+               "<a>1.1.1.1</a>");
+    basic_test("h(a 1.1.1.1 ip;) to-yaml; println",
+               "{\"a\":\"1.1.1.1\"}");
 }

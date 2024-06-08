@@ -2224,3 +2224,9 @@ fn single_address_range() {
     basic_test("1.1.1.1-1.1.1.1 ip", "v[ip 1.1.1.1]");
     basic_test("::-:: ip", "v[ip ::]");
 }
+
+#[test]
+fn to_json_unhandled() {
+    basic_test("(1.1.1.1 ip; README.md f<;) to-json; println",
+               "[\"1.1.1.1\",\"v[gen]\"]");
+}

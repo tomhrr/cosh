@@ -143,18 +143,22 @@
     cwd; cwd var; cwd !;
     name var; name !;
     files var; files !;
-    rpkic state get-storage-dir; / ++; name @; ++; cd;
+    rpkic state get-storage-dir; / ++; name @; ++; rsv var; rsv !;
+    rsv @; cd;
     tals ls; [-t{} fmt] map; ' ' join; talstr var; talstr !;
     begin;
         files @; 100 take; r;
         dup; len; 0 =; if;
+            drop;
             leave;
         else;
             dup; len; range; [drop; "-f {}"] map; ' ' joinr;
             talstr @;
+            rsv @; cd;
             "./rpki-client {} -d ./cache {} -j" fmt; cmdstr var; cmdstr !;
             shift-all; cmdstr @; fmt;
             cmd; res var; res !;
+            cwd @; cd;
             begin;
                 res @;
                 ["^}\n" m] before; r;
@@ -170,4 +174,5 @@
                 0 until;
         then;
         0 until;
-        ,,
+    cwd @; cd;
+    ,,

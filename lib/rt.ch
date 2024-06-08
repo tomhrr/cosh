@@ -835,9 +835,14 @@
 : git.mv swap;   "git mv {} {}"     fmtq; exec; drop; ,,
 : git.rm         "git rm {}"        fmtq; exec; drop; ,,
 : git.diff swap; "git diff {} {}"   fmtq; exec; drop; ,,
-: git.show       "git show {}"      fmtq; exec; drop; ,,
-: git.status     "git status {}"    fmtq; exec; drop; ,,
 : git.commit     "git commit -m {}" fmtq; exec; drop; ,,
+
+: git.show
+    depth; 0 =; if;
+        "git show ." exec; drop;
+    else;
+        "git show {}" fmtq; exec; drop;
+    then; ,,
 
 : git.checkout
     depth; 0 =; if;
@@ -879,6 +884,17 @@
         then;
         0 until;
         ,,
+
+: git.status
+    depth; 0 =; if;
+        .
+    then;
+    {git status --porcelain {}};
+    [h() res var; res !;
+     \s+ splitr; reverse;
+     dup; pop; res @; swap; state swap; set; drop;
+          pop; res @; swap; path  swap; set] map;
+    ,,
 
 : zathura     "zathura {}"     fmtq; exec; drop; ,,
 : libreoffice "libreoffice {}" fmtq; exec; drop; ,,

@@ -142,11 +142,6 @@
     then;
     ,,
 
-: rpkic.file
-    rpkic.file-raw;
-    rpkic.file-annotate;
-    ,,
-
 :~ rpkic.files 2 2
     drop;
     cwd; cwd var; cwd !;
@@ -184,4 +179,8 @@
         then;
         0 until;
     cwd @; cd;
+    ,,
+
+: rpkic.file
+    swap; 1 mlist; swap; rpkic.files;
     ,,

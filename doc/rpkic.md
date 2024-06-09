@@ -60,6 +60,9 @@ A library that acts as a wrapper around
         - `exec`: the path to the `rpki-client` executable
       Initialises a new `rpki-client` instance.
 
+ - `rpkic.instances`
+    - Returns a generator over all of the current instance names.
+
  - `rpkic.clear`
     - Takes an instance name, and deletes all data associated with
       that instance.

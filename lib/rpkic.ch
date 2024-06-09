@@ -1,11 +1,15 @@
 # rpki-client functions.
 
+: rpkic._gsd
+    rpkic state get-storage-dir; / ++;
+    ,,
+
 : rpkic.init
     dup; tals get; tals var; tals !;
     dup; name get; name var; name !;
          exec get; exec var; exec !;
 
-    rpkic state get-storage-dir; / ++; name @; ++; dup; mkdir;
+    rpkic._gsd; name @; ++; dup; mkdir;
     state-dir var; state-dir !;
 
     state-dir @; /tals ++; dup; mkdir; tals-dir var; tals-dir !;
@@ -16,17 +20,22 @@
     exec @; state-dir @; /rpki-client ++; link;
     ,,
 
+: rpkic.instances
+    rpkic._gsd; gsd var; gsd !;
+    gsd @; ls; is-dir grep; [gsd @; '' s] map;
+    ,,
+
 : rpkic.clear
-    rpkic state get-storage-dir; / ++; swap; ++; rmrf;
+    rpkic._gsd; swap; ++; rmrf;
     ,,
 
 : rpkic.cd
-    rpkic state get-storage-dir; / ++; swap; ++; cd;
+    rpkic._gsd; swap; ++; cd;
     ,,
 
 : rpkic.run
     cwd; cwd var; cwd !;
-    rpkic state get-storage-dir; / ++; swap; ++; cd;
+    rpkic._gsd; swap; ++; cd;
     tals ls; [-t{} fmt] map; ' ' join;
     {./rpki-client {} -d ./cache -c ./output}/c;
     r; dup; clone;
@@ -36,15 +45,15 @@
     ,,
 
 : rpkic.last-stdout
-    rpkic state get-storage-dir; / ++; swap; ++; /last-stdout ++; f<;
+    rpkic._gsd; swap; ++; /last-stdout ++; f<;
     ,,
 
 : rpkic.last-stderr
-    rpkic state get-storage-dir; / ++; swap; ++; /last-stderr ++; f<;
+    rpkic._gsd; swap; ++; /last-stderr ++; f<;
     ,,
 
 : rpkic.vrps-raw
-    rpkic state get-storage-dir; / ++; swap; ++; /output/csv ++; f<;
+    rpkic._gsd; swap; ++; /output/csv ++; f<;
     dup; shift; drop;
     [chomp; , split] map;
     ,,
@@ -83,7 +92,7 @@
 : rpkic.file-raw
     cwd; cwd var; cwd !;
     name var; name !;
-    rpkic state get-storage-dir; / ++; name @; ++; cd;
+    rpkic._gsd; name @; ++; cd;
     tals ls; [-t{} fmt] map; ' ' join;
     {./rpki-client {} -d ./cache -f {} -j}/o;
     from-json;
@@ -143,7 +152,7 @@
     cwd; cwd var; cwd !;
     name var; name !;
     files var; files !;
-    rpkic state get-storage-dir; / ++; name @; ++; rsv var; rsv !;
+    rpkic._gsd; name @; ++; rsv var; rsv !;
     rsv @; cd;
     tals ls; [-t{} fmt] map; ' ' join; talstr var; talstr !;
     begin;

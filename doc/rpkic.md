@@ -6,7 +6,7 @@ A library that acts as a wrapper around
 ### Usage
 
     $ rpkic import
-    $ h(tals /usr/local/etc/rpki/apnic.tal
+    $ h(tals (/usr/local/etc/rpki/apnic.tal)
         name apnic
         exec /usr/local/sbin/rpki-client) rpkic.init;
     $ rpkic.run;

@@ -275,6 +275,11 @@ lazy_static! {
         map.insert("fmtq", VM::core_fmtq as fn(&mut VM) -> i32);
         map.insert("exec", VM::core_exec as fn(&mut VM) -> i32);
         map.insert("cmd", VM::core_cmd as fn(&mut VM) -> i32);
+        map.insert("cmd/e", VM::core_cmde as fn(&mut VM) -> i32);
+        map.insert("cmd/o", VM::core_cmdo as fn(&mut VM) -> i32);
+        map.insert("cmd/eo", VM::core_cmdeo as fn(&mut VM) -> i32);
+        map.insert("cmd/oe", VM::core_cmdeo as fn(&mut VM) -> i32);
+        map.insert("cmd/c", VM::core_cmdc as fn(&mut VM) -> i32);
         map.insert("history", VM::core_history as fn(&mut VM) -> i32);
         map.insert("last", VM::core_last as fn(&mut VM) -> i32);
         map.insert("r", VM::core_reify as fn(&mut VM) -> i32);

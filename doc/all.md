@@ -1396,6 +1396,8 @@ for standard output, and 2 for standard error):
         )
     )
 
+These flags are supported for `cmd` as well.
+
 The `/b` flag can be used to produce a generator over lists of bytes
 from standard output, in instances where binary data is being dealt
 with.

@@ -618,9 +618,9 @@ impl VM {
         return 1;
     }
 
-    /// Takes a string as its single argument, and runs the string as
-    /// a command (captured).
-    pub fn core_cmd(&mut self) -> i32 {
+    /// Takes a string and a set of parameters as its arguments, and
+    /// runs the string as a command (captured).
+    pub fn core_cmd_internal(&mut self, params: HashSet<char>) -> i32 {
         if self.stack.len() < 1 {
             self.print_error("cmd requires one argument");
             return 0;
@@ -636,9 +636,39 @@ impl VM {
                 return 0;
             }
             Some(s) => {
-                let params: HashSet<char> = HashSet::new();
                 return self.core_command(&s, params);
             }
         }
+    }
+
+    pub fn core_cmd(&mut self) -> i32 {
+        let params: HashSet<char> = HashSet::new();
+        return self.core_cmd_internal(params);
+    }
+
+    pub fn core_cmde(&mut self) -> i32 {
+        let mut params: HashSet<char> = HashSet::new();
+        params.insert('e');
+        return self.core_cmd_internal(params);
+    }
+
+
+    pub fn core_cmdo(&mut self) -> i32 {
+        let mut params: HashSet<char> = HashSet::new();
+        params.insert('o');
+        return self.core_cmd_internal(params);
+    }
+
+    pub fn core_cmdeo(&mut self) -> i32 {
+        let mut params: HashSet<char> = HashSet::new();
+        params.insert('e');
+        params.insert('o');
+        return self.core_cmd_internal(params);
+    }
+
+    pub fn core_cmdc(&mut self) -> i32 {
+        let mut params: HashSet<char> = HashSet::new();
+        params.insert('c');
+        return self.core_cmd_internal(params);
     }
 }

@@ -37,7 +37,9 @@
     cwd; cwd var; cwd !;
     rpkic._gsd; swap; ++; cd;
     tals ls; [-t{} fmt] map; ' ' join;
-    {./rpki-client {} -d ./cache -c ./output}/c;
+
+    "./rpki-client {} -d ./cache -c ./output" fmtq; '"/g' '' s;
+    cmd/c;
     r; dup; clone;
     [0 get; 1 =] grep; [1 get] map; last-stdout f>;
     [0 get; 2 =] grep; [1 get] map; last-stderr f>;

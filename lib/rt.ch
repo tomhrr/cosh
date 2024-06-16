@@ -924,8 +924,13 @@
      swap; push; drop] for;
     stdout @; stderr @; ,,
 
+: _docker.created-at-parse
+    '\.\d+' '' s;
+    ' [A-Z]*$' '' s;
+    '%F %T %z' strptime;
+    ,,
 : _docker.created-at-map
-    [CreatedAt [' [A-Z]*$' '' s; '%F %T %z' strptime] CreatedAt hr] map;
+    [CreatedAt _docker.created-at-parse CreatedAt hr] map;
     ,,
 : docker.cp swap; "docker cp {} {}" fmtq; exec; drop; ,,
 : docker.ps
@@ -974,8 +979,9 @@
 : docker.start "docker start {}" fmtq; exec; drop; ,,
 : docker.stop  "docker stop  {}" fmtq; exec; drop; ,,
 
-: docker.volume-rm "docker volume rm {}" fmtq; exec; drop; ,,
-: docker.volume-inspect
+: docker.volume.rm "docker volume rm {}" fmtq; exec; drop; ,,
+: docker.volume.prune "docker volume prune" exec; drop; ,,
+: docker.volume.inspect
     {docker volume inspect {}}/c;
     _combined-to-lists;
     dup; len; 0 =; if;
@@ -992,6 +998,32 @@
     _combined-to-lists;
     dup; len; 0 =; if;
         drop;
+    else;
+        swap; drop; "" join; chomp; error;
+    then;
+    ,,
+
+: docker.network
+    {docker network ls --no-trunc --format '\{\{json .\}\}'}/c;
+    _combined-to-lists;
+    dup; len; 0 =; if;
+        drop;
+        from-json map; _docker.created-at-map;
+    else;
+        swap; drop; "" join; chomp; error;
+    then;
+    ,,
+
+: docker.network.rm "docker network rm {}" fmtq; exec; drop; ,,
+: docker.network.prune "docker network prune" exec; drop; ,,
+: docker.network.inspect
+    {docker network inspect {}}/c;
+    _combined-to-lists;
+    dup; len; 0 =; if;
+        drop;
+        '' join; from-json;
+        [Created ['\.\d+' '' s;
+                  '%FT%T%z' strptime] Created hr] map;
     else;
         swap; drop; "" join; chomp; error;
     then;

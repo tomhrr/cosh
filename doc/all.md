@@ -1549,6 +1549,11 @@ should help:
     set shellcmdflag=-e
     set noshelltemp
 
+However, Vim appears to assume a POSIX shell in at least some places
+(see e.g.
+https://github.com/vim/vim/blob/master/runtime/autoload/tar.vim), so
+some things may not work as expected.
+
 #### Caveats and pitfalls
 
 Opening a file and using regular expression matching to find a

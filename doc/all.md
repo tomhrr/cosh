@@ -1047,7 +1047,11 @@ Other operations:
    process was started, the number of seconds for which the process
    has been running, and the process's status.
  - `pss`: takes a PID and returns the associated process details,
-   using the same hash structure as in `ps`.
+   using the same hash structure as in `ps`.  (To make this call
+   faster, it skips the user list refresh operation that the standard
+   `ps` call makes, so user information in the response may not be
+   present or up to date.  If that information is needed, use `ps`
+   instead.)
  - `pse`: takes a PID and returns a boolean indicating whether the
    specified process exists.
  - `kill`: takes a PID and a signal name ("hup", "int", "term",

@@ -819,7 +819,6 @@ impl VM {
         let sys = &mut sysopt.as_mut().unwrap();
         let usersopt = &mut self.users;
         let users = &mut usersopt.as_mut().unwrap();
-        users.refresh_list();
 
         let pid_rr = self.stack.pop().unwrap();
         let pid_int_opt = pid_rr.to_int();

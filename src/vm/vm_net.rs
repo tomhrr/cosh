@@ -2,6 +2,10 @@ use std::cell::RefCell;
 use std::io::BufWriter;
 use std::net::TcpStream;
 use std::rc::Rc;
+use std::sync::mpsc;
+use std::sync::mpsc::TryRecvError;
+use std::thread;
+use std::time;
 
 use ipnetwork::IpNetwork::{V4, V6};
 use netstat2::*;
@@ -237,18 +241,40 @@ impl VM {
         }
 
         let conn_str = format!("{}:{}", host_str, port_int);
-        let stream_opt = TcpStream::connect(conn_str);
+        let (tx, rx) = mpsc::channel();
+        thread::spawn(move || {
+            let stream_res = TcpStream::connect(conn_str);
+            let _ = tx.send(stream_res);
+        });
         let stream;
-        match stream_opt {
-            Ok(stream_value) => {
-                stream = stream_value;
+        loop {
+            let stream_recv_res = rx.try_recv();
+            match stream_recv_res {
+                Ok(Ok(stream_value)) => {
+                    stream = stream_value;
+                    break;
+                }
+                Ok(Err(e)) => {
+                    let err_str = format!("unable to connect to host: {}", e);
+                    self.print_error(&err_str);
+                    return 0;
+                }
+                Err(TryRecvError::Disconnected) => {
+                    let err_str = format!("unable to connect to host: disconnected");
+                    self.print_error(&err_str);
+                    return 0;
+                }
+                Err(TryRecvError::Empty) => {
+                    if !self.running.load(Ordering::SeqCst) {
+                        self.running.store(true, Ordering::SeqCst);
+                        self.stack.clear();
+                        return 0;
+                    }
+                    let dur = time::Duration::from_secs_f64(0.05);
+                    thread::sleep(dur);
+                }
             }
-            Err(e) => {
-                let err_str = format!("unable to connect to host: {}", e);
-                self.print_error(&err_str);
-                return 0;
-            }
-        }
+        };
         stream.set_nonblocking(true).unwrap();
 
         let tsw = Value::TcpSocketWriter(Rc::new(RefCell::new(BufWriter::new(stream.try_clone().unwrap()))));

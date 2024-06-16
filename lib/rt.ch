@@ -864,7 +864,7 @@
     0 =; if;
         .
     then;
-    {git log --format=%H,"%P","%an","%ae",%at,"%cn","%ce",%ct,"%s","%b" {}}/oe;
+    {git log --format=%H,"%P","%an","%ae",%at,"%cn","%ce",%ct,"%s" {}}/oe;
     gl var; gl !;
     begin;
         gl @; shift; dup; is-null; if;
@@ -872,11 +872,12 @@
             leave;
         else;
             h() res var; res !;
+            dup; '"$' m; not; if; '"' ++; then;
             chomp; , split; reverse; entry var; entry !;
             (hash parents
              author-name author-email author-time
              committer-name committer-email committer-time
-             subject body)
+             subject)
             [entry @; pop; res @; rot; rot; set; drop] for;
             res @;
             parents [\s+ splitr] parents hr;

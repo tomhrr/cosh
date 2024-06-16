@@ -912,7 +912,7 @@
 : libreoffice "libreoffice {}" fmtq; exec; drop; ,,
 : nano        "nano {}"        fmtq; exec; drop; ,,
 
-: gr {grep -ri "{}" .}; [chomp; "(.*?):(.*)" c; (1 2) get] map; ,,
+: gr {grep -Zri "{}" .}; [0 chr; split; 1 chomp 1 lr] map; ,,
 
 : _combined-to-lists
     () stdout var; stdout !;

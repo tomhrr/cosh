@@ -1,15 +1,16 @@
-# rpki-client functions.
+# RPKI validator functions.
 
-: rpkic._gsd
-    rpkic state get-storage-dir; / ++;
+: rpkiv._gsd
+    rpkiv state get-storage-dir; / ++;
     ,,
 
-: rpkic.init
+: rpkiv.init
     dup; tals get; tals var; tals !;
+    dup; type get; type var; type !;
     dup; name get; name var; name !;
          exec get; exec var; exec !;
 
-    rpkic._gsd; name @; ++; dup; mkdir;
+    rpkiv._gsd; name @; ++; dup; mkdir;
     state-dir var; state-dir !;
 
     state-dir @; /tals ++; dup; mkdir; tals-dir var; tals-dir !;
@@ -17,28 +18,33 @@
 
     state-dir @; /cache ++; mkdir;
     state-dir @; /output ++; mkdir;
-    exec @; state-dir @; /rpki-client ++; link;
+    type @; state-dir @; /type ++; f>;
+    exec @; state-dir @; /rpki-validator ++; link;
     ,,
 
-: rpkic.instances
-    rpkic._gsd; gsd var; gsd !;
+: rpkiv.instances
+    rpkiv._gsd; gsd var; gsd !;
     gsd @; ls; is-dir grep; [gsd @; '' s] map;
     ,,
 
-: rpkic.clear
-    rpkic._gsd; swap; ++; rmrf;
+: rpkiv.type
+    rpkiv._gsd; swap; ++; /type ++; f<; shift; chomp;
     ,,
 
-: rpkic.cd
-    rpkic._gsd; swap; ++; cd;
+: rpkiv.clear
+    rpkiv._gsd; swap; ++; rmrf;
     ,,
 
-: rpkic.run
+: rpkiv.cd
+    rpkiv._gsd; swap; ++; cd;
+    ,,
+
+: _rpkiv.run.rpki-client
     cwd; cwd var; cwd !;
-    rpkic._gsd; swap; ++; cd;
+    rpkiv._gsd; swap; ++; cd;
     tals ls; [-t{} fmt] map; ' ' join;
 
-    "./rpki-client {} -d ./cache -c ./output" fmtq; '"/g' '' s;
+    "./rpki-validator {} -d ./cache -c ./output" fmtq; '"/g' '' s;
     cmd/c;
     r; dup; clone;
     [0 get; 1 =] grep; [1 get] map; last-stdout f>;
@@ -46,35 +52,93 @@
     cwd @; cd;
     ,,
 
-: rpkic.last-stdout
-    rpkic._gsd; swap; ++; /last-stdout ++; f<;
+: _rpkiv.run.routinator
+    cwd; cwd var; cwd !;
+    rpkiv._gsd; swap; ++; cd;
+
+    "./rpki-validator --no-rir-tals --extra-tals-dir ./tals -r ./cache vrps -o output/csv"
+    cmd/c;
+    r; dup; clone;
+    [0 get; 1 =] grep; [1 get] map; last-stdout f>;
+    [0 get; 2 =] grep; [1 get] map; last-stderr f>;
+    cwd @; cd;
     ,,
 
-: rpkic.last-stderr
-    rpkic._gsd; swap; ++; /last-stderr ++; f<;
+: _rpkiv.run.fort
+    cwd; cwd var; cwd !;
+    rpkiv._gsd; swap; ++; cd;
+
+    "./rpki-validator --tal=./tals --local-repository=./cache --mode=standalone --daemon=false --validation-log.enabled=true --validation-log.output=console --output.roa=output/csv --output.format=csv"
+    cmd/c;
+    r; dup; clone;
+    [0 get; 1 =] grep; [1 get] map; last-stdout f>;
+    [0 get; 2 =] grep; [1 get] map; last-stderr f>;
+    cwd @; cd;
     ,,
 
-: rpkic.vrps-raw
-    rpkic._gsd; swap; ++; /output/csv ++; f<;
+: rpkiv.run
+    name var; name !;
+    cwd; cwd var; cwd !;
+    rpkiv._gsd; name @; ++; /type ++; f<; shift; chomp;
+    dup; rpki-client =; if;
+        drop;
+        cwd @; cd;
+        name @; _rpkiv.run.rpki-client;
+    else; dup; routinator =; if;
+        drop;
+        cwd @; cd;
+        name @; _rpkiv.run.routinator;
+    else; fort =; if;
+        cwd @; cd;
+        name @; _rpkiv.run.fort;
+    else;
+        "invalid RPKI validator type" error;
+    then; then; then;
+    ,,
+
+: rpkiv.last-stdout
+    rpkiv._gsd; swap; ++; /last-stdout ++; f<;
+    ,,
+
+: rpkiv.last-stderr
+    rpkiv._gsd; swap; ++; /last-stderr ++; f<;
+    ,,
+
+: rpkiv.vrps-raw
+    rpkiv._gsd; swap; ++; /output/csv ++; f<;
     dup; shift; drop;
     [chomp; , split] map;
     ,,
 
-: rpkic.vrps
-    rpkic.vrps-raw;
+: _rpkiv.vrps.common
     [dup; 0 get; AS '' s;    0 swap; set;
-     dup; 1 get; ip;         1 swap; set;
-     dup; 4 get; from-epoch; 4 swap; set;] map;
+     dup; 1 get; ip;         1 swap; set] map;
     ,,
 
-: rpkic.rov
+: _rpkiv.vrps.rpki-client
+    _rpkiv.vrps.common;
+    [dup; 4 get; from-epoch; 4 swap; set;] map;
+    ,,
+
+: rpkiv.vrps
+    name var; name !;
+    name @; rpkiv.type; rpki-client =; if;
+        name @; rpkiv.vrps-raw;
+        _rpkiv.vrps.rpki-client;
+    else;
+        name @; rpkiv.vrps-raw;
+        _rpkiv.vrps.common;
+    then;
+    ,,
+
+: rpkiv.rov
     name var; name !;
     asn var; asn !;
     pfx var; ips; pfx !;
     pfx @; 0 get; ip.len; pfl var; pfl !;
 
     name @;
-    rpkic.vrps;
+    rpkiv.vrps;
     [1 get; ips; dup; pfx @; union; =] grep; r;
     dup; len; 0 =; if;
         drop;
@@ -91,16 +155,19 @@
     then;
     ,,
 
-: rpkic.file-raw
+: rpkiv.file-raw
     cwd; cwd var; cwd !;
     name var; name !;
-    rpkic._gsd; name @; ++; cd;
+    rpkiv._gsd; name @; ++; cd;
+    type f<; shift; chomp; rpki-client =; not; if;
+        "rpkiv.file-raw only available for rpki-client" error;
+    then;
     tals ls; [-t{} fmt] map; ' ' join;
     {./rpki-client {} -d ./cache -f {} -j}/o;
     from-json;
     ,,
 
-: rpkic.file-annotate
+: _rpkiv.file-annotate
     dup; valid_since exists; if;
         dup; valid_since get; from-epoch; valid_since swap; set;
     then;
@@ -144,13 +211,16 @@
     then;
     ,,
 
-:~ rpkic.files 2 2
+:~ rpkiv.files 2 2
     drop;
     cwd; cwd var; cwd !;
     name var; name !;
     files var; files !;
-    rpkic._gsd; name @; ++; rsv var; rsv !;
+    rpkiv._gsd; name @; ++; rsv var; rsv !;
     rsv @; cd;
+    type f<; shift; chomp; rpki-client =; not; if;
+        "rpkiv.files only available for rpki-client" error;
+    then;
     tals ls; [-t{} fmt] map; ' ' join; talstr var; talstr !;
     begin;
         files @; 100 take; r;
@@ -161,7 +231,7 @@
             dup; len; range; [drop; "-f {}"] map; ' ' joinr;
             talstr @;
             rsv @; cd;
-            "./rpki-client {} -d ./cache {} -j" fmt; cmdstr var; cmdstr !;
+            "./rpki-validator {} -d ./cache {} -j" fmt; cmdstr var; cmdstr !;
             shift-all; cmdstr @; fmt;
             cmd; res var; res !;
             cwd @; cd;
@@ -174,7 +244,7 @@
                 else;
                     "}\n" push; '' join;
                     from-json;
-                    rpkic.file-annotate;
+                    _rpkiv.file-annotate;
                     yield;
                 then;
                 0 until;
@@ -183,6 +253,6 @@
     cwd @; cd;
     ,,
 
-: rpkic.file
-    swap; 1 mlist; swap; rpkic.files;
+: rpkiv.file
+    swap; 1 mlist; swap; rpkiv.files;
     ,,

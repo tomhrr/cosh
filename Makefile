@@ -8,7 +8,7 @@ ifeq ($(UNAME_S),Darwin)
 	INSTALL=ginstall
 endif
 
-all: rt.chc rdap.chc rpkic.chc rpsl.chc ssh-agent.chc
+all: rt.chc rdap.chc rpkiv.chc rpsl.chc ssh-agent.chc
 
 rt.chc: target/release/cosh lib/rt.ch
 	./target/release/cosh --no-rt -c lib/rt.ch -o rt.chc
@@ -16,8 +16,8 @@ rt.chc: target/release/cosh lib/rt.ch
 rdap.chc: target/release/cosh rt.chc lib/rdap.ch
 	./target/release/cosh -c lib/rdap.ch -o rdap.chc
 
-rpkic.chc: target/release/cosh rt.chc lib/rpkic.ch
-	./target/release/cosh -c lib/rpkic.ch -o rpkic.chc
+rpkiv.chc: target/release/cosh rt.chc lib/rpkiv.ch
+	./target/release/cosh -c lib/rpkiv.ch -o rpkiv.chc
 
 rpsl.chc: target/release/cosh rt.chc lib/rpsl.ch
 	./target/release/cosh -c lib/rpsl.ch -o rpsl.chc
@@ -35,7 +35,7 @@ install: rt.chc
 	$(INSTALL) -D -m 755 target/release/cosh $(bindir)/cosh
 	$(INSTALL) -D -m 755 rt.chc -t $(libdir)/cosh/
 	$(INSTALL) -D -m 755 rdap.chc -t $(libdir)/cosh/
-	$(INSTALL) -D -m 755 rpkic.chc -t $(libdir)/cosh/
+	$(INSTALL) -D -m 755 rpkiv.chc -t $(libdir)/cosh/
 	$(INSTALL) -D -m 755 rpsl.chc -t $(libdir)/cosh/
 	$(INSTALL) -D -m 755 ssh-agent.chc -t $(libdir)/cosh/
 

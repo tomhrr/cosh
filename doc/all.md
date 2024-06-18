@@ -1174,6 +1174,22 @@ result.
    this is for converting a range into a set of prefixes, if
    necessary.)
 
+There are also various categorisation functions for IP addresses:
+
+ - `ip.is-unspecified`
+ - `ip.is-loopback`
+ - `ip.is-link-local`
+ - `ip.is-unique-local`
+ - `ip.is-private`
+ - `ip.is-global`
+ - `ip.is-documentation`
+ - `ip.is-multicast`
+ - `ip.is-reserved`
+
+These are based on data from the relevant IANA registries.  Each is
+relevant to both IPv4 and IPv6 addresses, save for the unique-local
+and private functions.
+
 There is also a separate IP set object, for storing multiple IP
 address ranges in a single type.  The `ips` function takes a single IP
 address or range as a string or a list of IP address objects or IP
@@ -1220,6 +1236,11 @@ and `str` is defined for both IP objects and IP sets.
    (either "tcp" or "udp"), the local address and port, the remote
    address and port (for TCP), inode, UID, username, associated PIDs,
    and connection state (for TCP).
+
+ - `ephemeral-ports`: returns the lower and upper port numbers for the
+   ephemeral port range.
+ - `is-ephemeral-port`: returns a boolean indicating whether or not
+   the port is ephemeral.
 
 #### HTTP
 

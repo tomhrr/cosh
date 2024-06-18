@@ -914,7 +914,7 @@
 
 : gr {grep -Zri "{}" .}; [0 chr; split; 1 chomp 1 lr] map; ,,
 
-: _combined-to-lists
+: _rt.combined-to-lists
     () stdout var; stdout !;
     () stderr var; stderr !;
     [dup; 1 get; swap; 0 get; 1 =; if;
@@ -925,48 +925,48 @@
      swap; push; drop] for;
     stdout @; stderr @; ,,
 
-: _docker.created-at-parse
+: _rt.docker.created-at-parse
     '\.\d+' '' s;
     ' [A-Z]*$' '' s;
     '%F %T %z' strptime;
     ,,
-: _docker.created-at-map
-    [CreatedAt _docker.created-at-parse CreatedAt hr] map;
+: _rt.docker.created-at-map
+    [CreatedAt _rt.docker.created-at-parse CreatedAt hr] map;
     ,,
 : docker.cp swap; "docker cp {} {}" fmtq; exec; drop; ,,
 : docker.ps
     {docker ps --no-trunc --format '\{\{json .\}\}'}/c;
-    _combined-to-lists;
+    _rt.combined-to-lists;
     dup; len; 0 =; if;
         drop;
-        from-json map; _docker.created-at-map;
+        from-json map; _rt.docker.created-at-map;
     else;
         swap; drop; "" join; chomp; error;
     then;
     ,,
 : docker.psa
     {docker ps -a --no-trunc --format '\{\{json .\}\}'}/c;
-    _combined-to-lists;
+    _rt.combined-to-lists;
     dup; len; 0 =; if;
         drop;
-        from-json map; _docker.created-at-map;
+        from-json map; _rt.docker.created-at-map;
     else;
         swap; drop; "" join; chomp; error;
     then;
     ,,
 : docker.images
     {docker images --no-trunc --format '\{\{json .\}\}'}/c;
-    _combined-to-lists;
+    _rt.combined-to-lists;
     dup; len; 0 =; if;
         drop;
-        from-json map; _docker.created-at-map;
+        from-json map; _rt.docker.created-at-map;
     else;
         swap; drop; "" join; chomp; error;
     then;
     ,,
 : docker.volume
     {docker volume ls --format '\{\{json .\}\}'}/c;
-    _combined-to-lists;
+    _rt.combined-to-lists;
     dup; len; 0 =; if;
         drop;
         from-json map;
@@ -984,7 +984,7 @@
 : docker.volume.prune "docker volume prune" exec; drop; ,,
 : docker.volume.inspect
     {docker volume inspect {}}/c;
-    _combined-to-lists;
+    _rt.combined-to-lists;
     dup; len; 0 =; if;
         drop;
         '' join; from-json;
@@ -996,7 +996,7 @@
 
 : docker.logs
     {docker logs {}}/c;
-    _combined-to-lists;
+    _rt.combined-to-lists;
     dup; len; 0 =; if;
         drop;
     else;
@@ -1006,10 +1006,10 @@
 
 : docker.network
     {docker network ls --no-trunc --format '\{\{json .\}\}'}/c;
-    _combined-to-lists;
+    _rt.combined-to-lists;
     dup; len; 0 =; if;
         drop;
-        from-json map; _docker.created-at-map;
+        from-json map; _rt.docker.created-at-map;
     else;
         swap; drop; "" join; chomp; error;
     then;
@@ -1019,7 +1019,7 @@
 : docker.network.prune "docker network prune" exec; drop; ,,
 : docker.network.inspect
     {docker network inspect {}}/c;
-    _combined-to-lists;
+    _rt.combined-to-lists;
     dup; len; 0 =; if;
         drop;
         '' join; from-json;
@@ -1063,3 +1063,133 @@ xdg-types var; h(data   .local/share
     /cosh/ ++;
     lib @; ++;
     dup; "mkdir -p {}" exec; drop; ,,
+
+: ip.is-unspecified
+    ip.addr-int; 0 =;
+    ,,
+
+127.0.0.0/8 ips; _rt.ipv4.loopback var; _rt.ipv4.loopback !;
+::/1 ip;         _rt.ipv6.loopback var; _rt.ipv6.loopback !;
+
+: ip.is-loopback
+    dup; ip.version; 4 =; if;
+        ips; dup; _rt.ipv4.loopback @; isect; =;
+    else;
+        _rt.ipv6.loopback @; =;
+    then;
+    ,,
+
+(10.0.0.0/8 172.16.0.0/12 192.168.0.0/16) ips;
+_rt.ipv4.private var; _rt.ipv4.private !;
+
+: ip.is-private
+    dup; ip.version; 4 =; if;
+        ips; dup; _rt.ipv4.private @; isect; =;
+    else;
+        .f
+    then;
+    ,,
+
+fc00::/7 ips; _rt.ipv6.unique-local var; _rt.ipv6.unique-local !;
+
+: ip.is-unique-local
+    dup; ip.version; 6 =; if;
+        ips; dup; _rt.ipv6.unique-local @; isect; =;
+    else;
+        .f
+    then;
+    ,,
+
+169.254.0.0/16 ips; _rt.ipv4.link-local var; _rt.ipv4.link-local !;
+fe80::/10      ips; _rt.ipv6.link-local var; _rt.ipv6.link-local !;
+
+: ip.is-link-local
+    dup; ip.version; 4 =; if;
+        _rt.ipv4.link-local @;
+    else;
+        _rt.ipv6.link-local @;
+    then;
+    swap; ips; dup; rot; isect; =;
+    ,,
+
+224.0.0.0/4 ips; _rt.ipv4.multicast var; _rt.ipv4.multicast !;
+ff00::/8    ips; _rt.ipv6.multicast var; _rt.ipv6.multicast !;
+
+: ip.is-multicast
+    dup; ip.version; 4 =; if;
+        _rt.ipv4.multicast @;
+    else;
+        _rt.ipv6.multicast @;
+    then;
+    swap; ips; dup; rot; isect; =;
+    ,,
+
+(192.0.2.0/24 198.51.100.0/24 203.0.113.0/24) ips;
+_rt.ipv4.documentation var; _rt.ipv4.documentation !;
+2001:db8::/32 ips;
+_rt.ipv6.documentation var; _rt.ipv6.documentation !;
+
+: ip.is-documentation
+    dup; ip.version; 4 =; if;
+        _rt.ipv4.documentation @;
+    else;
+        _rt.ipv6.documentation @;
+    then;
+    swap; ips; dup; rot; isect; =;
+    ,,
+
+2000::/3 ips; _rt.ipv6.global var; _rt.ipv6.global !;
+
+(0.0.0.0/8 240.0.0.0/4) ips;
+_rt.ipv4.reserved var; _rt.ipv4.reserved !;
+::/0 ips;
+    _rt.ipv6.global @; diff;
+    _rt.ipv6.unique-local @; diff;
+    _rt.ipv6.link-local @; diff;
+    _rt.ipv6.multicast @; diff;
+_rt.ipv6.reserved var; _rt.ipv6.reserved !;
+
+: ip.is-reserved
+    dup; ip.version; 4 =; if;
+        _rt.ipv4.reserved @;
+    else;
+        _rt.ipv6.reserved @;
+    then;
+    swap; ips; dup; rot; isect; =;
+    ,,
+
+0.0.0.0/0 ips;
+    _rt.ipv4.reserved @; diff;
+    _rt.ipv4.multicast @; diff;
+    _rt.ipv4.documentation @; diff;
+    _rt.ipv4.link-local @; diff;
+    _rt.ipv4.loopback @; diff;
+    _rt.ipv4.private @; diff;
+_rt.ipv4.global var; _rt.ipv4.global !;
+
+: ip.is-global
+    dup; ip.version; 4 =; if;
+        _rt.ipv4.global @;
+    else;
+        _rt.ipv6.global @;
+    then;
+    swap; ips; dup; rot; isect; =;
+    ,,
+
+: ephemeral-ports
+    {sysctl net.ipv4.ip_local_port_range};
+    shift;
+    chomp;
+    '.* = ' '' s;
+    \t splitr;
+    shift-all;
+    ,,
+
+: is-ephemeral-port
+    port var; port !;
+    ephemeral-ports;
+    port @; >=;
+    swap;
+    port @; <=;
+    and;
+    ,,

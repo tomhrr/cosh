@@ -2234,3 +2234,11 @@ fn to_format_unhandled() {
     basic_test("h(a 1.1.1.1 ip;) to-yaml; println",
                "{\"a\":\"1.1.1.1\"}");
 }
+
+#[test]
+fn ip_types() {
+    basic_test("127.0.0.1 ip; ip.is-loopback", ".t");
+    basic_test("128.0.0.1 ip; ip.is-loopback", ".f");
+    basic_test("fc00:: ip; ip.is-unique-local", ".t");
+    basic_test("fe00:: ip; ip.is-unique-local", ".f");
+}

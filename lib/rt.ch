@@ -826,7 +826,7 @@
     ,,
 
 # Common commands and aliases.
-: vim depth; 0 =; if; vim exec; else; "vim {}" exec; drop; then; ,,
+: vim depth; 0 =; if; vim exec; else; "vim {}" exec; then; drop; ,,
 : ssh "ssh {}" fmtq; exec; drop; ,,
 : scp swap; "scp {} {}" fmtq; exec; drop; ,,
 
@@ -858,6 +858,7 @@
         "git init {}" fmtq; exec; drop;
     then; ,,
 
+: git.pull "git pull" exec; drop; ,,
 : git.push "git push" exec; drop; ,,
 
 :~ git.log 1 0

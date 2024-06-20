@@ -1,5 +1,17 @@
 Changelog
 
+0.3.0   20 June 2024
+        - Closures.
+        - HTTP request support.
+        - General network connection support.
+        - `ifconfig` and `netstat`.
+        - YAML encoding/decoding.
+        - Libraries for RPKI, RDAP, and RPSL.
+        - Aliases for commonly-used commands (e.g. `ssh`, `git`, `docker`).
+        - Background process management (`jobs`).
+        - Improved SQL type handling.
+        - Various bug fixes.
+
 0.2.0   6 March 2024
         - Byte data type and associated operations.
         - Reification (`r`).

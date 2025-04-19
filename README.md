@@ -1,6 +1,6 @@
 ## cosh
 
-[![Build Status](https://github.com/tomhrr/cosh/workflows/build/badge.svg?branch=main)](https://github.com/tomhrr/cosh/actions)
+[![Build Status](https://github.com/tomhrr/cosh/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/tomhrr/cosh/actions)
 [![stability-beta](https://img.shields.io/badge/stability-beta-33bbff.svg)](https://github.com/mkenney/software-guides/blob/master/STABILITY-BADGES.md#beta)
 
 cosh is a concatenative command-line shell.

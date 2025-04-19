@@ -398,7 +398,7 @@ impl VM {
                                                             }
                                                         }
                                                         _ => {
-                                                            self.print_error("fmt string argument cannot be convered to string");
+                                                            self.print_error("fmt string argument cannot be converted to string");
                                                             return 0;
                                                         }
                                                     }
@@ -431,7 +431,7 @@ impl VM {
                                             }
                                         }
                                         _ => {
-                                            self.print_error("fmt string argument cannot be convered to string");
+                                            self.print_error("fmt string argument cannot be converted to string");
                                             return 0;
                                         }
                                     }

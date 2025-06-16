@@ -351,15 +351,17 @@ fn main() {
              * happen, so set it to true here just in case. */
             vm.running.clone().store(true, Ordering::SeqCst);
             let cwd_res = env::current_dir();
-            match cwd_res {
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("unable to get current working directory: {}", e);
-                    std::process::exit(1);
+            let cwd_str = match cwd_res {
+                Ok(cwd) => cwd.as_path().to_str().unwrap_or("/").to_string(),
+                Err(_) => {
+                    // If current directory is not available (e.g., removed),
+                    // try to fall back to home directory, then to root
+                    match env::var("HOME") {
+                        Ok(home) => home,
+                        Err(_) => "/".to_string(),
+                    }
                 }
-            }
-            let cwd = cwd_res.unwrap();
-            let cwd_str = cwd.as_path().to_str().unwrap();
+            };
             let prompt = format!("{}$ ", cwd_str);
 
             let readline_res = rl_rr.borrow_mut().readline(&prompt);

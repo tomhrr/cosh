@@ -872,6 +872,9 @@
             drop;
             leave;
         else;
+            dup; "fatal" m; if;
+                chomp; error;
+            then;
             h() res var; res !;
             dup; '"$' m; not; if; '"' ++; then;
             chomp; , split; reverse; entry var; entry !;

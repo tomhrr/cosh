@@ -344,6 +344,11 @@ fn main() {
         let rl_rr = Rc::new(RefCell::new(rl));
         vm.readline = Some(rl_rr.clone());
 
+        // Keep track of the last known working directory for the prompt
+        let mut last_known_cwd = env::current_dir()
+            .map(|p| p.as_path().to_str().unwrap_or("/").to_string())
+            .unwrap_or_else(|_| "/".to_string());
+
         loop {
             /* The ctrl-c handler that sets running to false is
              * supposed to be caught by the loop in run_inner in the
@@ -352,14 +357,16 @@ fn main() {
             vm.running.clone().store(true, Ordering::SeqCst);
             let cwd_res = env::current_dir();
             let cwd_str = match cwd_res {
-                Ok(cwd) => cwd.as_path().to_str().unwrap_or("/").to_string(),
+                Ok(cwd) => {
+                    // Update the last known directory when successful
+                    let cwd_str = cwd.as_path().to_str().unwrap_or("/").to_string();
+                    last_known_cwd = cwd_str.clone();
+                    cwd_str
+                }
                 Err(_) => {
                     // If current directory is not available (e.g., removed),
-                    // try to fall back to home directory, then to root
-                    match env::var("HOME") {
-                        Ok(home) => home,
-                        Err(_) => "/".to_string(),
-                    }
+                    // continue using the last known directory for the prompt
+                    last_known_cwd.clone()
                 }
             };
             let prompt = format!("{}$ ", cwd_str);

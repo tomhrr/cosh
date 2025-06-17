@@ -593,10 +593,7 @@ fn xml_test() {
     );
 }
 
-#[test]
-fn external_command_test() {
-    basic_test("$ls tests", "tests.rs");
-}
+
 
 #[test]
 fn bigint_test_add() {

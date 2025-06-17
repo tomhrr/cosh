@@ -502,4 +502,19 @@ mod tests {
         assert_eq!(start, 2);
         assert!(!matches.is_empty()); // Should have some completions
     }
+    
+    #[test]
+    fn test_edge_cases_with_parentheses() {
+        // Test nested parentheses - inner completion should work
+        assert!(should_complete_executable("ls", "((", 2));
+        assert!(should_complete_executable("ls", "h(s(", 4));
+        
+        // Test with mixed whitespace
+        assert!(should_complete_executable("ls", " \t(", 3));
+        assert!(should_complete_executable("ls", "\n h(", 4));
+        
+        // Test that empty path after parentheses still works
+        assert!(should_complete_executable("", "(", 1));
+        assert!(should_complete_executable("", "h(", 2));
+    }
 }

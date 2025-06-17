@@ -344,6 +344,11 @@ fn main() {
         let rl_rr = Rc::new(RefCell::new(rl));
         vm.readline = Some(rl_rr.clone());
 
+        // Keep track of the last known working directory for the prompt
+        let mut last_known_cwd = env::current_dir()
+            .map(|p| p.as_path().to_str().unwrap_or("/").to_string())
+            .unwrap_or_else(|_| "/".to_string());
+
         loop {
             /* The ctrl-c handler that sets running to false is
              * supposed to be caught by the loop in run_inner in the
@@ -351,15 +356,19 @@ fn main() {
              * happen, so set it to true here just in case. */
             vm.running.clone().store(true, Ordering::SeqCst);
             let cwd_res = env::current_dir();
-            match cwd_res {
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("unable to get current working directory: {}", e);
-                    std::process::exit(1);
+            let cwd_str = match cwd_res {
+                Ok(cwd) => {
+                    // Update the last known directory when successful
+                    let cwd_str = cwd.as_path().to_str().unwrap_or("/").to_string();
+                    last_known_cwd = cwd_str.clone();
+                    cwd_str
                 }
-            }
-            let cwd = cwd_res.unwrap();
-            let cwd_str = cwd.as_path().to_str().unwrap();
+                Err(_) => {
+                    // If current directory is not available (e.g., removed),
+                    // continue using the last known directory for the prompt
+                    last_known_cwd.clone()
+                }
+            };
             let prompt = format!("{}$ ", cwd_str);
 
             let readline_res = rl_rr.borrow_mut().readline(&prompt);

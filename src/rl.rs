@@ -299,13 +299,16 @@ fn should_complete_executable(path: &str, line: &str, start: usize) -> bool {
         return !(path.starts_with("./") || path.starts_with('/'));
     }
 
-    // If the string prior to path includes a $ or { character,
+    // If the string prior to path includes a $ or { or ( character,
     // followed by (optional) whitespace, and then the path, then
     // executable completion should be used (unless the path is
     // qualified).
     let mut index_opt = before.rfind('$');
     if index_opt.is_none() {
         index_opt = before.rfind('{');
+    }
+    if index_opt.is_none() {
+        index_opt = before.rfind('(');
     }
     if index_opt.is_none() {
         return false;
@@ -439,3 +442,64 @@ impl Hinter for RLHelper {}
 impl Highlighter for RLHelper {}
 
 impl Validator for RLHelper {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_should_complete_executable_with_parentheses() {
+        // Test list start
+        assert!(should_complete_executable("ls", "(", 1));
+        
+        // Test hash start  
+        assert!(should_complete_executable("ls", "h(", 2));
+        
+        // Test set start
+        assert!(should_complete_executable("ls", "s(", 2));
+        
+        // Test with whitespace before parentheses
+        assert!(should_complete_executable("ls", " (", 2));
+        assert!(should_complete_executable("ls", " h(", 3));
+        
+        // Test that other contexts still work
+        assert!(should_complete_executable("ls", " ", 1));
+        assert!(should_complete_executable("ls", "${", 2));
+        assert!(should_complete_executable("ls", "{", 1));
+    }
+    
+    #[test]
+    fn test_should_complete_executable_qualified_paths() {
+        // Qualified paths should return false even with parentheses
+        assert!(!should_complete_executable("./ls", "(", 1));
+        assert!(!should_complete_executable("/bin/ls", "h(", 2));
+    }
+    
+    #[test]
+    fn test_complete_path_with_lists_and_hashes() {
+        let global_functions = Rc::new(RefCell::new(HashMap::new()));
+        let global_vars = Rc::new(RefCell::new(HashMap::new()));
+        let completer = ShellCompleter::new(global_functions, global_vars);
+        
+        // Test completion at the start of a list
+        let result = completer.complete_path("(", 1);
+        assert!(result.is_ok());
+        let (start, matches) = result.unwrap();
+        assert_eq!(start, 1);
+        assert!(!matches.is_empty()); // Should have some completions
+        
+        // Test completion at the start of a hash
+        let result = completer.complete_path("h(", 2);
+        assert!(result.is_ok());
+        let (start, matches) = result.unwrap();
+        assert_eq!(start, 2);
+        assert!(!matches.is_empty()); // Should have some completions
+        
+        // Test completion at the start of a set
+        let result = completer.complete_path("s(", 2);
+        assert!(result.is_ok());
+        let (start, matches) = result.unwrap();
+        assert_eq!(start, 2);
+        assert!(!matches.is_empty()); // Should have some completions
+    }
+}

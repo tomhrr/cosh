@@ -865,31 +865,34 @@
     0 =; if;
         .
     then;
-    {git log --format=%H,"%P","%an","%ae",%at,"%cn","%ce",%ct,"%s" {}}/oe;
-    gl var; gl !;
-    begin;
-        gl @; shift; dup; is-null; if;
-            drop;
-            leave;
-        else;
-            dup; "fatal" m; if;
-                chomp; error;
+    {git log --format=%H,"%P","%an","%ae",%at,"%cn","%ce",%ct,"%s" {}}/c;
+    _rt.combined-to-lists;
+    dup; len; 0 =; if;
+        drop;
+        gl var; gl !;
+        begin;
+            gl @; shift; dup; is-null; if;
+                drop;
+                leave;
+            else;
+                h() res var; res !;
+                dup; '"$' m; not; if; '"' ++; then;
+                chomp; , split; reverse; entry var; entry !;
+                (hash parents
+                 author-name author-email author-time
+                 committer-name committer-email committer-time
+                 subject)
+                [entry @; pop; res @; rot; rot; set; drop] for;
+                res @;
+                parents [\s+ splitr] parents hr;
+                author-time from-epoch author-time hr;
+                committer-time from-epoch committer-time hr;
+                yield;
             then;
-            h() res var; res !;
-            dup; '"$' m; not; if; '"' ++; then;
-            chomp; , split; reverse; entry var; entry !;
-            (hash parents
-             author-name author-email author-time
-             committer-name committer-email committer-time
-             subject)
-            [entry @; pop; res @; rot; rot; set; drop] for;
-            res @;
-            parents [\s+ splitr] parents hr;
-            author-time from-epoch author-time hr;
-            committer-time from-epoch committer-time hr;
-            yield;
-        then;
-        0 until;
+            0 until;
+    else;
+        swap; drop; "" join; chomp; error;
+    then;
         ,,
 
 : git.status

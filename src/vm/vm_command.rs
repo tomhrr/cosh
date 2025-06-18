@@ -17,6 +17,12 @@ use std::process::{Command, Stdio};
 use crate::chunk::{CommandGenerator, Value};
 use crate::vm::*;
 
+#[derive(Debug, Clone)]
+enum RedirectMode {
+    Overwrite,
+    Append,
+}
+
 lazy_static! {
     static ref START_DOUBLE_QUOTE:  Regex = Regex ::new(r#"^\s*""#).unwrap();
     static ref END_DOUBLE_QUOTE:    Regex = Regex ::new(r#""\s*$"#).unwrap();
@@ -169,8 +175,8 @@ impl VM {
                  Vec<String>,
                  HashMap<String, String>,
                  HashSet<String>,
-                 Option<String>,
-                 Option<String>)> {
+                 Option<(String, RedirectMode)>,
+                 Option<(String, RedirectMode)>)> {
         let prepared_cmd_opt = self.prepare_command(cmd);
         if prepared_cmd_opt.is_none() {
             return None;
@@ -222,7 +228,7 @@ impl VM {
                 match captures.next() {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
-                        stdout_redirect = Some(format!(">>:{}", output));
+                        stdout_redirect = Some((output.to_string(), RedirectMode::Append));
                         elements.pop_back();
                         continue;
                     }
@@ -232,7 +238,7 @@ impl VM {
                 match captures.next() {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
-                        stderr_redirect = Some(format!(">>:{}", output));
+                        stderr_redirect = Some((output.to_string(), RedirectMode::Append));
                         elements.pop_back();
                         continue;
                     }
@@ -243,7 +249,7 @@ impl VM {
                 match captures.next() {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
-                        stdout_redirect = Some(output.to_string());
+                        stdout_redirect = Some((output.to_string(), RedirectMode::Overwrite));
                         elements.pop_back();
                         continue;
                     }
@@ -253,7 +259,7 @@ impl VM {
                 match captures.next() {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
-                        stderr_redirect = Some(output.to_string());
+                        stderr_redirect = Some((output.to_string(), RedirectMode::Overwrite));
                         elements.pop_back();
                         continue;
                     }
@@ -352,20 +358,17 @@ impl VM {
 
             let mut stdout_file_opt = None;
             let mut stdout_to_stderr = false;
-            if let Some(stdout_redirect) = stdout_redirect_opt {
-                if stdout_redirect == "&2" {
+            if let Some((stdout_file, stdout_mode)) = stdout_redirect_opt {
+                if stdout_file == "&2" {
                     stdout_to_stderr = true;
                 } else {
-                    let (is_append, file_path) = if stdout_redirect.starts_with(">>:") {
-                        (true, &stdout_redirect[3..])
-                    } else {
-                        (false, stdout_redirect.as_str())
-                    };
-                    
-                    let stdout_file_res = if is_append {
-                        File::options().create(true).append(true).open(file_path)
-                    } else {
-                        File::create(file_path)
+                    let stdout_file_res = match stdout_mode {
+                        RedirectMode::Append => {
+                            File::options().create(true).append(true).open(&stdout_file)
+                        }
+                        RedirectMode::Overwrite => {
+                            File::create(&stdout_file)
+                        }
                     };
                     
                     match stdout_file_res {
@@ -384,20 +387,17 @@ impl VM {
 
             let mut stderr_file_opt = None;
             let mut stderr_to_stdout = false;
-            if let Some(stderr_redirect) = stderr_redirect_opt {
-                if stderr_redirect == "&1" {
+            if let Some((stderr_file, stderr_mode)) = stderr_redirect_opt {
+                if stderr_file == "&1" {
                     stderr_to_stdout = true;
                 } else {
-                    let (is_append, file_path) = if stderr_redirect.starts_with(">>:") {
-                        (true, &stderr_redirect[3..])
-                    } else {
-                        (false, stderr_redirect.as_str())
-                    };
-                    
-                    let stderr_file_res = if is_append {
-                        File::options().create(true).append(true).open(file_path)
-                    } else {
-                        File::create(file_path)
+                    let stderr_file_res = match stderr_mode {
+                        RedirectMode::Append => {
+                            File::options().create(true).append(true).open(&stderr_file)
+                        }
+                        RedirectMode::Overwrite => {
+                            File::create(&stderr_file)
+                        }
                     };
                     
                     match stderr_file_res {

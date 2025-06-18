@@ -2228,6 +2228,10 @@ fn append_redirect_edge_cases() {
     // Test that multiple > characters don't create files with >> prefix
     // This addresses the concern about filenames starting with >>
     basic_test("'echo test >>>>badfile >/dev/null' exec; drop; '>badfile' is-file; not", ".t");
+    
+    // Test that regular redirection with content overwrite works as expected 
+    // This verifies our implementation handles edge cases correctly
+    basic_test("special rmf; 'echo first >special' exec; drop; 'echo second >special' exec; drop; special f<; \"\" join; 'second\n' =; special rmf", ".t");
 }
 
 #[test]

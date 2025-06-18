@@ -4,6 +4,15 @@
     rpkiv state get-storage-dir; / ++;
     ,,
 
+: _rpkiv.abspath
+    dup; "^/" m; if;
+        # Already absolute, return as-is
+    else;
+        # Relative path, make it absolute
+        cwd; "/" ++; swap; ++;
+    then;
+    ,,
+
 : rpkiv.init
     dup; tals get; tals var; tals !;
     dup; type get; type var; type !;
@@ -158,13 +167,15 @@
 : rpkiv.file-raw
     cwd; cwd var; cwd !;
     name var; name !;
+    _rpkiv.abspath; filepath var; filepath !;
     rpkiv._gsd; name @; ++; cd;
     type f<; shift; chomp; rpki-client =; not; if;
         "rpkiv.file-raw only available for rpki-client" error;
     then;
     tals ls; [-t{} fmt] map; ' ' join;
-    {./rpki-client {} -d ./cache -f {} -j}/o;
+    filepath @; {./rpki-client {} -d ./cache -f {} -j}/o;
     from-json;
+    cwd @; cd;
     ,,
 
 : _rpkiv.file-annotate
@@ -216,6 +227,8 @@
     cwd; cwd var; cwd !;
     name var; name !;
     files var; files !;
+    # Convert relative paths to absolute before changing directory
+    files @; [_rpkiv.abspath] map; files !;
     rpkiv._gsd; name @; ++; rsv var; rsv !;
     rsv @; cd;
     type f<; shift; chomp; rpki-client =; not; if;

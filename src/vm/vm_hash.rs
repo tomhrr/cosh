@@ -410,7 +410,50 @@ impl VM {
                             lst.borrow_mut()[n as usize] = val_rr;
                         }
                         _ => {
-                            self.print_error("second set argument must be field specifier");
+                            if let Some(s) = specifier_opt {
+                                let pos = s.chars().position(|c| c == '.');
+                                match pos {
+                                    Some(n) => {
+                                        let first_key = &s[..n];
+                                        match first_key.parse::<usize>() {
+                                            Ok(nn) => {
+                                                let lstb = lst.borrow();
+                                                if lstb.len() <= nn {
+                                                    self.print_error("second set argument must fall within list bounds");
+                                                    return 0;
+                                                } else {
+                                                    let rest_specifier = &s[n+1..];
+                                                    let rest_specifier_value =
+                                                        new_string_value(rest_specifier.to_string());
+                                                    let nested_element = lstb[nn].clone();
+                                                    drop(lstb); // Release the borrow before recursive call
+                                                    self.stack.push(nested_element);
+                                                    self.stack.push(rest_specifier_value);
+                                                    self.stack.push(val_rr);
+                                                    let res = self.core_set();
+                                                    if res == 1 {
+                                                        if self.stack.is_empty() {
+                                                            return 0;
+                                                        }
+                                                        let updated_element = self.stack.pop().unwrap();
+                                                        lst.borrow_mut()[nn] = updated_element;
+                                                    } else {
+                                                        return 0;
+                                                    }
+                                                }
+                                            }
+                                            _ => {
+                                                self.print_error("second set argument must be field specifier");
+                                            }
+                                        }
+                                    }
+                                    _ => {
+                                        self.print_error("second set argument must be field specifier");
+                                    }
+                                }
+                            } else {
+                                self.print_error("second set argument must be field specifier");
+                            }
                         }
                     }
                 }

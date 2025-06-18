@@ -100,6 +100,7 @@ pub struct Scanner<'a> {
     has_lookahead: bool,
     lookahead: u8,
     next_is_eof: bool,
+    interactive_mode: bool,
 }
 
 lazy_static! {
@@ -107,7 +108,7 @@ lazy_static! {
 }
 
 impl<'a> Scanner<'a> {
-    pub fn new(fh: &mut Box<dyn BufRead>) -> Scanner {
+    pub fn new(fh: &mut Box<dyn BufRead>, interactive_mode: bool) -> Scanner {
         Scanner {
             fh,
             line_number: 1,
@@ -117,6 +118,7 @@ impl<'a> Scanner<'a> {
             has_lookahead: false,
             lookahead: 0,
             next_is_eof: false,
+            interactive_mode,
         }
     }
 
@@ -285,7 +287,7 @@ impl<'a> Scanner<'a> {
         if (buffer[0] as char == '"')
             || (buffer[0] as char == '\'')
             || (buffer[0] as char == '{')
-            || (buffer[0] as char == '$')
+            || (buffer[0] as char == '$' && self.interactive_mode)
         {
             string_delimiter = buffer[0] as char;
             in_string = true;
@@ -403,7 +405,7 @@ impl<'a> Scanner<'a> {
                             result_index += 1;
                         }
                     }
-                } else if string_delimiter == '$' {
+                } else if string_delimiter == '$' && self.interactive_mode {
                     /* Uncaptured commands do not need to include a
                      * terminating delimiter. */
                     result[result_index] = buffer[0];
@@ -488,7 +490,7 @@ impl<'a> Scanner<'a> {
             /* Uncaptured commands do not need to include a
              * terminating delimiter, so there is special handling for
              * them here. */
-            if string_delimiter == '$' {
+            if string_delimiter == '$' && self.interactive_mode {
                 result[result_index] = 0;
                 let s_all = str::from_utf8(&result).unwrap();
                 let s = &s_all[..result_index];
@@ -580,6 +582,7 @@ impl<'a> Scanner<'a> {
 pub struct Compiler {
     locals: Vec<Local>,
     scope_depth: u32,
+    interactive_mode: bool,
 }
 
 /// Unescapes a single string value, by replacing string
@@ -629,6 +632,15 @@ impl Compiler {
         Compiler {
             locals: Vec::new(),
             scope_depth: 0,
+            interactive_mode: false,
+        }
+    }
+
+    pub fn new_interactive() -> Compiler {
+        Compiler {
+            locals: Vec::new(),
+            scope_depth: 0,
+            interactive_mode: true,
         }
     }
 
@@ -1537,7 +1549,7 @@ impl Compiler {
     /// the program code found in the BufRead, and returns a chunk
     /// containing the compiled code.
     pub fn compile(&mut self, fh: &mut Box<dyn BufRead>, name: &str) -> Option<Chunk> {
-        let mut scanner = Scanner::new(fh);
+        let mut scanner = Scanner::new(fh, self.interactive_mode);
         let mut chunk = Chunk::new_standard(name.to_string());
         let res = self.compile_inner(&mut scanner, &mut chunk);
         if !res {

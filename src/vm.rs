@@ -2361,7 +2361,20 @@ impl VM {
         fh: &mut Box<dyn BufRead>,
         name: &str,
     ) -> Option<Rc<RefCell<Chunk>>> {
-        let mut compiler = Compiler::new();
+        self.interpret_with_mode(fh, name, false)
+    }
+
+    pub fn interpret_with_mode(
+        &mut self,
+        fh: &mut Box<dyn BufRead>,
+        name: &str,
+        interactive_mode: bool,
+    ) -> Option<Rc<RefCell<Chunk>>> {
+        let mut compiler = if interactive_mode {
+            Compiler::new_interactive()
+        } else {
+            Compiler::new()
+        };
         let chunk_opt = compiler.compile(fh, name);
         if chunk_opt.is_none() {
             return None;

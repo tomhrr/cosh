@@ -1065,6 +1065,16 @@ fn set_test() {
 }
 
 #[test]
+fn nested_set_test() {
+    // Test that nested sets display without element indices
+    basic_test_no_rt("(s(1 2) s(3 4))", "(\n    0: s(\n        1\n        2\n    )\n    1: s(\n        3\n        4\n    )\n)");
+    // Test deeply nested sets
+    basic_test_no_rt("((s(1 2)))", "(\n    0: (\n        0: s(\n            1\n            2\n        )\n    )\n)");
+    // Test single nested set
+    basic_test_no_rt("(s(1))", "(\n    0: s(\n        1\n    )\n)");
+}
+
+#[test]
 fn predicate_test() {
     basic_test(".t is-bool;", ".t");
     basic_test(".f is-bool;", ".t");

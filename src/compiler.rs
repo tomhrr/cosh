@@ -1034,15 +1034,59 @@ impl Compiler {
                             chunk.add_byte((self.locals.len() - 1) as u8);
                         }
                     } else if s == "var!" {
+                        if !chunk.has_constant() {
+                            eprintln!(
+                                "{}:{}: variable name must precede var!",
+                                token.line_number, token.column_number
+                            );
+                            return false;
+                        }
                         if self.scope_depth == 0 {
                             chunk.add_opcode(OpCode::VarSet);
                             has_vars = true;
                         } else {
-                            eprintln!(
-                                "{}:{}: var! may only be used at the top level",
-                                token.line_number, token.column_number
-                            );
-                            return false;
+                            let last_constant_rr = chunk.get_last_constant();
+                            chunk.pop_byte();
+                            chunk.pop_byte();
+                            let last_opcode = chunk.get_last_opcode();
+                            chunk.pop_byte();
+
+                            let is_error;
+                            match last_opcode {
+                                Some(last_opcode) => {
+                                    let not_constant = !matches!(last_opcode, OpCode::Constant);
+                                    is_error = not_constant;
+                                }
+                                _ => {
+                                    is_error = true;
+                                }
+                            }
+                            if is_error {
+                                eprintln!(
+                                    "{}:{}: variable name must precede var!",
+                                    token.line_number, token.column_number
+                                );
+                                return false;
+                            }
+
+                            match last_constant_rr {
+                                Value::String(st) => {
+                                    let local = Local::new(
+                                        st.borrow().string.to_string(),
+                                        self.scope_depth,
+                                    );
+                                    self.locals.push(local);
+                                }
+                                _ => {
+                                    eprintln!(
+                                        "{}:{}: variable name must be a string",
+                                        token.line_number, token.column_number
+                                    );
+                                    return false;
+                                }
+                            }
+                            chunk.add_opcode(OpCode::SetLocalVar);
+                            chunk.add_byte((self.locals.len() - 1) as u8);
                         }
                     } else if s == "varm!" {
                         if self.scope_depth == 0 {

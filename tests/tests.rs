@@ -1827,11 +1827,8 @@ fn var_set_test() {
         "1:17: variable has already been declared in this scope"
     );
     
-    // Test var! scope restriction
-    basic_error_test_no_rt(
-        "[10 v var!; 1]",
-        "1:7: var! may only be used at the top level"
-    );
+    // Test var! works in sub-scopes (like var does)
+    basic_test_no_rt("[10 v var!; v @] funcall", "10");
 }
 
 #[test]

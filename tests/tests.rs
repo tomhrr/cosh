@@ -2217,7 +2217,7 @@ fn append_redirect_test() {
     basic_test("redtest rmf; 'ls notexists 2>redtest' exec; drop; 'ls notexists2 2>>redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
     
     // Test that >> actually appends content
-    basic_test("redtest rmf; 'echo line1 >redtest' exec; drop; 'echo line2 >>redtest' exec; drop; redtest f<; join; 'line1\\nline2\\n' =; redtest rmf", ".t");
+    basic_test("redtest rmf; 'echo line1 >redtest' exec; drop; 'echo line2 >>redtest' exec; drop; redtest f<; \"\" join; 'line1\nline2\n' =; redtest rmf", ".t");
     
     // Test 1>> redirection (explicit stdout)
     basic_test("redtest rmf; 'echo line1 1>redtest' exec; drop; 'echo line2 1>>redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
@@ -2227,7 +2227,7 @@ fn append_redirect_test() {
 fn append_redirect_edge_cases() {
     // Test that multiple > characters don't create files with >> prefix
     // This addresses the concern about filenames starting with >>
-    basic_test("'echo test >>>>badfile' exec; 'test >>>>badfile' =", ".t");
+    basic_test("'echo test >>>>badfile >/dev/null' exec; drop; '>badfile' is-file; not", ".t");
 }
 
 #[test]

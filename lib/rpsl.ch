@@ -41,24 +41,31 @@
 
 : rpsl.str
     # Takes a list of [key, value] pairs and converts to RPSL text format
+    input var; input !;
     result var; "" result !;
-    dup; is-shiftable; not; if;
-        1 mlist;
-    then;
-    [
-        # For each [key, value] pair (element is on the stack)
-        dup; 0 get;                    # Stack: [pair, key]
-        ": " ++;                       # Stack: [pair, "key: "]
-        swap; 1 get;                   # Stack: ["key: ", value] 
-        ++;                            # Stack: ["key: value"]
-        result @; "" =; not; if;       # If result is not empty
-            result @; "\n" ++;         # Add newline to result
-            swap; ++;                  # Add line to result
-            result !;
-        else;
-            result !;                  # Store first line
+    input @; len; n var; n !;
+    0 i var; i !;
+    begin;
+        i @; n @; =; if;
+            leave;
         then;
-    ] for;
+        # Get the [key, value] pair at index i
+        input @; i @; get;
+        # Extract key and value
+        dup; 0 get; str;
+        ": " ++;
+        swap; 1 get; str;
+        ++;
+        # Add to result
+        result @; swap; ++;
+        # Add newline if not last element
+        i @; n @; 1 -; =; not; if;
+            "\n" ++;
+        then;
+        result !;
+        # Increment i
+        i @; 1 +; i !;
+        0 until;
     result @;
     ,,
 

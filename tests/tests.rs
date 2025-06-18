@@ -2245,5 +2245,12 @@ fn ip_types() {
 
 #[test]
 fn rpsl_str_test() {
-    basic_test("lib/rpsl.ch import; (\"inetnum\" \"192.0.2.0 - 192.0.2.255\") (\"netname\" \"TEST-NET\") (\"descr\" \"Test network\") 3 mlist; rpsl.str", "inetnum: 192.0.2.0 - 192.0.2.255\nnetname: TEST-NET\ndescr: Test network");
+    // Test that rpsl.str produces correct output when printed
+    basic_test("lib/rpsl.ch import; (\"inetnum\" \"192.0.2.0 - 192.0.2.255\") (\"netname\" \"TEST-NET\") (\"descr\" \"Test network\") 3 mlist; rpsl.str; println", "inetnum: 192.0.2.0 - 192.0.2.255\nnetname: TEST-NET\ndescr: Test network");
+    
+    // Test empty list
+    basic_test("lib/rpsl.ch import; () rpsl.str; println", "");
+    
+    // Test single element
+    basic_test("lib/rpsl.ch import; (\"key\" \"value\") 1 mlist; rpsl.str; println", "key: value");
 }

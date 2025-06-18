@@ -51,3 +51,8 @@ A library for working with Routing Policy Specification Language
  - `rpsl.parsem`
     - Parse multiple RPSL objects from a generator over RPSL text
       content.
+
+ - `rpsl.str`
+    - Takes a list of [key, value] pairs (as returned by `rpsl.parse`)
+      and converts it back to RPSL text format. This performs the
+      reverse operation of `rpsl.parse`.

@@ -1260,6 +1260,9 @@ and `str` is defined for both IP objects and IP sets.
     - If the hash argument contains a `raw` entry with a true value,
       then the response becomes a hash with keys for `code`, `headers`
       (hash) and `body` (returned as-is).
+    - If the hash argument contains a `redirect-body` entry with a true
+      value, then the body of the first redirect response is returned,
+      rather than the body of the eventual redirect target.
 
 #### SQL databases
 

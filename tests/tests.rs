@@ -30,6 +30,17 @@ fn basic_test(input: &str, output: &str) {
     assert.success().stdout(output2);
 }
 
+fn basic_test_no_rt(input: &str, output: &str) {
+    let mut file = NamedTempFile::new().unwrap();
+    writeln!(file, "{}", input).unwrap();
+
+    let mut cmd = Command::cargo_bin("cosh").unwrap();
+    let path = file.path();
+    let assert = cmd.arg("--no-cosh-conf").arg("--no-rt").arg(path).assert();
+    let output2 = format!("{}\n", output);
+    assert.success().stdout(output2);
+}
+
 fn basic_error_test(input: &str, output: &str) {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "{}", input).unwrap();
@@ -42,7 +53,7 @@ fn basic_error_test(input: &str, output: &str) {
 
 #[test]
 fn add() {
-    basic_test("1 2 +;", "3");
+    basic_test_no_rt("1 2 +;", "3");
 }
 
 #[test]
@@ -507,10 +518,14 @@ fn split_test() {
 
 #[test]
 fn join_test() {
-    basic_test("(a b c) , join", "a,b,c");
-    basic_test("('a,b' c d) , join", "\\\"a,b\\\",c,d");
-    basic_test("(a,b c d) , join", "\\\"a,b\\\",c,d");
-    basic_test("('a\"b' c d) , join", "\\\"a\\\\\"b\\\",c,d");
+    basic_test_no_rt("(a b c) , join", "a,b,c");
+    basic_test_no_rt("('a,b' c d) , join", "\\\"a,b\\\",c,d");
+    basic_test_no_rt("(a,b c d) , join", "\\\"a,b\\\",c,d");
+    basic_test_no_rt("('a\"b' c d) , join", "\\\"a\\\\\"b\\\",c,d");
+    // Test for the period separator issue - elements without period should not be quoted
+    basic_test_no_rt("(1 2) . join", "1.2");
+    // Elements containing the separator should still be quoted  
+    basic_test_no_rt("('a.b' c d) . join", "\\\"a.b\\\".c.d");
 }
 
 #[test]

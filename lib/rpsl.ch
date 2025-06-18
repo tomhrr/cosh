@@ -42,6 +42,7 @@
 :~ rpsl.parsem 1 1
     drop;
     [^#|% m; not] grep;
+    [""] append-all;
     gen var; gen !;
     begin;
         gen @;

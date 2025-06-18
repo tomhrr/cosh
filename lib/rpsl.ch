@@ -39,6 +39,29 @@
     attrs @;
     ,,
 
+: rpsl.str
+    # Takes a list of [key, value] pairs and converts to RPSL text format
+    result var; "" result !;
+    dup; is-shiftable; not; if;
+        1 mlist;
+    then;
+    [
+        # For each [key, value] pair (element is on the stack)
+        dup; 0 get;                    # Stack: [pair, key]
+        ": " ++;                       # Stack: [pair, "key: "]
+        swap; 1 get;                   # Stack: ["key: ", value] 
+        ++;                            # Stack: ["key: value"]
+        result @; "" =; not; if;       # If result is not empty
+            result @; "\n" ++;         # Add newline to result
+            swap; ++;                  # Add line to result
+            result !;
+        else;
+            result !;                  # Store first line
+        then;
+    ] for;
+    result @;
+    ,,
+
 :~ rpsl.parsem 1 1
     drop;
     [^#|% m; not] grep;

@@ -40,6 +40,27 @@ fn basic_error_test(input: &str, output: &str) {
     assert.success().stderr(output.to_owned() + "\n");
 }
 
+fn basic_test_no_rt(input: &str, output: &str) {
+    let mut file = NamedTempFile::new().unwrap();
+    writeln!(file, "{}", input).unwrap();
+
+    let mut cmd = Command::cargo_bin("cosh").unwrap();
+    let path = file.path();
+    let assert = cmd.arg("--no-cosh-conf").arg("--no-rt").arg(path).assert();
+    let output2 = format!("{}\n", output);
+    assert.success().stdout(output2);
+}
+
+fn basic_error_test_no_rt(input: &str, output: &str) {
+    let mut file = NamedTempFile::new().unwrap();
+    writeln!(file, "{}", input).unwrap();
+
+    let mut cmd = Command::cargo_bin("cosh").unwrap();
+    let path = file.path();
+    let assert = cmd.arg("--no-cosh-conf").arg("--no-rt").arg(path).assert();
+    assert.success().stderr(output.to_owned() + "\n");
+}
+
 #[test]
 fn add() {
     basic_test("1 2 +;", "3");
@@ -1788,6 +1809,53 @@ fn varm_test() {
     basic_error_test(
         "[a varm; 1]",
         "1:4: varm may only be used at the top level"
+    );
+}
+
+#[test]
+fn var_set_test() {
+    // Test basic var! functionality
+    basic_test_no_rt("10 v var!; v @", "10");
+    
+    // Test var! is equivalent to var; !
+    basic_test_no_rt("x var; 20 x !; x @", "20");
+    basic_test_no_rt("20 x var!; x @", "20");
+    
+    // Test var! cannot redeclare
+    basic_error_test_no_rt(
+        "10 v var!; 20 v var!",
+        "1:17: variable has already been declared in this scope"
+    );
+    
+    // Test var! scope restriction
+    basic_error_test_no_rt(
+        "[10 v var!; 1]",
+        "1:7: var! may only be used at the top level"
+    );
+}
+
+#[test]
+fn varm_set_test() {
+    // Test basic varm! functionality 
+    basic_test_no_rt("10 v varm!; v @", "10");
+    
+    // Test varm! is equivalent to varm; !
+    basic_test_no_rt("x varm; 20 x !; x @", "20");
+    basic_test_no_rt("20 x varm!; x @", "20");
+    
+    // Test varm! can redeclare
+    basic_test_no_rt("10 v varm!; 20 v varm!; v @", "20");
+    
+    // Test varm! cannot redeclare var!
+    basic_error_test_no_rt(
+        "10 v var!; 20 v varm!",
+        "1:17: variable has already been declared with var in this scope"
+    );
+    
+    // Test varm! scope restriction
+    basic_error_test_no_rt(
+        "[10 v varm!; 1]",
+        "1:7: varm! may only be used at the top level"
     );
 }
 

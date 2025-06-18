@@ -1033,6 +1033,28 @@ impl Compiler {
                             chunk.add_opcode(OpCode::SetLocalVar);
                             chunk.add_byte((self.locals.len() - 1) as u8);
                         }
+                    } else if s == "var!" {
+                        if self.scope_depth == 0 {
+                            chunk.add_opcode(OpCode::VarSet);
+                            has_vars = true;
+                        } else {
+                            eprintln!(
+                                "{}:{}: var! may only be used at the top level",
+                                token.line_number, token.column_number
+                            );
+                            return false;
+                        }
+                    } else if s == "varm!" {
+                        if self.scope_depth == 0 {
+                            chunk.add_opcode(OpCode::VarMSet);
+                            has_vars = true;
+                        } else {
+                            eprintln!(
+                                "{}:{}: varm! may only be used at the top level",
+                                token.line_number, token.column_number
+                            );
+                            return false;
+                        }
                     } else if s == "!" {
                         if !chunk.has_constant() {
                             eprintln!(

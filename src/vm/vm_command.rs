@@ -29,10 +29,10 @@ lazy_static! {
     static ref HOME_DIR_TILDE:      Regex = Regex ::new("\\s~").unwrap();
     static ref LEADING_WS:          Regex = Regex ::new("^\\s*").unwrap();
     static ref ENV_VAR:             Regex = Regex ::new("^(.*)=(.*)$").unwrap();
-    static ref STDOUT_REDIRECT:     Regex = Regex ::new("^1?>(.*)$").unwrap();
-    static ref STDERR_REDIRECT:     Regex = Regex ::new("^2>(.*)$").unwrap();
-    static ref STDOUT_APPEND:       Regex = Regex ::new("^1?>>(.*)$").unwrap();
-    static ref STDERR_APPEND:       Regex = Regex ::new("^2>>(.*)$").unwrap();
+    static ref STDOUT_REDIRECT:     Regex = Regex ::new("^1?>([^>].*)$").unwrap();
+    static ref STDERR_REDIRECT:     Regex = Regex ::new("^2>([^>].*)$").unwrap();
+    static ref STDOUT_APPEND:       Regex = Regex ::new("^1?>>([^>].*)$").unwrap();
+    static ref STDERR_APPEND:       Regex = Regex ::new("^2>>([^>].*)$").unwrap();
 }
 
 /// Splits a string on whitespace, taking into account quoted values

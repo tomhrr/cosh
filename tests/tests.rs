@@ -2224,6 +2224,13 @@ fn append_redirect_test() {
 }
 
 #[test]
+fn append_redirect_edge_cases() {
+    // Test that multiple > characters don't create files with >> prefix
+    // This addresses the concern about filenames starting with >>
+    basic_test("'echo test >>>>badfile' exec; 'test >>>>badfile' =", ".t");
+}
+
+#[test]
 fn hash_literal_test() {
     basic_error_test("h(1)", "1:5: expected even number of elements for hash");
     basic_error_test("h(h(1 2) 3)", "1:13: expected string for hash key");

@@ -478,6 +478,24 @@ fn get_test() {
 }
 
 #[test]
+fn dotted_set_test() {
+    // Basic dotted field specifier test - issue #157
+    basic_test("((0 0)) 0.1 asdf set", "(\n    0: (\n        0: 0\n        1: asdf\n    )\n)");
+    
+    // Test with nested lists - simple case
+    basic_test("((a b) (c d)) 0.1 xyz set", "(\n    0: (\n        0: a\n        1: xyz\n    )\n    1: (\n        0: c\n        1: d\n    )\n)");
+    
+    // Test with 3 levels of nesting
+    basic_test("(((a b) (c d)) ((e f) (g h))) 1.0.1 xyz set", "(\n    0: (\n        0: (\n            0: a\n            1: b\n        )\n        1: (\n            0: c\n            1: d\n        )\n    )\n    1: (\n        0: (\n            0: e\n            1: xyz\n        )\n        1: (\n            0: g\n            1: h\n        )\n    )\n)");
+    
+    // Test first index access
+    basic_test("((first second) (third fourth)) 1.0 new_first set", "(\n    0: (\n        0: first\n        1: second\n    )\n    1: (\n        0: new_first\n        1: fourth\n    )\n)");
+    
+    // Ensure backward compatibility with simple integer indices
+    basic_test("(a b c) 1 xyz set", "(\n    0: a\n    1: xyz\n    2: c\n)");
+}
+
+#[test]
 fn take_test() {
     basic_test("(1 2 3) 2 take", "(\n    0: 1\n    1: 2\n)");
     basic_test("(1 2 3) take-all", "(\n    0: 1\n    1: 2\n    2: 3\n)");
@@ -762,6 +780,21 @@ fn nth_bounds_test2() {
     basic_error_test(
         "10 range; take-all; 10 15 set",
         "1:27: second set argument must fall within list bounds",
+    );
+}
+
+#[test]
+fn dotted_set_bounds_test() {
+    // Test out of bounds error with dotted field specifier
+    basic_error_test(
+        "((a b)) 1.0 xyz set",
+        "1:18: second set argument must fall within list bounds",
+    );
+    
+    // Test out of bounds error with deep nesting
+    basic_error_test(
+        "((a b)) 0.2 xyz set", 
+        "1:18: second set argument must fall within list bounds",
     );
 }
 

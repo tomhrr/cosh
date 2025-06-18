@@ -30,6 +30,17 @@ fn basic_test(input: &str, output: &str) {
     assert.success().stdout(output2);
 }
 
+fn basic_test_no_rt(input: &str, output: &str) {
+    let mut file = NamedTempFile::new().unwrap();
+    writeln!(file, "{}", input).unwrap();
+
+    let mut cmd = Command::cargo_bin("cosh").unwrap();
+    let path = file.path();
+    let assert = cmd.arg("--no-rt").arg("--no-cosh-conf").arg(path).assert();
+    let output2 = format!("{}\n", output);
+    assert.success().stdout(output2);
+}
+
 fn basic_error_test(input: &str, output: &str) {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "{}", input).unwrap();
@@ -1014,6 +1025,16 @@ fn set_test() {
     basic_test("s(1 2 3) s(2 3 4) diff;", "s(\n    1\n)");
     basic_test("s(1 2 3) s(2 3 4) symdiff;", "s(\n    1\n    4\n)");
     basic_test("s(1 2 3) dup; shift;", "s(\n    2\n    3\n)\n1");
+}
+
+#[test]
+fn nested_set_test() {
+    // Test that nested sets display without element indices
+    basic_test_no_rt("(s(1 2) s(3 4))", "(\n    0: s(\n        1\n        2\n    )\n    1: s(\n        3\n        4\n    )\n)");
+    // Test deeply nested sets
+    basic_test_no_rt("((s(1 2)))", "(\n    0: (\n        0: s(\n            1\n            2\n        )\n    )\n)");
+    // Test single nested set
+    basic_test_no_rt("(s(1))", "(\n    0: s(\n        1\n    )\n)");
 }
 
 #[test]

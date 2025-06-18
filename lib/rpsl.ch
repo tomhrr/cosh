@@ -40,11 +40,9 @@
     ,,
 
 :~ rpsl.parsem 1 1
-    drop;
-    [^#|% m; not] grep;
-    gen var; gen !;
+    input var; input !;
     begin;
-        gen @;
+        input @;
         rpsl.parse;
         dup; is-null; if;
             drop;

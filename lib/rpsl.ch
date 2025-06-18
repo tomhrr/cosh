@@ -40,6 +40,7 @@
     ,,
 
 :~ rpsl.parsem 1 1
+    drop;
     [^#|% m; not] grep;
     gen var; gen !;
     begin;

@@ -31,6 +31,8 @@ lazy_static! {
     static ref ENV_VAR:             Regex = Regex ::new("^(.*)=(.*)$").unwrap();
     static ref STDOUT_REDIRECT:     Regex = Regex ::new("^1?>(.*)$").unwrap();
     static ref STDERR_REDIRECT:     Regex = Regex ::new("^2>(.*)$").unwrap();
+    static ref STDOUT_APPEND:       Regex = Regex ::new("^1?>>(.*)$").unwrap();
+    static ref STDERR_APPEND:       Regex = Regex ::new("^2>>(.*)$").unwrap();
 }
 
 /// Splits a string on whitespace, taking into account quoted values
@@ -215,7 +217,29 @@ impl VM {
             while !elements.is_empty() {
                 let len = elements.len();
                 let element = elements.get(len - 1).unwrap();
-                let mut captures = STDOUT_REDIRECT.captures_iter(element);
+                // Check for append redirection first (longer patterns)
+                let mut captures = STDOUT_APPEND.captures_iter(element);
+                match captures.next() {
+                    Some(capture) => {
+                        let output = capture.get(1).unwrap().as_str();
+                        stdout_redirect = Some(format!(">>:{}", output));
+                        elements.pop_back();
+                        continue;
+                    }
+                    _ => {}
+                }
+                captures = STDERR_APPEND.captures_iter(element);
+                match captures.next() {
+                    Some(capture) => {
+                        let output = capture.get(1).unwrap().as_str();
+                        stderr_redirect = Some(format!(">>:{}", output));
+                        elements.pop_back();
+                        continue;
+                    }
+                    _ => {}
+                }
+                // Check for regular redirection (shorter patterns)
+                captures = STDOUT_REDIRECT.captures_iter(element);
                 match captures.next() {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
@@ -332,7 +356,18 @@ impl VM {
                 if stdout_redirect == "&2" {
                     stdout_to_stderr = true;
                 } else {
-                    let stdout_file_res = File::create(stdout_redirect);
+                    let (is_append, file_path) = if stdout_redirect.starts_with(">>:") {
+                        (true, &stdout_redirect[3..])
+                    } else {
+                        (false, stdout_redirect.as_str())
+                    };
+                    
+                    let stdout_file_res = if is_append {
+                        File::options().create(true).append(true).open(file_path)
+                    } else {
+                        File::create(file_path)
+                    };
+                    
                     match stdout_file_res {
                         Ok(stdout_file_arg) => {
                             stdout_file_opt = Some(stdout_file_arg.try_clone().unwrap());
@@ -353,7 +388,18 @@ impl VM {
                 if stderr_redirect == "&1" {
                     stderr_to_stdout = true;
                 } else {
-                    let stderr_file_res = File::create(stderr_redirect);
+                    let (is_append, file_path) = if stderr_redirect.starts_with(">>:") {
+                        (true, &stderr_redirect[3..])
+                    } else {
+                        (false, stderr_redirect.as_str())
+                    };
+                    
+                    let stderr_file_res = if is_append {
+                        File::options().create(true).append(true).open(file_path)
+                    } else {
+                        File::create(file_path)
+                    };
+                    
                     match stderr_file_res {
                         Ok(stderr_file_arg) => {
                             stderr_file_opt = Some(stderr_file_arg.try_clone().unwrap());

@@ -2209,6 +2209,21 @@ fn redirect_test() {
 }
 
 #[test]
+fn append_redirect_test() {
+    // Test stdout append redirection
+    basic_test("redtest rmf; 'echo line1 >redtest' exec; drop; 'echo line2 >>redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    
+    // Test stderr append redirection  
+    basic_test("redtest rmf; 'ls notexists 2>redtest' exec; drop; 'ls notexists2 2>>redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    
+    // Test that >> actually appends content
+    basic_test("redtest rmf; 'echo line1 >redtest' exec; drop; 'echo line2 >>redtest' exec; drop; redtest f<; join; 'line1\\nline2\\n' =; redtest rmf", ".t");
+    
+    // Test 1>> redirection (explicit stdout)
+    basic_test("redtest rmf; 'echo line1 1>redtest' exec; drop; 'echo line2 1>>redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+}
+
+#[test]
 fn hash_literal_test() {
     basic_error_test("h(1)", "1:5: expected even number of elements for hash");
     basic_error_test("h(h(1 2) 3)", "1:13: expected string for hash key");

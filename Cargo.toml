@@ -7,7 +7,7 @@ edition = "2021"
 [features]
 default = []
 ahash = ["dep:ahash"]
-fxhash = ["dep:rustc-hash"]
+fnv = ["dep:fnv"]
 
 [dependencies]
 assert_cmd = "2.0.9"
@@ -26,7 +26,7 @@ nix = { version = "0.28.0", features = ["fs", "process", "user", "signal"] }
 lazy_static = "1.4.0"
 indexmap = { version = "1.5.1", features = ["serde-1"] }
 ahash = { version = "0.8", optional = true }
-rustc-hash = { version = "1.1", optional = true }
+fnv = { version = "1.0", optional = true }
 roxmltree = "0.13.0"
 xml-rs = "0.8.3"
 utime = "0.3.1"

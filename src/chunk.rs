@@ -23,17 +23,17 @@ use chrono::prelude::*;
 use indexmap::IndexMap;
 #[cfg(feature = "ahash")]
 use ahash;
-#[cfg(feature = "fxhash")]
-use rustc_hash;
+#[cfg(feature = "fnv")]
+use fnv;
 use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
 
 // Hash map type definitions with configurable hashers
 #[cfg(feature = "ahash")]
 type ValueHashMap<K, V> = IndexMap<K, V, ahash::RandomState>;
-#[cfg(feature = "fxhash")]
-type ValueHashMap<K, V> = IndexMap<K, V, rustc_hash::FxBuildHasher>;
-#[cfg(not(any(feature = "ahash", feature = "fxhash")))]
+#[cfg(feature = "fnv")]
+type ValueHashMap<K, V> = IndexMap<K, V, fnv::FnvBuildHasher>;
+#[cfg(not(any(feature = "ahash", feature = "fnv")))]
 type ValueHashMap<K, V> = IndexMap<K, V>;
 
 // For serializable values, we keep using standard IndexMap to ensure compatibility
@@ -45,12 +45,12 @@ pub fn new_value_hashmap<K, V>() -> ValueHashMap<K, V> {
     IndexMap::with_hasher(ahash::RandomState::new())
 }
 
-#[cfg(feature = "fxhash")]
+#[cfg(feature = "fnv")]
 pub fn new_value_hashmap<K, V>() -> ValueHashMap<K, V> {
-    IndexMap::with_hasher(rustc_hash::FxBuildHasher::default())
+    IndexMap::with_hasher(fnv::FnvBuildHasher::default())
 }
 
-#[cfg(not(any(feature = "ahash", feature = "fxhash")))]
+#[cfg(not(any(feature = "ahash", feature = "fnv")))]
 pub fn new_value_hashmap<K, V>() -> ValueHashMap<K, V> {
     IndexMap::new()
 }

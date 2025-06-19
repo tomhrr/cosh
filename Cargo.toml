@@ -6,7 +6,6 @@ edition = "2021"
 
 [features]
 default = []
-ahash = ["dep:ahash"]
 fnv = ["dep:fnv"]
 
 [dependencies]
@@ -25,7 +24,7 @@ rustyline-derive = "0.3.1"
 nix = { version = "0.28.0", features = ["fs", "process", "user", "signal"] }
 lazy_static = "1.4.0"
 indexmap = { version = "1.5.1", features = ["serde-1"] }
-ahash = { version = "0.8", optional = true }
+ahash = "0.8"
 fnv = { version = "1.0", optional = true }
 roxmltree = "0.13.0"
 xml-rs = "0.8.3"

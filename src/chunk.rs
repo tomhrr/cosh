@@ -21,7 +21,6 @@ use std::time;
 use chrono::format::{parse, Parsed, StrftimeItems};
 use chrono::prelude::*;
 use indexmap::IndexMap;
-#[cfg(feature = "ahash")]
 use ahash;
 #[cfg(feature = "fnv")]
 use fnv;
@@ -29,30 +28,23 @@ use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
 
 // Hash map type definitions with configurable hashers
-#[cfg(feature = "ahash")]
-type ValueHashMap<K, V> = IndexMap<K, V, ahash::RandomState>;
 #[cfg(feature = "fnv")]
 type ValueHashMap<K, V> = IndexMap<K, V, fnv::FnvBuildHasher>;
-#[cfg(not(any(feature = "ahash", feature = "fnv")))]
-type ValueHashMap<K, V> = IndexMap<K, V>;
+#[cfg(not(feature = "fnv"))]
+type ValueHashMap<K, V> = IndexMap<K, V, ahash::RandomState>;
 
 // For serializable values, we keep using standard IndexMap to ensure compatibility
 type ValueSDHashMap<K, V> = IndexMap<K, V>;
 
 // Helper functions to create maps with appropriate hashers
-#[cfg(feature = "ahash")]
-pub fn new_value_hashmap<K, V>() -> ValueHashMap<K, V> {
-    IndexMap::with_hasher(ahash::RandomState::new())
-}
-
 #[cfg(feature = "fnv")]
 pub fn new_value_hashmap<K, V>() -> ValueHashMap<K, V> {
     IndexMap::with_hasher(fnv::FnvBuildHasher::default())
 }
 
-#[cfg(not(any(feature = "ahash", feature = "fnv")))]
+#[cfg(not(feature = "fnv"))]
 pub fn new_value_hashmap<K, V>() -> ValueHashMap<K, V> {
-    IndexMap::new()
+    IndexMap::with_hasher(ahash::RandomState::new())
 }
 
 pub fn new_valuesd_hashmap<K, V>() -> ValueSDHashMap<K, V> {

@@ -4,49 +4,40 @@ This document describes the alternative hashing algorithms feature implemented f
 
 ## Overview
 
-The cosh runtime uses `IndexMap` for hash tables to preserve insertion order while providing O(1) lookup performance. By default, `IndexMap` uses the standard library's `RandomState` hasher (SipHash-based), which is cryptographically secure but not always the fastest for general-purpose use.
+The cosh runtime uses `IndexMap` for hash tables to preserve insertion order while providing O(1) lookup performance. By default, cosh now uses the AHash algorithm, which provides better performance than the standard library's hasher while maintaining DoS resistance.
 
-This implementation adds support for alternative, faster hashing algorithms that can improve performance for hash-intensive operations.
+This implementation allows users to optionally select different hashing algorithms based on their specific needs.
 
 ## Available Hashers
 
-### Default (No Feature Flags)
-- **Hasher**: Standard library `RandomState` (SipHash-based)
-- **Characteristics**: Cryptographically secure, DoS-resistant, moderate performance
-- **Use case**: Default behavior, maximum compatibility
-
-### AHash (Feature: `ahash`)
+### Default (AHash)
 - **Hasher**: `ahash::RandomState`
 - **Characteristics**: Fast, DoS-resistant, good general-purpose performance
-- **Use case**: Recommended for most performance-sensitive applications
-- **Benchmark**: ~6-8% faster than default in typical workloads
+- **Use case**: Default behavior, recommended for most applications
+- **Benchmark**: ~6-8% faster than standard library hasher
 
 ### FNV (Feature: `fnv`)
 - **Hasher**: `fnv::FnvBuildHasher`
 - **Characteristics**: Very fast for small keys, not DoS-resistant
 - **Use case**: Specialized use cases with trusted input data
-- **Benchmark**: Similar to default, better for very small keys
+- **Benchmark**: Similar to standard library, better for very small keys
 
 ## Usage
 
 ### Building with Alternative Hashers
 
 ```bash
-# Build with AHash (recommended)
-cargo build --features ahash
-
-# Build with FNV
-cargo build --features fnv
-
-# Build with default hasher (no flags needed)
+# Build with default AHash (no flags needed)
 cargo build
+
+# Build with FNV for specialized use cases
+cargo build --features fnv
 ```
 
 ### Performance Considerations
 
-- **AHash**: Provides measurable performance improvements for typical hash operations
-- **FNV**: Best for scenarios with many small string keys
-- **Default**: Most compatible, adequate performance for most use cases
+- **AHash (Default)**: Provides measurable performance improvements for typical hash operations
+- **FNV**: Best for scenarios with many small string keys and when maximum speed is needed with trusted data
 
 ## Implementation Details
 
@@ -54,21 +45,18 @@ cargo build
 The implementation uses conditional compilation to select the appropriate hasher:
 
 ```rust
-#[cfg(feature = "ahash")]
-type ValueHashMap<K, V> = IndexMap<K, V, ahash::RandomState>;
-
 #[cfg(feature = "fnv")]
 type ValueHashMap<K, V> = IndexMap<K, V, fnv::FnvBuildHasher>;
 
-#[cfg(not(any(feature = "ahash", feature = "fnv")))]
-type ValueHashMap<K, V> = IndexMap<K, V>;
+#[cfg(not(feature = "fnv"))]
+type ValueHashMap<K, V> = IndexMap<K, V, ahash::RandomState>;
 ```
 
 ### Helper Functions
 Helper functions create maps with the appropriate hasher:
 
 ```rust
-#[cfg(feature = "ahash")]
+#[cfg(not(feature = "fnv"))]
 pub fn new_value_hashmap<K, V>() -> ValueHashMap<K, V> {
     IndexMap::with_hasher(ahash::RandomState::new())
 }
@@ -92,10 +80,11 @@ The implementation includes tests that verify:
 
 ## Backward Compatibility
 
-This feature is fully backward compatible:
-- Default behavior unchanged when no features are enabled
+This feature maintains full backward compatibility:
+- AHash is now the default hasher, providing improved performance out of the box
 - Existing code continues to work without modification
 - Serialization format remains consistent
+- Users can opt for FNV hasher for specialized use cases
 
 ## Security Considerations
 

@@ -131,6 +131,30 @@
     then;
     ,,
 
+# : _rpkiv.vrps.group-by-asn
+#     h() vrp-index var; vrp-index !;
+#     begin;
+#         shift; dup; is-null; if;
+#             drop; leave;
+#         then;
+#         dup; 0 get; asn-key var; asn-key !;
+#         vrp-index @; asn-key @; get; dup; is-null; if;
+#             drop; () asn-list var; asn-list !;
+#         else;
+#             asn-list var; asn-list !;
+#         then;
+#         asn-list @; rot; push; asn-list !;
+#         vrp-index @; asn-key @; asn-list @; set; vrp-index !;
+#         .f until;
+#     vrp-index @;
+#     ,,
+
+# : rpkiv.vrps-indexed
+#     name var; name !;
+#     name @; rpkiv.vrps;
+#     _rpkiv.vrps.group-by-asn;
+#     ,,
+
 : rpkiv.rov
     name var; name !;
     asn var; asn !;
@@ -139,18 +163,26 @@
 
     name @;
     rpkiv.vrps;
-    [1 get; ips; dup; pfx @; union; =] grep; r;
+    # Filter by ASN first (most selective filter)
+    [0 get; asn @; =] grep;
     dup; len; 0 =; if;
         drop;
         unknown
     else;
-        [0 get; asn @; =] grep;
-        [2 get; pfl @; >=] grep;
-        [1 get; ip.len; pfl @; <=] grep;
-        len; 0 >; if;
-            valid
+        # Now filter by prefix intersection on smaller subset
+        [1 get; ips; dup; pfx @; union; =] grep; r;
+        dup; len; 0 =; if;
+            drop;
+            unknown
         else;
-            invalid
+            # Filter by prefix length constraints
+            [2 get; pfl @; >=] grep;
+            [1 get; ip.len; pfl @; <=] grep;
+            len; 0 >; if;
+                valid
+            else;
+                invalid
+            then;
         then;
     then;
     ,,

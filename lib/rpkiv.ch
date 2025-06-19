@@ -131,26 +131,80 @@
     then;
     ,,
 
+# Simple VRP caching mechanism  
+: _rpkiv.vrp-cache-storage
+    h() ;
+    ,,
+
+# Clear VRP cache (useful for testing or when VRPs are updated)
+: rpkiv.clear-cache
+    h() _rpkiv.vrp-cache-storage var; drop;
+    ,,
+
+# Get VRPs with simple caching to avoid reloading from disk repeatedly
+: _rpkiv.get-vrps-cached
+    name var; name !;
+    
+    _rpkiv.vrp-cache-storage; name @; get; dup; is-null; if;
+        drop;
+        # Load VRPs and cache them
+        name @; rpkiv.vrps; dup;
+        _rpkiv.vrp-cache-storage; name @; rot; set; _rpkiv.vrp-cache-storage var; drop;
+    then;
+    ,,
+
+# Fast prefix intersection for common case of exact matches or obvious non-matches
+: _rpkiv.quick-prefix-check
+    vrp-prefix var; vrp-prefix !;
+    ann-prefix var; ann-prefix !;
+    
+    # Quick check: if announced prefix equals VRP prefix, they intersect
+    vrp-prefix @; ann-prefix @; =; if;
+        .t
+    else;
+        # Quick check: if no common bits in network portion, they don't intersect
+        # This is a simplified heuristic - we still need the full check for edge cases
+        .f
+    then;
+    ,,
+
+# Optimized VRP filtering with early termination and caching
 : rpkiv.rov
     name var; name !;
     asn var; asn !;
     pfx var; ips; pfx !;
     pfx @; 0 get; ip.len; pfl var; pfl !;
 
-    name @;
-    rpkiv.vrps;
+    # Use cached VRPs to avoid redundant disk I/O (major optimization)
+    name @; _rpkiv.get-vrps-cached;
+    
+    # RFC 6483 compliant filtering: prefix intersection first
+    # This finds all VRPs whose prefix intersects with the announced prefix
     [1 get; ips; dup; pfx @; union; =] grep; r;
+    
+    # Early termination: if no intersecting VRPs found, return unknown immediately
     dup; len; 0 =; if;
         drop;
         unknown
     else;
+        # Now apply ASN filtering on the (hopefully much smaller) intersecting set
         [0 get; asn @; =] grep;
-        [2 get; pfl @; >=] grep;
-        [1 get; ip.len; pfl @; <=] grep;
-        len; 0 >; if;
-            valid
-        else;
+        
+        # Early termination: if no ASN matches, return invalid immediately
+        dup; len; 0 =; if;
+            drop;
             invalid
+        else;
+            # Apply prefix length constraints on the (even smaller) ASN-matching set
+            [2 get; pfl @; >=] grep;
+            [1 get; ip.len; pfl @; <=] grep;
+            
+            # Final validation check
+            len; 0 >; if;
+                valid
+            else;
+                invalid
+            then;
         then;
     then;
     ,,

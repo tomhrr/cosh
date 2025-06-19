@@ -131,41 +131,33 @@
     then;
     ,,
 
-# Simple VRP caching mechanism  
-: _rpkiv.vrp-cache-storage
-    h() ;
-    ,,
+# Global VRP cache storage  
+h() _rpkiv.vrp-cache-storage var; _rpkiv.vrp-cache-storage !;
 
 # Clear VRP cache (useful for testing or when VRPs are updated)
 : rpkiv.clear-cache
-    h() _rpkiv.vrp-cache-storage var; drop;
+    h() _rpkiv.vrp-cache-storage !;
     ,,
 
 # Get VRPs with simple caching to avoid reloading from disk repeatedly
 : _rpkiv.get-vrps-cached
     name var; name !;
     
-    _rpkiv.vrp-cache-storage; name @; get; dup; is-null; if;
+    _rpkiv.vrp-cache-storage @; name @; get; dup; is-null; if;
         drop;
         # Load VRPs and cache them
         name @; rpkiv.vrps; dup;
-        _rpkiv.vrp-cache-storage; name @; rot; set; _rpkiv.vrp-cache-storage var; drop;
+        _rpkiv.vrp-cache-storage @; name @; rot; set; _rpkiv.vrp-cache-storage !;
     then;
     ,,
 
-# Fast prefix intersection for common case of exact matches or obvious non-matches
+# Full prefix intersection check for RPKI validation
 : _rpkiv.quick-prefix-check
     vrp-prefix var; vrp-prefix !;
     ann-prefix var; ann-prefix !;
     
-    # Quick check: if announced prefix equals VRP prefix, they intersect
-    vrp-prefix @; ann-prefix @; =; if;
-        .t
-    else;
-        # Quick check: if no common bits in network portion, they don't intersect
-        # This is a simplified heuristic - we still need the full check for edge cases
-        .f
-    then;
+    # Full check: do the prefixes actually intersect using proper IP operations
+    vrp-prefix @; ips; dup; ann-prefix @; ips; union; =;
     ,,
 
 # Optimized VRP filtering with early termination and caching
@@ -180,6 +172,7 @@
     
     # RFC 6483 compliant filtering: prefix intersection first
     # This finds all VRPs whose prefix intersects with the announced prefix
+    # Note: This checks if VRP prefix covers (is equal to or larger than) the announced prefix
     [1 get; ips; dup; pfx @; union; =] grep; r;
     
     # Early termination: if no intersecting VRPs found, return unknown immediately

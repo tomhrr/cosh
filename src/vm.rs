@@ -2088,6 +2088,98 @@ impl VM {
                     last_scope.insert(var_name.to_string(),
                                       Variable::new(Value::Int(0), false));
                 }
+                OpCode::VarSet => {
+                    if self.stack.len() < 2 {
+                        self.print_error("var! requires two arguments");
+                        return 0;
+                    }
+
+                    let var_name_rr = self.stack.pop().unwrap();
+                    let value_rr = self.stack.pop().unwrap();
+
+                    let var_name;
+                    match var_name_rr {
+                        Value::String(st) => {
+                            var_name = st.borrow().string.clone().to_string();
+                        }
+                        _ => {
+                            self.print_error("variable name must be a string");
+                            return 0;
+                        }
+                    }
+
+                    let var_name_ref = &var_name;
+                    let has_existing_var = {
+                        let last_scope = self.scopes.last().unwrap().borrow();
+                        let existing_var = last_scope.get(var_name_ref);
+                        match existing_var {
+                            Some(_) => true,
+                            _       => false
+                        }
+                    };
+                    if has_existing_var {
+                        self.print_error(
+                            "variable has already been declared in this scope"
+                        );
+                        return 0;
+                    }
+
+                    let mut last_scope =
+                        self.scopes.last_mut().unwrap().borrow_mut();
+                    if self.debug {
+                        eprintln!("  > Adding and setting variable with name {}", var_name.to_string());
+                    }
+                    last_scope.insert(var_name.to_string(),
+                                      Variable::new(value_rr, true));
+                }
+                OpCode::VarMSet => {
+                    if self.stack.len() < 2 {
+                        self.print_error("varm! requires two arguments");
+                        return 0;
+                    }
+
+                    let var_name_rr = self.stack.pop().unwrap();
+                    let value_rr = self.stack.pop().unwrap();
+
+                    let var_name;
+                    match var_name_rr {
+                        Value::String(st) => {
+                            var_name = st.borrow().string.clone().to_string();
+                        }
+                        _ => {
+                            self.print_error("variable name must be a string");
+                            return 0;
+                        }
+                    }
+
+                    let var_name_ref = &var_name;
+                    let (has_existing_var, defined_with_var) = {
+                        let last_scope = self.scopes.last().unwrap().borrow();
+                        let existing_var = last_scope.get(var_name_ref);
+                        match existing_var {
+                            Some(v) => {
+                                (true, v.defined_with_var)
+                            }
+                            _       => {
+                                (false, false)
+                            }
+                        }
+                    };
+                    if has_existing_var && defined_with_var {
+                        self.print_error(
+                            "variable has already been declared with var in this scope"
+                        );
+                        return 0;
+                    }
+
+                    let mut last_scope =
+                        self.scopes.last_mut().unwrap().borrow_mut();
+                    if self.debug {
+                        eprintln!("  > Adding and setting variable (varm!) with name {}", var_name.to_string());
+                    }
+                    last_scope.insert(var_name.to_string(),
+                                      Variable::new(value_rr, false));
+                }
                 OpCode::SetVar => {
                     if self.stack.len() < 2 {
                         self.print_error("! requires two arguments");
@@ -2361,7 +2453,20 @@ impl VM {
         fh: &mut Box<dyn BufRead>,
         name: &str,
     ) -> Option<Rc<RefCell<Chunk>>> {
-        let mut compiler = Compiler::new();
+        self.interpret_with_mode(fh, name, false)
+    }
+
+    pub fn interpret_with_mode(
+        &mut self,
+        fh: &mut Box<dyn BufRead>,
+        name: &str,
+        interactive_mode: bool,
+    ) -> Option<Rc<RefCell<Chunk>>> {
+        let mut compiler = if interactive_mode {
+            Compiler::new_interactive()
+        } else {
+            Compiler::new()
+        };
         let chunk_opt = compiler.compile(fh, name);
         if chunk_opt.is_none() {
             return None;

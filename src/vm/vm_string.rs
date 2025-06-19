@@ -236,7 +236,7 @@ impl VM {
                 let separator_regex_res = Regex::new(separator);
                 let mut final_elements = Vec::new();
                 match separator_regex_res {
-                    Ok(separator_regex) => {
+                    Ok(_separator_regex) => {
                         loop {
                             let dup_res = self.opcode_dup();
                             if dup_res == 0 {
@@ -253,7 +253,7 @@ impl VM {
                                 }
                                 Value::String(st) => {
                                     if !separator_is_empty_string
-                                        && (separator_regex.is_match(&st.borrow().string)
+                                        && (st.borrow().string.contains(separator)
                                             || esc_quotes.is_match(&st.borrow().string))
                                     {
                                         let s1 = &st.borrow();
@@ -289,7 +289,7 @@ impl VM {
                                     match element_opt {
                                         Some(s) => {
                                             if !separator_is_empty_string
-                                                && (separator_regex.is_match(s)
+                                                && (s.contains(separator)
                                                     || esc_quotes.is_match(s))
                                             {
                                                 let s2 = esc_quotes.replace_all(s, "\\\"");

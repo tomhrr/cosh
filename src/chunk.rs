@@ -1731,6 +1731,12 @@ impl Chunk {
                 OpCode::VarM => {
                     println!("OP_VARM");
                 }
+                OpCode::VarSet => {
+                    println!("OP_VARSET");
+                }
+                OpCode::VarMSet => {
+                    println!("OP_VARMSET");
+                }
                 OpCode::SetVar => {
                     println!("OP_SETVAR");
                 }

@@ -419,7 +419,7 @@ fn main() {
 
                     let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
                     rl_rr.borrow_mut().add_history_entry(original_line.as_str());
-                    let chunk_opt = vm.interpret(&mut bufread, "(main)");
+                    let chunk_opt = vm.interpret_with_mode(&mut bufread, "(main)", true);
                     match chunk_opt {
                         Some(chunk) => {
                             for (k, v) in chunk.borrow().functions.iter() {

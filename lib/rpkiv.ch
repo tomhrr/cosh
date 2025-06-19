@@ -131,26 +131,73 @@
     then;
     ,,
 
+# Global VRP cache storage  
+h() _rpkiv.vrp-cache-storage var; _rpkiv.vrp-cache-storage !;
+
+# Clear VRP cache (useful for testing or when VRPs are updated)
+: rpkiv.clear-cache
+    h() _rpkiv.vrp-cache-storage !;
+    ,,
+
+# Get VRPs with simple caching to avoid reloading from disk repeatedly
+: _rpkiv.get-vrps-cached
+    name var; name !;
+    
+    _rpkiv.vrp-cache-storage @; name @; get; dup; is-null; if;
+        drop;
+        # Load VRPs and cache them
+        name @; rpkiv.vrps; dup;
+        _rpkiv.vrp-cache-storage @; name @; rot; set; _rpkiv.vrp-cache-storage !;
+    then;
+    ,,
+
+# Full prefix intersection check for RPKI validation
+: _rpkiv.quick-prefix-check
+    vrp-prefix var; vrp-prefix !;
+    ann-prefix var; ann-prefix !;
+    
+    # Full check: do the prefixes actually intersect using proper IP operations
+    vrp-prefix @; ips; dup; ann-prefix @; ips; union; =;
+    ,,
+
+# Optimized VRP filtering with early termination and caching
 : rpkiv.rov
     name var; name !;
     asn var; asn !;
     pfx var; ips; pfx !;
     pfx @; 0 get; ip.len; pfl var; pfl !;
 
-    name @;
-    rpkiv.vrps;
+    # Use cached VRPs to avoid redundant disk I/O (major optimization)
+    name @; _rpkiv.get-vrps-cached;
+    
+    # RFC 6483 compliant filtering: prefix intersection first
+    # This finds all VRPs whose prefix intersects with the announced prefix
+    # Note: This checks if VRP prefix covers (is equal to or larger than) the announced prefix
     [1 get; ips; dup; pfx @; union; =] grep; r;
+    
+    # Early termination: if no intersecting VRPs found, return unknown immediately
     dup; len; 0 =; if;
         drop;
         unknown
     else;
+        # Now apply ASN filtering on the (hopefully much smaller) intersecting set
         [0 get; asn @; =] grep;
-        [2 get; pfl @; >=] grep;
-        [1 get; ip.len; pfl @; <=] grep;
-        len; 0 >; if;
-            valid
-        else;
+        
+        # Early termination: if no ASN matches, return invalid immediately
+        dup; len; 0 =; if;
+            drop;
             invalid
+        else;
+            # Apply prefix length constraints on the (even smaller) ASN-matching set
+            [2 get; pfl @; >=] grep;
+            [1 get; ip.len; pfl @; <=] grep;
+            
+            # Final validation check
+            len; 0 >; if;
+                valid
+            else;
+                invalid
+            then;
         then;
     then;
     ,,

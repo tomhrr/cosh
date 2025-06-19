@@ -27,52 +27,16 @@
             (1 2) get; attrs @; swap; push; attrs !;
             drop;
         then;
-        gen @; dup; is-shiftable; if;
-            shift;
-            dup; is-null; if;
-                drop;
-                leave;
-            then;
-            dup; ^\s+$ m; if;
-                drop;
-                leave;
-            then;
-        else;
+        gen @; shift;
+        dup; is-null; if;
+            leave;
+        then;
+        dup; ^\s+$ m; if;
             drop;
             leave;
         then;
         0 until;
     attrs @;
-    ,,
-
-: rpsl.str
-    # Takes a list of [key, value] pairs and converts to RPSL text format
-    input var; input !;
-    result var; "" result !;
-    input @; len; n var; n !;
-    0 i var; i !;
-    begin;
-        i @; n @; =; if;
-            leave;
-        then;
-        # Get the [key, value] pair at index i
-        input @; i @; get;
-        # Extract key and value
-        dup; 0 get; str;
-        ": " ++;
-        swap; 1 get; str;
-        ++;
-        # Add to result
-        result @; swap; ++;
-        # Add newline if not last element
-        i @; n @; 1 -; =; not; if;
-            "\n" ++;
-        then;
-        result !;
-        # Increment i
-        i @; 1 +; i !;
-        0 until;
-    result @;
     ,,
 
 :~ rpsl.parsem 1 1

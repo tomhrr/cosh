@@ -227,8 +227,6 @@
     cwd; cwd var; cwd !;
     name var; name !;
     files var; files !;
-    # Convert relative paths to absolute before changing directory
-    files @; [_rpkiv.abspath] map; files !;
     rpkiv._gsd; name @; ++; rsv var; rsv !;
     rsv @; cd;
     type f<; shift; chomp; rpki-client =; not; if;
@@ -241,6 +239,8 @@
             drop;
             leave;
         else;
+            # Convert this batch to absolute paths before changing directory
+            [dup; "^/" m; if; else; cwd @; "/" ++; swap; ++; then] map; r;
             dup; len; range; [drop; "-f {}"] map; ' ' joinr;
             talstr @;
             rsv @; cd;

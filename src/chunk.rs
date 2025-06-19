@@ -21,8 +21,43 @@ use std::time;
 use chrono::format::{parse, Parsed, StrftimeItems};
 use chrono::prelude::*;
 use indexmap::IndexMap;
+#[cfg(feature = "ahash")]
+use ahash;
+#[cfg(feature = "fxhash")]
+use rustc_hash;
 use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
+
+// Hash map type definitions with configurable hashers
+#[cfg(feature = "ahash")]
+type ValueHashMap<K, V> = IndexMap<K, V, ahash::RandomState>;
+#[cfg(feature = "fxhash")]
+type ValueHashMap<K, V> = IndexMap<K, V, rustc_hash::FxBuildHasher>;
+#[cfg(not(any(feature = "ahash", feature = "fxhash")))]
+type ValueHashMap<K, V> = IndexMap<K, V>;
+
+// For serializable values, we keep using standard IndexMap to ensure compatibility
+type ValueSDHashMap<K, V> = IndexMap<K, V>;
+
+// Helper functions to create maps with appropriate hashers
+#[cfg(feature = "ahash")]
+pub fn new_value_hashmap<K, V>() -> ValueHashMap<K, V> {
+    IndexMap::with_hasher(ahash::RandomState::new())
+}
+
+#[cfg(feature = "fxhash")]
+pub fn new_value_hashmap<K, V>() -> ValueHashMap<K, V> {
+    IndexMap::with_hasher(rustc_hash::FxBuildHasher::default())
+}
+
+#[cfg(not(any(feature = "ahash", feature = "fxhash")))]
+pub fn new_value_hashmap<K, V>() -> ValueHashMap<K, V> {
+    IndexMap::new()
+}
+
+pub fn new_valuesd_hashmap<K, V>() -> ValueSDHashMap<K, V> {
+    IndexMap::new()
+}
 use nix::{sys::signal::Signal,
           sys::wait::waitpid,
           sys::wait::WaitPidFlag,
@@ -826,12 +861,12 @@ pub enum Value {
     /// A list.
     List(Rc<RefCell<VecDeque<Value>>>),
     /// A hash.
-    Hash(Rc<RefCell<IndexMap<String, Value>>>),
+    Hash(Rc<RefCell<ValueHashMap<String, Value>>>),
     /// A set.  The stringification of the value is used as the map
     /// key, and the set may only contain values of a single type.
     /// (Not terribly efficient, but can be made decent later without
     /// affecting the language interface.)
-    Set(Rc<RefCell<IndexMap<String, Value>>>),
+    Set(Rc<RefCell<ValueHashMap<String, Value>>>),
     /// An anonymous function (includes reference to local variable
     /// stack).
     AnonymousFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<Value>>>),
@@ -1064,8 +1099,8 @@ pub enum ValueSD {
     Ipv6Range(Ipv6Range),
     IpSet(IpSet),
     List(VecDeque<ValueSD>),
-    Hash(IndexMap<String, ValueSD>),
-    Set(IndexMap<String, ValueSD>),
+    Hash(ValueSDHashMap<String, ValueSD>),
+    Set(ValueSDHashMap<String, ValueSD>),
 }
 
 pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
@@ -1102,14 +1137,14 @@ pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
             Value::List(Rc::new(RefCell::new(vds)))
         }
         ValueSD::Hash(hsh) => {
-            let mut new_hsh = IndexMap::new();
+            let mut new_hsh = new_value_hashmap();
             for (k, v) in hsh.iter() {
                 new_hsh.insert(k.clone(), valuesd_to_value(v.clone()));
             }
             Value::Hash(Rc::new(RefCell::new(new_hsh)))
         }
         ValueSD::Set(hsh) => {
-            let mut new_hsh = IndexMap::new();
+            let mut new_hsh = new_value_hashmap();
             for (k, v) in hsh.iter() {
                 new_hsh.insert(k.clone(), valuesd_to_value(v.clone()));
             }
@@ -1148,7 +1183,7 @@ pub fn value_to_valuesd(value: Value) -> ValueSD {
         }
         Value::Hash(hsh_rr) => {
             let hsh = hsh_rr.borrow();
-            let mut new_hsh = IndexMap::new();
+            let mut new_hsh = new_valuesd_hashmap();
             for (k, v) in hsh.iter() {
                 new_hsh.insert(k.clone(), value_to_valuesd(v.clone()));
             }
@@ -1156,7 +1191,7 @@ pub fn value_to_valuesd(value: Value) -> ValueSD {
         }
         Value::Set(hsh_rr) => {
             let hsh = hsh_rr.borrow();
-            let mut new_hsh = IndexMap::new();
+            let mut new_hsh = new_valuesd_hashmap();
             for (k, v) in hsh.iter() {
                 new_hsh.insert(k.clone(), value_to_valuesd(v.clone()));
             }
@@ -2213,14 +2248,14 @@ impl Value {
                 Value::List(Rc::new(RefCell::new(cloned_lst)))
             }
             Value::Hash(hsh) => {
-                let mut cloned_hsh = IndexMap::new();
+                let mut cloned_hsh = new_value_hashmap();
                 for (k, v) in hsh.borrow().iter() {
                     cloned_hsh.insert(k.clone(), v.value_clone());
                 }
                 Value::Hash(Rc::new(RefCell::new(cloned_hsh)))
             }
             Value::Set(hsh) => {
-                let mut cloned_hsh = IndexMap::new();
+                let mut cloned_hsh = new_value_hashmap();
                 for (k, v) in hsh.borrow().iter() {
                     cloned_hsh.insert(k.clone(), v.value_clone());
                 }

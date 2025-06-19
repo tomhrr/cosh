@@ -10,7 +10,7 @@ use indexmap::IndexMap;
 
 use crate::chunk::{IpSet, Value, ValueSD,
                    valuesd_to_value, read_valuesd,
-                   new_string_value};
+                   new_string_value, new_value_hashmap};
 use crate::vm::VM;
 
 impl VM {
@@ -529,7 +529,7 @@ impl VM {
 
         match (set1_rr, set2_rr) {
             (Value::Set(s1), Value::Set(s2)) => {
-                let mut new_hsh = IndexMap::new();
+                let mut new_hsh = new_value_hashmap();
                 for (k, v) in s1.borrow().iter() {
                     new_hsh.insert(k.clone(), v.value_clone());
                 }
@@ -576,7 +576,7 @@ impl VM {
 
         match (set1_rr, set2_rr) {
             (Value::Set(s1), Value::Set(s2)) => {
-                let mut new_hsh = IndexMap::new();
+                let mut new_hsh = new_value_hashmap();
                 for (k, v) in s1.borrow().iter() {
                     if s2.borrow().get(k).is_some() {
                         new_hsh.insert(k.clone(), v.value_clone());
@@ -622,7 +622,7 @@ impl VM {
 
         match (set1_rr, set2_rr) {
             (Value::Set(s1), Value::Set(s2)) => {
-                let mut new_hsh = IndexMap::new();
+                let mut new_hsh = new_value_hashmap();
                 for (k, v) in s1.borrow().iter() {
                     if s2.borrow().get(k).is_none() {
                         new_hsh.insert(k.clone(), v.value_clone());
@@ -668,7 +668,7 @@ impl VM {
 
         match (set1_rr, set2_rr) {
             (Value::Set(s1), Value::Set(s2)) => {
-                let mut new_hsh = IndexMap::new();
+                let mut new_hsh = new_value_hashmap();
                 for (k, v) in s1.borrow().iter() {
                     if s2.borrow().get(k).is_none() {
                         new_hsh.insert(k.clone(), v.value_clone());

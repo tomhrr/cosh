@@ -8,7 +8,7 @@ use num_traits::ToPrimitive;
 use rand::Rng;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::chunk::Value;
+use crate::chunk::{Value, new_value_hashmap};
 use crate::vm::*;
 
 impl VM {
@@ -976,7 +976,7 @@ impl VM {
                 return Some(Value::List(Rc::new(RefCell::new(new_list))));
             }
             Value::Hash(map) => {
-                let mut new_map = IndexMap::new();
+                let mut new_map = new_value_hashmap();
                 let mb = map.borrow();
                 for (k, v) in mb.iter() {
                     let new_v_opt = self.core_reify_inner(v.clone());
@@ -992,7 +992,7 @@ impl VM {
                 return Some(Value::Hash(Rc::new(RefCell::new(new_map))));
             }
             Value::Set(map) => {
-                let mut new_map = IndexMap::new();
+                let mut new_map = new_value_hashmap();
                 let mb = map.borrow();
                 for (k, v) in mb.iter() {
                     let new_v_opt = self.core_reify_inner(v.clone());

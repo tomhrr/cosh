@@ -252,7 +252,33 @@ impl VM {
                     }
                 }
 
-                let client = Client::new();
+                let raw_val_opt = mapp.get("raw");
+                let mut raw = false;
+                match raw_val_opt {
+                    Some(raw_val) => {
+                        raw = raw_val.to_bool();
+                    }
+                    _ => {}
+                }
+
+                let redirect_body_val_opt = mapp.get("redirect-body");
+                let mut redirect_body = false;
+                match redirect_body_val_opt {
+                    Some(redirect_body_val) => {
+                        redirect_body = redirect_body_val.to_bool();
+                    }
+                    _ => {}
+                }
+
+                let client = if redirect_body {
+                    // Create client that doesn't follow redirects
+                    Client::builder()
+                        .redirect(reqwest::redirect::Policy::none())
+                        .build()
+                        .unwrap()
+                } else {
+                    Client::new()
+                };
                 let mut rb = client.request(method, url);
                 let mut is_json = false;
                 let mut is_xml  = false;
@@ -359,15 +385,6 @@ impl VM {
                                 }
                             }
                         }
-                    }
-                    _ => {}
-                }
-
-                let raw_val_opt = mapp.get("raw");
-                let mut raw = false;
-                match raw_val_opt {
-                    Some(raw_val) => {
-                        raw = raw_val.to_bool();
                     }
                     _ => {}
                 }

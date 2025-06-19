@@ -30,6 +30,17 @@ fn basic_test(input: &str, output: &str) {
     assert.success().stdout(output2);
 }
 
+fn basic_test_no_rt(input: &str, output: &str) {
+    let mut file = NamedTempFile::new().unwrap();
+    writeln!(file, "{}", input).unwrap();
+
+    let mut cmd = Command::cargo_bin("cosh").unwrap();
+    let path = file.path();
+    let assert = cmd.arg("--no-cosh-conf").arg("--no-rt").arg(path).assert();
+    let output2 = format!("{}\n", output);
+    assert.success().stdout(output2);
+}
+
 fn basic_error_test(input: &str, output: &str) {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "{}", input).unwrap();
@@ -40,9 +51,19 @@ fn basic_error_test(input: &str, output: &str) {
     assert.success().stderr(output.to_owned() + "\n");
 }
 
+fn basic_error_test_no_rt(input: &str, output: &str) {
+    let mut file = NamedTempFile::new().unwrap();
+    writeln!(file, "{}", input).unwrap();
+
+    let mut cmd = Command::cargo_bin("cosh").unwrap();
+    let path = file.path();
+    let assert = cmd.arg("--no-cosh-conf").arg("--no-rt").arg(path).assert();
+    assert.success().stderr(output.to_owned() + "\n");
+}
+
 #[test]
 fn add() {
-    basic_test("1 2 +;", "3");
+    basic_test_no_rt("1 2 +;", "3");
 }
 
 #[test]
@@ -467,6 +488,24 @@ fn get_test() {
 }
 
 #[test]
+fn dotted_set_test() {
+    // Basic dotted field specifier test - issue #157
+    basic_test("((0 0)) 0.1 asdf set", "(\n    0: (\n        0: 0\n        1: asdf\n    )\n)");
+    
+    // Test with nested lists - simple case
+    basic_test("((a b) (c d)) 0.1 xyz set", "(\n    0: (\n        0: a\n        1: xyz\n    )\n    1: (\n        0: c\n        1: d\n    )\n)");
+    
+    // Test with 3 levels of nesting
+    basic_test("(((a b) (c d)) ((e f) (g h))) 1.0.1 xyz set", "(\n    0: (\n        0: (\n            0: a\n            1: b\n        )\n        1: (\n            0: c\n            1: d\n        )\n    )\n    1: (\n        0: (\n            0: e\n            1: xyz\n        )\n        1: (\n            0: g\n            1: h\n        )\n    )\n)");
+    
+    // Test first index access
+    basic_test("((first second) (third fourth)) 1.0 new_first set", "(\n    0: (\n        0: first\n        1: second\n    )\n    1: (\n        0: new_first\n        1: fourth\n    )\n)");
+    
+    // Ensure backward compatibility with simple integer indices
+    basic_test("(a b c) 1 xyz set", "(\n    0: a\n    1: xyz\n    2: c\n)");
+}
+
+#[test]
 fn take_test() {
     basic_test("(1 2 3) 2 take", "(\n    0: 1\n    1: 2\n)");
     basic_test("(1 2 3) take-all", "(\n    0: 1\n    1: 2\n    2: 3\n)");
@@ -507,10 +546,14 @@ fn split_test() {
 
 #[test]
 fn join_test() {
-    basic_test("(a b c) , join", "a,b,c");
-    basic_test("('a,b' c d) , join", "\\\"a,b\\\",c,d");
-    basic_test("(a,b c d) , join", "\\\"a,b\\\",c,d");
-    basic_test("('a\"b' c d) , join", "\\\"a\\\\\"b\\\",c,d");
+    basic_test_no_rt("(a b c) , join", "a,b,c");
+    basic_test_no_rt("('a,b' c d) , join", "\\\"a,b\\\",c,d");
+    basic_test_no_rt("(a,b c d) , join", "\\\"a,b\\\",c,d");
+    basic_test_no_rt("('a\"b' c d) , join", "\\\"a\\\\\"b\\\",c,d");
+    // Test for the period separator issue - elements without period should not be quoted
+    basic_test_no_rt("(1 2) . join", "1.2");
+    // Elements containing the separator should still be quoted  
+    basic_test_no_rt("('a.b' c d) . join", "\\\"a.b\\\".c.d");
 }
 
 #[test]
@@ -747,6 +790,21 @@ fn nth_bounds_test2() {
     basic_error_test(
         "10 range; take-all; 10 15 set",
         "1:27: second set argument must fall within list bounds",
+    );
+}
+
+#[test]
+fn dotted_set_bounds_test() {
+    // Test out of bounds error with dotted field specifier
+    basic_error_test(
+        "((a b)) 1.0 xyz set",
+        "1:18: second set argument must fall within list bounds",
+    );
+    
+    // Test out of bounds error with deep nesting
+    basic_error_test(
+        "((a b)) 0.2 xyz set", 
+        "1:18: second set argument must fall within list bounds",
     );
 }
 
@@ -1014,6 +1072,16 @@ fn set_test() {
     basic_test("s(1 2 3) s(2 3 4) diff;", "s(\n    1\n)");
     basic_test("s(1 2 3) s(2 3 4) symdiff;", "s(\n    1\n    4\n)");
     basic_test("s(1 2 3) dup; shift;", "s(\n    2\n    3\n)\n1");
+}
+
+#[test]
+fn nested_set_test() {
+    // Test that nested sets display without element indices
+    basic_test_no_rt("(s(1 2) s(3 4))", "(\n    0: s(\n        1\n        2\n    )\n    1: s(\n        3\n        4\n    )\n)");
+    // Test deeply nested sets
+    basic_test_no_rt("((s(1 2)))", "(\n    0: (\n        0: s(\n            1\n            2\n        )\n    )\n)");
+    // Test single nested set
+    basic_test_no_rt("(s(1))", "(\n    0: s(\n        1\n    )\n)");
 }
 
 #[test]
@@ -1792,6 +1860,50 @@ fn varm_test() {
 }
 
 #[test]
+fn var_set_test() {
+    // Test basic var! functionality
+    basic_test_no_rt("10 v var!; v @", "10");
+    
+    // Test var! is equivalent to var; !
+    basic_test_no_rt("x var; 20 x !; x @", "20");
+    basic_test_no_rt("20 x var!; x @", "20");
+    
+    // Test var! cannot redeclare
+    basic_error_test_no_rt(
+        "10 v var!; 20 v var!",
+        "1:17: variable has already been declared in this scope"
+    );
+    
+    // Test var! works in sub-scopes (like var does)
+    basic_test_no_rt("[10 v var!; v @] funcall", "10");
+}
+
+#[test]
+fn varm_set_test() {
+    // Test basic varm! functionality 
+    basic_test_no_rt("10 v varm!; v @", "10");
+    
+    // Test varm! is equivalent to varm; !
+    basic_test_no_rt("x varm; 20 x !; x @", "20");
+    basic_test_no_rt("20 x varm!; x @", "20");
+    
+    // Test varm! can redeclare
+    basic_test_no_rt("10 v varm!; 20 v varm!; v @", "20");
+    
+    // Test varm! cannot redeclare var!
+    basic_error_test_no_rt(
+        "10 v var!; 20 v varm!",
+        "1:17: variable has already been declared with var in this scope"
+    );
+    
+    // Test varm! scope restriction
+    basic_error_test_no_rt(
+        "[10 v varm!; 1]",
+        "1:7: varm! may only be used at the top level"
+    );
+}
+
+#[test]
 fn scope_close_test() {
     basic_error_test(",,",        "1:1: attempting to close scope at top level");
     basic_error_test("]",         "1:1: attempting to close scope at top level");
@@ -2298,4 +2410,15 @@ test_input_without_blank.txt f<; rpsl.parsem; shift-all;
     )
 )"
     );
+}
+
+fn rpsl_str_test() {
+    // Test that rpsl.str produces correct output when printed
+    basic_test("lib/rpsl.ch import; (\"inetnum\" \"192.0.2.0 - 192.0.2.255\") (\"netname\" \"TEST-NET\") (\"descr\" \"Test network\") 3 mlist; rpsl.str; println", "inetnum: 192.0.2.0 - 192.0.2.255\nnetname: TEST-NET\ndescr: Test network");
+    
+    // Test empty list
+    basic_test("lib/rpsl.ch import; () rpsl.str; println", "");
+    
+    // Test single element
+    basic_test("lib/rpsl.ch import; (\"key\" \"value\") 1 mlist; rpsl.str; println", "key: value");
 }

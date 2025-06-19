@@ -732,7 +732,7 @@ impl VM {
                                         window_height,
                                         window_width,
                                         lines_to_print,
-                                        index,
+                                        None,
                                         &mut hash_values,
                                     );
                                     let new_hash_value =

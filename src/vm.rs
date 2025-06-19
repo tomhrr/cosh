@@ -965,7 +965,7 @@ impl VM {
             if let Some(r) = &st.borrow().regex {
                 return Some(r.clone());
             }
-            let regex_res = self.str_to_regex(&st.borrow().escaped_string);
+            let regex_res = self.str_to_regex(&st.borrow().string);
             match regex_res {
                 Some((regex, global)) => {
                     let rc = Rc::new(regex);

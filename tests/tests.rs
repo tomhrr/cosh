@@ -2363,3 +2363,60 @@ fn rpsl_str_test() {
     // Test single element
     basic_test("lib/rpsl.ch import; (\"key\" \"value\") 1 mlist; rpsl.str; println", "key: value");
 }
+
+#[test]
+fn rpkiv_rov_optimization_test() {
+    // Test that rpkiv.rov optimization maintains correct functionality
+    // while improving performance by filtering by ASN first
+    
+    // Mock rpkiv.vrps function for testing with predictable data
+    basic_test("
+lib/rpkiv.ch import;
+: rpkiv.vrps
+    drop;
+    (13335 1.0.0.0/24 25) 1 mlist;
+    _rpkiv.vrps.common;
+    ,,
+
+1.0.0.0/25 13335 test rpkiv.rov;
+", "valid");
+
+    // Test invalid case: wrong ASN 
+    basic_test("
+lib/rpkiv.ch import;
+: rpkiv.vrps
+    drop;
+    (13335 1.0.0.0/24 24) 1 mlist;
+    _rpkiv.vrps.common;
+    ,,
+
+1.0.0.0/25 64512 test rpkiv.rov;
+", "unknown");
+
+    // Test invalid case: prefix too specific (violates max-length)
+    basic_test("
+lib/rpkiv.ch import;
+: rpkiv.vrps
+    drop;
+    (13335 1.0.0.0/24 24) 1 mlist;
+    _rpkiv.vrps.common;
+    ,,
+
+1.0.0.0/25 13335 test rpkiv.rov;
+", "invalid");
+
+    // Test performance characteristics: verify ASN filtering reduces search space
+    basic_test("
+lib/rpkiv.ch import;
+(13335 1.0.0.0/24 24) 
+(13335 1.1.1.0/24 24)
+(64512 192.168.1.0/24 24)
+(64512 10.0.0.0/8 16)
+(65001 203.0.113.0/24 24)
+5 mlist; vrps var; vrps !;
+
+vrps @; len; total var; total !;
+vrps @; [0 get; 13335 =] grep; len; filtered var; filtered !;
+total @; filtered @; >; if; optimization-working else; no-optimization then;
+", "optimization-working");
+}

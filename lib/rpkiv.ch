@@ -164,7 +164,7 @@
     name @;
     rpkiv.vrps;
     # Filter by ASN first (most selective filter)
-    [0 get; asn @; =] grep;
+    [0 get; asn @; =] grep; r;
     dup; len; 0 =; if;
         drop;
         unknown

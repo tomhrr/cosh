@@ -17,6 +17,12 @@ use std::process::{Command, Stdio};
 use crate::chunk::{CommandGenerator, Value};
 use crate::vm::*;
 
+#[derive(Debug, Clone)]
+enum RedirectMode {
+    Overwrite,
+    Append,
+}
+
 lazy_static! {
     static ref START_DOUBLE_QUOTE:  Regex = Regex ::new(r#"^\s*""#).unwrap();
     static ref END_DOUBLE_QUOTE:    Regex = Regex ::new(r#""\s*$"#).unwrap();
@@ -29,8 +35,10 @@ lazy_static! {
     static ref HOME_DIR_TILDE:      Regex = Regex ::new("\\s~").unwrap();
     static ref LEADING_WS:          Regex = Regex ::new("^\\s*").unwrap();
     static ref ENV_VAR:             Regex = Regex ::new("^(.*)=(.*)$").unwrap();
-    static ref STDOUT_REDIRECT:     Regex = Regex ::new("^1?>(.*)$").unwrap();
-    static ref STDERR_REDIRECT:     Regex = Regex ::new("^2>(.*)$").unwrap();
+    static ref STDOUT_REDIRECT:     Regex = Regex ::new("^1?>([^>].*)$").unwrap();
+    static ref STDERR_REDIRECT:     Regex = Regex ::new("^2>([^>].*)$").unwrap();
+    static ref STDOUT_APPEND:       Regex = Regex ::new("^1?>>([^>].*)$").unwrap();
+    static ref STDERR_APPEND:       Regex = Regex ::new("^2>>([^>].*)$").unwrap();
 }
 
 /// Splits a string on whitespace, taking into account quoted values
@@ -49,7 +57,8 @@ fn split_command(s: &str) -> Option<VecDeque<String>> {
                 add_to_next_opt = None;
             }
             _ => {
-                if e_str == ">" || e_str == "2>" || e_str == "1>" {
+                if e_str == ">" || e_str == "2>" || e_str == "1>" || 
+                   e_str == ">>" || e_str == "2>>" || e_str == "1>>" {
                     add_to_next_opt = Some(e_str);
                     continue;
                 }
@@ -167,8 +176,8 @@ impl VM {
                  Vec<String>,
                  HashMap<String, String>,
                  HashSet<String>,
-                 Option<String>,
-                 Option<String>)> {
+                 Option<(String, RedirectMode)>,
+                 Option<(String, RedirectMode)>)> {
         let prepared_cmd_opt = self.prepare_command(cmd);
         if prepared_cmd_opt.is_none() {
             return None;
@@ -215,11 +224,33 @@ impl VM {
             while !elements.is_empty() {
                 let len = elements.len();
                 let element = elements.get(len - 1).unwrap();
-                let mut captures = STDOUT_REDIRECT.captures_iter(element);
+                // Check for append redirection first (longer patterns)
+                let mut captures = STDOUT_APPEND.captures_iter(element);
                 match captures.next() {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
-                        stdout_redirect = Some(output.to_string());
+                        stdout_redirect = Some((output.to_string(), RedirectMode::Append));
+                        elements.pop_back();
+                        continue;
+                    }
+                    _ => {}
+                }
+                captures = STDERR_APPEND.captures_iter(element);
+                match captures.next() {
+                    Some(capture) => {
+                        let output = capture.get(1).unwrap().as_str();
+                        stderr_redirect = Some((output.to_string(), RedirectMode::Append));
+                        elements.pop_back();
+                        continue;
+                    }
+                    _ => {}
+                }
+                // Check for regular redirection (shorter patterns)
+                captures = STDOUT_REDIRECT.captures_iter(element);
+                match captures.next() {
+                    Some(capture) => {
+                        let output = capture.get(1).unwrap().as_str();
+                        stdout_redirect = Some((output.to_string(), RedirectMode::Overwrite));
                         elements.pop_back();
                         continue;
                     }
@@ -229,7 +260,7 @@ impl VM {
                 match captures.next() {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
-                        stderr_redirect = Some(output.to_string());
+                        stderr_redirect = Some((output.to_string(), RedirectMode::Overwrite));
                         elements.pop_back();
                         continue;
                     }
@@ -328,11 +359,19 @@ impl VM {
 
             let mut stdout_file_opt = None;
             let mut stdout_to_stderr = false;
-            if let Some(stdout_redirect) = stdout_redirect_opt {
-                if stdout_redirect == "&2" {
+            if let Some((stdout_file, stdout_mode)) = stdout_redirect_opt {
+                if stdout_file == "&2" {
                     stdout_to_stderr = true;
                 } else {
-                    let stdout_file_res = File::create(stdout_redirect);
+                    let stdout_file_res = match stdout_mode {
+                        RedirectMode::Append => {
+                            File::options().create(true).append(true).open(&stdout_file)
+                        }
+                        RedirectMode::Overwrite => {
+                            File::create(&stdout_file)
+                        }
+                    };
+                    
                     match stdout_file_res {
                         Ok(stdout_file_arg) => {
                             stdout_file_opt = Some(stdout_file_arg.try_clone().unwrap());
@@ -349,11 +388,19 @@ impl VM {
 
             let mut stderr_file_opt = None;
             let mut stderr_to_stdout = false;
-            if let Some(stderr_redirect) = stderr_redirect_opt {
-                if stderr_redirect == "&1" {
+            if let Some((stderr_file, stderr_mode)) = stderr_redirect_opt {
+                if stderr_file == "&1" {
                     stderr_to_stdout = true;
                 } else {
-                    let stderr_file_res = File::create(stderr_redirect);
+                    let stderr_file_res = match stderr_mode {
+                        RedirectMode::Append => {
+                            File::options().create(true).append(true).open(&stderr_file)
+                        }
+                        RedirectMode::Overwrite => {
+                            File::create(&stderr_file)
+                        }
+                    };
+                    
                     match stderr_file_res {
                         Ok(stderr_file_arg) => {
                             stderr_file_opt = Some(stderr_file_arg.try_clone().unwrap());

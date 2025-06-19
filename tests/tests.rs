@@ -2318,6 +2318,44 @@ fn redirect_test() {
 }
 
 #[test]
+fn append_redirect_test() {
+    // Test stdout append redirection
+    basic_test("redtest rmf; 'echo line1 >redtest' exec; drop; 'echo line2 >>redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    
+    // Test stderr append redirection  
+    basic_test("redtest rmf; 'ls notexists 2>redtest' exec; drop; 'ls notexists2 2>>redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    
+    // Test that >> actually appends content
+    basic_test("redtest rmf; 'echo line1 >redtest' exec; drop; 'echo line2 >>redtest' exec; drop; redtest f<; \"\" join; 'line1\nline2\n' =; redtest rmf", ".t");
+    
+    // Test 1>> redirection (explicit stdout)
+    basic_test("redtest rmf; 'echo line1 1>redtest' exec; drop; 'echo line2 1>>redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+}
+
+#[test]
+fn append_redirect_whitespace_test() {
+    // Test >> with whitespace (should work like > with whitespace) - simple test first
+    basic_test("redtest rmf; 'echo hello >> redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    
+    // Test 2>> with whitespace
+    basic_test("redtest rmf; 'ls notexists 2>> redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    
+    // Test 1>> with whitespace
+    basic_test("redtest rmf; 'echo hello 1>> redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+}
+
+#[test]
+fn append_redirect_edge_cases() {
+    // Test that multiple > characters don't create files with >> prefix
+    // This addresses the concern about filenames starting with >>
+    basic_test("'echo test >>>>badfile >/dev/null' exec; drop; '>badfile' is-file; not", ".t");
+    
+    // Test that regular redirection with content overwrite works as expected 
+    // This verifies our implementation handles edge cases correctly
+    basic_test("special rmf; 'echo first >special' exec; drop; 'echo second >special' exec; drop; special f<; \"\" join; 'second\n' =; special rmf", ".t");
+}
+
+#[test]
 fn hash_literal_test() {
     basic_error_test("h(1)", "1:5: expected even number of elements for hash");
     basic_error_test("h(h(1 2) 3)", "1:13: expected string for hash key");

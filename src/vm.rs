@@ -698,6 +698,9 @@ impl VM {
             Some(s) => {
                 let mut path_opt = VM::find_library(".", s);
                 if path_opt.is_none() {
+                    path_opt = VM::find_library("./lib", s);
+                }
+                if path_opt.is_none() {
                     let libdir = format!("{}/{}", self.libdir, "cosh");
                     path_opt = VM::find_library(&libdir, s);
                 }

@@ -14,7 +14,7 @@
 : id ,,
 
 :~ lsh 1 0
-    0 =; if; . then;
+    0 =; if; cwd; then;
     opendir;
     dh var;
     dh !;
@@ -34,7 +34,7 @@
     expand-tilde; "/*$" "" s; "^{}/\." fmt; ,,
 
 :~ ls 1 0
-    0 =; if; . then;
+    0 =; if; cwd; then;
     dup; ls-filter-path; myre var; myre !;
     lsh; lsv var; lsv !;
     begin;
@@ -52,7 +52,7 @@
         .f until; ,,
 
 :~ lshr 1 0
-    0 =; if; . then;
+    0 =; if; cwd; then;
     "/" ++;
     dirname var;
     dup;
@@ -87,7 +87,7 @@
 	finished @; 1 =; until; ,,
 
 :~ lsr 1 0
-    0 =; if; . then;
+    0 =; if; cwd; then;
     dup; ls-filter-path; myre var; myre !;
     lshr; lsv var; lsv !;
     begin;

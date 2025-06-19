@@ -1369,6 +1369,13 @@ fn regex_escape_tests() {
 }
 
 #[test]
+fn single_quote_escape_test() {
+    basic_test_no_rt("\"test's data\" \\'s m", ".t");
+    basic_test_no_rt("\"test data\" \\'s m", ".f");
+    basic_test_no_rt("\"it's a test\" \\'s m", ".t");
+}
+
+#[test]
 fn xml_ns_test() {
     basic_test(
         "test-misc/test.xml f<; '' join; from-xml; namespaces get; 0 get; name get;",

@@ -51,17 +51,6 @@ fn basic_error_test(input: &str, output: &str) {
     assert.success().stderr(output.to_owned() + "\n");
 }
 
-fn basic_test_no_rt(input: &str, output: &str) {
-    let mut file = NamedTempFile::new().unwrap();
-    writeln!(file, "{}", input).unwrap();
-
-    let mut cmd = Command::cargo_bin("cosh").unwrap();
-    let path = file.path();
-    let assert = cmd.arg("--no-cosh-conf").arg("--no-rt").arg(path).assert();
-    let output2 = format!("{}\n", output);
-    assert.success().stdout(output2);
-}
-
 fn basic_error_test_no_rt(input: &str, output: &str) {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "{}", input).unwrap();

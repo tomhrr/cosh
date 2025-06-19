@@ -57,7 +57,8 @@ fn split_command(s: &str) -> Option<VecDeque<String>> {
                 add_to_next_opt = None;
             }
             _ => {
-                if e_str == ">" || e_str == "2>" || e_str == "1>" {
+                if e_str == ">" || e_str == "2>" || e_str == "1>" || 
+                   e_str == ">>" || e_str == "2>>" || e_str == "1>>" {
                     add_to_next_opt = Some(e_str);
                     continue;
                 }

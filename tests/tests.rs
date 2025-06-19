@@ -2224,6 +2224,18 @@ fn append_redirect_test() {
 }
 
 #[test]
+fn append_redirect_whitespace_test() {
+    // Test >> with whitespace (should work like > with whitespace) - simple test first
+    basic_test("redtest rmf; 'echo hello >> redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    
+    // Test 2>> with whitespace
+    basic_test("redtest rmf; 'ls notexists 2>> redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+    
+    // Test 1>> with whitespace
+    basic_test("redtest rmf; 'echo hello 1>> redtest' exec; drop; redtest f<; len; 0 >; redtest rmf", ".t");
+}
+
+#[test]
 fn append_redirect_edge_cases() {
     // Test that multiple > characters don't create files with >> prefix
     // This addresses the concern about filenames starting with >>

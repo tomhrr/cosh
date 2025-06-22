@@ -9,7 +9,7 @@
         dup; is-null; if;
             return;
         then;
-        dup; ^\s+$ m; not; if;
+        dup; ^\s*$ m; not; if;
             leave;
         then;
         drop;
@@ -29,9 +29,10 @@
         then;
         gen @; shift;
         dup; is-null; if;
+            drop;
             leave;
         then;
-        dup; ^\s+$ m; if;
+        dup; ^\s*$ m; if;
             drop;
             leave;
         then;

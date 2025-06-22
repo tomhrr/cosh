@@ -2363,7 +2363,7 @@ field2: value2
 field3: value3
 field4: value4
 
-\" c-lines; rpsl.parsem; shift-all;
+\" \"\\n\" split; rpsl.parsem; shift-all;
         ",
         "(
     0: (
@@ -2397,7 +2397,7 @@ fn rpsl_parsem_without_trailing_blank() {
 field2: value2
 
 field3: value3
-field4: value4\" c-lines; rpsl.parsem; shift-all;
+field4: value4\" \"\\n\" split; rpsl.parsem; shift-all;
         ",
         "(
     0: (

@@ -14,8 +14,7 @@ use nix::fcntl::{Flock, FlockArg};
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::io::{BufRead, BufReader};
-use std::io::{Seek, SeekFrom};
+use std::io::{BufRead, BufReader, Cursor};
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
@@ -29,7 +28,7 @@ use rustyline::error::ReadlineError;
 use rustyline::{
     At, Cmd, CompletionType, Config, EditMode, Editor, KeyPress, Movement, Word,
 };
-use tempfile::tempfile;
+
 
 use cosh::chunk::{Chunk, new_string_value};
 use cosh::compiler::Compiler;
@@ -235,25 +234,7 @@ fn main() {
         }
     } else if !expr_opt.is_none() {
         let expr = expr_opt.unwrap();
-        let file_res = tempfile();
-        match file_res {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("unable to create temporary file: {}", e);
-                std::process::exit(1);
-            }
-        }
-        let mut file = file_res.unwrap();
-        let res = file.write_all(expr.as_bytes());
-        match res {
-            Ok(_) => {}
-            Err(e) => {
-                eprintln!("unable to write content to temporary file: {}", e);
-                std::process::exit(1);
-            }
-        }
-        file.seek(SeekFrom::Start(0)).unwrap();
-
+        
         let global_functions = Rc::new(RefCell::new(HashMap::new()));
         let global_vars = Rc::new(RefCell::new(HashMap::new()));
         let mut vm = VM::new(true, debug, global_functions.clone(),
@@ -274,7 +255,7 @@ fn main() {
         if !matches.opt_present("no-cosh-conf") {
             import_cosh_conf(&mut vm, global_functions.clone());
         }
-        let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
+        let mut bufread: Box<dyn BufRead> = Box::new(Cursor::new(expr.into_bytes()));
         vm.interpret(&mut bufread, "(main)");
     } else {
         /* A path has not been provided, so start the shell. */
@@ -398,26 +379,8 @@ fn main() {
                         };
 
                     line = line.trim().to_string();
-                    let file_res = tempfile();
-                    match file_res {
-                        Ok(_) => {}
-                        Err(e) => {
-                            eprintln!("unable to create temporary REPL file: {}", e);
-                            std::process::exit(1);
-                        }
-                    }
-                    let mut file = file_res.unwrap();
-                    let res = file.write_all(line.as_bytes());
-                    match res {
-                        Ok(_) => {}
-                        Err(e) => {
-                            eprintln!("unable to write content to temporary REPL file: {}", e);
-                            std::process::exit(1);
-                        }
-                    }
-                    file.seek(SeekFrom::Start(0)).unwrap();
-
-                    let mut bufread: Box<dyn BufRead> = Box::new(BufReader::new(file));
+                    
+                    let mut bufread: Box<dyn BufRead> = Box::new(Cursor::new(line.into_bytes()));
                     rl_rr.borrow_mut().add_history_entry(original_line.as_str());
                     let chunk_opt = vm.interpret_with_mode(&mut bufread, "(main)", true);
                     match chunk_opt {

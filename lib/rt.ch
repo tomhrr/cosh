@@ -13,8 +13,7 @@
 
 : id ,,
 
-:~ lsh 1 0
-    0 =; if; cwd; then;
+:~ _lsh 1 0
     opendir;
     dh var;
     dh !;
@@ -30,13 +29,16 @@
 	.f until;
     drop; ,,
 
+:~ lsh 1 0
+    0 =; if; cwd; then;
+    _lsh; ,,
+
 : ls-filter-path
     expand-tilde; "/*$" "" s; "^{}/\." fmt; ,,
 
-:~ ls 1 0
-    0 =; if; cwd; then;
+:~ _ls 1 0
     dup; ls-filter-path; myre var; myre !;
-    lsh; lsv var; lsv !;
+    _lsh; lsv var; lsv !;
     begin;
         lsv @; shift; dup;
         is-null; if;
@@ -51,8 +53,11 @@
         then;
         .f until; ,,
 
-:~ lshr 1 0
+:~ ls 1 0
     0 =; if; cwd; then;
+    _ls; ,,
+
+:~ _lshr 1 0
     "/" ++;
     dirname var;
     dup;
@@ -86,10 +91,13 @@
         then;
 	finished @; 1 =; until; ,,
 
-:~ lsr 1 0
+:~ lshr 1 0
     0 =; if; cwd; then;
+    _lshr; ,,
+
+:~ _lsr 1 0
     dup; ls-filter-path; myre var; myre !;
-    lshr; lsv var; lsv !;
+    _lshr; lsv var; lsv !;
     begin;
         lsv @; shift; dup;
         is-null; if;
@@ -103,6 +111,10 @@
             then;
         then;
         .f until; ,,
+
+:~ lsr 1 0
+    0 =; if; cwd; then;
+    _lsr; ,,
 
 :~ f< 1 1
     drop;

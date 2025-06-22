@@ -54,7 +54,7 @@ signal-hook = "0.3.17"
 dirs = "5.0"
 pnet = "0.34.0"
 ipnetwork = "0.20.0"
-netstat2 = "0.9.1"
+netstat2 = "0.11.1"
 reqwest = { version = "0.12.1", features = [ "blocking" ] }
 mime = "0.3.17"
 http = "1.1.0"

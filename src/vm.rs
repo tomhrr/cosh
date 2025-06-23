@@ -701,6 +701,21 @@ impl VM {
                     path_opt = VM::find_library("./lib", s);
                 }
                 if path_opt.is_none() {
+                    // Check relative to executable location
+                    if let Ok(exe_path) = std::env::current_exe() {
+                        if let Some(exe_dir) = exe_path.parent() {
+                            if let Some(exe_parent) = exe_dir.parent() {
+                                if let Some(exe_grandparent) = exe_parent.parent() {
+                                    let lib_path = exe_grandparent.join("lib");
+                                    if let Some(lib_str) = lib_path.to_str() {
+                                        path_opt = VM::find_library(lib_str, s);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if path_opt.is_none() {
                     let libdir = format!("{}/{}", self.libdir, "cosh");
                     path_opt = VM::find_library(&libdir, s);
                 }

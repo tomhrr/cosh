@@ -216,6 +216,9 @@
     cwd; cwd var; cwd !;
     name var; name !;
     files var; files !;
+    # Convert file paths to absolute paths before changing directory
+    cwd @; orig_cwd var; orig_cwd !;
+    files @; [dup; / 0 get; 0 get; / =; not; if; orig_cwd @; swap; ++; then] map; files !;
     rpkiv._gsd; name @; ++; rsv var; rsv !;
     rsv @; cd;
     type f<; shift; chomp; rpki-client =; not; if;

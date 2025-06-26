@@ -19,6 +19,15 @@ fn add_file() {
     assert.success().stdout("3\n");
 }
 
+#[test]
+fn append_redirect_test() {
+    // Test >> append redirection for external commands
+    basic_test(
+        "first test_append_file f>; 'echo second >>test_append_file' exec; 'echo third >>test_append_file' exec; test_append_file f<; '' join; test_append_file rm;",
+        "firstsecond\nthird\n"
+    );
+}
+
 fn basic_test(input: &str, output: &str) {
     let mut file = NamedTempFile::new().unwrap();
     writeln!(file, "{}", input).unwrap();

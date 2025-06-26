@@ -2433,3 +2433,22 @@ fn rpsl_str_test() {
     // Test single element
     basic_test("lib/rpsl.ch import; (\"key\" \"value\") 1 mlist; rpsl.str; println", "key: value");
 }
+
+#[test]
+fn string_escape_single_quote() {
+    // Test basic single quote escaping
+    basic_test("'It\\'s working' puts", "It's working");
+}
+
+#[test]
+fn string_escape_single_quote_regex() {
+    // Test the specific case from issue #159: escaped single quotes in regex patterns
+    // This creates a simple test that would previously fail with "unrecognized escape sequence"
+    basic_test("'test\\'s' 's match", "true");
+}
+
+#[test]
+fn string_escape_multiple_single_quotes() {
+    // Test multiple escaped single quotes in one string
+    basic_test("'Don\\'t say \\'never\\'' puts", "Don't say 'never'");
+}

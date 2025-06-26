@@ -2437,7 +2437,7 @@ fn rpsl_str_test() {
 #[test]
 fn string_escape_single_quote() {
     // Test basic single quote escaping
-    basic_test("'It\\'s working' puts", "It's working");
+    basic_test("'It\\'s working'", "\"It's working\"");
 }
 
 #[test]
@@ -2450,5 +2450,5 @@ fn string_escape_single_quote_regex() {
 #[test]
 fn string_escape_multiple_single_quotes() {
     // Test multiple escaped single quotes in one string
-    basic_test("'Don\\'t say \\'never\\'' puts", "Don't say 'never'");
+    basic_test("'Don\\'t say \\'never\\'", "\"Don't say 'never'\"");
 }

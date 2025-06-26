@@ -411,8 +411,9 @@ impl<'a> Scanner<'a> {
                     result[result_index] = buffer[0];
                     result_index += 1;
                 } else if buffer[0] as char == string_delimiter {
-                    if result_index > 0 && result[result_index - 1] as char == '\\' {
-                        result[result_index - 1] = buffer[0];
+                    if result_index > 0 && result[result_index - 1] as char == '\\' && !last_escaped {
+                        result[result_index] = buffer[0];
+                        result_index += 1;
                     } else {
                         in_string = false;
                         done = true;

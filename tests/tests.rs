@@ -2433,3 +2433,27 @@ fn rpsl_str_test() {
     // Test single element
     basic_test("lib/rpsl.ch import; (\"key\" \"value\") 1 mlist; rpsl.str; println", "key: value");
 }
+
+#[test]
+fn string_escape_single_quote() {
+    // Test basic single quote escaping.
+    basic_test("\"It\\'s working\" println", "It's working");
+}
+
+#[test]
+fn string_escape_single_quote_regex() {
+    // Test the specific regex pattern from issue #159.
+    basic_test("\"/etc/dictionaries-common/words\" f<; [\\'s m; not] grep; count", "0");
+}
+
+#[test]
+fn string_escape_multiple_single_quotes() {
+    // Test multiple escaped single quotes in one string.
+    basic_test("\"\\'Hello\\' \\'World\\'\" println", "'Hello' 'World'");
+}
+
+#[test]
+fn string_escape_mixed_sequences() {
+    // Test mixed escape sequences to ensure existing functionality works.
+    basic_test("\"Line 1\\nTab\\there\\r\\\\\\'Quote\\'\" println", "Line 1\nTab\there\r\\'Quote'");
+}

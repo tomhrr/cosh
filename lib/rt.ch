@@ -13,11 +13,17 @@
 
 : id ,,
 
+: make-absolute
+    dup; "^/" m; if;
+        return;
+    then;
+    cwd; "/" ++; swap; ++; ,,
+
 :~ lsh 1 0
     0 =; if; . then;
+    expand-tilde; make-absolute;
     opendir;
-    dh var;
-    dh !;
+    dh var; dh !;
     begin;
 	dh @;
 	readdir;
@@ -53,6 +59,7 @@
 
 :~ lshr 1 0
     0 =; if; . then;
+    expand-tilde; make-absolute;
     "/" ++;
     dirname var;
     dup;

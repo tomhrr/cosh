@@ -2433,3 +2433,16 @@ fn rpsl_str_test() {
     // Test single element
     basic_test("lib/rpsl.ch import; (\"key\" \"value\") 1 mlist; rpsl.str; println", "key: value");
 }
+
+#[test]
+fn string_escape_single_quote_regex_match() {
+    // Test that escaped single quotes work in regex patterns.
+    // First test if escaping works in a simple string.
+    basic_test("\"\\\\'\" println", "'");
+    // Test simple single quote matching.
+    basic_test("\"'\" \"'\" m;", ".t");
+    // Test regex matching with escaped single quote in a string pattern.
+    basic_test("\"asdf's\" \"\\\\'s\" m;", ".t");
+    // Test the user's exact command.
+    basic_test("\"asdf's\" \\\\'s m;", ".t");
+}

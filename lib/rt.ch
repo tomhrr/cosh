@@ -13,11 +13,29 @@
 
 : id ,,
 
-:~ lsh 1 0
-    0 =; if; . then;
+: get-dir-for-ls
+    swap; cwd-param var!;
+    1 =; if; . then;
+    dirname var!;
+
+    cwd; cwd-param @; =; not; if;
+        dirname @; . =; if;
+            cwd-param @;
+        else;
+            cwd-param @; / ++; dirname @; ++;
+        then;
+        dirname !;
+    then;
+    dirname @;
+    ,,
+
+:~ _lsh 2 1
+    get-dir-for-ls;
+    dirname var!;
+    dirname @;
+
     opendir;
-    dh var;
-    dh !;
+    dh var; dh !;
     begin;
 	dh @;
 	readdir;
@@ -30,11 +48,17 @@
 	.f until;
     drop; ,,
 
+: lsh
+    cwd; _lsh; ,,
+
 : ls-filter-path
     expand-tilde; "/*$" "" s; "^{}/\." fmt; ,,
 
-:~ ls 1 0
-    0 =; if; . then;
+:~ _ls 2 1
+    get-dir-for-ls;
+    dirname var!;
+    dirname @;
+
     dup; ls-filter-path; myre var; myre !;
     lsh; lsv var; lsv !;
     begin;
@@ -51,12 +75,14 @@
         then;
         .f until; ,,
 
-:~ lshr 1 0
-    0 =; if; . then;
-    "/" ++;
-    dirname var;
-    dup;
-    dirname !;
+: ls
+    cwd; _ls; ,,
+
+:~ _lshr 2 1
+    get-dir-for-ls;
+    dirname var!;
+    dirname @;
+
     opendir;
     dh var;
     dh !;
@@ -86,8 +112,14 @@
         then;
 	finished @; 1 =; until; ,,
 
-:~ lsr 1 0
-    0 =; if; . then;
+: lshr
+    cwd; _lshr; ,,
+
+:~ _lsr 2 1
+    get-dir-for-ls;
+    dirname var!;
+    dirname @;
+
     dup; ls-filter-path; myre var; myre !;
     lshr; lsv var; lsv !;
     begin;
@@ -103,6 +135,9 @@
             then;
         then;
         .f until; ,,
+
+: lsr
+    cwd; _lsr; ,,
 
 :~ f< 1 1
     drop;

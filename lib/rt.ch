@@ -19,9 +19,17 @@
     then;
     cwd; "/" ++; swap; ++; ,,
 
-:~ lsh 1 0
+: make-absolute-with-dir
+    swap; captured-dir var; captured-dir !;
+    dup; "^/" m; if;
+        return;
+    then;
+    captured-dir @; "/" ++; swap; ++; ,,
+
+:~ _lsh 2 0
+    cwd-param var; cwd-param !;
     0 =; if; . then;
-    expand-tilde; make-absolute;
+    expand-tilde; cwd-param @; make-absolute-with-dir;
     opendir;
     dh var; dh !;
     begin;
@@ -35,6 +43,9 @@
 	yield;
 	.f until;
     drop; ,,
+
+:~ lsh 1 0
+    cwd; _lsh; ,,
 
 : ls-filter-path
     expand-tilde; "/*$" "" s; "^{}/\." fmt; ,,
@@ -57,9 +68,10 @@
         then;
         .f until; ,,
 
-:~ lshr 1 0
+:~ _lshr 2 0
+    cwd-param var; cwd-param !;
     0 =; if; . then;
-    expand-tilde; make-absolute;
+    expand-tilde; cwd-param @; make-absolute-with-dir;
     "/" ++;
     dirname var;
     dup;
@@ -92,6 +104,9 @@
             then;
         then;
 	finished @; 1 =; until; ,,
+
+:~ lshr 1 0
+    cwd; _lshr; ,,
 
 :~ lsr 1 0
     0 =; if; . then;

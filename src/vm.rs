@@ -958,6 +958,7 @@ impl VM {
         }
     }
 
+
     /// Takes a value, converts it into a string, and then generates a
     /// regex from that string and returns it.
     pub fn gen_regex(&mut self, value_rr: Value) -> Option<(Rc<Regex>, bool)> {
@@ -965,7 +966,9 @@ impl VM {
             if let Some(r) = &st.borrow().regex {
                 return Some(r.clone());
             }
-            let regex_res = self.str_to_regex(&st.borrow().escaped_string);
+            // Handle single quote escapes specifically for regex patterns
+            let regex_string = st.borrow().escaped_string.replace("\\'", "'");
+            let regex_res = self.str_to_regex(&regex_string);
             match regex_res {
                 Some((regex, global)) => {
                     let rc = Rc::new(regex);

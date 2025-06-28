@@ -2433,3 +2433,34 @@ fn rpsl_str_test() {
     // Test single element
     basic_test("lib/rpsl.ch import; (\"key\" \"value\") 1 mlist; rpsl.str; println", "key: value");
 }
+
+#[test]
+fn string_escape_single_quote() {
+    // Test basic single quote escaping.
+    basic_test("\"it\\'s working\" println", "it's working");
+    basic_test("\"don\\'t\" println", "don't");
+    basic_test("\"\\'hello\\'\" println", "'hello'");
+}
+
+#[test]
+fn string_escape_single_quote_regex() {
+    // Test the specific regex pattern from the issue.
+    basic_test("\"[\\'s m; not]\" println", "['s m; not]");
+    // Test regex pattern usage in a more complete example.
+    basic_test("\"[\\'a-zA-Z]\" println", "['a-zA-Z]");
+}
+
+#[test]
+fn string_escape_multiple_single_quotes() {
+    // Test multiple escaped single quotes in one string.
+    basic_test("\"it\\'s Bob\\'s car\" println", "it's Bob's car");
+    basic_test("\"\\'quotes\\' everywhere\\'\" println", "'quotes' everywhere'");
+}
+
+#[test]
+fn string_escape_mixed_sequences() {
+    // Test mixed escape sequences including single quotes.
+    basic_test("\"line1\\nit\\'s line2\" println", "line1\nit's line2");
+    basic_test("\"tab\\there\\'s text\" println", "tab\there's text");
+    basic_test("\"back\\\\slash and \\'quote\\'\" println", "back\\slash and 'quote'");
+}

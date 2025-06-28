@@ -24,6 +24,7 @@ use sysinfo::{System, Users};
 use crate::chunk::{print_error, new_string_value, Chunk, GeneratorObject,
                    StringTriple, Value, ValueLiteral, Variable};
 use crate::compiler::Compiler;
+use crate::hasher::new_hash_indexmap;
 use crate::opcode::{to_opcode, OpCode};
 use crate::rl::RLHelper;
 
@@ -581,7 +582,7 @@ impl VM {
                 to_remove.push(*pid_int);
             }
 
-            let mut map = IndexMap::new();
+            let mut map = new_hash_indexmap();
             map.insert("pid".to_string(), Value::Int(*pid_int as i32));
             map.insert("desc".to_string(), new_string_value(cmd.to_string()));
             map.insert("complete".to_string(), Value::Bool(!res));
@@ -1635,7 +1636,7 @@ impl VM {
                             self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
                         }
                         ListType::Hash => {
-                            let mut map = IndexMap::new();
+                            let mut map = new_hash_indexmap();
                             while self.stack.len() > list_index {
                                 if self.stack.len() < 2 {
                                     self.print_error("expected even number of elements for hash");
@@ -1658,7 +1659,7 @@ impl VM {
                             self.stack.push(Value::Hash(Rc::new(RefCell::new(map))));
                         }
                         ListType::Set => {
-                            let mut map = IndexMap::new();
+                            let mut map = new_hash_indexmap();
                             let mut value = None;
                             while self.stack.len() > list_index {
                                 let value_rr = self.stack.pop().unwrap();

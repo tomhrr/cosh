@@ -16,6 +16,7 @@ use sysinfo::Uid;
 
 use crate::chunk::{Value, new_string_value,
                    BufReaderWithBuffer};
+use crate::hasher::{new_hash_indexmap, new_set_indexmap};
 use crate::vm::*;
 
 impl VM {
@@ -23,7 +24,7 @@ impl VM {
         let interfaces = datalink::interfaces();
         let mut lst = VecDeque::new();
         for interface in interfaces {
-            let mut map = IndexMap::new();
+            let mut map = new_hash_indexmap();
             map.insert(
                 "name".to_string(),
                 new_string_value(interface.name)
@@ -60,7 +61,7 @@ impl VM {
                         }
                         let netaddr_obj = self.stack.pop().unwrap();
 
-                        let mut netmap = IndexMap::new();
+                        let mut netmap = new_hash_indexmap();
                         netmap.insert("ip".to_string(),      ipaddr_obj);
                         netmap.insert("network".to_string(), netaddr_obj);
 
@@ -86,7 +87,7 @@ impl VM {
                         }
                         let netaddr_obj = self.stack.pop().unwrap();
 
-                        let mut netmap = IndexMap::new();
+                        let mut netmap = new_hash_indexmap();
                         netmap.insert("ip".to_string(),      ipaddr_obj);
                         netmap.insert("network".to_string(), netaddr_obj);
 
@@ -123,7 +124,7 @@ impl VM {
 
         let mut lst = VecDeque::new();
         for si in sockets_info {
-            let mut map = IndexMap::new();
+            let mut map = new_hash_indexmap();
             match si.protocol_socket_info {
                 ProtocolSocketInfo::Tcp(tcp_si) => {
                     map.insert("type".to_string(),

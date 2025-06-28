@@ -14,13 +14,14 @@ use hickory_client::rr::RecordType;
 use hickory_client::udp::UdpClientConnection;
 
 use crate::chunk::{Value, new_string_value};
+use crate::hasher::{new_hash_indexmap, new_set_indexmap, CoshIndexMap};
 use crate::vm::*;
 
 impl VM {
     /// Add the given string to the map as a bigint, unless it can't
     /// be parsed, in which case add it as a string.
     pub fn add_bi(&mut self,
-                  map: &mut IndexMap<String, Value>,
+                  map: &mut CoshIndexMap<String, Value>,
                   key: &str,
                   value: &str) {
         let bi_opt = value.parse::<num_bigint::BigInt>();
@@ -39,7 +40,7 @@ impl VM {
     /// Add the given string to the map as an int, unless it can't
     /// be parsed, in which case add it as a string.
     pub fn add_int(&mut self,
-                   map: &mut IndexMap<String, Value>,
+                   map: &mut CoshIndexMap<String, Value>,
                    key: &str,
                    value: &str) {
         let int_opt = value.parse::<i32>();
@@ -58,7 +59,7 @@ impl VM {
     /// Convert the DNS record into a hash.
     pub fn record_to_value(&mut self,
                            record: &Record) -> Value {
-        let mut record_map = IndexMap::new();
+        let mut record_map = new_hash_indexmap();
         record_map.insert(
             "name".to_string(),
             new_string_value(record.name().to_string())
@@ -85,7 +86,7 @@ impl VM {
             _ => {}
         }
 
-        let mut sdata_map = IndexMap::new();
+        let mut sdata_map = new_hash_indexmap();
         match record.record_type() {
             RecordType::A => {
                 sdata_map.insert(
@@ -283,7 +284,7 @@ impl VM {
 		    }
                 }
 
-                let mut header_map = IndexMap::new();
+                let mut header_map = new_hash_indexmap();
                 header_map.insert(
                     "opcode".to_string(),
                     new_string_value(resp.op_code().to_string().to_uppercase())
@@ -312,7 +313,7 @@ impl VM {
                     Value::Int(resp.id() as i32)
                 );
 
-                let mut question_map = IndexMap::new();
+                let mut question_map = new_hash_indexmap();
                 question_map.insert(
                     "name".to_string(),
                     new_string_value(query.to_string())
@@ -343,7 +344,7 @@ impl VM {
                     additional_lst.push_back(self.record_to_value(&record));
                 }
 
-                let mut res_map = IndexMap::new();
+                let mut res_map = new_hash_indexmap();
                 res_map.insert(
                     "header".to_string(),
                     Value::Hash(Rc::new(RefCell::new(header_map)))

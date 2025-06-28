@@ -37,6 +37,7 @@ use serde::{Deserialize, Serialize};
 use std::process::{ChildStderr, ChildStdout};
 use sqlx::{MySql, Postgres, Sqlite};
 
+use crate::hasher::{CoshIndexMap, new_hash_indexmap, new_set_indexmap};
 use crate::opcode::{to_opcode, OpCode};
 use crate::vm::*;
 
@@ -826,12 +827,12 @@ pub enum Value {
     /// A list.
     List(Rc<RefCell<VecDeque<Value>>>),
     /// A hash.
-    Hash(Rc<RefCell<IndexMap<String, Value>>>),
+    Hash(Rc<RefCell<CoshIndexMap<String, Value>>>),
     /// A set.  The stringification of the value is used as the map
     /// key, and the set may only contain values of a single type.
     /// (Not terribly efficient, but can be made decent later without
     /// affecting the language interface.)
-    Set(Rc<RefCell<IndexMap<String, Value>>>),
+    Set(Rc<RefCell<CoshIndexMap<String, Value>>>),
     /// An anonymous function (includes reference to local variable
     /// stack).
     AnonymousFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<Value>>>),
@@ -1102,14 +1103,14 @@ pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
             Value::List(Rc::new(RefCell::new(vds)))
         }
         ValueSD::Hash(hsh) => {
-            let mut new_hsh = IndexMap::new();
+            let mut new_hsh = new_hash_indexmap();
             for (k, v) in hsh.iter() {
                 new_hsh.insert(k.clone(), valuesd_to_value(v.clone()));
             }
             Value::Hash(Rc::new(RefCell::new(new_hsh)))
         }
         ValueSD::Set(hsh) => {
-            let mut new_hsh = IndexMap::new();
+            let mut new_hsh = new_set_indexmap();
             for (k, v) in hsh.iter() {
                 new_hsh.insert(k.clone(), valuesd_to_value(v.clone()));
             }
@@ -2213,14 +2214,14 @@ impl Value {
                 Value::List(Rc::new(RefCell::new(cloned_lst)))
             }
             Value::Hash(hsh) => {
-                let mut cloned_hsh = IndexMap::new();
+                let mut cloned_hsh = new_hash_indexmap();
                 for (k, v) in hsh.borrow().iter() {
                     cloned_hsh.insert(k.clone(), v.value_clone());
                 }
                 Value::Hash(Rc::new(RefCell::new(cloned_hsh)))
             }
             Value::Set(hsh) => {
-                let mut cloned_hsh = IndexMap::new();
+                let mut cloned_hsh = new_set_indexmap();
                 for (k, v) in hsh.borrow().iter() {
                     cloned_hsh.insert(k.clone(), v.value_clone());
                 }

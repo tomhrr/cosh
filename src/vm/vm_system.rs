@@ -21,6 +21,7 @@ use sysinfo::CpuRefreshKind;
 use utime::*;
 
 use crate::chunk::Value;
+use crate::hasher::{new_hash_indexmap, CoshIndexMap};
 use crate::vm::*;
 
 impl VM {
@@ -634,7 +635,7 @@ impl VM {
                 };
                 match meta_res {
                     Ok(meta) => {
-                        let mut map = IndexMap::new();
+                        let mut map = new_hash_indexmap();
                         map.insert(
                             "dev".to_string(),
                             Value::BigInt(BigInt::from_u64(meta.dev()).unwrap()),
@@ -716,9 +717,9 @@ impl VM {
 
     fn convert_process(tz: &chrono_tz::Tz,
                        users: &sysinfo::Users,
-                       process: &sysinfo::Process) -> IndexMap<String, Value> {
+                       process: &sysinfo::Process) -> CoshIndexMap<String, Value> {
         let pid = process.pid();
-        let mut map = IndexMap::new();
+        let mut map = new_hash_indexmap();
         map.insert(
             "pid".to_string(),
             Value::BigInt(BigInt::from_i32(pid.as_u32().try_into().unwrap()).unwrap()),

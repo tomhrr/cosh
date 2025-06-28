@@ -4,6 +4,11 @@ version = "0.3.0"
 authors = ["Tom Harrison <tomhrr@tomhrr.org>"]
 edition = "2021"
 
+[features]
+default = []
+fxhash = ["dep:fxhash"]
+default-hasher = []
+
 [dependencies]
 assert_cmd = "2.0.9"
 csv = "1.0.0-beta.5"
@@ -20,6 +25,8 @@ rustyline-derive = "0.3.1"
 nix = { version = "0.28.0", features = ["fs", "process", "user", "signal"] }
 lazy_static = "1.4.0"
 indexmap = { version = "1.5.1", features = ["serde-1"] }
+ahash = "0.8.3"
+fxhash = { version = "0.2.1", optional = true }
 roxmltree = "0.13.0"
 xml-rs = "0.8.3"
 utime = "0.3.1"

@@ -5,6 +5,7 @@ use std::rc::Rc;
 use indexmap::IndexMap;
 
 use crate::chunk::{StringTriple, Value};
+use crate::hasher::{new_hash_indexmap, new_set_indexmap};
 use crate::vm::*;
 
 /// Converts a value into an XML string.
@@ -169,7 +170,7 @@ impl VM {
         node: &roxmltree::Node,
         param_namespaces: &HashMap<String, String>,
     ) -> Value {
-        let mut map = IndexMap::new();
+        let mut map = new_hash_indexmap();
 
         let mut current_namespaces = param_namespaces;
         let mut changed_namespaces = false;
@@ -210,7 +211,7 @@ impl VM {
                     }
                 }
 
-                let mut ns_map = IndexMap::new();
+                let mut ns_map = new_hash_indexmap();
                 ns_map.insert(
                     "uri".to_string(),
                     Value::String(Rc::new(RefCell::new(StringTriple::new(
@@ -277,7 +278,7 @@ impl VM {
             return Value::Hash(Rc::new(RefCell::new(map)));
         }
 
-        let mut attr_map = IndexMap::new();
+        let mut attr_map = new_hash_indexmap();
         for attr in node.attributes() {
             attr_map.insert(
                 attr.name().to_string(),

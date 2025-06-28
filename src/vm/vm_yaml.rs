@@ -7,6 +7,7 @@ use indexmap::IndexMap;
 use num_bigint::ToBigInt;
 
 use crate::chunk::Value;
+use crate::hasher::{new_hash_indexmap, new_set_indexmap};
 use crate::vm::*;
 
 /// Converts a serde_yaml object into a value.
@@ -39,16 +40,16 @@ fn convert_from_yaml(v: &serde_yaml::value::Value) -> Value {
         serde_yaml::value::Value::Sequence(lst) => Value::List(Rc::new(RefCell::new(
             lst.iter().map(convert_from_yaml).collect::<VecDeque<_>>(),
         ))),
-        serde_yaml::value::Value::Mapping(map) => Value::Hash(Rc::new(RefCell::new(
-            map.iter()
-                .map(|(k, v)| {
-                    let k_value = convert_from_yaml(k);
-                    let k_value_opt: Option<&str>;
-                    to_str!(k_value, k_value_opt);
-                    (k_value_opt.unwrap().to_string(), convert_from_yaml(v))
-                })
-                .collect::<IndexMap<_, _>>(),
-        ))),
+        serde_yaml::value::Value::Mapping(map) => {
+            let mut result = new_hash_indexmap();
+            for (k, v) in map.iter() {
+                let k_value = convert_from_yaml(k);
+                let k_value_opt: Option<&str>;
+                to_str!(k_value, k_value_opt);
+                result.insert(k_value_opt.unwrap().to_string(), convert_from_yaml(v));
+            }
+            Value::Hash(Rc::new(RefCell::new(result)))
+        },
         _ => Value::Null
     }
 }

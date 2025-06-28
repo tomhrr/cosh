@@ -2433,3 +2433,18 @@ fn rpsl_str_test() {
     // Test single element
     basic_test("lib/rpsl.ch import; (\"key\" \"value\") 1 mlist; rpsl.str; println", "key: value");
 }
+
+#[test]
+fn string_escape_single_quote_test() {
+    // Test basic single quote escaping
+    basic_test("\\' println", "'");
+    
+    // Test the specific command from issue #159
+    basic_test("\"asdf's\" \\'s m;", ".t");
+    
+    // Test single quote in regex pattern doesn't match
+    basic_test("\"asdf\" \\'s m;", ".f");
+    
+    // Test multiple escaped single quotes
+    basic_test("\\'test\\' println", "'test'");
+}

@@ -13,23 +13,27 @@
 
 : id ,,
 
-: make-absolute
-    dup; "^/" m; if;
-        return;
-    then;
-    cwd; "/" ++; swap; ++; ,,
+: get-dir-for-ls
+    swap; cwd-param var!;
+    1 =; if; . then;
+    dirname var!;
 
-: make-absolute-with-dir
-    swap; captured-dir var; captured-dir !;
-    dup; "^/" m; if;
-        return;
+    cwd; cwd-param @; =; not; if;
+        dirname @; . =; if;
+            cwd-param @;
+        else;
+            cwd-param @; / ++; dirname @; ++;
+        then;
+        dirname !;
     then;
-    captured-dir @; "/" ++; swap; ++; ,,
+    dirname @;
+    ,,
 
-:~ _lsh 2 0
-    cwd-param var; cwd-param !;
-    0 =; if; . then;
-    expand-tilde; cwd-param @; make-absolute-with-dir;
+:~ _lsh 2 1
+    get-dir-for-ls;
+    dirname var!;
+    dirname @;
+
     opendir;
     dh var; dh !;
     begin;
@@ -44,14 +48,17 @@
 	.f until;
     drop; ,,
 
-:~ lsh 1 0
+: lsh
     cwd; _lsh; ,,
 
 : ls-filter-path
     expand-tilde; "/*$" "" s; "^{}/\." fmt; ,,
 
-:~ ls 1 0
-    0 =; if; . then;
+:~ _ls 2 1
+    get-dir-for-ls;
+    dirname var!;
+    dirname @;
+
     dup; ls-filter-path; myre var; myre !;
     lsh; lsv var; lsv !;
     begin;
@@ -68,14 +75,14 @@
         then;
         .f until; ,,
 
-:~ _lshr 2 0
-    cwd-param var; cwd-param !;
-    0 =; if; . then;
-    expand-tilde; cwd-param @; make-absolute-with-dir;
-    "/" ++;
-    dirname var;
-    dup;
-    dirname !;
+: ls
+    cwd; _ls; ,,
+
+:~ _lshr 2 1
+    get-dir-for-ls;
+    dirname var!;
+    dirname @;
+
     opendir;
     dh var;
     dh !;
@@ -105,11 +112,14 @@
         then;
 	finished @; 1 =; until; ,,
 
-:~ lshr 1 0
+: lshr
     cwd; _lshr; ,,
 
-:~ lsr 1 0
-    0 =; if; . then;
+:~ _lsr 2 1
+    get-dir-for-ls;
+    dirname var!;
+    dirname @;
+
     dup; ls-filter-path; myre var; myre !;
     lshr; lsv var; lsv !;
     begin;
@@ -125,6 +135,9 @@
             then;
         then;
         .f until; ,,
+
+: lsr
+    cwd; _lsr; ,,
 
 :~ f< 1 1
     drop;

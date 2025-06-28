@@ -2433,3 +2433,24 @@ fn rpsl_str_test() {
     // Test single element
     basic_test("lib/rpsl.ch import; (\"key\" \"value\") 1 mlist; rpsl.str; println", "key: value");
 }
+
+#[test]
+fn string_escape_single_quote() {
+    basic_test("'don\\'t worry' print", "don't worry");
+}
+
+#[test]
+fn string_escape_single_quote_regex() {
+    basic_test("'[^']*' print", "[^']*");
+    basic_test("'[\\'s m; not]' print", "['s m; not]");
+}
+
+#[test]
+fn string_escape_multiple_single_quotes() {
+    basic_test("'can\\'t won\\'t shouldn\\'t' print", "can't won't shouldn't");
+}
+
+#[test]
+fn string_escape_mixed_sequences() {
+    basic_test("'line1\\ndon\\'t\\ttab' print", "line1\ndon't\ttab");
+}

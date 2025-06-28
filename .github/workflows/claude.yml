@@ -47,6 +47,7 @@ jobs:
             Bash(make)
             Bash(make test)
             Bash(make install)
+            Bash(cargo test:*)
           claude_env: |
             BASH_DEFAULT_TIMEOUT_MS: 180000
             BASH_MAX_TIMEOUT_MS: 180000

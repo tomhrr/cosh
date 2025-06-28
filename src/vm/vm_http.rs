@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use http::Method;
+use indexmap::IndexMap;
 use mime::Mime;
 use reqwest::blocking::{Client, Response, RequestBuilder};
 use reqwest::header::CONTENT_TYPE;
@@ -12,6 +13,7 @@ use std::time;
 use url::Url;
 
 use crate::chunk::{Value, new_string_value};
+use crate::hasher::{new_hash_indexmap, new_set_indexmap};
 use crate::vm::*;
 
 impl VM {
@@ -393,12 +395,12 @@ impl VM {
                 match response_res {
                     Some(response) => {
                         if raw {
-                            let mut headers = IndexMap::new();
+                            let mut headers = new_hash_indexmap();
                             for (k, v) in response.headers().iter() {
                                 headers.insert(k.to_string(),
                                                new_string_value((*v).to_str().unwrap().to_string()));
                             }
-                            let mut result = IndexMap::new();
+                            let mut result = new_hash_indexmap();
                             result.insert("headers".to_string(),
                                           Value::Hash(Rc::new(RefCell::new(headers))));
                             result.insert("code".to_string(),

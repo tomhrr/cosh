@@ -5,12 +5,14 @@
     clippy::type_complexity
 )]
 
+extern crate ahash;
 extern crate ansi_term;
 extern crate atty;
 extern crate chrono;
 extern crate chrono_tz;
 extern crate chronoutil;
 extern crate dirs;
+extern crate fxhash;
 extern crate iana_time_zone;
 extern crate indexmap;
 extern crate ipnet;
@@ -48,6 +50,7 @@ extern crate xml;
 #[macro_use]
 pub mod chunk;
 pub mod compiler;
+pub mod hasher;
 mod opcode;
 pub mod rl;
 pub mod vm;

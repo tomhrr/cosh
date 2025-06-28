@@ -37,6 +37,7 @@ use serde::{Deserialize, Serialize};
 use std::process::{ChildStderr, ChildStdout};
 use sqlx::{MySql, Postgres, Sqlite};
 
+use crate::hasher::{CoshIndexMap, new_hash_indexmap, new_set_indexmap};
 use crate::opcode::{to_opcode, OpCode};
 use crate::vm::*;
 
@@ -826,12 +827,12 @@ pub enum Value {
     /// A list.
     List(Rc<RefCell<VecDeque<Value>>>),
     /// A hash.
-    Hash(Rc<RefCell<IndexMap<String, Value>>>),
+    Hash(Rc<RefCell<CoshIndexMap<String, Value>>>),
     /// A set.  The stringification of the value is used as the map
     /// key, and the set may only contain values of a single type.
     /// (Not terribly efficient, but can be made decent later without
     /// affecting the language interface.)
-    Set(Rc<RefCell<IndexMap<String, Value>>>),
+    Set(Rc<RefCell<CoshIndexMap<String, Value>>>),
     /// An anonymous function (includes reference to local variable
     /// stack).
     AnonymousFunction(Rc<RefCell<Chunk>>, Rc<RefCell<Vec<Value>>>),

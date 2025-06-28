@@ -4,13 +4,14 @@ use std::rc::Rc;
 
 use indexmap::IndexMap;
 
+use crate::hasher::new_hash_indexmap;
 use crate::vm::*;
 
 impl VM {
     /// Add a hash containing the data from the current environment to
     /// the stack.
     pub fn core_env(&mut self) -> i32 {
-        let mut hsh = IndexMap::new();
+        let mut hsh = new_hash_indexmap();
         for (key, value) in env::vars() {
             let value_str = new_string_value(value);
             hsh.insert(key, value_str);

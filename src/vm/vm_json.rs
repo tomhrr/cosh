@@ -7,6 +7,7 @@ use indexmap::IndexMap;
 use num_bigint::ToBigInt;
 
 use crate::chunk::Value;
+use crate::hasher::{new_hash_indexmap, new_set_indexmap};
 use crate::vm::*;
 
 /// Converts a serde_json object into a value.
@@ -39,11 +40,13 @@ fn convert_from_json(v: &serde_json::value::Value) -> Value {
         serde_json::value::Value::Array(lst) => Value::List(Rc::new(RefCell::new(
             lst.iter().map(convert_from_json).collect::<VecDeque<_>>(),
         ))),
-        serde_json::value::Value::Object(map) => Value::Hash(Rc::new(RefCell::new(
-            map.iter()
-                .map(|(k, v)| (k.to_string(), convert_from_json(v)))
-                .collect::<IndexMap<_, _>>(),
-        ))),
+        serde_json::value::Value::Object(map) => {
+            let mut result = new_hash_indexmap();
+            for (k, v) in map.iter() {
+                result.insert(k.to_string(), convert_from_json(v));
+            }
+            Value::Hash(Rc::new(RefCell::new(result)))
+        },
     }
 }
 

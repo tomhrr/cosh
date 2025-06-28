@@ -2,6 +2,7 @@ use crate::chunk::{DBConnectionMySQL, DBStatementMySQL,
                    DBConnectionPostgres, DBStatementPostgres,
                    DBConnectionSQLite, DBStatementSQLite,
                    Value};
+use crate::hasher::{new_hash_indexmap, new_set_indexmap};
 use crate::vm::*;
 use chrono::Utc;
 use ipnet::{Ipv4Net, Ipv6Net};
@@ -321,7 +322,7 @@ impl VM {
 			self.stack.clear();
 			return 0;
 		    }
-                    let mut ret_record = IndexMap::new();
+                    let mut ret_record = new_hash_indexmap();
                     for column in raw_record.columns() {
                         let name = column.name();
                         let index = column.ordinal();
@@ -689,7 +690,7 @@ impl VM {
 			self.stack.clear();
 			return 0;
 		    }
-                    let mut ret_record = IndexMap::new();
+                    let mut ret_record = new_hash_indexmap();
                     for column in raw_record.columns() {
                         let name = column.name();
                         let index = column.ordinal();
@@ -949,7 +950,7 @@ impl VM {
                                         );
                                     }
                                     Some(final_value) => {
-                                        let mut map = IndexMap::new();
+                                        let mut map = new_hash_indexmap();
                                         map.insert(
                                             "months".to_string(),
                                             Value::Int(final_value.months)
@@ -1102,7 +1103,7 @@ impl VM {
 			self.stack.clear();
 			return 0;
 		    }
-                    let mut ret_record = IndexMap::new();
+                    let mut ret_record = new_hash_indexmap();
                     for column in raw_record.columns() {
                         let name = column.name();
                         let index = column.ordinal();

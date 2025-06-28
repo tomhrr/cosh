@@ -9,6 +9,7 @@ use termion::raw::IntoRawMode;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::chunk::{Chunk, Value};
+use crate::hasher::{new_hash_indexmap, new_set_indexmap};
 use crate::vm::*;
 
 /// Helper function for paging once the line limit has been reached.
@@ -593,7 +594,7 @@ impl VM {
                     }
                 }
                 Value::Hash(map) => {
-                    let mut subhash = IndexMap::new();
+                    let mut subhash = new_hash_indexmap();
                     if map.borrow().len() == 0 {
                         last_stack.push(Value::Hash(Rc::new(RefCell::new(subhash))));
                         lines_to_print = psv_helper(
@@ -688,7 +689,7 @@ impl VM {
                     }
                 }
                 Value::Set(map) => {
-                    let mut subhash = IndexMap::new();
+                    let mut subhash = new_set_indexmap();
                     if map.borrow().len() == 0 {
                         last_stack.push(Value::Set(Rc::new(RefCell::new(subhash))));
                         lines_to_print = psv_helper(

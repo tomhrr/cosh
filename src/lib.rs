@@ -12,6 +12,7 @@ extern crate chrono;
 extern crate chrono_tz;
 extern crate chronoutil;
 extern crate dirs;
+#[cfg(feature = "fxhash")]
 extern crate fxhash;
 extern crate iana_time_zone;
 extern crate indexmap;

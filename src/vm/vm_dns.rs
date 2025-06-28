@@ -40,7 +40,7 @@ impl VM {
     /// Add the given string to the map as an int, unless it can't
     /// be parsed, in which case add it as a string.
     pub fn add_int(&mut self,
-                   map: &mut IndexMap<String, Value>,
+                   map: &mut CoshIndexMap<String, Value>,
                    key: &str,
                    value: &str) {
         let int_opt = value.parse::<i32>();

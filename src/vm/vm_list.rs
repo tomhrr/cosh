@@ -6,12 +6,10 @@ use std::sync::atomic::Ordering;
 use std::thread;
 use std::time;
 
-use indexmap::IndexMap;
-
 use crate::chunk::{IpSet, Value, ValueSD,
                    valuesd_to_value, read_valuesd,
                    new_string_value};
-use crate::hasher::{new_hash_indexmap, new_set_indexmap};
+use crate::hasher::new_set_indexmap;
 use crate::vm::VM;
 
 impl VM {

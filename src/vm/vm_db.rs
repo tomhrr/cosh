@@ -2,7 +2,7 @@ use crate::chunk::{DBConnectionMySQL, DBStatementMySQL,
                    DBConnectionPostgres, DBStatementPostgres,
                    DBConnectionSQLite, DBStatementSQLite,
                    Value};
-use crate::hasher::{new_hash_indexmap, new_set_indexmap};
+use crate::hasher::new_hash_indexmap;
 use crate::vm::*;
 use chrono::Utc;
 use ipnet::{Ipv4Net, Ipv6Net};

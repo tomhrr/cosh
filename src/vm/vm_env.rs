@@ -2,8 +2,6 @@ use std::cell::RefCell;
 use std::env;
 use std::rc::Rc;
 
-use indexmap::IndexMap;
-
 use crate::hasher::new_hash_indexmap;
 use crate::vm::*;
 

@@ -1103,14 +1103,14 @@ pub fn valuesd_to_value(value_sd: ValueSD) -> Value {
             Value::List(Rc::new(RefCell::new(vds)))
         }
         ValueSD::Hash(hsh) => {
-            let mut new_hsh = IndexMap::new();
+            let mut new_hsh = new_hash_indexmap();
             for (k, v) in hsh.iter() {
                 new_hsh.insert(k.clone(), valuesd_to_value(v.clone()));
             }
             Value::Hash(Rc::new(RefCell::new(new_hsh)))
         }
         ValueSD::Set(hsh) => {
-            let mut new_hsh = IndexMap::new();
+            let mut new_hsh = new_set_indexmap();
             for (k, v) in hsh.iter() {
                 new_hsh.insert(k.clone(), valuesd_to_value(v.clone()));
             }
@@ -2214,14 +2214,14 @@ impl Value {
                 Value::List(Rc::new(RefCell::new(cloned_lst)))
             }
             Value::Hash(hsh) => {
-                let mut cloned_hsh = IndexMap::new();
+                let mut cloned_hsh = new_hash_indexmap();
                 for (k, v) in hsh.borrow().iter() {
                     cloned_hsh.insert(k.clone(), v.value_clone());
                 }
                 Value::Hash(Rc::new(RefCell::new(cloned_hsh)))
             }
             Value::Set(hsh) => {
-                let mut cloned_hsh = IndexMap::new();
+                let mut cloned_hsh = new_set_indexmap();
                 for (k, v) in hsh.borrow().iter() {
                     cloned_hsh.insert(k.clone(), v.value_clone());
                 }

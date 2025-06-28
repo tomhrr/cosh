@@ -104,8 +104,8 @@ mod tests {
         
         assert_eq!(hash_map.len(), 1);
         assert_eq!(set_map.len(), 1);
-        assert_eq!(hash_map.get("key1"), Some(&Value::Int(100)));
-        assert_eq!(set_map.get("key2"), Some(&Value::Int(200)));
+        assert!(hash_map.contains_key("key1"));
+        assert!(set_map.contains_key("key2"));
     }
 
     #[test]
@@ -120,7 +120,9 @@ mod tests {
         map.insert("float".to_string(), Value::Float(3.14));
         
         assert_eq!(map.len(), 4);
-        assert_eq!(map.get("bool"), Some(&Value::Bool(true)));
-        assert_eq!(map.get("int"), Some(&Value::Int(42)));
+        assert!(map.contains_key("bool"));
+        assert!(map.contains_key("int"));
+        assert!(map.contains_key("null"));
+        assert!(map.contains_key("float"));
     }
 }

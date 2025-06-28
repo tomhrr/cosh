@@ -14,7 +14,7 @@ codebase. Follow these guidelines precisely.
  - When adding a new feature, add tests for the feature as well.
  - When fixing a bug, add regression tests for the bug as well.
  - After making any change and adding any required tests, make sure
-   that all tests pass.
+   that the project builds and that all tests pass.
 
 ## Code quality
 

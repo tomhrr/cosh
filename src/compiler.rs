@@ -609,6 +609,9 @@ pub fn unescape_string(s: &str) -> String {
                 '\'' => {
                     s2.push('\'');
                 }
+                '"' => {
+                    s2.push('\"');
+                }
                 _ => {
                     s2.push('\\');
                     s2.push(c);

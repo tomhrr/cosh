@@ -966,8 +966,9 @@ impl VM {
             if let Some(r) = &st.borrow().regex {
                 return Some(r.clone());
             }
-            // Handle single quote escapes specifically for regex patterns
-            let regex_string = st.borrow().escaped_string.replace("\\'", "'");
+            // Handle quote escapes specifically for regex patterns.
+            let regex_string = st.borrow().escaped_string.replace("\\'", "'")
+                                                         .replace("\\\"", "\"");
             let regex_res = self.str_to_regex(&regex_string);
             match regex_res {
                 Some((regex, global)) => {

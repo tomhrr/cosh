@@ -131,20 +131,44 @@
     then;
     ,,
 
+: rpkiv.vrps-indexed
+    name var; name !;
+    name @; "vrp-cache-" swap; ++; cname var; cname !;
+    cname @; exists; not; if;
+        name @; rpkiv.vrps; vrps var; vrps !;
+        h(); asn-index var; asn-index !;
+        vrps @; 
+        [dup; 0 get; asn var; asn !;
+         asn-index @; asn @; get; exists; if;
+             asn-index @; asn @; get; swap; push;
+             asn-index @; asn @; swap; set;
+         else;
+             1 mlist;
+             asn-index @; asn @; swap; set;
+         then;] for;
+        h() vrps vrps @; set;
+             asn-index asn-index @; set;
+        cname @; swap; set-global;
+    then;
+    cname @; get-global;
+    ,,
+
+: rpkiv.clear-cache
+    name var; name !;
+    ,,
+
 : rpkiv.rov
     name var; name !;
     asn var; asn !;
     pfx var; ips; pfx !;
     pfx @; 0 get; ip.len; pfl var; pfl !;
 
-    name @;
-    rpkiv.vrps;
-    [1 get; ips; dup; pfx @; union; =] grep; r;
-    dup; len; 0 =; if;
-        drop;
+    name @; rpkiv.vrps-indexed; idx var; idx !;
+    idx @; asn-index get; asn @; get; exists; not; if;
         unknown
     else;
-        [0 get; asn @; =] grep;
+        idx @; asn-index get; asn @; get;
+        [1 get; ips; dup; pfx @; union; =] grep;
         [2 get; pfl @; >=] grep;
         [1 get; ip.len; pfl @; <=] grep;
         len; 0 >; if;

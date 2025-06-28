@@ -2448,3 +2448,8 @@ fn string_escape_single_quote_test() {
     // Test multiple escaped single quotes
     basic_test("\\'test\\' println", "'test'");
 }
+
+#[test]
+fn rpkiv_cache_test() {
+    basic_test("lib/rpkiv.ch import; .t", ".t");
+}

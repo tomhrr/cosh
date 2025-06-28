@@ -11,10 +11,10 @@ codebase. Follow these guidelines precisely.
 
 ## Tests
 
- - New features require tests.
- - Bug fixes require regression tests.
- - Tests (per `make test`) must pass before changes are given to the
-   user.
+ - When adding a new feature, add tests for the feature as well.
+ - When fixing a bug, add regression tests for the bug as well.
+ - After making any change and adding any required tests, make sure
+   that all tests pass.
 
 ## Code quality
 

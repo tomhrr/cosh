@@ -2462,3 +2462,45 @@ fn string_escape_single_quote_test() {
     // Test multiple escaped single quotes
     basic_test("\\'test\\' println", "'test'");
 }
+
+#[test]
+fn try_error_form_test() {
+    // Test try with error form - should capture error
+    basic_test("\"test error\" try error", ".f\n1:16: test error");
+}
+
+#[test]
+fn try_simple_test() {
+    // Test try with simple operation that doesn't error
+    basic_test("1 try 2", ".t\n\n1\n2");
+}
+
+#[test]
+fn try_success_test() {
+    // Test try with successful operation - should return true + empty string
+    basic_test("try 1 2 +", ".t\n\n3");
+}
+
+#[test]
+fn try_division_by_zero_test() {
+    // Test try with division by zero - should capture error
+    basic_test("try 1 0 /", ".f\n1:9: / requires two non-zero numbers");
+}
+
+#[test] 
+fn try_undefined_function_test() {
+    // Test try with undefined function - should capture error
+    basic_test("try nonexistent", ".f\n1:4: function not found");
+}
+
+#[test]
+fn try_stack_underflow_test() {
+    // Test try with stack underflow - should capture error
+    basic_test("try +", ".f\n1:5: + requires two arguments");
+}
+
+#[test]
+fn try_nested_test() {
+    // Test try inside try - inner try should work
+    basic_test("try try \"inner\" error", ".t\n.f\n1:17: inner");
+}

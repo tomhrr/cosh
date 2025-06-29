@@ -380,31 +380,37 @@ impl VM {
                                             updated_str.push_str(sc);
                                         }
                                         _ => {
-                                            let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - n);
-                                            match capture_el_rr_opt {
-                                                Some(capture_el_rr) => {
-                                                    let capture_el_str_opt: Option<&str>;
-                                                    to_str!(capture_el_rr, capture_el_str_opt);
-                                                    match capture_el_str_opt {
-                                                        Some(capture_el_str) => {
-                                                            stack_cache.resize(n as usize, None);
-                                                            stack_cache.insert(n as usize, Some(capture_el_str.to_string()));
-                                                            if quoted && capture_el_str.contains(char::is_whitespace) {
-                                                                updated_str.push_str("\"");
-                                                                updated_str.push_str(capture_el_str);
-                                                                updated_str.push_str("\"");
-                                                            } else {
-                                                                updated_str.push_str(capture_el_str);
+                                            let conversion_result = {
+                                                let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - n);
+                                                match capture_el_rr_opt {
+                                                    Some(capture_el_rr) => {
+                                                        let capture_el_str_opt: Option<&str>;
+                                                        to_str!(capture_el_rr, capture_el_str_opt);
+                                                        match capture_el_str_opt {
+                                                            Some(capture_el_str) => {
+                                                                Some(capture_el_str.to_string())
                                                             }
+                                                            _ => None
                                                         }
-                                                        _ => {
-                                                            self.print_error("fmt string argument cannot be converted to string");
-                                                            return 0;
-                                                        }
+                                                    }
+                                                    None => None
+                                                }
+                                            };
+                                            
+                                            match conversion_result {
+                                                Some(capture_el_str_owned) => {
+                                                    stack_cache.resize(n as usize, None);
+                                                    stack_cache.insert(n as usize, Some(capture_el_str_owned.clone()));
+                                                    if quoted && capture_el_str_owned.contains(char::is_whitespace) {
+                                                        updated_str.push_str("\"");
+                                                        updated_str.push_str(&capture_el_str_owned);
+                                                        updated_str.push_str("\"");
+                                                    } else {
+                                                        updated_str.push_str(&capture_el_str_owned);
                                                     }
                                                 }
                                                 None => {
-                                                    self.print_error("fmt string contains invalid stack element reference");
+                                                    self.print_error("fmt string argument cannot be converted to string");
                                                     return 0;
                                                 }
                                             }

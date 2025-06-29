@@ -79,6 +79,12 @@ pub struct VM {
     print_stack: bool,
     /// Whether the stack is currently being printed.
     printing_stack: bool,
+    /// Whether we're in try mode (capturing errors instead of printing).
+    try_mode: bool,
+    /// Whether the next instruction should be tried.
+    try_next: bool,
+    /// Captured error message when in try mode.
+    captured_error: Option<String>,
     /// The local variable stack.
     local_var_stack: Rc<RefCell<Vec<Value>>>,
     /// The scopes.
@@ -438,6 +444,9 @@ impl VM {
             local_var_stack: Rc::new(RefCell::new(Vec::new())),
             print_stack,
             printing_stack: false,
+            try_mode: false,
+            try_next: false,
+            captured_error: None,
             scopes: vec![global_vars],
             global_functions: global_functions,
             call_stack_chunks: Vec::new(),
@@ -485,20 +494,39 @@ impl VM {
     /// Takes a chunk, an instruction index, and an error message as its
     /// arguments.  Prints the error message, including filename, line number
     /// and column number elements (if applicable).
-    pub fn print_error(&self, error: &str) {
-        let point = self.chunk.borrow().get_point(self.i);
-        let name = &self.chunk.borrow().name;
-        let error_start = if name == "(main)" {
-            String::new()
+    pub fn print_error(&mut self, error: &str) {
+        if self.try_mode {
+            let point = self.chunk.borrow().get_point(self.i);
+            let name = &self.chunk.borrow().name;
+            let error_start = if name == "(main)" {
+                String::new()
+            } else {
+                format!("{}:", name)
+            };
+            let formatted_error = match point {
+                Some((line, col)) => {
+                    format!("{}{}:{}: {}", error_start, line, col, error)
+                }
+                _ => {
+                    format!("{}{}", error_start, error)
+                }
+            };
+            self.captured_error = Some(formatted_error);
         } else {
-            format!("{}:", name)
-        };
-        match point {
-            Some((line, col)) => {
-                eprintln!("{}{}:{}: {}", error_start, line, col, error);
-            }
-            _ => {
-                eprintln!("{}{}", error_start, error);
+            let point = self.chunk.borrow().get_point(self.i);
+            let name = &self.chunk.borrow().name;
+            let error_start = if name == "(main)" {
+                String::new()
+            } else {
+                format!("{}:", name)
+            };
+            match point {
+                Some((line, col)) => {
+                    eprintln!("{}{}:{}: {}", error_start, line, col, error);
+                }
+                _ => {
+                    eprintln!("{}{}", error_start, error);
+                }
             }
         }
     }
@@ -905,7 +933,7 @@ impl VM {
     }
 
     /// Takes a string and converts it into a regex.
-    pub fn str_to_regex(&self, s_arg: &str) -> Option<(Regex, bool)> {
+    pub fn str_to_regex(&mut self, s_arg: &str) -> Option<(Regex, bool)> {
         let mut global = false;
         let mut s: &str = s_arg;
         let mut s_replacement: String;
@@ -1523,6 +1551,10 @@ impl VM {
                         if let Value::Int(ref mut n1) = v1_rr {
                             if self.debug {
                                 eprintln!("  > Got integer from stack: {}", *n1);
+                            }
+                            if n == 0 {
+                                self.print_error("/ requires two non-zero numbers");
+                                return 0;
                             }
                             *n1 /= n;
                             done = true;
@@ -2404,15 +2436,30 @@ impl VM {
                     match error_str_opt {
                         Some(s) => {
                             let err_str = format!("{}:{}: {}", line, col, s);
-                            eprintln!("{}", err_str);
-                            return 0;
+                            if self.try_mode {
+                                self.captured_error = Some(err_str);
+                                // Don't return 0 in try mode, let execution continue
+                            } else {
+                                eprintln!("{}", err_str);
+                                return 0;
+                            }
                         }
                         None => {
                             let err_str = format!("{}:{}: {}", line, col, "(unknown error)");
-                            eprintln!("{}", err_str);
-                            return 0;
+                            if self.try_mode {
+                                self.captured_error = Some(err_str);
+                                // Don't return 0 in try mode, let execution continue
+                            } else {
+                                eprintln!("{}", err_str);
+                                return 0;
+                            }
                         }
                     }
+                }
+                OpCode::Try => {
+                    // Enable try mode for the next instruction
+                    self.try_next = true;
+                    self.captured_error = None;
                 }
                 OpCode::EndFn => {
                     if !chunk.borrow().is_generator && chunk.borrow().has_vars {
@@ -2431,6 +2478,29 @@ impl VM {
                     std::process::abort();
                 }
             }
+            
+            // Check if we should enable try mode for the next instruction
+            if self.try_next {
+                self.try_next = false;
+                self.try_mode = true;
+            } else if self.try_mode {
+                // We just finished executing an instruction in try mode
+                self.try_mode = false;
+                match &self.captured_error {
+                    Some(error_msg) => {
+                        // Error was captured, push false and error message
+                        self.stack.push(new_string_value("f".to_string()));
+                        self.stack.push(new_string_value(error_msg.clone()));
+                    }
+                    None => {
+                        // No error, push true and empty string  
+                        self.stack.push(new_string_value("t".to_string()));
+                        self.stack.push(new_string_value("".to_string()));
+                    }
+                }
+                self.captured_error = None;
+            }
+            
             i += 1;
         }
 

@@ -31,6 +31,8 @@ lazy_static! {
     static ref ENV_VAR:             Regex = Regex ::new("^(.*)=(.*)$").unwrap();
     static ref STDOUT_REDIRECT:     Regex = Regex ::new("^1?>(.*)$").unwrap();
     static ref STDERR_REDIRECT:     Regex = Regex ::new("^2>(.*)$").unwrap();
+    static ref STDOUT_APPEND_REDIRECT: Regex = Regex ::new("^1?>>(.*)$").unwrap();
+    static ref STDERR_APPEND_REDIRECT: Regex = Regex ::new("^2>>(.*)$").unwrap();
 }
 
 /// Splits a string on whitespace, taking into account quoted values
@@ -49,7 +51,8 @@ fn split_command(s: &str) -> Option<VecDeque<String>> {
                 add_to_next_opt = None;
             }
             _ => {
-                if e_str == ">" || e_str == "2>" || e_str == "1>" {
+                if e_str == ">" || e_str == "2>" || e_str == "1>" ||
+                   e_str == ">>" || e_str == "2>>" || e_str == "1>>" {
                     add_to_next_opt = Some(e_str);
                     continue;
                 }
@@ -167,8 +170,8 @@ impl VM {
                  Vec<String>,
                  HashMap<String, String>,
                  HashSet<String>,
-                 Option<String>,
-                 Option<String>)> {
+                 Option<(String, bool)>,
+                 Option<(String, bool)>)> {
         let prepared_cmd_opt = self.prepare_command(cmd);
         if prepared_cmd_opt.is_none() {
             return None;
@@ -215,11 +218,31 @@ impl VM {
             while !elements.is_empty() {
                 let len = elements.len();
                 let element = elements.get(len - 1).unwrap();
-                let mut captures = STDOUT_REDIRECT.captures_iter(element);
+                let mut captures = STDOUT_APPEND_REDIRECT.captures_iter(element);
                 match captures.next() {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
-                        stdout_redirect = Some(output.to_string());
+                        stdout_redirect = Some((output.to_string(), true));
+                        elements.pop_back();
+                        continue;
+                    }
+                    _ => {}
+                }
+                captures = STDERR_APPEND_REDIRECT.captures_iter(element);
+                match captures.next() {
+                    Some(capture) => {
+                        let output = capture.get(1).unwrap().as_str();
+                        stderr_redirect = Some((output.to_string(), true));
+                        elements.pop_back();
+                        continue;
+                    }
+                    _ => {}
+                }
+                captures = STDOUT_REDIRECT.captures_iter(element);
+                match captures.next() {
+                    Some(capture) => {
+                        let output = capture.get(1).unwrap().as_str();
+                        stdout_redirect = Some((output.to_string(), false));
                         elements.pop_back();
                         continue;
                     }
@@ -229,7 +252,7 @@ impl VM {
                 match captures.next() {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
-                        stderr_redirect = Some(output.to_string());
+                        stderr_redirect = Some((output.to_string(), false));
                         elements.pop_back();
                         continue;
                     }
@@ -328,11 +351,15 @@ impl VM {
 
             let mut stdout_file_opt = None;
             let mut stdout_to_stderr = false;
-            if let Some(stdout_redirect) = stdout_redirect_opt {
+            if let Some((stdout_redirect, is_append)) = stdout_redirect_opt {
                 if stdout_redirect == "&2" {
                     stdout_to_stderr = true;
                 } else {
-                    let stdout_file_res = File::create(stdout_redirect);
+                    let stdout_file_res = if is_append {
+                        File::options().create(true).append(true).open(stdout_redirect)
+                    } else {
+                        File::create(stdout_redirect)
+                    };
                     match stdout_file_res {
                         Ok(stdout_file_arg) => {
                             stdout_file_opt = Some(stdout_file_arg.try_clone().unwrap());
@@ -349,11 +376,15 @@ impl VM {
 
             let mut stderr_file_opt = None;
             let mut stderr_to_stdout = false;
-            if let Some(stderr_redirect) = stderr_redirect_opt {
+            if let Some((stderr_redirect, is_append)) = stderr_redirect_opt {
                 if stderr_redirect == "&1" {
                     stderr_to_stdout = true;
                 } else {
-                    let stderr_file_res = File::create(stderr_redirect);
+                    let stderr_file_res = if is_append {
+                        File::options().create(true).append(true).open(stderr_redirect)
+                    } else {
+                        File::create(stderr_redirect)
+                    };
                     match stderr_file_res {
                         Ok(stderr_file_arg) => {
                             stderr_file_opt = Some(stderr_file_arg.try_clone().unwrap());

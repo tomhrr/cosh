@@ -2318,6 +2318,20 @@ fn redirect_test() {
 }
 
 #[test]
+fn append_redirect_test() {
+    // Test stdout append redirection with >>.
+    // Create a file, append to it, then check the results.
+    basic_test("'test' append_test f>; 'ls >>append_test' exec; drop; append_test f<; len; 0 >; append_test rmf", ".t");
+    basic_test("'test' append_test f>; 'ls >> append_test' exec; drop; append_test f<; len; 0 >; append_test rmf", ".t");
+    basic_test("'test' append_test f>; 'ls 1>>append_test' exec; drop; append_test f<; len; 0 >; append_test rmf", ".t");
+    basic_test("'test' append_test f>; 'ls 1>> append_test' exec; drop; append_test f<; len; 0 >; append_test rmf", ".t");
+
+    // Test stderr append redirection with 2>>.
+    basic_test("'test' append_test f>; 'ls notexists 2>>append_test' exec; drop; append_test f<; len; 0 >; append_test rmf", ".t");
+    basic_test("'test' append_test f>; 'ls notexists 2>> append_test' exec; drop; append_test f<; len; 0 >; append_test rmf", ".t");
+}
+
+#[test]
 fn hash_literal_test() {
     basic_error_test("h(1)", "1:5: expected even number of elements for hash");
     basic_error_test("h(h(1 2) 3)", "1:13: expected string for hash key");

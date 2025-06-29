@@ -41,7 +41,7 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          timeout_minutes: "60"
+          timeout_minutes: "180"
           model: "claude-sonnet-4-20250514"
           allowed_tools: |
             Bash(make)

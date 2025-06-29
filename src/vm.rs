@@ -2513,14 +2513,14 @@ impl VM {
                     self.try_mode = false;
                     match &self.captured_error {
                         Some(error_msg) => {
-                            // Error was captured, push false and error message
-                            self.stack.push(new_string_value(".f".to_string()));
-                            self.stack.push(new_string_value(error_msg.clone()));
+                            // Error was captured, push false and error message at beginning
+                            self.stack.insert(0, Value::Bool(false));
+                            self.stack.insert(1, new_string_value(error_msg.clone()));
                         }
                         None => {
-                            // No error, push true and empty string  
-                            self.stack.push(new_string_value(".t".to_string()));
-                            self.stack.push(new_string_value("".to_string()));
+                            // No error, push true and empty string at beginning
+                            self.stack.insert(0, Value::Bool(true));
+                            self.stack.insert(1, new_string_value("".to_string()));
                         }
                     }
                     self.captured_error = None;

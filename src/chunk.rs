@@ -1890,6 +1890,9 @@ impl Chunk {
                 OpCode::Error => {
                     println!("OP_ERROR");
                 }
+                OpCode::Try => {
+                    println!("OP_TRY");
+                }
                 OpCode::Return => {
                     println!("OP_RETURN");
                 }

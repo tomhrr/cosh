@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::fmt;
 use std::io;
 use std::io::Write;
 use std::str;
@@ -888,6 +889,51 @@ impl VM {
                                window_width, lines_to_print, None);
             }
             last_stack.push(Value::List(Rc::new(RefCell::new(VecDeque::from(sublist)))));
+        } else if shiftable_fallback {
+            // Handle simple non-shiftable values (strings, booleans, numbers, etc.)
+            last_stack.push(value_rr.clone());
+            match value_rr {
+                Value::String(s) => {
+                    let ss = &s.borrow().string;
+                    if ss.is_empty() {
+                        // Empty strings print as nothing (blank line)
+                        lines_to_print = psv_helper(
+                            "",
+                            indent,
+                            no_first_indent,
+                            window_height,
+                            window_width,
+                            lines_to_print,
+                            index,
+                        );
+                    } else {
+                        // Regular strings print with quotes
+                        let value_str = format!("\"{}\"", ss);
+                        lines_to_print = psv_helper(
+                            &value_str,
+                            indent,
+                            no_first_indent,
+                            window_height,
+                            window_width,
+                            lines_to_print,
+                            index,
+                        );
+                    }
+                }
+                _ => {
+                    // Other types use their to_string method
+                    let value_str = value_rr.to_string().unwrap();
+                    lines_to_print = psv_helper(
+                        &value_str,
+                        indent,
+                        no_first_indent,
+                        window_height,
+                        window_width,
+                        lines_to_print,
+                        index,
+                    );
+                }
+            }
         }
         if lines_to_print == -1 {
             return lines_to_print;

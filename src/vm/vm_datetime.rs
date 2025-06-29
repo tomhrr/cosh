@@ -309,7 +309,7 @@ impl VM {
 
     /// The internal strptime function, used by both core_strptime and
     /// core_strptimez.
-    fn strptime(&self, pattern: &str, value: &str) -> Option<Parsed> {
+    fn strptime(&mut self, pattern: &str, value: &str) -> Option<Parsed> {
         let mut parsed = Parsed::new();
         let si = StrftimeItems::new(pattern);
         let res = parse(&mut parsed, value, si);

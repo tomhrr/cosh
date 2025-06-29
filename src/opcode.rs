@@ -1,5 +1,5 @@
 /// The opcodes used in the compiler and the bytecode.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OpCode {
     Constant = 1,
     Add = 2,

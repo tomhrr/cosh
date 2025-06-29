@@ -545,6 +545,76 @@ impl VM {
         }
     }
 
+    /// Determines if an opcode represents a callable form that can consume try mode.
+    /// Data opcodes (constants, variables, etc.) are not callable.
+    /// Only operations that can potentially error are callable.
+    pub fn is_callable_opcode(&self, op: OpCode) -> bool {
+        match op {
+            // Arithmetic operations (can error)
+            OpCode::Add | OpCode::Subtract | OpCode::Multiply | OpCode::Divide | OpCode::Remainder => true,
+            // Function calls (can error)
+            OpCode::Call | OpCode::CallImplicit | OpCode::CallConstant | OpCode::CallImplicitConstant => true,
+            // Explicit error
+            OpCode::Error => true,
+            // Stack operations that can error
+            OpCode::Drop | OpCode::Swap | OpCode::Rot | OpCode::Over => true,
+            // I/O operations that can error  
+            OpCode::Open | OpCode::Readline => true,
+            // Variable operations that can error
+            OpCode::GetVar | OpCode::SetVar | OpCode::GetLocalVar | OpCode::SetLocalVar => true,
+            // Import operations that can error
+            OpCode::Import => true,
+            // Other operations that can error
+            OpCode::GLVCall | OpCode::GLVShift => true,
+            
+            // Data opcodes (do NOT consume try)
+            OpCode::Constant => false,
+            OpCode::Shift => false, 
+            OpCode::Push => false,
+            OpCode::Pop => false,
+            OpCode::StartList | OpCode::EndList | OpCode::StartHash | OpCode::StartSet => false,
+            OpCode::Try => false, // Try itself is not callable
+            
+            // Type conversion/checking (generally safe)
+            OpCode::Bool | OpCode::Int | OpCode::BigInt | OpCode::Str | OpCode::Flt | OpCode::Byte => false,
+            OpCode::IsNull | OpCode::IsBool | OpCode::IsInt | OpCode::IsBigInt | OpCode::IsStr 
+            | OpCode::IsFlt | OpCode::IsList | OpCode::IsCallable | OpCode::IsShiftable | OpCode::IsByte => false,
+            
+            // Stack inspection (safe)
+            OpCode::Depth | OpCode::DupIsNull => false,
+            
+            // Other safe operations
+            OpCode::Clone | OpCode::Print | OpCode::PrintStack | OpCode::Clear => false,
+            OpCode::Dup => false,
+            OpCode::ToggleMode => false,
+            OpCode::ToFunction => false,
+            OpCode::Rand => false,
+            
+            // Comparisons and equality (generally safe)
+            OpCode::Eq | OpCode::Gt | OpCode::Lt | OpCode::Cmp => false,
+            OpCode::EqConstant | OpCode::AddConstant | OpCode::SubtractConstant 
+            | OpCode::MultiplyConstant | OpCode::DivideConstant => true, // These can error
+            
+            // Control flow
+            OpCode::Jump | OpCode::JumpNe | OpCode::JumpR | OpCode::JumpNeR | OpCode::JumpNeREqC => false,
+            OpCode::EndFn | OpCode::Function | OpCode::Return | OpCode::Yield => false,
+            OpCode::Var | OpCode::PopLocalVar => false,
+            OpCode::VarM | OpCode::VarSet | OpCode::VarMSet => false,
+            OpCode::Read => true, // Can error
+            
+            OpCode::Unknown => false,
+        }
+    }
+
+    /// Resets try mode state. Used between REPL commands to prevent
+    /// try mode from persisting across commands.
+    pub fn reset_try_state(&mut self) {
+        self.try_mode = false;
+        self.try_next = false;
+        self.captured_error = None;
+        self.try_stack_depth = 0;
+    }
+
     /// Toggles whether the stack is printed and cleared on command
     /// execution when running interactively.
     pub fn opcode_togglemode(&mut self) -> i32 {
@@ -1372,16 +1442,49 @@ impl VM {
                 eprintln!(" >  Stack:  {:?}", self.stack);
                 eprintln!(" >  Index:  {:?}", i);
             }
+            
+            // Check if we should enable try mode for this callable form BEFORE executing
+            if self.try_next && self.is_callable_opcode(op) && op != OpCode::Try {
+                self.try_next = false;
+                self.try_mode = true;
+                self.try_stack_depth = self.stack.len();
+            }
+            
             let op_fn_opt = SIMPLE_OPS[op as usize];
             if let Some(op_fn) = op_fn_opt {
                 let res = op_fn(self);
                 if res == 0 {
                     return 0;
                 } else {
+                    // Check if we should end try mode after executing a callable operation
+                    if self.try_mode && self.is_callable_opcode(op) && op != OpCode::Try {
+                        self.try_mode = false;
+                        match &self.captured_error {
+                            Some(error_msg) => {
+                                // Error was captured, push false and error message at beginning
+                                self.stack.insert(0, Value::Bool(false));
+                                self.stack.insert(1, new_string_value(error_msg.clone()));
+                            }
+                            None => {
+                                // No error, push true and empty string at beginning
+                                self.stack.insert(0, Value::Bool(true));
+                                self.stack.insert(1, new_string_value("".to_string()));
+                            }
+                        }
+                        self.captured_error = None;
+                    }
                     i += 1;
                     continue;
                 }
             }
+            
+            // Check if we should enable try mode for this callable form (for match statement opcodes)
+            if self.try_next && self.is_callable_opcode(op) && op != OpCode::Try {
+                self.try_next = false;
+                self.try_mode = true;
+                self.try_stack_depth = self.stack.len();
+            }
+            
             match op {
                 OpCode::AddConstant => {
                     i += 1;
@@ -2499,32 +2602,22 @@ impl VM {
                 }
             }
             
-            // Check if we should enable try mode for the next form
-            if self.try_next {
-                self.try_next = false;
-                self.try_mode = true;
-            } else if self.try_mode {
-                // Check if we should end try mode
-                let should_end_try = self.captured_error.is_some() || 
-                    (self.stack.len() > self.try_stack_depth);
-                
-                if should_end_try {
-                    // We finished executing the form in try mode
-                    self.try_mode = false;
-                    match &self.captured_error {
-                        Some(error_msg) => {
-                            // Error was captured, push false and error message at beginning
-                            self.stack.insert(0, Value::Bool(false));
-                            self.stack.insert(1, new_string_value(error_msg.clone()));
-                        }
-                        None => {
-                            // No error, push true and empty string at beginning
-                            self.stack.insert(0, Value::Bool(true));
-                            self.stack.insert(1, new_string_value("".to_string()));
-                        }
+            // Check if we should end try mode after executing a callable operation (for match statement opcodes)
+            if self.try_mode && self.is_callable_opcode(op) && op != OpCode::Try {
+                self.try_mode = false;
+                match &self.captured_error {
+                    Some(error_msg) => {
+                        // Error was captured, push false and error message at beginning
+                        self.stack.insert(0, Value::Bool(false));
+                        self.stack.insert(1, new_string_value(error_msg.clone()));
                     }
-                    self.captured_error = None;
+                    None => {
+                        // No error, push true and empty string at beginning
+                        self.stack.insert(0, Value::Bool(true));
+                        self.stack.insert(1, new_string_value("".to_string()));
+                    }
                 }
+                self.captured_error = None;
             }
             
             i += 1;

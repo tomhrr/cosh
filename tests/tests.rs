@@ -2471,8 +2471,8 @@ fn try_error_form_test() {
 
 #[test]
 fn try_simple_test() {
-    // Test try with simple operation that doesn't error
-    basic_test("1 try; 2", ".t\n\n1\n2");
+    // Test try with non-callable form - should have no effect since 2 is not callable
+    basic_test("1 try; 2", "1\n2");
 }
 
 #[test]
@@ -2501,6 +2501,6 @@ fn try_stack_underflow_test() {
 
 #[test]
 fn try_nested_test() {
-    // Test try inside try - inner try should work
-    basic_test("try; try; \"inner\" error;", ".t\n.f\n1:19: inner");
+    // Test try inside try - inner try gets consumed by error, outer try has no callable form
+    basic_test("try; try; \"inner\" error;", ".f\n1:19: inner");
 }

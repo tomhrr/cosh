@@ -85,6 +85,8 @@ pub struct VM {
     try_next: bool,
     /// Captured error message when in try mode.
     captured_error: Option<String>,
+    /// Stack depth when try mode started (to know when form ends).
+    try_stack_depth: usize,
     /// The local variable stack.
     local_var_stack: Rc<RefCell<Vec<Value>>>,
     /// The scopes.
@@ -447,6 +449,7 @@ impl VM {
             try_mode: false,
             try_next: false,
             captured_error: None,
+            try_stack_depth: 0,
             scopes: vec![global_vars],
             global_functions: global_functions,
             call_stack_chunks: Vec::new(),
@@ -528,6 +531,17 @@ impl VM {
                     eprintln!("{}{}", error_start, error);
                 }
             }
+        }
+    }
+
+    /// Helper function to handle errors appropriately based on try mode.
+    /// Returns 1 in try mode (continue execution), 0 otherwise (terminate).
+    pub fn handle_error(&mut self, error: &str) -> usize {
+        self.print_error(error);
+        if self.try_mode {
+            1  // Continue execution in try mode
+        } else {
+            0  // Terminate execution
         }
     }
 
@@ -1194,8 +1208,13 @@ impl VM {
             let value_rr = new_string_value(s.to_string());
             self.stack.push(value_rr);
         } else {
-            self.print_error("function not found");
-            return false;
+            if self.try_mode {
+                self.print_error("function not found");
+                return true;  // Continue in try mode
+            } else {
+                self.print_error("function not found");
+                return false;
+            }
         }
 
         true
@@ -1294,8 +1313,13 @@ impl VM {
                 if is_implicit {
                     self.stack.push(function_rr.clone());
                 } else {
-                    self.print_error("function not found");
-                    return false;
+                    if self.try_mode {
+                        self.print_error("function not found");
+                        return true;  // Continue in try mode  
+                    } else {
+                        self.print_error("function not found");
+                        return false;
+                    }
                 }
             }
         }
@@ -1376,8 +1400,7 @@ impl VM {
                         }
                         let len = self.stack.len();
                         if len == 0 {
-                            self.print_error("+ requires two arguments");
-                            return 0;
+                            return self.handle_error("+ requires two arguments");
                         }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
@@ -1432,8 +1455,7 @@ impl VM {
                         }
                         let len = self.stack.len();
                         if len == 0 {
-                            self.print_error("- requires two arguments");
-                            return 0;
+                            return self.handle_error("- requires two arguments");
                         }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
@@ -1488,8 +1510,7 @@ impl VM {
                         }
                         let len = self.stack.len();
                         if len == 0 {
-                            self.print_error("* requires two arguments");
-                            return 0;
+                            return self.handle_error("* requires two arguments");
                         }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
@@ -1544,8 +1565,7 @@ impl VM {
                         }
                         let len = self.stack.len();
                         if len == 0 {
-                            self.print_error("/ requires two arguments");
-                            return 0;
+                            return self.handle_error("/ requires two arguments");
                         }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
@@ -1553,8 +1573,7 @@ impl VM {
                                 eprintln!("  > Got integer from stack: {}", *n1);
                             }
                             if n == 0 {
-                                self.print_error("/ requires two non-zero numbers");
-                                return 0;
+                                return self.handle_error("/ requires two non-zero numbers");
                             }
                             *n1 /= n;
                             done = true;
@@ -2457,9 +2476,10 @@ impl VM {
                     }
                 }
                 OpCode::Try => {
-                    // Enable try mode for the next instruction
+                    // Enable try mode for the next form
                     self.try_next = true;
                     self.captured_error = None;
+                    self.try_stack_depth = self.stack.len();
                 }
                 OpCode::EndFn => {
                     if !chunk.borrow().is_generator && chunk.borrow().has_vars {
@@ -2479,26 +2499,32 @@ impl VM {
                 }
             }
             
-            // Check if we should enable try mode for the next instruction
+            // Check if we should enable try mode for the next form
             if self.try_next {
                 self.try_next = false;
                 self.try_mode = true;
             } else if self.try_mode {
-                // We just finished executing an instruction in try mode
-                self.try_mode = false;
-                match &self.captured_error {
-                    Some(error_msg) => {
-                        // Error was captured, push false and error message
-                        self.stack.push(new_string_value("f".to_string()));
-                        self.stack.push(new_string_value(error_msg.clone()));
+                // Check if we should end try mode
+                let should_end_try = self.captured_error.is_some() || 
+                    (self.stack.len() > self.try_stack_depth);
+                
+                if should_end_try {
+                    // We finished executing the form in try mode
+                    self.try_mode = false;
+                    match &self.captured_error {
+                        Some(error_msg) => {
+                            // Error was captured, push false and error message
+                            self.stack.push(new_string_value(".f".to_string()));
+                            self.stack.push(new_string_value(error_msg.clone()));
+                        }
+                        None => {
+                            // No error, push true and empty string  
+                            self.stack.push(new_string_value(".t".to_string()));
+                            self.stack.push(new_string_value("".to_string()));
+                        }
                     }
-                    None => {
-                        // No error, push true and empty string  
-                        self.stack.push(new_string_value("t".to_string()));
-                        self.stack.push(new_string_value("".to_string()));
-                    }
+                    self.captured_error = None;
                 }
-                self.captured_error = None;
             }
             
             i += 1;

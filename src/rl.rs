@@ -50,9 +50,9 @@ use crate::vm::{LIB_FORMS, SIMPLE_FORMS};
 
 const ESCAPE_CHAR: Option<char> = Some('\\');
 const DOUBLE_QUOTES_ESCAPE_CHAR: Option<char> = Some('\\');
-const DEFAULT_BREAK_CHARS: [u8; 18] = [
+const DEFAULT_BREAK_CHARS: [u8; 19] = [
     b' ', b'\t', b'\n', b'"', b'\\', b'\'', b'`', b'@', b'$', b'>', b'<', b'=', b';', b'|', b'&',
-    b'{', b'(', b'\0',
+    b'{', b'(', b'\0', b'['
 ];
 const DOUBLE_QUOTES_SPECIAL_CHARS: [u8; 4] = [b'"', b'$', b'\\', b'`'];
 

@@ -218,27 +218,7 @@ impl VM {
             while !elements.is_empty() {
                 let len = elements.len();
                 let element = elements.get(len - 1).unwrap();
-                let mut captures = STDOUT_REDIRECT.captures_iter(element);
-                match captures.next() {
-                    Some(capture) => {
-                        let output = capture.get(1).unwrap().as_str();
-                        stdout_redirect = Some((output.to_string(), false));
-                        elements.pop_back();
-                        continue;
-                    }
-                    _ => {}
-                }
-                captures = STDERR_REDIRECT.captures_iter(element);
-                match captures.next() {
-                    Some(capture) => {
-                        let output = capture.get(1).unwrap().as_str();
-                        stderr_redirect = Some((output.to_string(), false));
-                        elements.pop_back();
-                        continue;
-                    }
-                    _ => {}
-                }
-                captures = STDOUT_APPEND_REDIRECT.captures_iter(element);
+                let mut captures = STDOUT_APPEND_REDIRECT.captures_iter(element);
                 match captures.next() {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
@@ -253,6 +233,26 @@ impl VM {
                     Some(capture) => {
                         let output = capture.get(1).unwrap().as_str();
                         stderr_redirect = Some((output.to_string(), true));
+                        elements.pop_back();
+                        continue;
+                    }
+                    _ => {}
+                }
+                captures = STDOUT_REDIRECT.captures_iter(element);
+                match captures.next() {
+                    Some(capture) => {
+                        let output = capture.get(1).unwrap().as_str();
+                        stdout_redirect = Some((output.to_string(), false));
+                        elements.pop_back();
+                        continue;
+                    }
+                    _ => {}
+                }
+                captures = STDERR_REDIRECT.captures_iter(element);
+                match captures.next() {
+                    Some(capture) => {
+                        let output = capture.get(1).unwrap().as_str();
+                        stderr_redirect = Some((output.to_string(), false));
                         elements.pop_back();
                         continue;
                     }

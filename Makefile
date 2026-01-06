@@ -8,7 +8,7 @@ ifeq ($(UNAME_S),Darwin)
 	INSTALL=ginstall
 endif
 
-all: rt.chc rdap.chc rpkiv.chc rpsl.chc ssh-agent.chc
+all: rt.chc rdap.chc rpkiv.chc rpsl.chc ssh-agent.chc nrtm.chc
 
 rt.chc: target/release/cosh lib/rt.ch
 	./target/release/cosh --no-rt -c lib/rt.ch -o rt.chc
@@ -24,6 +24,9 @@ rpsl.chc: target/release/cosh rt.chc lib/rpsl.ch
 
 ssh-agent.chc: target/release/cosh rt.chc lib/ssh-agent.ch
 	./target/release/cosh -c lib/ssh-agent.ch -o ssh-agent.chc
+
+nrtm.chc: target/release/cosh rt.chc lib/nrtm.ch
+	./target/release/cosh -c lib/nrtm.ch -o nrtm.chc
 
 target/release/cosh:
 	libdir=$(libdir) cargo build --release

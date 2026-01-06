@@ -39,6 +39,7 @@ cosh is a concatenative command-line shell.
     * [rdap](#rdap)
     * [rpkiv](#rpkiv)
     * [rpsl](#rpsl)
+    * [nrtm](#nrtm)
     * [ssh-agent](#ssh-agent)
  * [Miscellaneous](#miscellaneous)
     * [Caveats and pitfalls](#caveats-and-pitfalls)
@@ -893,10 +894,13 @@ Other higher-order functions:
  - `before`: takes a list and a function, and calls the function on
    each element from the list, returning elements up until the
    function call returns a value that evaluates to true, at which
-   point it returns no more elements.
+   point it returns no more elements.  `beforei` works in the same
+   way, except that the element for which the function call returns
+   a true value is included in the result.
  - `after`: works similarly to `before`, save that it returns the
    elements from after the point where the function returns a true
-   value.
+   value.  `afteri` works in the same way, except that the element for
+   which the function returns a true value is included in the result.
  - `apply`: like `map`, but it works on the stack, rather than on a
    list.  Takes a function and the number of stack elements to which
    the function should be applied.
@@ -1510,6 +1514,10 @@ validators.
 
 A library for working with Routing Policy Specification Language
 (RPSL) objects.
+
+#### [nrtm](nrtm.md)
+
+A library for working with RPSL NRTMv3 servers.
 
 #### [ssh-agent](ssh-agent.md)
 

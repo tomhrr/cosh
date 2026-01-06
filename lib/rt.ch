@@ -626,6 +626,25 @@
         then;
         .f until; ,,
 
+:~ beforei 2 2
+    drop;
+    fn var; to-function; fn !;
+    lst var; lst !;
+
+    begin;
+        lst @; shift;
+        dup; is-null; if;
+            leave;
+        then;
+        dup;
+        fn @; funcall; not; if;
+            yield;
+        else;
+            yield;
+            leave;
+        then;
+        .f until; ,,
+
 :~ after 2 2
     drop;
     fn var; to-function; fn !;
@@ -645,6 +664,31 @@
                 yield;
                 .f until;
             leave;
+        then;
+        .f until; ,,
+
+:~ afteri 2 2
+    drop;
+    fn var; to-function; fn !;
+    lst var; lst !;
+
+    begin;
+        lst @; shift;
+        dup; is-null; if;
+            leave;
+        then;
+        dup; fn @; funcall; if;
+            yield;
+            begin;
+                lst @; shift;
+                dup; is-null; if;
+                    leave;
+                then;
+                yield;
+                .f until;
+            leave;
+        else;
+            drop;
         then;
         .f until; ,,
 

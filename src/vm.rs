@@ -108,7 +108,9 @@ pub struct VM {
     /// The modification time of the nameserver file.
     dns_mtime: SystemTime,
     /// Local nameserver addresses.
-    dns_servers: Vec<ScopedIp>
+    dns_servers: Vec<ScopedIp>,
+    /// Imported libraries.
+    imported: HashSet<String>
 }
 
 lazy_static! {
@@ -355,7 +357,9 @@ lazy_static! {
         set.insert("ls");
         set.insert("or");
         set.insert("after");
+        set.insert("afteri");
         set.insert("before");
+        set.insert("beforei");
         set.insert("pairwise");
         set.insert("slide");
         set.insert("id");
@@ -454,7 +458,8 @@ impl VM {
             child_processes: IndexMap::new(),
             dns_mtime: std::fs::metadata("/etc/resolv.conf").unwrap()
                                                             .modified().unwrap(),
-            dns_servers: config.nameservers
+            dns_servers: config.nameservers,
+            imported: HashSet::new()
         }
     }
 
@@ -698,6 +703,9 @@ impl VM {
 
         match lib_str_opt {
             Some(s) => {
+                if self.imported.contains(s) {
+                    return 1;
+                }
                 let mut path_opt = VM::find_library(".", s);
                 if path_opt.is_none() {
                     let libdir = format!("{}/{}", self.libdir, "cosh");
@@ -755,6 +763,7 @@ impl VM {
                         }
                     }
                 }
+                self.imported.insert(s.to_string());
             }
             _ => {
                 self.print_error("import argument must be a string");

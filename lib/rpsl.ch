@@ -104,12 +104,12 @@ h(afrinic whois.afrinic.net
   reach   rr.telstraglobal.net
   ripe    whois.ripe.net
   tc      irr.bgp.net.br)
-servers var; servers !;
+rpsl._servers var; rpsl._servers !;
 
-: rpsl.servers servers @; clone; ,,
+: rpsl.servers rpsl._servers @; clone; ,,
 
 : rpsl.query-raw
-    dup; servers @; swap; get; dup; is-null; if;
+    dup; rpsl._servers @; swap; get; dup; is-null; if;
         drop;
     else;
         swap;

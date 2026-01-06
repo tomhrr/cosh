@@ -12,23 +12,23 @@ and [Mirroring with IRRd](https://irrd.readthedocs.io/en/stable/users/mirroring/
     $ nrtm import
     $ radb nrtm.sources; [name get; RADB =] first
     h(
-	"available": .t
-	"name":      RADB
-	"last":      4370184
-	"first":     0
+        "available": .t
+        "name":      RADB
+        "last":      4370184
+        "first":     0
     )
     $ RADB 4370183 4370184 radb nrtm.query
     v[gen (
-	0: h(
-	    "object": (
-		0: (
-		    0: route
-		    1: 130.137.240.0/24
-		)
+        0: h(
+            "object": (
+                0: (
+                    0: route
+                    1: 130.137.240.0/24
+                )
                 ...
             )
-	    "type":   DEL
-	    "serial": 4370183
+            "type":   DEL
+            "serial": 4370183
         )
         ...
     )

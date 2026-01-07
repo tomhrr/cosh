@@ -41,6 +41,7 @@ install: rt.chc
 	$(INSTALL) -D -m 755 rpkiv.chc -t $(libdir)/cosh/
 	$(INSTALL) -D -m 755 rpsl.chc -t $(libdir)/cosh/
 	$(INSTALL) -D -m 755 ssh-agent.chc -t $(libdir)/cosh/
+	$(INSTALL) -D -m 755 nrtm.chc -t $(libdir)/cosh/
 
 clean:
 	rm *.chc

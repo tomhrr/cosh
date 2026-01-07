@@ -157,7 +157,7 @@ nrtm._servers var; nrtm._servers !;
     "-g {}:3:{}-{}\n" fmt; 1 mlist;
     server @; port @; nc;
     gen var!;
-    gen @; ["^%" m] beforei; r; pop; chomp;
+    gen @; ["^%START " m] beforei; r; pop; chomp;
     dup; ERROR m; if;
         "failed query: {}" fmt; error;
     then;

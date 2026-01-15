@@ -35,7 +35,7 @@
     dirname @;
 
     opendir;
-    dh var; dh !;
+    dh var!;
     begin;
 	dh @;
 	readdir;
@@ -59,8 +59,8 @@
     dirname var!;
     dirname @;
 
-    dup; ls-filter-path; myre var; myre !;
-    lsh; lsv var; lsv !;
+    dup; ls-filter-path; myre var!;
+    lsh; lsv var!;
     begin;
         lsv @; shift; dup;
         is-null; if;
@@ -84,12 +84,9 @@
     dirname @;
 
     opendir;
-    dh var;
-    dh !;
-    dhs var;
-    () dhs !;
-    finished var;
-    0 finished !;
+    dh var!;
+    () dhs var!;
+    0 finished var!;
     begin;
         dh @; readdir;
         dup; is-null;
@@ -120,8 +117,8 @@
     dirname var!;
     dirname @;
 
-    dup; ls-filter-path; myre var; myre !;
-    lshr; lsv var; lsv !;
+    dup; ls-filter-path; myre var!;
+    lshr; lsv var!;
     begin;
         lsv @; shift; dup;
         is-null; if;
@@ -142,8 +139,7 @@
 :~ f< 1 1
     drop;
     r open;
-    fh var;
-    fh !;
+    fh var!;
     begin;
         fh @;
         readline;
@@ -157,17 +153,25 @@
 :~ b< 1 1
     drop;
     r open;
-    fh var;
-    fh !;
+    fh var!;
+    () buf var!;
     begin;
-        fh @;
-        1024 read;
+        buf @; shift;
         dup; is-null; if;
             drop;
-            leave;
+            fh @;
+            1024 read;
+            dup; is-null; if;
+                drop;
+                leave;
+            else;
+                dup; buf !;
+                shift;
+            then;
         then;
         yield;
-        .f until; ,,
+        .f until;
+        ,,
 
 : for
     depth; 2 <; if;
@@ -176,14 +180,11 @@
     dup; is-callable; not; if;
         "second for argument must be callable" error;
     then;
-    fn var;
-    to-function;
-    fn !;
+    to-function; fn var!;
     dup; is-shiftable; not; if;
         "first for argument must be shiftable" error;
     then;
-    lst var;
-    lst !;
+    lst var!
     begin;
         lst @; shift;
         dup; is-null; if;
@@ -197,7 +198,7 @@
     depth; 2 <; if;
         "f> requires two arguments" error;
     then;
-    w open; fh var; fh !;
+    w open; fh var!;
     dup; is-str; if;
         fh @; swap; writeline;
         fh @; close;
@@ -218,20 +219,12 @@
     depth; 2 <; if;
         "b> requires two arguments" error;
     then;
-    w open; fh var; fh !;
+    w open; fh var!;
     dup; is-str; if;
         fh @; swap; writeline;
         fh @; close;
     else;
-        begin;
-            dup; shift;
-            dup; is-null; if;
-                drop;
-                drop;
-                leave;
-            then;
-            fh @; swap; write;
-            .f until;
+        fh @; swap; write;
         fh @; close;
     then; ,,
 
@@ -247,7 +240,7 @@
         drop;
         ()
     else;
-        () lst var; lst !;
+        () lst var!;
         begin;
             swap; dup; shift;
             dup; is-null; if;
@@ -270,7 +263,7 @@
     dup; is-list; if;
         return;
     then;
-    () lst var; lst !;
+    () lst var!;
     begin;
         dup; shift;
         dup; is-null; if;
@@ -287,11 +280,11 @@
     dup; is-callable; not; if;
         "second grep argument must be callable" error;
     then;
-    fn var; to-function; fn !;
+    to-function; fn var!;
     dup; is-shiftable; not; if;
         "first grep argument must be shiftable" error;
     then;
-    lst var; lst !;
+    lst var!;
     begin;
         lst @;
         shift;
@@ -313,11 +306,11 @@
     dup; is-callable; not; if;
         "second map argument must be callable" error;
     then;
-    fn var; to-function; fn !;
+    to-function; fn var!;
     dup; is-shiftable; not; if;
         "first map argument must be shiftable" error;
     then;
-    lst var; lst !;
+    lst var!;
     begin;
         lst @;
         shift;
@@ -332,8 +325,8 @@
     dup; int; is-null; if;
         "range argument must be integer" error;
     then;
-    limit var; limit !;
-    0 i var; i !;
+    limit var!;
+    0 i var!;
     begin;
         i @; yield;
         i @; 1 +; i !;
@@ -344,11 +337,11 @@
     dup; is-shiftable; not; if;
         "first foldl argument must be shiftable" error;
     then;
-    lst var; lst !;
+    lst var!;
     dup; is-callable; not; if;
         "second foldl argument must be callable" error;
     then;
-    fn var; to-function; fn !;
+    to-function; fn var!;
     begin;
         lst @; shift;
         dup; is-null; if;
@@ -371,11 +364,11 @@
     dup; is-callable; not; if;
         "second any argument must be callable" error;
     then;
-    fn var; to-function; fn !;
+    to-function; fn var!;
     dup; is-shiftable; not; if;
         "first any argument must be shiftable" error;
     then;
-    lst var; lst !;
+    lst var!;
     begin;
         lst @;
         shift;
@@ -395,11 +388,11 @@
     dup; is-callable; not; if;
         "second all argument must be callable" error;
     then;
-    fn var; to-function; fn !;
+    to-function; fn var!;
     dup; is-shiftable; not; if;
         "first all argument must be shiftable" error;
     then;
-    lst var; lst !;
+    lst var!;
     begin;
         lst @;
         shift;
@@ -419,11 +412,11 @@
     dup; is-callable; not; if;
         "second none argument must be callable" error;
     then;
-    fn var; to-function; fn !;
+    to-function; fn var!;
     dup; is-shiftable; not; if;
         "first none argument must be shiftable" error;
     then;
-    lst var; lst !;
+    lst var!;
     begin;
         lst @;
         shift;
@@ -445,11 +438,11 @@
     dup; is-callable; not; if;
         "second first argument must be callable" error;
     then;
-    fn var; to-function; fn !;
+    to-function; fn var!;
     dup; is-shiftable; not; if;
         "first first argument must be shiftable" error;
     then;
-    lst var; lst !;
+    lst var!;
     begin;
         lst @;
         shift;
@@ -469,7 +462,7 @@
     dup; is-shiftable; not; if;
         "min argument must be shiftable" error;
     then;
-    lst var; lst !;
+    lst var!;
     cmin var;
     begin;
         lst @;
@@ -493,7 +486,7 @@
     dup; is-shiftable; not; if;
         "max argument must be shiftable" error;
     then;
-    lst var; lst !;
+    lst var!;
     cmax var;
     begin;
         lst @;
@@ -521,9 +514,9 @@
         "shuffle requires one argument" error;
     then;
     take-all;
-    lst var; lst !;
-    lst @; len; lstlen var; lstlen !;
-    i var; 0 i !;
+    lst var!;
+    lst @; len; lstlen var!;
+    0 i var!;
     begin;
         i @; lstlen @; >=; if;
             lst @;
@@ -544,8 +537,8 @@
     depth; 1 <; if;
         "uniq requires one argument" error;
     then;
-    lst var; lst !;
-    seen var; h() seen !;
+    lst var!;
+    h() seen var!;
     begin;
         lst @; shift;
         dup; is-null; if;
@@ -561,9 +554,9 @@
 
 :~ pairwise 3 3
     drop;
-    fn var; to-function; fn !;
-    lst2 var; lst2 !;
-    lst1 var; lst1 !;
+    to-function; fn var!;
+    lst2 var!;
+    lst1 var!;
     begin;
         lst1 @; shift;
         dup; is-null; if;
@@ -578,8 +571,8 @@
 
 :~ slide 2 2
     drop;
-    fn var; to-function; fn !;
-    lst var; lst !;
+    to-function; fn var!;
+    lst var!;
     last var;
 
     lst @; shift;
@@ -609,8 +602,8 @@
 
 :~ before 2 2
     drop;
-    fn var; to-function; fn !;
-    lst var; lst !;
+    to-function; fn var!;
+    lst var!;
 
     begin;
         lst @; shift;
@@ -628,8 +621,8 @@
 
 :~ beforei 2 2
     drop;
-    fn var; to-function; fn !;
-    lst var; lst !;
+    to-function; fn var!;
+    lst var!;
 
     begin;
         lst @; shift;
@@ -647,8 +640,8 @@
 
 :~ after 2 2
     drop;
-    fn var; to-function; fn !;
-    lst var; lst !;
+    to-function; fn var!;
+    lst var!;
 
     begin;
         lst @; shift;
@@ -669,8 +662,8 @@
 
 :~ afteri 2 2
     drop;
-    fn var; to-function; fn !;
-    lst var; lst !;
+    to-function; fn var!;
+    lst var!;
 
     begin;
         lst @; shift;
@@ -693,9 +686,9 @@
         .f until; ,,
 
 : apply
-    n var; n !;
-    fn var; fn !;
-    lst var; () lst !;
+    n var!;
+    fn var!;
+    () lst var!;
 
     begin;
         n @;
@@ -718,9 +711,9 @@
         .f until; ,,
 
 : avg
-    gen var; gen !;
-    0 total var; total !;
-    0 count var; count !;
+    gen var!;
+    0 total var!;
+    0 count var!;
     begin;
         gen @; shift; dup; is-null; if;
             drop;
@@ -740,7 +733,7 @@
     depth; 1 <; if;
         "mlist requires at least one argument" error;
     then;
-    n var; n !;
+    n var!;
     ()
     begin;
         n @; 0 <=; if;
@@ -763,7 +756,7 @@
     depth; 1 <; if;
         "mhash requires at least one argument" error;
     then;
-    2 *; mlist; lst var; lst !;
+    2 *; mlist; lst var!;
     h()
     begin;
         lst @; len; 0 =; if;
@@ -777,7 +770,7 @@
     depth; 1 <; if;
         "shift-all requires one argument" error;
     then;
-    obj var; obj !;
+    obj var!;
     begin;
         obj @; shift; dup; is-null; if;
             drop;
@@ -787,8 +780,8 @@
     ,,
 
 : pforn
-    pc var; pc !;
-    fn var; fn !;
+    pc var!;
+    fn var!;
     [ fn @; funcall; .t ] pc @; pmapn; r; drop;
     ,,
 
@@ -796,8 +789,8 @@
 
 :~ pgrepn 3 3
     drop;
-    pc var; pc !;
-    fn var; fn !;
+    pc var!;
+    fn var!;
     res var;
     [ dup; clone; fn @; funcall; 2 mlist ] pc @; pmapn; res !;
     begin;
@@ -838,9 +831,9 @@
 : pse /proc/{} fmt; is-dir; ,,
 
 : joinr
-    sep var; sep !;
-    gen var; gen !;
-    "" res var; res !;
+    sep var!;
+    gen var!;
+    "" res var!;
     begin;
         gen @; shift;
         dup; is-null; if;
@@ -854,10 +847,10 @@
         ,,
 
 : lr
-    pst-index var; pst-index !;
-    fn var; fn !;
-    pre-index var; pre-index !;
-    lst var; lst !;
+    pst-index var!;
+    fn var!;
+    pre-index var!;
+    lst var!;
 
     lst @; pre-index @; get;
     fn @; funcall;
@@ -865,10 +858,10 @@
     ,,
 
 : hr
-    pst-index var; pst-index !;
-    fn var; fn !;
-    pre-index var; pre-index !;
-    hsh var; hsh !;
+    pst-index var!;
+    fn var!;
+    pre-index var!;
+    hsh var!;
 
     hsh @; pre-index @; get;
     fn @; funcall;
@@ -948,15 +941,15 @@
     _rt.combined-to-lists;
     dup; len; 0 =; if;
         drop;
-        gl var; gl !;
+        gl var!;
         begin;
             gl @; shift; dup; is-null; if;
                 drop;
                 leave;
             else;
-                h() res var; res !;
+                h() res var!;
                 dup; '"$' m; not; if; '"' ++; then;
-                chomp; , split; reverse; entry var; entry !;
+                chomp; , split; reverse; entry var!;
                 (hash parents
                  author-name author-email author-time
                  committer-name committer-email committer-time
@@ -979,7 +972,7 @@
         .
     then;
     {git status --porcelain {}};
-    [h() res var; res !;
+    [h() res var!;
      "(.)(.)\s(.*)" c; dup; shift; drop;
      reverse;
      dup; pop; res @; swap; state1 swap; set; drop;
@@ -1001,8 +994,8 @@
 : gr {grep -Zri "{}" .}; [0 chr; split; 1 chomp 1 lr] map; ,,
 
 : _rt.combined-to-lists
-    () stdout var; stdout !;
-    () stderr var; stderr !;
+    () stdout var!;
+    () stderr var!;
     [dup; 1 get; swap; 0 get; 1 =; if;
         stdout @;
      else;
@@ -1120,20 +1113,20 @@
 : make-xdg-env-var
     XDG_ swap; uc; ++; _HOME ++; ,,
 
-xdg-types var; h(data   .local/share
-                 config .config
-                 state  .local/state
-                 cache  .cache) xdg-types !;
+h(data   .local/share
+  config .config
+  state  .local/state
+  cache  .cache) xdg-types var!;
 
 : get-storage-dir
-    type var; type !;
-    lib var; lib !;
+    type var!;
+    lib var!;
 
     xdg-types @; type @; get; dup; is-null; if;
         drop;
         "storage type is invalid" error;
     then;
-    path-segment var; path-segment !;
+    path-segment var!;
 
     type @; make-xdg-env-var; getenv;
     dup; is-null; if;
@@ -1154,8 +1147,8 @@ xdg-types var; h(data   .local/share
     ip.addr-int; 0 =;
     ,,
 
-127.0.0.0/8 ips; _rt.ipv4.loopback var; _rt.ipv4.loopback !;
-::/1 ip;         _rt.ipv6.loopback var; _rt.ipv6.loopback !;
+127.0.0.0/8 ips; _rt.ipv4.loopback var!;
+::/1 ip;         _rt.ipv6.loopback var!;
 
 : ip.is-loopback
     dup; ip.version; 4 =; if;
@@ -1166,7 +1159,7 @@ xdg-types var; h(data   .local/share
     ,,
 
 (10.0.0.0/8 172.16.0.0/12 192.168.0.0/16) ips;
-_rt.ipv4.private var; _rt.ipv4.private !;
+_rt.ipv4.private var!;
 
 : ip.is-private
     dup; ip.version; 4 =; if;
@@ -1176,7 +1169,7 @@ _rt.ipv4.private var; _rt.ipv4.private !;
     then;
     ,,
 
-fc00::/7 ips; _rt.ipv6.unique-local var; _rt.ipv6.unique-local !;
+fc00::/7 ips; _rt.ipv6.unique-local var!;
 
 : ip.is-unique-local
     dup; ip.version; 6 =; if;
@@ -1186,8 +1179,8 @@ fc00::/7 ips; _rt.ipv6.unique-local var; _rt.ipv6.unique-local !;
     then;
     ,,
 
-169.254.0.0/16 ips; _rt.ipv4.link-local var; _rt.ipv4.link-local !;
-fe80::/10      ips; _rt.ipv6.link-local var; _rt.ipv6.link-local !;
+169.254.0.0/16 ips; _rt.ipv4.link-local var!;
+fe80::/10      ips; _rt.ipv6.link-local var!;
 
 : ip.is-link-local
     dup; ip.version; 4 =; if;
@@ -1198,8 +1191,8 @@ fe80::/10      ips; _rt.ipv6.link-local var; _rt.ipv6.link-local !;
     swap; ips; dup; rot; isect; =;
     ,,
 
-224.0.0.0/4 ips; _rt.ipv4.multicast var; _rt.ipv4.multicast !;
-ff00::/8    ips; _rt.ipv6.multicast var; _rt.ipv6.multicast !;
+224.0.0.0/4 ips; _rt.ipv4.multicast var!;
+ff00::/8    ips; _rt.ipv6.multicast var!;
 
 : ip.is-multicast
     dup; ip.version; 4 =; if;
@@ -1211,9 +1204,9 @@ ff00::/8    ips; _rt.ipv6.multicast var; _rt.ipv6.multicast !;
     ,,
 
 (192.0.2.0/24 198.51.100.0/24 203.0.113.0/24) ips;
-_rt.ipv4.documentation var; _rt.ipv4.documentation !;
+_rt.ipv4.documentation var!;
 2001:db8::/32 ips;
-_rt.ipv6.documentation var; _rt.ipv6.documentation !;
+_rt.ipv6.documentation var!;
 
 : ip.is-documentation
     dup; ip.version; 4 =; if;
@@ -1224,16 +1217,16 @@ _rt.ipv6.documentation var; _rt.ipv6.documentation !;
     swap; ips; dup; rot; isect; =;
     ,,
 
-2000::/3 ips; _rt.ipv6.global var; _rt.ipv6.global !;
+2000::/3 ips; _rt.ipv6.global var!;
 
 (0.0.0.0/8 240.0.0.0/4) ips;
-_rt.ipv4.reserved var; _rt.ipv4.reserved !;
+_rt.ipv4.reserved var!;
 ::/0 ips;
     _rt.ipv6.global @; diff;
     _rt.ipv6.unique-local @; diff;
     _rt.ipv6.link-local @; diff;
     _rt.ipv6.multicast @; diff;
-_rt.ipv6.reserved var; _rt.ipv6.reserved !;
+_rt.ipv6.reserved var!;
 
 : ip.is-reserved
     dup; ip.version; 4 =; if;
@@ -1251,7 +1244,7 @@ _rt.ipv6.reserved var; _rt.ipv6.reserved !;
     _rt.ipv4.link-local @; diff;
     _rt.ipv4.loopback @; diff;
     _rt.ipv4.private @; diff;
-_rt.ipv4.global var; _rt.ipv4.global !;
+_rt.ipv4.global var!;
 
 : ip.is-global
     dup; ip.version; 4 =; if;
@@ -1272,7 +1265,7 @@ _rt.ipv4.global var; _rt.ipv4.global !;
     ,,
 
 : is-ephemeral-port
-    port var; port !;
+    port var!;
     ephemeral-ports;
     port @; >=;
     swap;

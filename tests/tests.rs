@@ -1581,8 +1581,8 @@ fn write_test() {
     basic_test(
         "
 test-data/cert.der b<; output-file b>;
-output-file b<;        () ++ foldl; int map; '' join;
-test-data/cert.der b<; () ++ foldl; int map; '' join;
+output-file b<;        int map; '' join;
+test-data/cert.der b<; int map; '' join;
 output-file rm;
 =;
 ", ".t");
@@ -1593,8 +1593,8 @@ fn byte_file_test() {
     basic_test(
         "
 {cat test-data/cert.der}/b; output-file b>;
-output-file b<;        () ++ foldl; int map; '' join;
-test-data/cert.der b<; () ++ foldl; int map; '' join;
+output-file b<;        int map; '' join;
+test-data/cert.der b<; int map; '' join;
 output-file rm;
 =;
 ", ".t");

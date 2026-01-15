@@ -8,6 +8,8 @@ ifeq ($(UNAME_S),Darwin)
 	INSTALL=ginstall
 endif
 
+SOURCE_FILES := $(wildcard src/*.rs src/bin/*.rs src/vm/*rs)
+
 all: rt.chc rdap.chc rpkiv.chc rpsl.chc ssh-agent.chc nrtm.chc
 
 rt.chc: target/release/cosh lib/rt.ch
@@ -28,7 +30,7 @@ ssh-agent.chc: target/release/cosh rt.chc lib/ssh-agent.ch
 nrtm.chc: target/release/cosh rt.chc lib/nrtm.ch
 	./target/release/cosh -c lib/nrtm.ch -o nrtm.chc
 
-target/release/cosh:
+target/release/cosh: $(SOURCE_FILES)
 	libdir=$(libdir) cargo build --release
 
 test:

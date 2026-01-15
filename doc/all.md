@@ -1008,8 +1008,8 @@ its arguments and writes the strings (or string) to that file:
     )]
 
 `b<` and `b>` operate in the same way as `f<` and `f>`, except that
-they produce and consume lists where each element of the list is a
-list of bytes.  This make them suitable for handling binary data.
+they produce and consume generators where each element is a byte.
+This make them suitable for handling binary data.
 
 Other operations:
 
@@ -1430,9 +1430,8 @@ for standard output, and 2 for standard error):
 
 These flags are supported for `cmd` as well.
 
-The `/b` flag can be used to produce a generator over lists of bytes
-from standard output, in instances where binary data is being dealt
-with.
+The `/b` flag can be used to produce a generator over bytes from
+standard output, in instances where binary data is being dealt with.
 
 Environment variables can also be set for commands, in the same way as
 for a standard shell:

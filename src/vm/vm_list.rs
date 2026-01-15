@@ -252,15 +252,13 @@ impl VM {
             Value::CommandGenerator(ref mut command_generator) => {
                 let mut cg = command_generator.borrow_mut();
                 if cg.get_bytes {
-                    let bytes_res = cg.read_bytes();
-                    match bytes_res {
+                    let byte_res = cg.read_byte();
+                    match byte_res {
                         None => {
                             self.stack.push(Value::Null);
                         }
-                        Some(bytes) => {
-                            let lst: VecDeque<Value> =
-                                bytes.iter().map(|b| Value::Byte(*b)).collect();
-                            self.stack.push(Value::List(Rc::new(RefCell::new(lst))));
+                        Some(byte) => {
+                            self.stack.push(Value::Byte(byte));
                         }
                     }
                 } else if cg.get_combined {

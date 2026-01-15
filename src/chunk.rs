@@ -679,27 +679,29 @@ impl CommandGenerator {
         }
     }
 
-    /// Read bytes from standard output and return the bytes as a
-    /// list.  By default, 1024 bytes are read on each call.
-    pub fn read_bytes(&mut self) -> Option<Vec<u8>> {
-        /* If get_bytes is set, then this is the only function that's
-         * called, and it doesn't make use of the buffer. */
-        let mut bytes = Vec::new();
+    /// Read a byte from standard output and return it.
+    pub fn read_byte(&mut self) -> Option<u8> {
         loop {
-            let res_n = self.stdout.read_available(&mut bytes);
-            match res_n {
-                Ok(0) => {
-                    if self.stdout.is_eof() {
-                        return None;
-                    } else {
-                        continue;
+            if self.stdout_buffer.len() > 0 {
+                return Some(self.stdout_buffer.remove(0));
+            } else if self.stdout.is_eof() {
+                return None;
+            } else {
+                let res_n = self.stdout.read_available(&mut self.stdout_buffer);
+                match res_n {
+                    Ok(0) => {
+                        if self.stdout.is_eof() {
+                            return None;
+                        } else {
+                            continue;
+                        }
                     }
-                }
-                Ok(_) => {
-                    return Some(bytes);
-                }
-                _ => {
-                    return None;
+                    Ok(_) => {
+                        return Some(self.stdout_buffer.remove(0));
+                    }
+                    _ => {
+                        return None;
+                    }
                 }
             }
         }

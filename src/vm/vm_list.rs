@@ -149,7 +149,7 @@ impl VM {
             Value::Generator(ref mut generator_object_) => {
                 let mut new_i = 0;
                 {
-                    let mut gen_res = generator_object_.try_borrow_mut();
+                    let gen_res = generator_object_.try_borrow_mut();
                     if gen_res.is_err() {
                         self.print_error("generator shift operation already in progress");
                         return 0;

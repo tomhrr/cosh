@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use http::Method;
-use indexmap::IndexMap;
 use mime::Mime;
 use reqwest::blocking::{Client, Response, RequestBuilder};
 use reqwest::header::CONTENT_TYPE;
@@ -13,7 +12,7 @@ use std::time;
 use url::Url;
 
 use crate::chunk::{Value, new_string_value};
-use crate::hasher::{new_hash_indexmap, new_set_indexmap};
+use crate::hasher::new_hash_indexmap;
 use crate::vm::*;
 
 impl VM {

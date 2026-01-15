@@ -3,11 +3,10 @@ use std::collections::VecDeque;
 use std::convert::TryFrom;
 use std::rc::Rc;
 
-use indexmap::IndexMap;
 use num_bigint::ToBigInt;
 
 use crate::chunk::Value;
-use crate::hasher::{new_hash_indexmap, new_set_indexmap};
+use crate::hasher::new_hash_indexmap;
 use crate::vm::*;
 
 /// Converts a serde_json object into a value.

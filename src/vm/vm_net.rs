@@ -16,7 +16,7 @@ use sysinfo::Uid;
 
 use crate::chunk::{Value, new_string_value,
                    BufReaderWithBuffer};
-use crate::hasher::{new_hash_indexmap, new_set_indexmap};
+use crate::hasher::new_hash_indexmap;
 use crate::vm::*;
 
 impl VM {

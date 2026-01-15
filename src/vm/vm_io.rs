@@ -265,7 +265,6 @@ impl VM {
                 return 0;
             }
         }
-        return 1;
     }
 
     /// Takes a FileWriter object and a list of bytes as its

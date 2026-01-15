@@ -14,7 +14,7 @@ use hickory_client::rr::RecordType;
 use hickory_client::udp::UdpClientConnection;
 
 use crate::chunk::{Value, new_string_value};
-use crate::hasher::{new_hash_indexmap, new_set_indexmap, CoshIndexMap};
+use crate::hasher::{new_hash_indexmap, CoshIndexMap};
 use crate::vm::*;
 
 impl VM {

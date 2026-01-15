@@ -2,10 +2,8 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-use indexmap::IndexMap;
-
 use crate::chunk::{StringTriple, Value};
-use crate::hasher::{new_hash_indexmap, new_set_indexmap};
+use crate::hasher::new_hash_indexmap;
 use crate::vm::*;
 
 /// Converts a value into an XML string.

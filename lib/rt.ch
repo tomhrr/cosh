@@ -355,7 +355,26 @@
 
 : sum 0 + foldl; ,,
 
-: flatten () ++ foldl; ,,
+:~ flatten 1 1
+    drop;
+    lsts var!;
+    lsts @; shift; current var!;
+    begin;
+        current @;
+        shift;
+        dup; is-null; if;
+            drop;
+            lsts @; shift; dup; is-null; if;
+                drop;
+                leave;
+            else;
+                current !;
+            then;
+        else;
+            yield;
+        then;
+        0 until;
+        ,,
 
 : any
     depth; 2 <; if;

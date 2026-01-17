@@ -89,7 +89,7 @@ impl VM {
                 self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
             }
             _ => {
-                self.print_error("sha1 argument must be string");
+                self.print_error("sha256 argument must be string");
                 return 0;
             }
         }
@@ -120,7 +120,7 @@ impl VM {
                 self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
             }
             _ => {
-                self.print_error("sha1 argument must be string");
+                self.print_error("sha512 argument must be string");
                 return 0;
             }
         }

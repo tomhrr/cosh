@@ -1,3 +1,4 @@
+use md5;
 use sha1::{Digest, Sha1};
 use sha2::{Sha256, Sha512};
 
@@ -13,25 +14,74 @@ impl VM {
             return 0;
         }
 
-        let str_rr = self.stack.pop().unwrap();
-        let str_opt: Option<&str>;
-        to_str!(str_rr, str_opt);
+        let mut hasher = md5::Context::new();
 
-        match str_opt {
-            Some(s) => {
-                let digest = md5::compute(s.as_bytes());
-                let mut byte_list = VecDeque::new();
-                for byte in digest.into_iter() {
-                    byte_list.push_back(Value::Byte(byte));
+        let input_rr = self.stack.pop().unwrap();
+        if input_rr.is_shiftable() {
+            self.stack.push(input_rr);
+            loop {
+                let dup_res = self.opcode_dup();
+                if dup_res == 0 {
+                    return 0;
                 }
-                self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
+                let shift_res = self.opcode_shift();
+                if shift_res == 0 {
+                    return 0;
+                }
+                let element_rr = self.stack.pop().unwrap();
+                match element_rr {
+                    Value::Null => {
+                        break;
+                    }
+                    Value::Byte(b) => {
+                        let byte_array: [u8; 1] = [b];
+                        hasher.consume(&byte_array);
+                    }
+                    _ => {
+                        let str_opt: Option<&str>;
+                        to_str!(element_rr, str_opt);
+                        match str_opt {
+                            Some(s) => {
+                                hasher.consume(s.as_bytes());
+                            }
+                            _ => {
+                                self.print_error("md5 argument is invalid");
+                                return 0;
+                            }
+                        }
+                    }
+                }
             }
-            _ => {
-                self.print_error("md5 argument must be string");
-                return 0;
-            }
+            self.stack.pop();
+        } else {
+            match input_rr {
+                Value::Byte(b) => {
+                    let byte_array: [u8; 1] = [b];
+                    hasher.consume(&byte_array);
+                }
+                _ => {
+                    let str_opt: Option<&str>;
+                    to_str!(input_rr, str_opt);
+                    match str_opt {
+                        Some(s) => {
+                            hasher.consume(s.as_bytes());
+                        }
+                        _ => {
+                            self.print_error("md5 argument is invalid");
+                            return 0;
+                        }
+                    }
+                }
+            };
         }
-        1
+
+        let digest = hasher.compute();
+        let mut byte_list = VecDeque::new();
+        for byte in digest.into_iter() {
+            byte_list.push_back(Value::Byte(byte));
+        }
+        self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
+        return 1;
     }
 
     /// Takes a string as its single argument.  Hashes the string
@@ -42,27 +92,74 @@ impl VM {
             return 0;
         }
 
-        let str_rr = self.stack.pop().unwrap();
-        let str_opt: Option<&str>;
-        to_str!(str_rr, str_opt);
+        let mut hasher = Sha1::new();
 
-        match str_opt {
-            Some(s) => {
-                let mut hasher = Sha1::new();
-                hasher.update(s.as_bytes());
-                let digest = hasher.finalize();
-                let mut byte_list = VecDeque::new();
-                for byte in digest.into_iter() {
-                    byte_list.push_back(Value::Byte(byte));
+        let input_rr = self.stack.pop().unwrap();
+        if input_rr.is_shiftable() {
+            self.stack.push(input_rr);
+            loop {
+                let dup_res = self.opcode_dup();
+                if dup_res == 0 {
+                    return 0;
                 }
-                self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
+                let shift_res = self.opcode_shift();
+                if shift_res == 0 {
+                    return 0;
+                }
+                let element_rr = self.stack.pop().unwrap();
+                match element_rr {
+                    Value::Null => {
+                        break;
+                    }
+                    Value::Byte(b) => {
+                        let byte_array: [u8; 1] = [b];
+                        hasher.update(&byte_array);
+                    }
+                    _ => {
+                        let str_opt: Option<&str>;
+                        to_str!(element_rr, str_opt);
+                        match str_opt {
+                            Some(s) => {
+                                hasher.update(s.as_bytes());
+                            }
+                            _ => {
+                                self.print_error("sha1 argument is invalid");
+                                return 0;
+                            }
+                        }
+                    }
+                }
             }
-            _ => {
-                self.print_error("sha1 argument must be string");
-                return 0;
-            }
+            self.stack.pop();
+        } else {
+            match input_rr {
+                Value::Byte(b) => {
+                    let byte_array: [u8; 1] = [b];
+                    hasher.update(&byte_array);
+                }
+                _ => {
+                    let str_opt: Option<&str>;
+                    to_str!(input_rr, str_opt);
+                    match str_opt {
+                        Some(s) => {
+                            hasher.update(s.as_bytes());
+                        }
+                        _ => {
+                            self.print_error("sha1 argument is invalid");
+                            return 0;
+                        }
+                    }
+                }
+            };
         }
-        1
+
+        let digest = hasher.finalize();
+        let mut byte_list = VecDeque::new();
+        for byte in digest.into_iter() {
+            byte_list.push_back(Value::Byte(byte));
+        }
+        self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
+        return 1;
     }
 
     /// Takes a string as its single argument.  Hashes the string
@@ -73,27 +170,74 @@ impl VM {
             return 0;
         }
 
-        let str_rr = self.stack.pop().unwrap();
-        let str_opt: Option<&str>;
-        to_str!(str_rr, str_opt);
+        let mut hasher = Sha256::new();
 
-        match str_opt {
-            Some(s) => {
-                let mut hasher = Sha256::new();
-                hasher.update(s.as_bytes());
-                let digest = hasher.finalize();
-                let mut byte_list = VecDeque::new();
-                for byte in digest.into_iter() {
-                    byte_list.push_back(Value::Byte(byte));
+        let input_rr = self.stack.pop().unwrap();
+        if input_rr.is_shiftable() {
+            self.stack.push(input_rr);
+            loop {
+                let dup_res = self.opcode_dup();
+                if dup_res == 0 {
+                    return 0;
                 }
-                self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
+                let shift_res = self.opcode_shift();
+                if shift_res == 0 {
+                    return 0;
+                }
+                let element_rr = self.stack.pop().unwrap();
+                match element_rr {
+                    Value::Null => {
+                        break;
+                    }
+                    Value::Byte(b) => {
+                        let byte_array: [u8; 1] = [b];
+                        hasher.update(&byte_array);
+                    }
+                    _ => {
+                        let str_opt: Option<&str>;
+                        to_str!(element_rr, str_opt);
+                        match str_opt {
+                            Some(s) => {
+                                hasher.update(s.as_bytes());
+                            }
+                            _ => {
+                                self.print_error("sha256 argument is invalid");
+                                return 0;
+                            }
+                        }
+                    }
+                }
             }
-            _ => {
-                self.print_error("sha256 argument must be string");
-                return 0;
-            }
+            self.stack.pop();
+        } else {
+            match input_rr {
+                Value::Byte(b) => {
+                    let byte_array: [u8; 1] = [b];
+                    hasher.update(&byte_array);
+                }
+                _ => {
+                    let str_opt: Option<&str>;
+                    to_str!(input_rr, str_opt);
+                    match str_opt {
+                        Some(s) => {
+                            hasher.update(s.as_bytes());
+                        }
+                        _ => {
+                            self.print_error("sha256 argument is invalid");
+                            return 0;
+                        }
+                    }
+                }
+            };
         }
-        1
+
+        let digest = hasher.finalize();
+        let mut byte_list = VecDeque::new();
+        for byte in digest.into_iter() {
+            byte_list.push_back(Value::Byte(byte));
+        }
+        self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
+        return 1;
     }
 
     /// Takes a string as its single argument.  Hashes the string
@@ -104,26 +248,73 @@ impl VM {
             return 0;
         }
 
-        let str_rr = self.stack.pop().unwrap();
-        let str_opt: Option<&str>;
-        to_str!(str_rr, str_opt);
+        let mut hasher = Sha512::new();
 
-        match str_opt {
-            Some(s) => {
-                let mut hasher = Sha512::new();
-                hasher.update(s.as_bytes());
-                let digest = hasher.finalize();
-                let mut byte_list = VecDeque::new();
-                for byte in digest.into_iter() {
-                    byte_list.push_back(Value::Byte(byte));
+        let input_rr = self.stack.pop().unwrap();
+        if input_rr.is_shiftable() {
+            self.stack.push(input_rr);
+            loop {
+                let dup_res = self.opcode_dup();
+                if dup_res == 0 {
+                    return 0;
                 }
-                self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
+                let shift_res = self.opcode_shift();
+                if shift_res == 0 {
+                    return 0;
+                }
+                let element_rr = self.stack.pop().unwrap();
+                match element_rr {
+                    Value::Null => {
+                        break;
+                    }
+                    Value::Byte(b) => {
+                        let byte_array: [u8; 1] = [b];
+                        hasher.update(&byte_array);
+                    }
+                    _ => {
+                        let str_opt: Option<&str>;
+                        to_str!(element_rr, str_opt);
+                        match str_opt {
+                            Some(s) => {
+                                hasher.update(s.as_bytes());
+                            }
+                            _ => {
+                                self.print_error("sha512 argument is invalid");
+                                return 0;
+                            }
+                        }
+                    }
+                }
             }
-            _ => {
-                self.print_error("sha512 argument must be string");
-                return 0;
-            }
+            self.stack.pop();
+        } else {
+            match input_rr {
+                Value::Byte(b) => {
+                    let byte_array: [u8; 1] = [b];
+                    hasher.update(&byte_array);
+                }
+                _ => {
+                    let str_opt: Option<&str>;
+                    to_str!(input_rr, str_opt);
+                    match str_opt {
+                        Some(s) => {
+                            hasher.update(s.as_bytes());
+                        }
+                        _ => {
+                            self.print_error("sha512 argument is invalid");
+                            return 0;
+                        }
+                    }
+                }
+            };
         }
-        1
+
+        let digest = hasher.finalize();
+        let mut byte_list = VecDeque::new();
+        for byte in digest.into_iter() {
+            byte_list.push_back(Value::Byte(byte));
+        }
+        self.stack.push(Value::List(Rc::new(RefCell::new(byte_list))));
+        return 1;
     }
 }

@@ -1295,9 +1295,9 @@ itself).
 number of seconds.
 
 `md5`, `sha1`, `sha256` and `sha512` each take a single string
-argument and return the corresponding cryptographic hash for that
-input as a list of bytes.  (See `hex` for conversion of that output
-into a hexadecimal string.)
+argument, byte, or generator over strings or bytes and return the
+corresponding cryptographic hash for that input as a list of bytes.
+(See `hex` for conversion of that output into a hexadecimal string.)
 
 `range` takes an integer and returns a generator over the integers
 from zero to that integer, minus one.

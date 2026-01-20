@@ -1,5 +1,5 @@
 /// The opcodes used in the compiler and the bytecode.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OpCode {
     Constant = 1,
     Add = 2,
@@ -82,6 +82,7 @@ pub enum OpCode {
     VarM = 79,
     VarSet = 80,
     VarMSet = 81,
+    Try = 82,
     Unknown = 255,
 }
 
@@ -169,6 +170,7 @@ pub fn to_opcode(value: u8) -> OpCode {
         79 => OpCode::VarM,
         80 => OpCode::VarSet,
         81 => OpCode::VarMSet,
+        82 => OpCode::Try,
         255 => OpCode::Unknown,
         _ => OpCode::Unknown,
     }

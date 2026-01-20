@@ -1307,6 +1307,8 @@ impl Compiler {
                         chunk.add_opcode(OpCode::PrintStack);
                     } else if s == "error" {
                         chunk.add_opcode(OpCode::Error);
+                    } else if s == "try" {
+                        chunk.add_opcode(OpCode::Try);
                     } else if s == "print" {
                         chunk.add_opcode(OpCode::Print);
                     } else if s == "drop" {

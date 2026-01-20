@@ -79,6 +79,14 @@ pub struct VM {
     print_stack: bool,
     /// Whether the stack is currently being printed.
     printing_stack: bool,
+    /// Whether we're in try mode (capturing errors instead of printing).
+    try_mode: bool,
+    /// Whether the next instruction should be tried.
+    try_next: bool,
+    /// Captured error message when in try mode.
+    captured_error: Option<String>,
+    /// Stack depth when try mode started (to know when form ends).
+    try_stack_depth: usize,
     /// The local variable stack.
     local_var_stack: Rc<RefCell<Vec<Value>>>,
     /// The scopes.
@@ -442,6 +450,10 @@ impl VM {
             local_var_stack: Rc::new(RefCell::new(Vec::new())),
             print_stack,
             printing_stack: false,
+            try_mode: false,
+            try_next: false,
+            captured_error: None,
+            try_stack_depth: 0,
             scopes: vec![global_vars],
             global_functions: global_functions,
             call_stack_chunks: Vec::new(),
@@ -490,22 +502,122 @@ impl VM {
     /// Takes a chunk, an instruction index, and an error message as its
     /// arguments.  Prints the error message, including filename, line number
     /// and column number elements (if applicable).
-    pub fn print_error(&self, error: &str) {
-        let point = self.chunk.borrow().get_point(self.i);
-        let name = &self.chunk.borrow().name;
-        let error_start = if name == "(main)" {
-            String::new()
+    pub fn print_error(&mut self, error: &str) {
+        if self.try_mode {
+            let point = self.chunk.borrow().get_point(self.i);
+            let name = &self.chunk.borrow().name;
+            let error_start = if name == "(main)" {
+                String::new()
+            } else {
+                format!("{}:", name)
+            };
+            let formatted_error = match point {
+                Some((line, col)) => {
+                    format!("{}{}:{}: {}", error_start, line, col, error)
+                }
+                _ => {
+                    format!("{}{}", error_start, error)
+                }
+            };
+            self.captured_error = Some(formatted_error);
         } else {
-            format!("{}:", name)
-        };
-        match point {
-            Some((line, col)) => {
-                eprintln!("{}{}:{}: {}", error_start, line, col, error);
-            }
-            _ => {
-                eprintln!("{}{}", error_start, error);
+            let point = self.chunk.borrow().get_point(self.i);
+            let name = &self.chunk.borrow().name;
+            let error_start = if name == "(main)" {
+                String::new()
+            } else {
+                format!("{}:", name)
+            };
+            match point {
+                Some((line, col)) => {
+                    eprintln!("{}{}:{}: {}", error_start, line, col, error);
+                }
+                _ => {
+                    eprintln!("{}{}", error_start, error);
+                }
             }
         }
+    }
+
+    /// Helper function to handle errors appropriately based on try mode.
+    /// Returns 1 in try mode (continue execution), 0 otherwise (terminate).
+    pub fn handle_error(&mut self, error: &str) -> usize {
+        self.print_error(error);
+        if self.try_mode {
+            1  // Continue execution in try mode
+        } else {
+            0  // Terminate execution
+        }
+    }
+
+    /// Determines if an opcode represents a callable form that can consume try mode.
+    /// Data opcodes (constants, variables, etc.) are not callable.
+    /// Only operations that can potentially error are callable.
+    pub fn is_callable_opcode(&self, op: OpCode) -> bool {
+        match op {
+            // Arithmetic operations (can error)
+            OpCode::Add | OpCode::Subtract | OpCode::Multiply | OpCode::Divide | OpCode::Remainder => true,
+            // Function calls (can error)
+            OpCode::Call | OpCode::CallImplicit | OpCode::CallConstant | OpCode::CallImplicitConstant => true,
+            // Explicit error
+            OpCode::Error => true,
+            // Stack operations that can error
+            OpCode::Drop | OpCode::Swap | OpCode::Rot | OpCode::Over => true,
+            // I/O operations that can error  
+            OpCode::Open | OpCode::Readline => true,
+            // Variable operations that can error
+            OpCode::GetVar | OpCode::SetVar | OpCode::GetLocalVar | OpCode::SetLocalVar => true,
+            // Import operations that can error
+            OpCode::Import => true,
+            // Other operations that can error
+            OpCode::GLVCall | OpCode::GLVShift => true,
+            
+            // Data opcodes (do NOT consume try)
+            OpCode::Constant => false,
+            OpCode::Shift => false, 
+            OpCode::Push => false,
+            OpCode::Pop => false,
+            OpCode::StartList | OpCode::EndList | OpCode::StartHash | OpCode::StartSet => false,
+            OpCode::Try => false, // Try itself is not callable
+            
+            // Type conversion/checking (generally safe)
+            OpCode::Bool | OpCode::Int | OpCode::BigInt | OpCode::Str | OpCode::Flt | OpCode::Byte => false,
+            OpCode::IsNull | OpCode::IsBool | OpCode::IsInt | OpCode::IsBigInt | OpCode::IsStr 
+            | OpCode::IsFlt | OpCode::IsList | OpCode::IsCallable | OpCode::IsShiftable | OpCode::IsByte => false,
+            
+            // Stack inspection (safe)
+            OpCode::Depth | OpCode::DupIsNull => false,
+            
+            // Other safe operations
+            OpCode::Clone | OpCode::Print | OpCode::PrintStack | OpCode::Clear => false,
+            OpCode::Dup => false,
+            OpCode::ToggleMode => false,
+            OpCode::ToFunction => false,
+            OpCode::Rand => false,
+            
+            // Comparisons and equality (generally safe)
+            OpCode::Eq | OpCode::Gt | OpCode::Lt | OpCode::Cmp => false,
+            OpCode::EqConstant | OpCode::AddConstant | OpCode::SubtractConstant 
+            | OpCode::MultiplyConstant | OpCode::DivideConstant => true, // These can error
+            
+            // Control flow
+            OpCode::Jump | OpCode::JumpNe | OpCode::JumpR | OpCode::JumpNeR | OpCode::JumpNeREqC => false,
+            OpCode::EndFn | OpCode::Function | OpCode::Return | OpCode::Yield => false,
+            OpCode::Var | OpCode::PopLocalVar => false,
+            OpCode::VarM | OpCode::VarSet | OpCode::VarMSet => false,
+            OpCode::Read => true, // Can error
+            
+            OpCode::Unknown => false,
+        }
+    }
+
+    /// Resets try mode state. Used between REPL commands to prevent
+    /// try mode from persisting across commands.
+    pub fn reset_try_state(&mut self) {
+        self.try_mode = false;
+        self.try_next = false;
+        self.captured_error = None;
+        self.try_stack_depth = 0;
     }
 
     /// Toggles whether the stack is printed and cleared on command
@@ -914,7 +1026,7 @@ impl VM {
     }
 
     /// Takes a string and converts it into a regex.
-    pub fn str_to_regex(&self, s_arg: &str) -> Option<(Regex, bool)> {
+    pub fn str_to_regex(&mut self, s_arg: &str) -> Option<(Regex, bool)> {
         let mut global = false;
         let mut s: &str = s_arg;
         let mut s_replacement: String;
@@ -1175,8 +1287,13 @@ impl VM {
             let value_rr = new_string_value(s.to_string());
             self.stack.push(value_rr);
         } else {
-            self.print_error("function not found");
-            return false;
+            if self.try_mode {
+                self.print_error("function not found");
+                return true;  // Continue in try mode
+            } else {
+                self.print_error("function not found");
+                return false;
+            }
         }
 
         true
@@ -1275,8 +1392,13 @@ impl VM {
                 if is_implicit {
                     self.stack.push(function_rr.clone());
                 } else {
-                    self.print_error("function not found");
-                    return false;
+                    if self.try_mode {
+                        self.print_error("function not found");
+                        return true;  // Continue in try mode  
+                    } else {
+                        self.print_error("function not found");
+                        return false;
+                    }
                 }
             }
         }
@@ -1329,16 +1451,49 @@ impl VM {
                 eprintln!(" >  Stack:  {:?}", self.stack);
                 eprintln!(" >  Index:  {:?}", i);
             }
+            
+            // Check if we should enable try mode for this callable form BEFORE executing
+            if self.try_next && self.is_callable_opcode(op) && op != OpCode::Try {
+                self.try_next = false;
+                self.try_mode = true;
+                self.try_stack_depth = self.stack.len();
+            }
+            
             let op_fn_opt = SIMPLE_OPS[op as usize];
             if let Some(op_fn) = op_fn_opt {
                 let res = op_fn(self);
                 if res == 0 {
                     return 0;
                 } else {
+                    // Check if we should end try mode after executing a callable operation
+                    if self.try_mode && self.is_callable_opcode(op) && op != OpCode::Try {
+                        self.try_mode = false;
+                        match &self.captured_error {
+                            Some(error_msg) => {
+                                // Error was captured, push false and error message at beginning
+                                self.stack.insert(0, Value::Bool(false));
+                                self.stack.insert(1, new_string_value(error_msg.clone()));
+                            }
+                            None => {
+                                // No error, push true and empty string at beginning
+                                self.stack.insert(0, Value::Bool(true));
+                                self.stack.insert(1, new_string_value("".to_string()));
+                            }
+                        }
+                        self.captured_error = None;
+                    }
                     i += 1;
                     continue;
                 }
             }
+            
+            // Check if we should enable try mode for this callable form (for match statement opcodes)
+            if self.try_next && self.is_callable_opcode(op) && op != OpCode::Try {
+                self.try_next = false;
+                self.try_mode = true;
+                self.try_stack_depth = self.stack.len();
+            }
+            
             match op {
                 OpCode::AddConstant => {
                     i += 1;
@@ -1357,8 +1512,7 @@ impl VM {
                         }
                         let len = self.stack.len();
                         if len == 0 {
-                            self.print_error("+ requires two arguments");
-                            return 0;
+                            return self.handle_error("+ requires two arguments");
                         }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
@@ -1413,8 +1567,7 @@ impl VM {
                         }
                         let len = self.stack.len();
                         if len == 0 {
-                            self.print_error("- requires two arguments");
-                            return 0;
+                            return self.handle_error("- requires two arguments");
                         }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
@@ -1469,8 +1622,7 @@ impl VM {
                         }
                         let len = self.stack.len();
                         if len == 0 {
-                            self.print_error("* requires two arguments");
-                            return 0;
+                            return self.handle_error("* requires two arguments");
                         }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
@@ -1525,13 +1677,15 @@ impl VM {
                         }
                         let len = self.stack.len();
                         if len == 0 {
-                            self.print_error("/ requires two arguments");
-                            return 0;
+                            return self.handle_error("/ requires two arguments");
                         }
                         let v1_rr = self.stack.get_mut(len - 1).unwrap();
                         if let Value::Int(ref mut n1) = v1_rr {
                             if self.debug {
                                 eprintln!("  > Got integer from stack: {}", *n1);
+                            }
+                            if n == 0 {
+                                return self.handle_error("/ requires two non-zero numbers");
                             }
                             *n1 /= n;
                             done = true;
@@ -2413,15 +2567,31 @@ impl VM {
                     match error_str_opt {
                         Some(s) => {
                             let err_str = format!("{}:{}: {}", line, col, s);
-                            eprintln!("{}", err_str);
-                            return 0;
+                            if self.try_mode {
+                                self.captured_error = Some(err_str);
+                                // Don't return 0 in try mode, let execution continue
+                            } else {
+                                eprintln!("{}", err_str);
+                                return 0;
+                            }
                         }
                         None => {
                             let err_str = format!("{}:{}: {}", line, col, "(unknown error)");
-                            eprintln!("{}", err_str);
-                            return 0;
+                            if self.try_mode {
+                                self.captured_error = Some(err_str);
+                                // Don't return 0 in try mode, let execution continue
+                            } else {
+                                eprintln!("{}", err_str);
+                                return 0;
+                            }
                         }
                     }
+                }
+                OpCode::Try => {
+                    // Enable try mode for the next form
+                    self.try_next = true;
+                    self.captured_error = None;
+                    self.try_stack_depth = self.stack.len();
                 }
                 OpCode::EndFn => {
                     if !chunk.borrow().is_generator && chunk.borrow().has_vars {
@@ -2440,6 +2610,25 @@ impl VM {
                     std::process::abort();
                 }
             }
+            
+            // Check if we should end try mode after executing a callable operation (for match statement opcodes)
+            if self.try_mode && self.is_callable_opcode(op) && op != OpCode::Try {
+                self.try_mode = false;
+                match &self.captured_error {
+                    Some(error_msg) => {
+                        // Error was captured, push false and error message at beginning
+                        self.stack.insert(0, Value::Bool(false));
+                        self.stack.insert(1, new_string_value(error_msg.clone()));
+                    }
+                    None => {
+                        // No error, push true and empty string at beginning
+                        self.stack.insert(0, Value::Bool(true));
+                        self.stack.insert(1, new_string_value("".to_string()));
+                    }
+                }
+                self.captured_error = None;
+            }
+            
             i += 1;
         }
 

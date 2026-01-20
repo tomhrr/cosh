@@ -164,7 +164,7 @@ fn convert_to_xml(v: &Value) -> Option<String> {
 impl VM {
     /// Converts a roxmltree object into a value.
     fn convert_from_xml(
-        &self,
+        &mut self,
         node: &roxmltree::Node,
         param_namespaces: &HashMap<String, String>,
     ) -> Value {

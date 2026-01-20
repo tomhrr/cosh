@@ -382,6 +382,8 @@ fn main() {
                     
                     let mut bufread: Box<dyn BufRead> = Box::new(Cursor::new(line.into_bytes()));
                     rl_rr.borrow_mut().add_history_entry(original_line.as_str());
+                    // Reset try state to prevent it from persisting across REPL commands
+                    vm.reset_try_state();
                     let chunk_opt = vm.interpret_with_mode(&mut bufread, "(main)", true);
                     match chunk_opt {
                         Some(chunk) => {

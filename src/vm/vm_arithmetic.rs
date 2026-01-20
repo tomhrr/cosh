@@ -55,12 +55,15 @@ fn multiply_ints(n1: i32, n2: i32) -> Value {
 
 /// Divide one integer by another and return the result value.  Promote
 /// to bigint if the value cannot be stored in an i32.
-fn divide_ints(n1: i32, n2: i32) -> Value {
+fn divide_ints(n1: i32, n2: i32) -> Option<Value> {
+    if n1 == 0 {
+        return None; // Division by zero
+    }
     match n2.checked_div(n1) {
-        Some(n3) => Value::Int(n3),
+        Some(n3) => Some(Value::Int(n3)),
         None => {
             let n2_bigint = BigInt::from_i32(n2).unwrap();
-            Value::BigInt(n2_bigint / n1)
+            Some(Value::BigInt(n2_bigint / n1))
         }
     }
 }
@@ -80,6 +83,16 @@ fn remainder_ints(n1: i32, n2: i32) -> Value {
 }
 
 impl VM {
+    /// Helper function to handle errors appropriately based on try mode.
+    /// Returns 1 in try mode (continue execution), 0 otherwise (terminate).
+    fn handle_arithmetic_error(&mut self, error: &str) -> i32 {
+        self.print_error(error);
+        if self.try_mode {
+            1  // Continue execution in try mode
+        } else {
+            0  // Terminate execution
+        }
+    }
     /// Helper function for adding two values together and placing the
     /// result onto the stack.  Returns an integer indicating whether
     /// the values were able to be added together.
@@ -131,8 +144,7 @@ impl VM {
     pub fn opcode_add(&mut self) -> i32 {
         let len = self.stack.len();
         if len < 2 {
-            self.print_error("+ requires two arguments");
-            return 0;
+            return self.handle_arithmetic_error("+ requires two arguments");
         }
 
         let v1_rr = self.stack.pop().unwrap();
@@ -152,8 +164,7 @@ impl VM {
 
             let res = self.opcode_add_inner(&v1_rr, &v2_rr);
             if res == 0 {
-                self.print_error("+ requires two numbers");
-                return 0;
+                return self.handle_arithmetic_error("+ requires two numbers");
             }
         }
 
@@ -215,8 +226,7 @@ impl VM {
     pub fn opcode_subtract(&mut self) -> i32 {
         let len = self.stack.len();
         if len < 2 {
-            self.print_error("- requires two arguments");
-            return 0;
+            return self.handle_arithmetic_error("- requires two arguments");
         }
 
         let v1_rr = self.stack.pop().unwrap();
@@ -236,8 +246,7 @@ impl VM {
 
             let res = self.opcode_subtract_inner(&v1_rr, &v2_rr);
             if res == 0 {
-                self.print_error("- requires two numbers");
-                return 0;
+                return self.handle_arithmetic_error("- requires two numbers");
             }
         }
 
@@ -300,8 +309,7 @@ impl VM {
     pub fn opcode_multiply(&mut self) -> i32 {
         let len = self.stack.len();
         if len < 2 {
-            self.print_error("* requires two arguments");
-            return 0;
+            return self.handle_arithmetic_error("* requires two arguments");
         }
 
         let v1_rr = self.stack.pop().unwrap();
@@ -321,8 +329,7 @@ impl VM {
 
             let res = self.opcode_multiply_inner(&v1_rr, &v2_rr);
             if res == 0 {
-                self.print_error("* requires two numbers");
-                return 0;
+                return self.handle_arithmetic_error("* requires two numbers");
             }
         }
 
@@ -335,6 +342,9 @@ impl VM {
     fn opcode_divide_inner(&mut self, v1: &Value, v2: &Value) -> i32 {
         match (v1, v2) {
             (Value::BigInt(n1), Value::BigInt(n2)) => {
+                if *n1 == BigInt::from_i32(0).unwrap() {
+                    return -1; // Division by zero
+                }
                 let n3 = Value::BigInt(n2 / n1);
                 self.stack.push(n3);
                 1
@@ -342,10 +352,18 @@ impl VM {
             (Value::BigInt(_), Value::Int(n2)) => self.opcode_divide_inner(v1, &int_to_bigint(*n2)),
             (Value::Int(n1), Value::BigInt(_)) => self.opcode_divide_inner(&int_to_bigint(*n1), v2),
             (Value::Int(n1), Value::Int(n2)) => {
-                self.stack.push(divide_ints(*n1, *n2));
-                1
+                match divide_ints(*n1, *n2) {
+                    Some(result) => {
+                        self.stack.push(result);
+                        1
+                    }
+                    None => -1 // Division by zero
+                }
             }
             (Value::Float(n1), Value::Float(n2)) => {
+                if *n1 == 0.0 {
+                    return -1; // Division by zero
+                }
                 self.stack.push(Value::Float(n2 / n1));
                 1
             }
@@ -355,8 +373,13 @@ impl VM {
                 let n1_opt = v1.to_int();
                 let n2_opt = v2.to_int();
                 if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
-                    self.stack.push(divide_ints(n1, n2));
-                    return 1;
+                    match divide_ints(n1, n2) {
+                        Some(result) => {
+                            self.stack.push(result);
+                            return 1;
+                        }
+                        None => return -1 // Division by zero
+                    }
                 }
                 let n1_opt = v1.to_bigint();
                 let n2_opt = v2.to_bigint();
@@ -367,6 +390,9 @@ impl VM {
                 let n1_opt = v1.to_float();
                 let n2_opt = v2.to_float();
                 if let (Some(n1), Some(n2)) = (n1_opt, n2_opt) {
+                    if n1 == 0.0 {
+                        return -1; // Division by zero
+                    }
                     self.stack.push(Value::Float(n2 / n1));
                     return 1;
                 }
@@ -380,8 +406,7 @@ impl VM {
     pub fn opcode_divide(&mut self) -> i32 {
         let len = self.stack.len();
         if len < 2 {
-            self.print_error("/ requires two arguments");
-            return 0;
+            return self.handle_arithmetic_error("/ requires two arguments");
         }
 
         let v1_rr = self.stack.pop().unwrap();
@@ -390,10 +415,16 @@ impl VM {
         if let (Value::Int(n1), Value::Int(ref mut n2)) =
             (&v1_rr, self.stack.get_mut(len - 2).unwrap())
         {
-            let v3 = divide_ints(*n1, *n2);
-            if let Value::Int(n3) = v3 {
-                *n2 = n3;
-                done = true;
+            match divide_ints(*n1, *n2) {
+                Some(v3) => {
+                    if let Value::Int(n3) = v3 {
+                        *n2 = n3;
+                        done = true;
+                    }
+                }
+                None => {
+                    return self.handle_arithmetic_error("/ requires two non-zero numbers");
+                }
             }
         }
 
@@ -402,8 +433,9 @@ impl VM {
 
             let res = self.opcode_divide_inner(&v1_rr, &v2_rr);
             if res == 0 {
-                self.print_error("/ requires two numbers");
-                return 0;
+                return self.handle_arithmetic_error("/ requires two numbers");
+            } else if res == -1 {
+                return self.handle_arithmetic_error("/ requires two non-zero numbers");
             }
         }
 

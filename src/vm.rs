@@ -242,6 +242,7 @@ lazy_static! {
         map.insert("is-float", VM::opcode_is_flt as fn(&mut VM) -> i32);
         map.insert("is-set", VM::opcode_is_set as fn(&mut VM) -> i32);
         map.insert("is-hash", VM::opcode_is_hash as fn(&mut VM) -> i32);
+        map.insert("is-byte", VM::opcode_is_byte as fn(&mut VM) -> i32);
         map.insert("bigint", VM::opcode_bigint as fn(&mut VM) -> i32);
         map.insert("chr", VM::core_chr as fn(&mut VM) -> i32);
         map.insert("ord", VM::core_ord as fn(&mut VM) -> i32);

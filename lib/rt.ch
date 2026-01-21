@@ -916,6 +916,58 @@
      res @] map;
     ,,
 
+:~ _stbg 1 1
+    drop;
+    str var!;
+    str @; len; slen var!;
+    0 index var!;
+    begin;
+        index @; slen @; >=; if;
+            leave;
+        then;
+        str @; index @; nb; yield;
+        index @; 1 +; index !;
+        0 until;
+    ,,
+
+:~ _tbg 1 1
+    drop;
+    input var;
+    finished var;
+    dup; is-byte; if;
+        yield;
+        drop;
+        .t finished !;
+    else; dup; is-str; if;
+        _stbg; input !;
+    else; dup; is-shiftable; if;
+        input !;
+    else;
+        "input cannot be converted to bytes" error;
+    then; then; then;
+
+    finished @; not; if;
+        begin;
+            input @;
+            shift;
+            dup; is-null; if;
+                leave;
+            then;
+
+            dup; is-byte; if;
+                yield;
+            else; dup; is-str; if;
+                _stbg; input @; ++; input !;
+            else; dup; is-shiftable; if;
+                input @; ++; input !;
+            else;
+                "input cannot be converted to bytes" error;
+            then; then; then;
+
+            0 until;
+    then;
+    ,,
+
 (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
  a b c d e f g h i j k l m n o p q r s t u v w x y z
  0 1 2 3 4 5 6 7 8 9 + /) _b64a var!;
@@ -928,7 +980,7 @@
 
 :~ b64e 1 1
     drop;
-    input var!;
+    _tbg; input var!;
     begin;
         0 num var!;
         input @;

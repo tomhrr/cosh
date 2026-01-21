@@ -6,6 +6,9 @@ use crate::chunk::Value;
 use crate::vm::*;
 
 impl VM {
+    /// The basic functionality is common to each function, and should
+    /// be refactored so as to avoid the repetition.
+
     /// Takes a string as its single argument.  Hashes the string
     /// using the MD5 algorithm and adds the result to the stack.
     pub fn core_md5(&mut self) -> i32 {

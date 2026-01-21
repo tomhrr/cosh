@@ -916,6 +916,61 @@
      res @] map;
     ,,
 
+(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+ a b c d e f g h i j k l m n o p q r s t u v w x y z
+ 0 1 2 3 4 5 6 7 8 9 + /) _b64a var!;
+
+: b64a  _b64a @; swap; get; ,,
+: b64m0 18 >>; 0x3f unhex; &; b64a; ,,
+: b64m1 12 >>; 0x3f unhex; &; b64a; ,,
+: b64m2 6  >>; 0x3f unhex; &; b64a; ,,
+: b64m3        0x3f unhex; &; b64a; ,,
+
+:~ b64e 1 1
+    drop;
+    input var!;
+    begin;
+        0 num var!;
+        input @;
+        shift;
+        dup; is-null; if;
+            drop;
+            leave;
+        then;
+        int; 16 <<; num @; +; num !;
+
+        input @;
+        shift;
+        dup; is-null; if;
+            drop;
+            num @; b64m0; yield;
+            num @; b64m1; yield;
+            = yield;
+            = yield;
+            leave;
+        then;
+        int; 8 <<; num @; +; num !;
+
+        input @;
+        shift;
+        dup; is-null; if;
+            drop;
+            num @; b64m0; yield;
+            num @; b64m1; yield;
+            num @; b64m2; yield;
+            = yield;
+            leave;
+        then;
+        int; num @; +; num !;
+
+        num @; b64m0; yield;
+        num @; b64m1; yield;
+        num @; b64m2; yield;
+        num @; b64m3; yield;
+
+        0 until;
+    ,,
+
 # Common commands and aliases.
 : vim depth; 0 =; if; vim exec; else; "vim {}" exec; then; drop; ,,
 : ssh "ssh {}" fmtq; exec; drop; ,,

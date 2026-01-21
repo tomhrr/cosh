@@ -489,4 +489,49 @@ impl VM {
 
         return self.fmt(true);
     }
+
+    /// Takes a string as its argument, and returns the nth byte from
+    /// the string.
+    pub fn core_nb(&mut self) -> i32 {
+        if self.stack.len() < 2 {
+            self.print_error("nb requires two arguments");
+            return 0;
+        }
+
+        let index_rr = self.stack.pop().unwrap();
+        let index_opt = index_rr.to_int();
+        let index_int;
+        match index_opt {
+            Some(index) => {
+                index_int = index;
+            }
+            _ => {
+                self.print_error("index must be an integer");
+                return 0;
+            }
+        };
+
+        let str_rr = self.stack.pop().unwrap();
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
+
+        match str_opt {
+            Some(s) => {
+                match s.as_bytes().get(index_int as usize) {
+                    Some(&b) => {
+                        self.stack.push(Value::Byte(b));
+                        return 1;
+                    }
+                    _ => {
+                        self.print_error("index out of bounds");
+                        return 0;
+                    }
+                }
+            }
+            _ => {
+                self.print_error("nb argument must be a string");
+                return 0;
+            }
+        };
+    }
 }

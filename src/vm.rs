@@ -306,6 +306,7 @@ lazy_static! {
         map.insert("dnsat", VM::core_dnsat as fn(&mut VM) -> i32);
         map.insert("dns", VM::core_dns as fn(&mut VM) -> i32);
         map.insert("readlink", VM::core_readlink as fn(&mut VM) -> i32);
+        map.insert("nb", VM::core_nb as fn(&mut VM) -> i32);
         map
     };
 

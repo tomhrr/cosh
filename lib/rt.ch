@@ -1023,6 +1023,74 @@
         0 until;
     ,,
 
+h() _b64ar var!;
+begin-scope;
+    _b64a @; len; _b64alen var!;
+    0 i var!;
+    begin;
+        _b64a @; i @; get;
+        i @; _b64ar @; rot; rot; set; drop;
+        i @; 1 +; i !;
+        i @; _b64alen @; >=; until;
+    _b64ar @; = 0 set; drop;
+end-scope;
+
+:~ b64d 1 1
+    drop;
+    _tbg; input var!;
+    begin;
+        1 count var!
+        0 num var!;
+        input @;
+        shift;
+        dup; is-null; if;
+            drop;
+            leave;
+        then;
+        _b64ar @; swap; int; chr; get;
+        int; 18 <<; num @; +; num !;
+
+        input @;
+        shift;
+        dup; is-null; if;
+            "invalid base64 data" error;
+        then;
+        _b64ar @; swap; int; chr; get;
+        int; 12 <<; num @; +; num !;
+
+        input @;
+        shift;
+        dup; is-null; if;
+            "invalid base64 data" error;
+        then;
+        dup; int; chr; "=" =; not; if;
+            count @; 1 +; count !;
+        then;
+        _b64ar @; swap; int; chr; get;
+        int; 6 <<; num @; +; num !;
+
+        input @;
+        shift;
+        dup; is-null; if;
+            "invalid base64 data" error;
+        then;
+        dup; int; chr; "=" =; not; if;
+            count @; 1 +; count !;
+        then;
+        _b64ar @; swap; int; chr; get;
+        int; num @; +; num !;
+
+        num @; 0xff unhex; 16 <<; &; 16 >>; byte; yield;
+        count @; 2 >=; if;
+            num @; 0xff unhex; 8 <<; &; 8 >>; byte; yield;
+        then;
+        count @; 3 >=; if;
+            num @; 0xff unhex; &; byte; yield;
+        then;
+
+        0 until;
+    ,,
+
 # Common commands and aliases.
 : vim depth; 0 =; if; vim exec; else; "vim {}" exec; then; drop; ,,
 : ssh "ssh {}" fmtq; exec; drop; ,,

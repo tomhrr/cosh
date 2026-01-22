@@ -2470,3 +2470,11 @@ fn base64_encode_test() {
     basic_test("asd  b64e; '' join", "YXNk");
     basic_test("as   b64e; '' join", "YXM=");
 }
+
+#[test]
+fn base64_decode_test() {
+    basic_test("''   b64e; b64d; chr map; '' join", "\"\"");
+    basic_test("asdf b64e; b64d; chr map; '' join", "asdf");
+    basic_test("asd  b64e; b64d; chr map; '' join", "asd");
+    basic_test("as   b64e; b64d; chr map; '' join", "as");
+}

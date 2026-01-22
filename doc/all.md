@@ -1299,6 +1299,12 @@ argument, byte, or generator over strings or bytes and return the
 corresponding cryptographic hash for that input as a list of bytes.
 (See `hex` for conversion of that output into a hexadecimal string.)
 
+`b64e` takes a single string argument, byte, or generator over strings
+or bytes and returns a generator over the base64-encoded result, where
+each element is a single base64 character.  `b64d` performs the
+reverse operation, with the result being a generator over the
+individual bytes.
+
 `range` takes an integer and returns a generator over the integers
 from zero to that integer, minus one.
 

@@ -2462,3 +2462,11 @@ fn string_escape_single_quote_test() {
     // Test multiple escaped single quotes
     basic_test("\\'test\\' println", "'test'");
 }
+
+#[test]
+fn base64_encode_test() {
+    basic_test("''   b64e; '' join", "\"\"");
+    basic_test("asdf b64e; '' join", "YXNkZg==");
+    basic_test("asd  b64e; '' join", "YXNk");
+    basic_test("as   b64e; '' join", "YXM=");
+}

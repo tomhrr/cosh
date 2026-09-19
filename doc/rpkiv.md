@@ -10,7 +10,7 @@ validators.
         name apnic
         type rpki-client
         exec /usr/local/sbin/rpki-client) rpkiv.init;
-    $ rpkiv.run;
+    $ apnic rpkiv.run;
     $ apnic rpkiv.vrps; shift;
     (
         0: 13335

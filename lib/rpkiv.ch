@@ -44,11 +44,20 @@
     rpkiv._gsd; swap; ++; cd;
     tals ls; [-t{} fmt] map; ' ' join;
 
-    "./rpki-validator {} -d ./cache -c ./output" fmtq; '"/g' '' s;
+    "./rpki-validator {} -d ./cache -c ./output -j" fmtq; '"/g' '' s;
     cmd/c;
     r; dup; clone;
     [0 get; 1 =] grep; [1 get] map; last-stdout f>;
     [0 get; 2 =] grep; [1 get] map; last-stderr f>;
+    output/json f<; from-json; dup; aspas exists; if;
+        aspas get;
+        [providers [. join] providers hr] map;
+        [(customer_asid providers) get; , join; \n ++] map;
+        output/aspas f>;
+    else;
+        drop;
+    then;
+
     cwd @; cd;
     ,,
 
@@ -131,6 +140,29 @@
     then;
     ,,
 
+: _rpkiv.aspas-raw
+    rpkiv._gsd; swap; ++; /output/aspas ++;
+    dup; is-file; not; if;
+        "RPKI validator does not support ASPAs" error;
+    then;
+    f<; [chomp; , split; 1 [. split] 1 lr] map;
+    ,,
+
+: rpkiv.aspas
+    _rpkiv.aspas-raw
+    ,,
+
+: _rpkiv.aspas-hash
+    _rpkiv.aspas-raw;
+    h() ah var!;
+    [ah @; swap; shift-all; set; drop] for;
+    ah @; keys;
+    [k var!; ah @; k @; get;
+     s() swap; push for;
+     ah @; k @; rot; set; drop] for;
+    ah @;
+    ,,
+
 : rpkiv.rov
     name var; name !;
     asn var; asn !;
@@ -153,6 +185,164 @@
             invalid
         then;
     then;
+    ,,
+
+: _rpkiv.aspa-hop-check
+    s var!; f var!; ah var!;
+    ah @; f @; exists; not; if;
+        0
+    else;
+        ah @; f @; get;
+        s @; exists; if;
+            1
+        else;
+            2
+        then;
+    then;
+    ,,
+
+: _rpkiv.aspa-upstream
+    min-down-ramp var!;
+    max-down-ramp var!;
+    min-up-ramp var!;
+    max-up-ramp var!;
+    as-path var!;
+
+    as-path @; r; clone; len; apl var!;
+
+    apl @; 0 =; if;
+        0
+    else; max-up-ramp @; apl @; <; if;
+        0
+    else; min-up-ramp @; apl @; <; if;
+        1
+    else;
+        2
+    then; then; then;
+    ,,
+
+: _rpkiv.aspa-downstream
+    min-down-ramp var!;
+    max-down-ramp var!;
+    min-up-ramp var!;
+    max-up-ramp var!;
+    as-path var!;
+
+    as-path @; r; clone; len; apl var!;
+
+    apl @; 0 =; if;
+        0
+    else; max-up-ramp @; max-down-ramp @; +; apl @; <; if;
+        0
+    else; min-up-ramp @; min-down-ramp @; +; apl @; <; if;
+        1
+    else;
+        2
+    then; then; then;
+    ,,
+
+: rpkiv.av
+    name var!;
+    as-path var!;
+    name @; _rpkiv.aspas-hash; ah var!;
+
+    0 last-asn var!;
+    as-path @; reverse;
+    [dup; last-asn @; =; if;
+        drop;
+        ()
+     else;
+        dup; last-asn !;
+        1 mlist;
+     then] map;
+    flatten; r;
+    final-as-path var!;
+
+    final-as-path @; r; clone; len; apl var!;
+
+    null max-up-ramp var!;
+    0 index var!;
+    begin;
+        ah @;
+        final-as-path @; index @; get;
+        final-as-path @; index @; 1 +; get;
+        _rpkiv.aspa-hop-check;
+        2 =; if;
+            index @; 1 +; max-up-ramp !;
+            leave;
+        then;
+        index @; 1 +; index !;
+        index @; apl @; 1 -; <; not; until;
+    max-up-ramp @; is-null; if;
+        apl @; max-up-ramp !;
+    then;
+
+    null min-up-ramp var!;
+    0 index var!;
+    begin;
+        ah @;
+        final-as-path @; index @; get;
+        final-as-path @; index @; 1 +; get;
+        _rpkiv.aspa-hop-check;
+        1 =; not; if;
+            index @; 1 +; min-up-ramp !;
+            leave;
+        then;
+        index @; 1 +; index !;
+        index @; apl @; 1 -; <; not; until;
+    min-up-ramp @; is-null; if;
+        apl @; min-up-ramp !;
+    then;
+
+    null max-down-ramp var!;
+    apl @; 1 -; index var!;
+    begin;
+        ah @;
+        final-as-path @; index @; get;
+        final-as-path @; index @; 1 -; get;
+        _rpkiv.aspa-hop-check;
+        2 =; if;
+            apl @; index @; 1 +; -; 1 +; max-down-ramp !;
+            leave;
+        then;
+        index @; 1 -; index !;
+        index @; 0 >; not; until;
+    max-down-ramp @; is-null; if;
+        apl @; max-down-ramp !;
+    then;
+
+    null min-down-ramp var!;
+    apl @; 1 -; index var!;
+    begin;
+        ah @;
+        final-as-path @; index @; get;
+        final-as-path @; index @; 1 -; get;
+        _rpkiv.aspa-hop-check;
+        1 =; not; if;
+            apl @; index @; 1 +; -; 1 +; min-down-ramp !;
+            leave;
+        then;
+        index @; 1 -; index !;
+        index @; 0 >; not; until;
+    min-down-ramp @; is-null; if;
+        apl @; min-down-ramp !;
+    then;
+
+    as-path @;
+    max-up-ramp @;
+    min-up-ramp @;
+    max-down-ramp @;
+    min-down-ramp @;
+
+    ah @; as-path @; 0 get; get;
+    dup; is-null; if;
+        drop;
+        _rpkiv.aspa-downstream;
+    else; as-path @; 1 get; exists; if;
+        _rpkiv.aspa-upstream;
+    else;
+        _rpkiv.aspa-downstream;
+    then; then;
     ,,
 
 : rpkiv.file-raw

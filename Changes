@@ -1,12 +1,17 @@
 Changelog
 
 0.4.0   4 October 2026
-	- Add `var!` form.
-	- Add option for accessing the redirect body for an HTTP response.
-	- Handle `>>` in external commands.
-	- Support stringification of RPSL objects.
-	- Update `ls` to capture the working directory when it is called.
-	- Various bug fixes.
+        - Add `var!` form.
+        - Add option for accessing the redirect body for an HTTP response.
+        - Handle `>>` in external commands.
+        - Support stringification of RPSL objects.
+        - Update `ls` to capture the working directory when it is called.
+        - Add base64-encoding/decoding functions.
+        - Add `beforei` and `afteri` functions (inclusive of condition element).
+        - Update `b<` and `b>` to produce/consume generators.
+        - Update hash functions to accept more types of input.
+        - Add RPSL NRTMv3 library.
+        - Various bug fixes.
 
 0.3.0   20 June 2024
         - Closures.

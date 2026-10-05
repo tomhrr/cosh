@@ -2283,10 +2283,17 @@ fn sequence_test() {
 
 #[test]
 fn dns_test() {
-    basic_test(". NS dns; answer.0.rdata get; root-servers m", ".t");
-    basic_test("google.com A dns; answer.0.sdata.address get; ip; str; len; 0 >", ".t");
-    basic_test("google.com A dns; header.status get; NOERROR =", ".t");
-    basic_test("brtiortuhbioruthbronibtoinr.com A dns; header.status get; NXDOMAIN =", ".t");
+    match env::var("COSH_TEST_DNS") {
+        Ok(_) => {
+            basic_test(". NS dns; answer.0.rdata get; root-servers m", ".t");
+            basic_test("google.com A dns; answer.0.sdata.address get; ip; str; len; 0 >", ".t");
+            basic_test("google.com A dns; header.status get; NOERROR =", ".t");
+            basic_test("brtiortuhbioruthbronibtoinr.com A dns; header.status get; NXDOMAIN =", ".t");
+        }
+        _ => {
+            eprintln!("DNS tests disabled (dns_test).");
+        }
+    }
 }
 
 #[test]

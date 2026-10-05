@@ -65,7 +65,7 @@ enum ScanMode {
     SingleQuote,
 }
 
-fn normalize(s: &str) -> Cow<str> {
+fn normalize(s: &str) -> Cow<'_, str> {
     Cow::Borrowed(s)
 }
 

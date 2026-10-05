@@ -1,5 +1,7 @@
 # Common functions and variables.
 
+dns._nameservers; dns.nameservers var!;
+
 : and if; if; .t else; .f then; else; drop; .f then; ,,
 : or if; drop; .t else; if; .t else; .f then; then; ,,
 : not if; .f else; .t then; ,,

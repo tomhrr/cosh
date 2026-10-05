@@ -108,7 +108,7 @@ lazy_static! {
 }
 
 impl<'a> Scanner<'a> {
-    pub fn new(fh: &mut Box<dyn BufRead>, interactive_mode: bool) -> Scanner {
+    pub fn new(fh: &mut Box<dyn BufRead>, interactive_mode: bool) -> Scanner<'_> {
         Scanner {
             fh,
             line_number: 1,

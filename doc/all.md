@@ -1220,9 +1220,15 @@ and `str` is defined for both IP objects and IP sets.
    response for that query.  The result from the call is a hash,
    including separate entries for the header, question, answer,
    authority, and additional sections from the DNS response.
+   Currently, this sends all queries via the first entry found in the
+   `dns.nameservers` list.
  - `dnsat`: takes a nameserver IP address, a DNS name, and a DNS
-   record type.  Queries the nameserver and returns a response
-   with the same format as `dns`.
+   record type.  Queries the nameserver and returns a response with
+   the same format as `dns`.
+ - `dns.nameservers`: a variable containing a list of the
+   currently-configured nameserver IP addresses, as IPv4/IPv6 objects.
+ - `dns.refresh`: refreshes the nameserver list from the system's
+   configuration.
 
  - `socket`: takes a server name/address and a port, and returns
    socket reader and socket writer objects.

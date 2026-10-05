@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::net::IpAddr;
 use std::ops::Index;
 use std::ops::IndexMut;
 use std::path::Path;
@@ -13,12 +14,11 @@ use std::str;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::SystemTime;
 
+use hickory_resolver::system_conf::read_system_conf;
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use regex::{Regex, RegexBuilder};
-use resolv_conf::ScopedIp;
 use sysinfo::{System, Users};
 
 use crate::chunk::{print_error, new_string_value, Chunk, GeneratorObject,
@@ -105,10 +105,8 @@ pub struct VM {
     libdir: &'static str,
     /// Child process details.
     child_processes: IndexMap<u32, String>,
-    /// The modification time of the nameserver file.
-    dns_mtime: SystemTime,
     /// Local nameserver addresses.
-    dns_servers: Vec<ScopedIp>,
+    dns_servers: Vec<IpAddr>,
     /// Imported libraries.
     imported: HashSet<String>
 }
@@ -306,6 +304,8 @@ lazy_static! {
         map.insert("source", VM::core_source as fn(&mut VM) -> i32);
         map.insert("dnsat", VM::core_dnsat as fn(&mut VM) -> i32);
         map.insert("dns", VM::core_dns as fn(&mut VM) -> i32);
+        map.insert("dns.refresh", VM::core_dns_refresh as fn(&mut VM) -> i32);
+        map.insert("dns._nameservers", VM::core_dns_nameservers as fn(&mut VM) -> i32);
         map.insert("readlink", VM::core_readlink as fn(&mut VM) -> i32);
         map.insert("nb", VM::core_nb as fn(&mut VM) -> i32);
         map
@@ -434,8 +434,16 @@ impl VM {
         libdir: &'static str
     ) -> VM {
         let ltz = iana_time_zone::get_timezone().unwrap();
-	let contents = std::fs::read_to_string("/etc/resolv.conf").expect("Failed to open resolv.conf");
-	let config = resolv_conf::Config::parse(&contents).unwrap();
+        let mut dns_servers = Vec::new();
+        match read_system_conf() {
+            Ok((config, _)) => {
+                for ns in config.name_servers() {
+                    dns_servers.push(ns.ip);
+                }
+            }
+            Err(_) => {
+            }
+        }
 
         VM {
             debug,
@@ -458,10 +466,22 @@ impl VM {
             readline: None,
             libdir,
             child_processes: IndexMap::new(),
-            dns_mtime: std::fs::metadata("/etc/resolv.conf").unwrap()
-                                                            .modified().unwrap(),
-            dns_servers: config.nameservers,
+            dns_servers: dns_servers,
             imported: HashSet::new()
+        }
+    }
+
+    /// Refresh the VM's DNS servers.
+    pub fn refresh_dns_servers(&mut self) {
+        self.dns_servers.clear();
+        match read_system_conf() {
+            Ok((config, _)) => {
+                for ns in config.name_servers() {
+                    self.dns_servers.push(ns.ip);
+                }
+            }
+            Err(_) => {
+            }
         }
     }
 
@@ -473,19 +493,6 @@ impl VM {
                 self.users = Some(Users::new());
             }
             _ => {}
-        }
-    }
-
-    /// Refresh the VM's DNS servers, if necessary.
-    pub fn refresh_dns_servers_if_necessary(&mut self) {
-        let current_mtime =
-            std::fs::metadata("/etc/resolv.conf").unwrap()
-                                                 .modified().unwrap();
-        if current_mtime != self.dns_mtime {
-            self.dns_mtime = current_mtime;
-            let contents = std::fs::read_to_string("/etc/resolv.conf").expect("Failed to open resolv.conf");
-            let config = resolv_conf::Config::parse(&contents).unwrap();
-            self.dns_servers = config.nameservers;
         }
     }
 

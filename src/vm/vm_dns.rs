@@ -12,6 +12,7 @@ use hickory_client::op::ResponseCode;
 use hickory_client::rr::Record;
 use hickory_client::rr::RecordType;
 use hickory_client::udp::UdpClientConnection;
+use ipnet::{Ipv4Net, Ipv6Net};
 
 use crate::chunk::{Value, new_string_value};
 use crate::hasher::{new_hash_indexmap, CoshIndexMap};
@@ -391,18 +392,82 @@ impl VM {
         let type_rr = self.stack.pop().unwrap();
         let query_rr = self.stack.pop().unwrap();
 
-        self.refresh_dns_servers_if_necessary();
-        let server_addr = self.dns_servers.get(0);
-        if let None = server_addr {
-            self.print_error("unable to find default server for dns");
+        let global_scope = self.scopes.iter().next().unwrap();
+        if !global_scope.borrow().contains_key("dns.nameservers") {
+            self.print_error("unable to find dns.nameservers variable for dns");
             return 0;
         }
-        let server_rr = new_string_value(server_addr.unwrap().to_string());
+
+        let servers =
+            global_scope.borrow().get("dns.nameservers").unwrap().value.clone();
+        let server =
+            match servers {
+                Value::List(ref lst) => {
+                    if lst.borrow().len() > 0 {
+                        lst.borrow_mut().front().unwrap().clone()
+                    } else {
+                        self.print_error("dns.nameservers variable is empty");
+                        return 0;
+                    }
+                }
+                _ => {
+                    self.print_error("dns.nameservers variable is not a list");
+                    return 0;
+                }
+            };
+        let server_addr =
+            match server {
+                Value::Ipv4(ipv4net) => {
+                    ipv4net.addr().to_string()
+                }
+                Value::Ipv6(ipv6net) => {
+                    ipv6net.addr().to_string()
+                }
+                _ => {
+                    self.print_error("dns.nameservers entry is not an IP address");
+                    return 0;
+                }
+            };
+
+        let server_rr = new_string_value(server_addr);
 
         self.stack.push(server_rr);
         self.stack.push(query_rr);
         self.stack.push(type_rr);
 
         return self.core_dnsat();
+    }
+
+    /// Refresh the system DNS server list, and update the nameserver
+    /// global variable accordingly.
+    pub fn core_dns_refresh(&mut self) -> i32 {
+        self.refresh_dns_servers();
+        self.core_dns_nameservers();
+        let nameserver_rr = self.stack.pop().unwrap();
+        let global_scope = self.scopes.iter().next().unwrap();
+        global_scope.borrow_mut().insert(
+            "dns.nameservers".to_string(),
+            Variable::new(nameserver_rr, true)
+        );
+        return 1;
+    }
+
+    /// Get the system's DNS server list.
+    pub fn core_dns_nameservers(&mut self) -> i32 {
+        let mut nameserver_lst = VecDeque::new();
+        for s in &self.dns_servers {
+            match s {
+                std::net::IpAddr::V4(ipv4_addr) => {
+                    nameserver_lst.push_back(
+                        Value::Ipv4(Ipv4Net::new(*ipv4_addr, 32).unwrap()));
+                }
+                std::net::IpAddr::V6(ipv6_addr) => {
+                    nameserver_lst.push_back(
+                        Value::Ipv6(Ipv6Net::new(*ipv6_addr, 128).unwrap()));
+                }
+            }
+        }
+        self.stack.push(Value::List(Rc::new(RefCell::new(nameserver_lst))));
+        return 1;
     }
 }

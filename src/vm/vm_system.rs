@@ -14,6 +14,7 @@ use std::rc::Rc;
 use std::time::SystemTime;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
+use gethostname::gethostname;
 use num::FromPrimitive;
 use num_bigint::BigInt;
 use sysinfo::CpuRefreshKind;
@@ -21,22 +22,23 @@ use utime::*;
 
 use crate::chunk::Value;
 use crate::hasher::{new_hash_indexmap, CoshIndexMap};
+use crate::num_traits::ToPrimitive;
 use crate::vm::*;
 
 impl VM {
     /// From https://stackoverflow.com/a/65192210.
     fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<u64> {
-	fs::create_dir_all(&dst)?;
-	for entry in fs::read_dir(src)? {
-	    let entry = entry?;
-	    let ty = entry.file_type()?;
-	    if ty.is_dir() {
-		VM::copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
-	    } else {
-		std::fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
-	    }
-	}
-	Ok(1)
+        fs::create_dir_all(&dst)?;
+        for entry in fs::read_dir(src)? {
+            let entry = entry?;
+            let ty = entry.file_type()?;
+            if ty.is_dir() {
+                VM::copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+            } else {
+                std::fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+            }
+        }
+        Ok(1)
     }
 
     /// Takes a value that can be stringified as its single argument.
@@ -90,15 +92,15 @@ impl VM {
                 let ss = VM::expand_tilde(s);
                 let path = Path::new(&ss);
                 if path.exists() {
-		    let res = std::fs::remove_file(ss);
-		    match res {
-			Ok(_) => {}
-			Err(e) => {
-			    let err_str = format!("unable to remove file: {}", e);
-			    self.print_error(&err_str);
-			    return 0;
-			}
-		    }
+                    let res = std::fs::remove_file(ss);
+                    match res {
+                        Ok(_) => {}
+                        Err(e) => {
+                            let err_str = format!("unable to remove file: {}", e);
+                            self.print_error(&err_str);
+                            return 0;
+                        }
+                    }
                 }
             }
             _ => {
@@ -129,15 +131,15 @@ impl VM {
                 let ss = VM::expand_tilde(s);
                 let path = Path::new(&ss);
                 if path.exists() {
-		    let res = std::fs::remove_dir_all(ss);
-		    match res {
-			Ok(_) => {}
-			Err(e) => {
-			    let err_str = format!("unable to remove file/directory: {}", e);
-			    self.print_error(&err_str);
-			    return 0;
-			}
-		    }
+                    let res = std::fs::remove_dir_all(ss);
+                    match res {
+                        Ok(_) => {}
+                        Err(e) => {
+                            let err_str = format!("unable to remove file/directory: {}", e);
+                            self.print_error(&err_str);
+                            return 0;
+                        }
+                    }
                 }
             }
             _ => {
@@ -299,15 +301,15 @@ impl VM {
                     } else {
                         real_dst = dsts;
                     }
-		    let res = std::fs::rename(srcs, real_dst);
-		    return match res {
-			Ok(_) => 1,
-			Err(e) => {
-			    let err_str = format!("unable to rename: {}", e);
-			    self.print_error(&err_str);
-			    0
-			}
-		    };
+                    let res = std::fs::rename(srcs, real_dst);
+                    return match res {
+                        Ok(_) => 1,
+                        Err(e) => {
+                            let err_str = format!("unable to rename: {}", e);
+                            self.print_error(&err_str);
+                            0
+                        }
+                    };
                 }
 
                 self.stack.push(new_string_value(src.to_string()));
@@ -417,13 +419,13 @@ impl VM {
             (Some(src), Some(dst)) => {
                 let mut srcs = VM::expand_tilde(src);
                 if !srcs.starts_with("/") {
-		    let current_dir_res = std::env::current_dir();
-		    match current_dir_res {
-			Ok(current_dir) => {
+                    let current_dir_res = std::env::current_dir();
+                    match current_dir_res {
+                        Ok(current_dir) => {
                             srcs = format!("{}/{}", current_dir.to_str().unwrap(), srcs);
-			}
-			_ => {}
-		    }
+                        }
+                        _ => {}
+                    }
                 }
                 let dsts = VM::expand_tilde(dst);
                 let dst_meta_opt = fs::metadata(&dsts);
@@ -1183,5 +1185,55 @@ impl VM {
             }
         }
         1
+    }
+
+    /// Returns the system hostname.
+    pub fn core_hostname(&mut self) -> i32 {
+        self.stack.push(new_string_value(gethostname().into_string().unwrap()));
+        1
+    }
+
+    /// Returns the real user ID of the current process.
+    pub fn core_getuid(&mut self) -> i32 {
+        let uid = nix::unistd::getuid().as_raw();
+        self.stack.push(Value::BigInt(uid.into()));
+        1
+    }
+
+    /// Returns the effective user ID of the current process.
+    pub fn core_geteuid(&mut self) -> i32 {
+        let uid = nix::unistd::geteuid().as_raw();
+        self.stack.push(Value::BigInt(uid.into()));
+        1
+    }
+
+    /// Takes a user ID, and returns the user's username.
+    pub fn core_getpwuid(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("readlink requires one argument");
+            return 0;
+        }
+        let uid_rr = self.stack.pop().unwrap();
+        let uid_opt = uid_rr.to_bigint();
+        match uid_opt {
+            Some(n) => {
+                let user_opt = User::from_uid(n.to_u32().unwrap().into());
+                match user_opt {
+                    Ok(Some(user)) => {
+                        self.stack.push(
+                            new_string_value(user.name));
+                        1
+                    }
+                    _ => {
+                        self.print_error("unable to find specified user");
+                        0
+                    }
+                }
+            }
+            _ => {
+                self.print_error("getpwuid argument must be a UID");
+                0
+            }
+        }
     }
 }

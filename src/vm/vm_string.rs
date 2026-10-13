@@ -1,16 +1,60 @@
 use std::cell::RefCell;
 use std::collections::VecDeque;
+use std::convert::TryFrom;
 use std::rc::Rc;
 
+use colored::Colorize;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::chunk::Value;
+use crate::chunk::{Value, ColoredStringTriple};
 use crate::vm::*;
 
 lazy_static! {
     static ref CAPTURE_NUM: Regex = Regex::new("\\{(\\d+)\\}").unwrap();
     static ref CAPTURE_WITHOUT_NUM: Regex = Regex::new("\\{\\}").unwrap();
+}
+
+/// Converts a colour specifier into an ANSI colour code.
+fn specifier_to_code(specifier: &str) -> Option<u8> {
+    if specifier == "black" {
+        Some(0)
+    } else if specifier == "red" {
+        Some(1)
+    } else if specifier == "green" {
+        Some(2)
+    } else if specifier == "yellow" {
+        Some(3)
+    } else if specifier == "blue" {
+        Some(4)
+    } else if specifier == "magenta" {
+        Some(5)
+    } else if specifier == "cyan" {
+        Some(6)
+    } else if specifier == "white" {
+        Some(7)
+    } else if specifier == "bright-black" {
+        Some(8)
+    } else if specifier == "bright-red" {
+        Some(9)
+    } else if specifier == "bright-green" {
+        Some(10)
+    } else if specifier == "bright-yellow" {
+        Some(11)
+    } else if specifier == "bright-blue" {
+        Some(12)
+    } else if specifier == "bright-magenta" {
+        Some(13)
+    } else if specifier == "bright-cyan" {
+        Some(14)
+    } else if specifier == "bright-white" {
+        Some(15)
+    } else {
+        match specifier.parse::<u8>() {
+            Ok(num) => Some(num),
+            Err(_) => None
+        }
+    }
 }
 
 impl VM {
@@ -533,5 +577,122 @@ impl VM {
                 return 0;
             }
         };
+    }
+
+    /// Takes a string, a foreground colour, and a background colour
+    /// as its arguments, and returns a styled string.
+    pub fn core_style(&mut self) -> i32 {
+        if self.stack.len() < 4 {
+            self.print_error("style requires four arguments");
+            return 0;
+        }
+
+        let modifiers_rr = self.stack.pop().unwrap();
+
+        let bg_rr = self.stack.pop().unwrap();
+        let bg_is_null = matches!(bg_rr, Value::Null);
+        let bg_opt: Option<&str>;
+        let mut bg_int : u8 = 0;
+        if !bg_is_null {
+            to_str!(bg_rr, bg_opt);
+            match bg_opt {
+                Some(bg) => {
+                    match specifier_to_code(bg) {
+                        Some(v) => { bg_int = v; }
+                        None => {
+                            self.print_error("third style argument must be colour specifier");
+                            return 0;
+                        }
+                    }
+                }
+                _ => {
+                    self.print_error("third style argument must be colour specifier");
+                    return 0;
+                }
+            };
+        }
+
+        let fg_rr = self.stack.pop().unwrap();
+        let fg_is_null = matches!(fg_rr, Value::Null);
+        let fg_opt: Option<&str>;
+        let mut fg_int : u8 = 0;
+        if !fg_is_null {
+            to_str!(fg_rr, fg_opt);
+            match fg_opt {
+                Some(fg) => {
+                    match specifier_to_code(fg) {
+                        Some(v) => { fg_int = v; }
+                        None => {
+                            self.print_error("second style argument must be colour specifier");
+                            return 0;
+                        }
+                    }
+                }
+                _ => {
+                    self.print_error("second style argument must be colour specifier");
+                    return 0;
+                }
+            };
+        }
+
+        let str_rr = self.stack.pop().unwrap();
+        let str_opt: Option<&str>;
+        to_str!(str_rr, str_opt);
+        let mut ss;
+
+        match str_opt {
+            Some(s) => {
+                ss = s.normal();
+                if !fg_is_null {
+                    ss = ss.ansi_color(u8::try_from(fg_int).unwrap());
+                }
+                if !bg_is_null {
+                    ss = ss.on_ansi_color(u8::try_from(bg_int).unwrap());
+                }
+            }
+            _ => {
+                self.print_error("first style argument must be a string");
+                return 0;
+            }
+        };
+
+        match modifiers_rr {
+            Value::Set(hsh) => {
+                let mb = hsh.borrow();
+                for (k, _) in mb.iter() {
+                    if k == "bold" {
+                        ss = ss.bold();
+                    } else if k == "blink" {
+                        ss = ss.blink();
+                    } else if k == "dimmed" {
+                        ss = ss.dimmed();
+                    } else if k == "hidden" {
+                        ss = ss.hidden();
+                    } else if k == "italic" {
+                        ss = ss.italic();
+                    } else if k == "underline" {
+                        ss = ss.underline();
+                    } else if k == "strikethrough" {
+                        ss = ss.strikethrough();
+                    } else if k == "reverse" {
+                        ss = ss.reversed();
+                    } else {
+                        self.print_error("unknown style modifier");
+                        return 0;
+                    }
+                }
+            }
+            _ => {
+                self.print_error("fourth style argument must be a set of modifiers");
+                return 0;
+            }
+        };
+
+        self.stack.push(
+            Value::StyledString(
+                Rc::new(RefCell::new(ColoredStringTriple::new(ss, None)))
+            )
+        );
+        return 1;
     }
 }

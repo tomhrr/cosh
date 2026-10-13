@@ -1323,6 +1323,14 @@ object will then be quicker than using it on the original string.
 
 `id` is a no-op function.
 
+`getuid`, `geteuid`, and `getpwuid` operate in the same way as the
+corresponding POSIX functions.
+
+`hostname` returns the current system hostname.
+
+If `prompt` is defined as a function, the string it returns will be
+used for the prompt.
+
 `exit` takes an exit code as its single argument, and exits the
 program/shell.
 

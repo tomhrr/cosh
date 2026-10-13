@@ -1,3 +1,4 @@
+extern crate colored;
 extern crate cosh;
 extern crate ctrlc;
 extern crate dirs;
@@ -350,8 +351,8 @@ fn main() {
                     last_known_cwd.clone()
                 }
             };
-            let prompt = format!("{}$ ", cwd_str);
 
+            let prompt = vm.get_prompt(&cwd_str);
             let readline_res = rl_rr.borrow_mut().readline(&prompt);
             match readline_res {
                 Ok(mut line) => {

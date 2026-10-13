@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 use std::convert::TryInto;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::io::Cursor;
 use std::net::IpAddr;
 use std::ops::Index;
 use std::ops::IndexMut;
@@ -77,6 +78,8 @@ pub struct VM {
     /// Whether the stack should be printed after interpretation has
     /// finished.
     print_stack: bool,
+    /// Whether errors should be printed.
+    print_errors: bool,
     /// Whether the stack is currently being printed.
     printing_stack: bool,
     /// The local variable stack.
@@ -308,6 +311,11 @@ lazy_static! {
         map.insert("dns._nameservers", VM::core_dns_nameservers as fn(&mut VM) -> i32);
         map.insert("readlink", VM::core_readlink as fn(&mut VM) -> i32);
         map.insert("nb", VM::core_nb as fn(&mut VM) -> i32);
+        map.insert("style", VM::core_style as fn(&mut VM) -> i32);
+        map.insert("getuid", VM::core_getuid as fn(&mut VM) -> i32);
+        map.insert("geteuid", VM::core_geteuid as fn(&mut VM) -> i32);
+        map.insert("getpwuid", VM::core_getpwuid as fn(&mut VM) -> i32);
+        map.insert("hostname", VM::core_hostname as fn(&mut VM) -> i32);
         map
     };
 
@@ -451,6 +459,7 @@ impl VM {
             last_stack: Vec::new(),
             local_var_stack: Rc::new(RefCell::new(Vec::new())),
             print_stack,
+            print_errors: true,
             printing_stack: false,
             scopes: vec![global_vars],
             global_functions: global_functions,
@@ -500,6 +509,9 @@ impl VM {
     /// arguments.  Prints the error message, including filename, line number
     /// and column number elements (if applicable).
     pub fn print_error(&self, error: &str) {
+        if !self.print_errors {
+            return;
+        }
         let point = self.chunk.borrow().get_point(self.i);
         let name = &self.chunk.borrow().name;
         let error_start = if name == "(main)" {
@@ -2502,5 +2514,31 @@ impl VM {
             self.stack.clear();
         }
         Some(chunk)
+    }
+
+    pub fn get_prompt(&mut self, cwd: &str) -> String {
+        let mut bufread: Box<dyn BufRead> = Box::new(Cursor::new("prompt;"));
+        self.print_stack = false;
+        self.print_errors = false;
+        self.interpret_with_mode(&mut bufread, "(main)", true);
+        self.print_stack = true;
+        self.print_errors = true;
+        if !self.stack.is_empty() {
+	    let prompt_rr = self.stack.pop().unwrap();
+            match prompt_rr {
+                Value::StyledString(s) => {
+                    return s.borrow().string.to_string();
+                }
+                _ => {
+                    let prompt_opt: Option<&str>;
+                    to_str!(prompt_rr, prompt_opt);
+
+                    if let Some(s) = prompt_opt {
+                        return s.to_string();
+                    }
+                }
+            }
+        }
+        return format!("{}$ ", cwd.to_string());
     }
 }

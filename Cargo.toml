@@ -69,3 +69,5 @@ url = "2.5.0"
 cpu-time = "1.0.0"
 hickory-client = { version = "0.24.1", features = [ "dnssec" ] }
 hickory-resolver = { version = "0.26.3", features = [ "system-config" ] }
+colored = "3"
+gethostname = "1.1.0"

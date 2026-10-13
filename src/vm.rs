@@ -441,7 +441,15 @@ impl VM {
         global_vars: Rc<RefCell<HashMap<String, Variable>>>,
         libdir: &'static str
     ) -> VM {
-        let ltz = iana_time_zone::get_timezone().unwrap();
+        let mut ltz = "UTC".to_string();
+        let ltz_res = iana_time_zone::get_timezone();
+        match ltz_res {
+            Ok(s) => {
+                ltz = s;
+            }
+            _ => {}
+        }
+
         let mut dns_servers = Vec::new();
         match read_system_conf() {
             Ok((config, _)) => {

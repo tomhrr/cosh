@@ -2525,18 +2525,11 @@ impl VM {
         self.print_errors = true;
         if !self.stack.is_empty() {
 	    let prompt_rr = self.stack.pop().unwrap();
-            match prompt_rr {
-                Value::StyledString(s) => {
-                    return s.borrow().string.to_string();
-                }
-                _ => {
-                    let prompt_opt: Option<&str>;
-                    to_str!(prompt_rr, prompt_opt);
+            let prompt_opt: Option<&str>;
+            to_str!(prompt_rr, prompt_opt);
 
-                    if let Some(s) = prompt_opt {
-                        return s.to_string();
-                    }
-                }
+            if let Some(s) = prompt_opt {
+                return s.to_string();
             }
         }
         return format!("{}$ ", cwd.to_string());

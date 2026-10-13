@@ -7,7 +7,7 @@ use colored::Colorize;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::chunk::{Value, ColoredStringTriple};
+use crate::chunk::Value;
 use crate::vm::*;
 
 lazy_static! {
@@ -689,9 +689,7 @@ impl VM {
         };
 
         self.stack.push(
-            Value::StyledString(
-                Rc::new(RefCell::new(ColoredStringTriple::new(ss, None)))
-            )
+            new_string_value(ss.to_string())
         );
         return 1;
     }

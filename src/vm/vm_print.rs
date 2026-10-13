@@ -4,7 +4,6 @@ use std::io::Write;
 use std::str;
 
 use atty::Stream;
-use colored::{ColoredString, Colorize};
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use unicode_segmentation::UnicodeSegmentation;
@@ -155,78 +154,6 @@ fn psv_helper(
     return lines_to_print;
 }
 
-/// Helper function for print_stack_value for styled strings.
-fn psv_helper_styled(
-    s: &ColoredString,
-    indent: i32,
-    no_first_indent: bool,
-    window_height: i32,
-    window_width: i32,
-    mut lines_to_print: i32,
-    index: Option<i32>,
-) -> i32 {
-    if !atty::is(Stream::Stdout) || (window_width == 0) {
-        if !no_first_indent {
-            for _ in 0..indent {
-                print!(" ");
-            }
-        }
-        if let Some(n) = index {
-            print!("{}: ", n);
-        }
-        println!("{}", s);
-        return lines_to_print - 1;
-    }
-
-    lines_to_print = pager_input(window_height, lines_to_print);
-    if lines_to_print == -1 {
-        return -1;
-    }
-
-    let mut str_offset = 0;
-    if !no_first_indent {
-        str_offset += indent;
-        for _ in 0..indent {
-            print!(" ");
-        }
-    }
-    if let Some(n) = index {
-        str_offset += n.to_string().len() as i32;
-        str_offset += 2;
-        print!("{}: ", n);
-    }
-
-    let mut str_finish =
-        (window_width - str_offset) as usize;
-
-    let graphemes: Vec<&str> = s.graphemes(true).collect();
-
-    let slen = graphemes.len();
-    if slen < str_finish {
-        println!("{}", s);
-        return lines_to_print - 1;
-    }
-    let mut str_start = 0;
-    while str_finish < slen {
-        let joined_str = graphemes[str_start..str_finish].join("");
-        println!("{}", joined_str);
-        str_start = str_finish;
-        str_finish += window_width as usize;
-        lines_to_print -= 1;
-        lines_to_print = pager_input(window_height, lines_to_print);
-        if lines_to_print == -1 {
-            return -1;
-        }
-    }
-    if str_start <= slen {
-        let joined_str = graphemes[str_start..slen].join("");
-        println!("{}", joined_str);
-        lines_to_print -= 1;
-    }
-
-    return lines_to_print;
-}
-
 impl VM {
     /// Takes a value that can be stringified as its single argument,
     /// and prints that value to standard output.
@@ -237,25 +164,17 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        match value_rr {
-            Value::StyledString(st) => {
-                print!("{}", st.borrow().string);
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+
+        match value_opt {
+            Some(s) => {
+                print!("{}", s);
                 1
             }
             _ => {
-                let value_opt: Option<&str>;
-                to_str!(value_rr, value_opt);
-
-                match value_opt {
-                    Some(s) => {
-                        print!("{}", s);
-                        1
-                    }
-                    _ => {
-                        self.print_error("print argument must be a string");
-                        0
-                    }
-                }
+                self.print_error("print argument must be a string");
+                0
             }
         }
     }
@@ -269,25 +188,17 @@ impl VM {
         }
 
         let value_rr = self.stack.pop().unwrap();
-        match value_rr {
-            Value::StyledString(st) => {
-                println!("{}", st.borrow().string);
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+
+        match value_opt {
+            Some(s) => {
+                println!("{}", s);
                 1
             }
             _ => {
-                let value_opt: Option<&str>;
-                to_str!(value_rr, value_opt);
-
-                match value_opt {
-                    Some(s) => {
-                        println!("{}", s);
-                        1
-                    }
-                    _ => {
-                        self.print_error("println argument must be a string");
-                        0
-                    }
-                }
+                self.print_error("println argument must be a string");
+                0
             }
         }
     }
@@ -470,35 +381,6 @@ impl VM {
                         ss = "\".f\"".to_string();
                     }
                     lines_to_print = psv_helper(
-                        &ss,
-                        indent,
-                        no_first_indent,
-                        window_height,
-                        window_width,
-                        lines_to_print,
-                        index,
-                    );
-                }
-                Value::StyledString(st) => {
-                    last_stack.push(value_rr.clone());
-                    let mut ss = st.borrow().escaped_string.clone();
-                    let mut sst = "".to_string();
-                    if st.borrow().string.contains(char::is_whitespace) {
-                        sst = format!("\"{}\"", ss);
-                    } else if ss.is_empty() {
-                        sst = "\"\"".to_string();
-                    } else if ss == ".t".into() {
-                        sst = "\".t\"".to_string();
-                    } else if ss == ".f".into() {
-                        sst = "\".f\"".to_string();
-                    }
-                    if sst != "" {
-                        ss = sst.normal();
-                        ss.fgcolor = st.borrow().string.fgcolor;
-                        ss.bgcolor = st.borrow().string.bgcolor;
-                        ss.style   = st.borrow().string.style;
-                    }
-                    lines_to_print = psv_helper_styled(
                         &ss,
                         indent,
                         no_first_indent,

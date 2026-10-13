@@ -20,7 +20,6 @@ use std::time;
 
 use chrono::format::{parse, Parsed, StrftimeItems};
 use chrono::prelude::*;
-use colored::ColoredString;
 use indexmap::IndexMap;
 use ipnet::{Ipv4Net, Ipv6Net};
 use iprange::IpRange;
@@ -94,15 +93,6 @@ pub struct StringTriple {
     pub regex: Option<(Rc<Regex>, bool)>,
 }
 
-/// ColoredStringTriple is the same as StringTriple, except it wraps a
-/// ColoredString.
-#[derive(Debug, Clone)]
-pub struct ColoredStringTriple {
-    pub string: ColoredString,
-    pub escaped_string: ColoredString,
-    pub regex: Option<(Rc<Regex>, bool)>,
-}
-
 /// Takes a display string and returns an escaped string.
 fn escape_string(s: &str) -> String {
     let mut s2 = String::from("");
@@ -154,60 +144,6 @@ fn escape_string(s: &str) -> String {
     s2
 }
 
-/// Takes a coloured display string and returns an escaped string.
-fn escape_string_coloured(s: &ColoredString) -> ColoredString {
-    let mut s2 = ColoredString::from("");
-    let mut next_escaped = false;
-    for c in s.chars() {
-        if next_escaped {
-            match c {
-                '\\' => {
-                    s2.input.push('\\');
-                }
-                '"' => {
-                    s2.input.push('\\');
-                    s2.input.push('\\');
-                    s2.input.push(c);
-                }
-                _ => {
-                    s2.input.push('\\');
-                    s2.input.push(c);
-                }
-            }
-            next_escaped = false;
-        } else {
-            match c {
-                '\\' => {
-                    next_escaped = true;
-                }
-                '\n' => {
-                    s2.input.push('\\');
-                    s2.input.push('n');
-                }
-                '\r' => {
-                    s2.input.push('\\');
-                    s2.input.push('r');
-                }
-                '\t' => {
-                    s2.input.push('\\');
-                    s2.input.push('t');
-                }
-                '"' => {
-                    s2.input.push('\\');
-                    s2.input.push('"');
-                }
-                _ => {
-                    s2.input.push(c);
-                }
-            }
-        }
-    }
-    s2.fgcolor = s.fgcolor;
-    s2.bgcolor = s.bgcolor;
-    s2.style   = s.style;
-    s2
-}
-
 impl StringTriple {
     pub fn new(s: String, r: Option<(Rc<Regex>, bool)>) -> StringTriple {
         let e = escape_string(&s);
@@ -219,25 +155,6 @@ impl StringTriple {
     }
     pub fn new_with_escaped(s: String, e: String, r: Option<(Rc<Regex>, bool)>) -> StringTriple {
         StringTriple {
-            string: s,
-            escaped_string: e,
-            regex: r,
-        }
-    }
-}
-
-impl ColoredStringTriple {
-    pub fn new(s: ColoredString, r: Option<(Rc<Regex>, bool)>) -> ColoredStringTriple {
-        let e = escape_string_coloured(&s);
-        ColoredStringTriple {
-            string: s,
-            escaped_string: e,
-            regex: r,
-        }
-    }
-    pub fn new_with_escaped(s: ColoredString, e: ColoredString, r: Option<(Rc<Regex>, bool)>)
-            -> ColoredStringTriple {
-        ColoredStringTriple {
             string: s,
             escaped_string: e,
             regex: r,
@@ -903,8 +820,6 @@ pub enum Value {
     /// corresponds to the string, which is generated and cached
     /// when the string is used as a regex.
     String(Rc<RefCell<StringTriple>>),
-    /// Styled string.
-    StyledString(Rc<RefCell<ColoredStringTriple>>),
     /// An external command (wrapped in curly brackets), where the
     /// output is captured.
     Command(Rc<String>, Rc<HashSet<char>>),
@@ -1007,10 +922,6 @@ impl fmt::Debug for Value {
                 write!(f, "{}", b)
             }
             Value::String(s) => {
-                let ss = &s.borrow().string;
-                write!(f, "\"{}\"", ss)
-            }
-            Value::StyledString(s) => {
                 let ss = &s.borrow().string;
                 write!(f, "\"{}\"", ss)
             }
@@ -1416,10 +1327,6 @@ impl Chunk {
             Value::Float(n) => ValueLiteral::Float(n),
             Value::BigInt(n) => ValueLiteral::BigInt(n.to_str_radix(10)),
             Value::String(st) => ValueLiteral::String(
-                st.borrow().string.to_string(),
-                st.borrow().escaped_string.to_string(),
-            ),
-            Value::StyledString(st) => ValueLiteral::String(
                 st.borrow().string.to_string(),
                 st.borrow().escaped_string.to_string(),
             ),
@@ -2089,8 +1996,6 @@ macro_rules! to_str {
     ($val:expr, $var:expr) => {
         let lib_str_s;
         let lib_str_b;
-        let lib_str_s_st;
-        let lib_str_b_st;
         let lib_str_str;
         let lib_str_bk: Option<String>;
         $var = match $val {
@@ -2098,11 +2003,6 @@ macro_rules! to_str {
                 lib_str_s = st;
                 lib_str_b = lib_str_s.borrow();
                 Some(&lib_str_b.string)
-            }
-            Value::StyledString(st) => {
-                lib_str_s_st = st;
-                lib_str_b_st = lib_str_s_st.borrow();
-                Some(&lib_str_b_st.string.input)
             }
             _ => {
                 lib_str_bk = $val.to_string();
@@ -2309,7 +2209,6 @@ impl Value {
             Value::BigInt(_) => self.clone(),
             Value::Float(_) => self.clone(),
             Value::String(_) => self.clone(),
-            Value::StyledString(_) => self.clone(),
             Value::Command(_, _) => self.clone(),
             Value::CommandUncaptured(_) => self.clone(),
             Value::List(lst) => {
@@ -2394,7 +2293,6 @@ impl Value {
             (Value::BigInt(..), Value::BigInt(..)) => true,
             (Value::Float(..), Value::Float(..)) => true,
             (Value::String(..), Value::String(..)) => true,
-            (Value::StyledString(..), Value::StyledString(..)) => true,
             (Value::Command(..), Value::Command(..)) => true,
             (Value::CommandUncaptured(..), Value::CommandUncaptured(..)) => true,
             (Value::List(..), Value::List(..)) => true,
@@ -2470,7 +2368,6 @@ impl Value {
             Value::BigInt(..) => "bigint",
             Value::Float(..) => "float",
             Value::String(..) => "str",
-            Value::StyledString(..) => "styled-str",
             Value::Command(..) => "command",
             Value::CommandUncaptured(..) => "command",
             Value::List(..) => "list",

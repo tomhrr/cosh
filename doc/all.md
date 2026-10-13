@@ -1321,6 +1321,14 @@ generator.
 converts it into a function object.  Using `funcall` on the function
 object will then be quicker than using it on the original string.
 
+`style` takes a string, a foreground colour specifier, a background
+colour specifier, and a set of styles, and returns a styled string.  A
+colour specifier is a number between 0 and 255, mapping to one of the
+XTerm colours, or the name of one of the first 16 colours (e.g.
+`green`, `bright-green`).  The possible style strings are `bold`,
+`blink`, `dimmed`, `hidden`, `italic`, `underline`, `strikethrough`,
+and `reverse`.
+
 `id` is a no-op function.
 
 `getuid`, `geteuid`, and `getpwuid` operate in the same way as the

@@ -2485,3 +2485,12 @@ fn base64_decode_test() {
     basic_test("asd  b64e; b64d; chr map; '' join", "asd");
     basic_test("as   b64e; b64d; chr map; '' join", "as");
 }
+
+#[test]
+fn style_test() {
+    // Not ideal, but at least confirms that the function appears to
+    // do the right thing.
+    basic_test("asdf blue green s(underline) style", "asdf");
+    basic_test("asdf blue green s() style", "asdf");
+    basic_test("asdf null null s() style", "asdf");
+}

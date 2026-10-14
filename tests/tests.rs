@@ -592,8 +592,8 @@ fn commands_test() {
         "v[gen (\n    0: Cargo.toml\n)]",
     );
     basic_test(
-        "3 2 1 {dc -e \"{2} {0} + {1} + p\"}; shift; chomp; nip; nip; nip;",
-        "6",
+        "hello world {expr \"{1} {0}\" : 'hello \\(.*\\)'}; shift; chomp; nip; nip",
+        "world"
     );
 }
 

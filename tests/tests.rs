@@ -1299,25 +1299,25 @@ fn bitwise_tests() {
 
 #[test]
 fn stdout_stderr_tests() {
-    basic_test("{perl test-misc/test.pl}; len; 25 =", ".t");
+    basic_test("{./test-misc/test.sh}; len; 25 =", ".t");
 
-    basic_test("{perl test-misc/test.pl}/o; len; 25 =", ".t");
-    basic_test("{perl test-misc/test.pl}/o; [output m] all", ".t");
-    basic_test("{perl test-misc/test.pl}/o; [error m; not] all", ".t");
+    basic_test("{./test-misc/test.sh}/o; len; 25 =", ".t");
+    basic_test("{./test-misc/test.sh}/o; [output m] all", ".t");
+    basic_test("{./test-misc/test.sh}/o; [error m; not] all", ".t");
 
-    basic_test("{perl test-misc/test.pl}/e; len; 25 =", ".t");
-    basic_test("{perl test-misc/test.pl}/e; [output m; not] all", ".t");
-    basic_test("{perl test-misc/test.pl}/e; [error m] all", ".t");
+    basic_test("{./test-misc/test.sh}/e; len; 25 =", ".t");
+    basic_test("{./test-misc/test.sh}/e; [output m; not] all", ".t");
+    basic_test("{./test-misc/test.sh}/e; [error m] all", ".t");
 
-    basic_test("{perl test-misc/test.pl}/oe; len; 50 =", ".t");
-    basic_test("{perl test-misc/test.pl}/oe; [output m] grep; len", "25");
-    basic_test("{perl test-misc/test.pl}/oe; [error m] grep; len", "25");
+    basic_test("{./test-misc/test.sh}/oe; len; 50 =", ".t");
+    basic_test("{./test-misc/test.sh}/oe; [output m] grep; len", "25");
+    basic_test("{./test-misc/test.sh}/oe; [error m] grep; len", "25");
 
-    basic_test("{perl test-misc/test.pl}/c; [0 get; 1 =] grep; len", "25");
-    basic_test("{perl test-misc/test.pl}/c; [0 get; 2 =] grep; len", "25");
-    basic_test("{perl test-misc/test.pl}/c; len;", "50");
-    basic_test("{perl test-misc/test.pl}/c; [0 get; 1 =] grep; [1 get] map; [output m] all", ".t");
-    basic_test("{perl test-misc/test.pl}/c; [0 get; 2 =] grep; [1 get] map; [error  m] all", ".t");
+    basic_test("{./test-misc/test.sh}/c; [0 get; 1 =] grep; len", "25");
+    basic_test("{./test-misc/test.sh}/c; [0 get; 2 =] grep; len", "25");
+    basic_test("{./test-misc/test.sh}/c; len;", "50");
+    basic_test("{./test-misc/test.sh}/c; [0 get; 1 =] grep; [1 get] map; [output m] all", ".t");
+    basic_test("{./test-misc/test.sh}/c; [0 get; 2 =] grep; [1 get] map; [error  m] all", ".t");
 }
 
 #[test]
@@ -1476,11 +1476,11 @@ fn after_test() {
 #[test]
 fn newline_command_test() {
     basic_test(
-        "{perl test-misc/newline.pl}; len",
+        "{./test-misc/newline.sh}; len",
         "2"
     );
     basic_test(
-        "{perl test-misc/newline.pl}/e; len",
+        "{./test-misc/newline.sh}/e; len",
         "2"
     );
 }

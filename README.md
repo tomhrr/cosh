@@ -328,7 +328,8 @@ Print a path's modification time in a specific format:
 
 Find the ping times for a series of domain names, in parallel:
 
-    cosh$ (sourcehut.org github.com gitlab.com) [dup; A dig; answer.0.sdata.address get; 1 pingn; 0 get; 2 mlist] pmap;
+    cosh$ (sourcehut.org github.com gitlab.com) domains var!;
+    cosh$ domains @; [dup; A dig; answer.0.sdata.address get; 1 pingn; 0 get; 2 mlist] pmap;
     v[channel-gen (
         0: (
             0: gitlab.com

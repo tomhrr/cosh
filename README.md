@@ -382,6 +382,14 @@ record to the table:
     )
     cosh$
 
+Update the prompt, including coloured text:
+
+    cosh$ : user geteuid; getpwuid; green blue s(underline) style; ,,
+    cosh$ : host hostname; blue green s() style; ,,
+    cosh$ : dir cwd; red 214 s() style; ,,
+    cosh$ : prompt dir; host; user; "{}@{}:{}$ " fmt; ,,
+    john@computer:cosh$
+
 ### Documentation
 
 [Documentation](./doc/all.md)

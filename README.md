@@ -172,22 +172,20 @@ Each example starts from the repository clone directory.
 
 List files in a specified directory:
 
-```console
-cosh$ test-data ls
-v[gen (
-    0: test-data/cert.der
-    1: test-data/json-bigint
-    2: test-data/json2
-    3: test-data/json1
-    4: test-data/readfile
-    5: test-data/yaml1.yml
-    6: test-data/test.ch
-    7: test-data/csv
-    8: test-data/split
-    9: test-data/readlines
-)]
-cosh$
-```
+    cosh$ test-data ls
+    v[gen (
+        0: test-data/cert.der
+        1: test-data/json-bigint
+        2: test-data/json2
+        3: test-data/json1
+        4: test-data/readfile
+        5: test-data/yaml1.yml
+        6: test-data/test.ch
+        7: test-data/csv
+        8: test-data/split
+        9: test-data/readlines
+    )]
+    cosh$
 
 Sort files alphabetically in a specified directory:
 

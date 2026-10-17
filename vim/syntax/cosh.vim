@@ -211,8 +211,8 @@ syn keyword coshOperators unshift;
 syn keyword coshOperators values;
 syn keyword coshOperators write;
 syn keyword coshOperators writeline;
-syn keyword coshOperators |;
-syn keyword coshOperators ||;
+syn keyword coshOperators \|;
+syn keyword coshOperators \|\|;
 
 syn keyword coshOperators var;
 syn keyword coshOperators var!;

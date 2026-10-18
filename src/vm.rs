@@ -730,9 +730,13 @@ impl VM {
         let lib_str_opt: Option<&str>;
         to_str!(lib_rr, lib_str_opt);
 
+        let mut temp_stack = Vec::new();
+        std::mem::swap(&mut temp_stack, &mut self.stack);
+
         match lib_str_opt {
             Some(s) => {
                 if self.imported.contains(s) {
+                    std::mem::swap(&mut temp_stack, &mut self.stack);
                     return 1;
                 }
                 let mut path_opt = VM::find_library(".", s);
@@ -742,6 +746,7 @@ impl VM {
                 }
                 if path_opt.is_none() {
                     self.print_error("unable to open import path");
+                    std::mem::swap(&mut temp_stack, &mut self.stack);
                     return 0;
                 }
                 let path = path_opt.unwrap();
@@ -758,7 +763,6 @@ impl VM {
                         /* The main reason for running the chunk is so
                          * that global variables are introduced. */
                         self.run(Rc::new(RefCell::new(import_chunk)));
-                        self.stack.clear();
                     }
                     None => {
                         let file_res = std::fs::File::open(path.clone());
@@ -777,16 +781,17 @@ impl VM {
                                             }
                                         }
                                         self.run(chunk);
-                                        self.stack.clear();
                                     }
                                     None => {
                                         self.print_error("unable to load import path");
+                                        std::mem::swap(&mut temp_stack, &mut self.stack);
                                         return 0;
                                     }
                                 }
                             }
                             Err(_) => {
                                 self.print_error("unable to open import path");
+                                std::mem::swap(&mut temp_stack, &mut self.stack);
                                 return 0;
                             }
                         }
@@ -796,9 +801,11 @@ impl VM {
             }
             _ => {
                 self.print_error("import argument must be a string");
+                std::mem::swap(&mut temp_stack, &mut self.stack);
                 return 0;
             }
         }
+        std::mem::swap(&mut temp_stack, &mut self.stack);
         1
     }
 

@@ -22,7 +22,7 @@ use std::sync::atomic::Ordering;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use cpu_time::ProcessTime;
-use getopts::Options;
+use getopts::{Options, ParsingStyle};
 use regex::Regex;
 use rustyline::config::OutputStreamType;
 use rustyline::error::ReadlineError;
@@ -98,6 +98,7 @@ fn main() {
     opts.optflag("d", "debug", "show debug information");
     opts.optopt("e", "", "run single expression", "EXPR");
     opts.optopt("o", "", "set output file name for compilation", "NAME");
+    opts.parsing_style(ParsingStyle::StopAtFirstFree);
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => {

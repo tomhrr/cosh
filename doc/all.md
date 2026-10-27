@@ -41,6 +41,7 @@ cosh is a concatenative command-line shell.
     * [rpsl](#rpsl)
     * [nrtm](#nrtm)
     * [ssh-agent](#ssh-agent)
+    * [getopts](#getopts)
  * [Miscellaneous](#miscellaneous)
     * [Caveats and pitfalls](#caveats-and-pitfalls)
     * [Development](#development)
@@ -100,6 +101,9 @@ Scripts may accept command-line arguments:
     +;
     user@host:/$ cosh script.ch 1 1
     2
+
+See [getopts](#getopts) for more full-featured handling of
+command-line arguments.
 
 To source a script (run the script within the existing context):
 
@@ -1549,6 +1553,11 @@ A library for working with RPSL NRTMv3 servers.
 #### [ssh-agent](ssh-agent.md)
 
 Utility functions for initialising `ssh-agent`.
+
+#### [getopts](getopts.md)
+
+Utility functions for dealing with command-line arguments in
+standalone scripts.
 
 ### Miscellaneous
 

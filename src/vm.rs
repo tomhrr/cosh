@@ -151,6 +151,8 @@ lazy_static! {
         map.insert("readline", VM::opcode_readline as fn(&mut VM) -> i32);
         map.insert("read", VM::opcode_read as fn(&mut VM) -> i32);
         map.insert("println", VM::core_println as fn(&mut VM) -> i32);
+        map.insert("eprint", VM::core_eprint as fn(&mut VM) -> i32);
+        map.insert("eprintln", VM::core_eprintln as fn(&mut VM) -> i32);
         map.insert("rm", VM::core_rm as fn(&mut VM) -> i32);
         map.insert("rmf", VM::core_rmf as fn(&mut VM) -> i32);
         map.insert("rmrf", VM::core_rmrf as fn(&mut VM) -> i32);

@@ -2494,3 +2494,27 @@ fn style_test() {
     basic_test("asdf blue green s() style", "asdf");
     basic_test("asdf null null s() style", "asdf");
 }
+
+#[test]
+fn getopts_basic_test() {
+    basic_test(
+        "
+getopts import;
+
+-h --sometext asdf
+
+(h(short h
+   long help
+   type 'bool'
+   default .f
+   doc 'Display help text.')
+ h(short 's' long sometext
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts;
+
+drop; dup; help get; if; '.t' else; '.f' then; println; sometext get; println
+        ",
+        ".t\nasdf"
+    );
+}

@@ -180,6 +180,30 @@ impl VM {
     }
 
     /// Takes a value that can be stringified as its single argument,
+    /// and prints that value to standard error.
+    pub fn core_eprint(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("eprint requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+
+        match value_opt {
+            Some(s) => {
+                eprint!("{}", s);
+                1
+            }
+            _ => {
+                self.print_error("eprint argument must be a string");
+                0
+            }
+        }
+    }
+
+    /// Takes a value that can be stringified as its single argument,
     /// and prints that value followed by newline to standard output.
     pub fn core_println(&mut self) -> i32 {
         if self.stack.is_empty() {
@@ -198,6 +222,30 @@ impl VM {
             }
             _ => {
                 self.print_error("println argument must be a string");
+                0
+            }
+        }
+    }
+
+    /// Takes a value that can be stringified as its single argument,
+    /// and prints that value followed by newline to standard error.
+    pub fn core_eprintln(&mut self) -> i32 {
+        if self.stack.is_empty() {
+            self.print_error("eprintln requires one argument");
+            return 0;
+        }
+
+        let value_rr = self.stack.pop().unwrap();
+        let value_opt: Option<&str>;
+        to_str!(value_rr, value_opt);
+
+        match value_opt {
+            Some(s) => {
+                eprintln!("{}", s);
+                1
+            }
+            _ => {
+                self.print_error("eprintln argument must be a string");
                 0
             }
         }

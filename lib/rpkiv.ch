@@ -163,7 +163,7 @@
         "rpkiv.file-raw only available for rpki-client" error;
     then;
     tals ls; [-t{} fmt] map; ' ' join;
-    {./rpki-client {} -d ./cache -f {} -j}/o;
+    {./rpki-validator {} -d ./cache -f {} -j}/o;
     from-json;
     ,,
 

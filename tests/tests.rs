@@ -61,6 +61,16 @@ fn basic_error_test_no_rt(input: &str, output: &str) {
     assert.success().stderr(output.to_owned() + "\n");
 }
 
+fn basic_failure_test(input: &str, output: &str) {
+    let mut file = NamedTempFile::new().unwrap();
+    writeln!(file, "{}", input).unwrap();
+
+    let mut cmd = Command::cargo_bin("cosh").unwrap();
+    let path = file.path();
+    let assert = cmd.arg("--no-cosh-conf").arg(path).assert();
+    assert.failure().stderr(output.to_owned() + "\n");
+}
+
 #[test]
 fn add() {
     basic_test_no_rt("1 2 +;", "3");
@@ -2516,5 +2526,30 @@ getopts import;
 drop; dup; help get; if; '.t' else; '.f' then; println; sometext get; println
         ",
         ".t\nasdf"
+    );
+}
+
+#[test]
+fn getopts_required_test() {
+    basic_failure_test(
+        "
+getopts import;
+
+--sometext asdf
+
+(h(short h
+   long help
+   type 'bool'
+   doc 'Display help text.'
+   required .t)
+ h(short 's' long sometext
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts;
+        ",
+        "--help is a required argument
+Usage:
+  -h/--help\tDisplay help text.
+  -s/--sometext\tSome text."
     );
 }

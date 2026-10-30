@@ -1,13 +1,16 @@
 # Command line option parser.
 
-: usage
-    errormsg var!;
-    options var!;
-    errormsg @; eprintln;
-    "Usage:" eprintln;
-    options @;
+: getopts._usage-text
     [(doc long short) get; shift-all;
-     "  -{}/--{}	{}" fmt; eprintln] for;
+     "  -{}/--{}	{}" fmt] map; r;
+    "Usage:" unshift;
+    \n join;
+    ,,
+
+: usage
+    eprintln;
+    getopts._usage-text;
+    eprintln;
     10 exit;
     ,,
 

@@ -2553,3 +2553,25 @@ Usage:
   -s/--sometext\tSome text."
     );
 }
+
+#[test]
+fn getopts_usage_test() {
+    basic_test(
+        "
+getopts import;
+
+(h(short h
+   long help
+   type 'bool'
+   default .f
+   doc 'Display help text.')
+ h(short 's' long sometext
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts._usage-text; println;
+        ",
+        "Usage:
+  -h/--help\tDisplay help text.
+  -s/--sometext\tSome text."
+    );
+}

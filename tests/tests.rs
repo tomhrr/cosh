@@ -2699,7 +2699,45 @@ getopts import;
    default 5
    doc 'Some text.')) getopts;
         ",
-        "s must be an int
+        "s must be an integer
+Usage:
+  -s	Some text."
+    );
+}
+
+#[test]
+fn getopts_flt_test() {
+    basic_test(
+        "
+getopts import;
+
+-s 4.0
+
+(h(short 's'
+   type 'flt'
+   default 5
+   doc 'Some text.')) getopts;
+
+drop; s get; println
+        ",
+        "4.0"
+    );
+}
+
+#[test]
+fn getopts_flt_error_test() {
+    basic_failure_test(
+        "
+getopts import;
+
+-s asdf
+
+(h(short 's'
+   type 'flt'
+   default 5
+   doc 'Some text.')) getopts;
+        ",
+        "s must be a floating-point number
 Usage:
   -s	Some text."
     );

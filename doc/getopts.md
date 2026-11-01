@@ -33,7 +33,10 @@ standalone scripts.
         - `short`: the single letter option specifier
         - `long`: the long option specifier
         - `name`: the key to use in the results (optional)
-        - `type`: the type of the option
+        - `type`: the type of the option:
+            - `str`: a string
+            - `int`: an integer
+            - `flt`: a floating-point number
         - `is-list`: whether the option can be provided multiple times
         - `default`: the default value for the option (optional)
         - `required`: whether the option is required (defaults to false)

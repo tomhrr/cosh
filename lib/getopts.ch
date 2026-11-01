@@ -95,7 +95,15 @@
                     arg @; type get; int =; if;
                         dup; ^\d+$ m; not; if;
                             drop;
-                            arg @; name get; "{} must be an int" fmt;
+                            arg @; name get; "{} must be an integer" fmt;
+                            options @; swap;
+                            usage;
+                        then;
+                    then;
+                    arg @; type get; flt =; if;
+                        dup; "^\d+(?:\.\d+)?$" m; not; if;
+                            drop;
+                            arg @; name get; "{} must be a floating-point number" fmt;
                             options @; swap;
                             usage;
                         then;

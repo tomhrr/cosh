@@ -61,6 +61,16 @@ fn basic_error_test_no_rt(input: &str, output: &str) {
     assert.success().stderr(output.to_owned() + "\n");
 }
 
+fn basic_failure_test(input: &str, output: &str) {
+    let mut file = NamedTempFile::new().unwrap();
+    writeln!(file, "{}", input).unwrap();
+
+    let mut cmd = Command::cargo_bin("cosh").unwrap();
+    let path = file.path();
+    let assert = cmd.arg("--no-cosh-conf").arg(path).assert();
+    assert.failure().stderr(output.to_owned() + "\n");
+}
+
 #[test]
 fn add() {
     basic_test_no_rt("1 2 +;", "3");
@@ -2494,3 +2504,261 @@ fn style_test() {
     basic_test("asdf blue green s() style", "asdf");
     basic_test("asdf null null s() style", "asdf");
 }
+
+#[test]
+fn getopts_basic_test() {
+    basic_test(
+        "
+getopts import;
+
+-h --sometext asdf
+
+(h(short h
+   long help
+   type 'bool'
+   default .f
+   doc 'Display help text.')
+ h(short 's' long sometext
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts;
+
+drop; dup; help get; if; '.t' else; '.f' then; println; sometext get; println
+        ",
+        ".t\nasdf"
+    );
+}
+
+#[test]
+fn getopts_required_test() {
+    basic_failure_test(
+        "
+getopts import;
+
+--sometext asdf
+
+(h(short h
+   long help
+   type 'bool'
+   doc 'Display help text.'
+   required .t)
+ h(short 's' long sometext
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts;
+        ",
+        "--help is a required argument
+Usage:
+  -h/--help\tDisplay help text.
+  -s/--sometext\tSome text."
+    );
+}
+
+#[test]
+fn getopts_usage_test() {
+    basic_test(
+        "
+getopts import;
+
+(h(short h
+   long help
+   type 'bool'
+   default .f
+   doc 'Display help text.')
+ h(short 's' long sometext
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts._usage-text; println;
+        ",
+        "Usage:
+  -h/--help\tDisplay help text.
+  -s/--sometext\tSome text."
+    );
+}
+
+#[test]
+fn getopts_short_only_test() {
+    basic_test(
+        "
+getopts import;
+
+-h -s asdf
+
+(h(short h
+   type 'bool'
+   default .f
+   doc 'Display help text.')
+ h(short 's'
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts;
+
+drop; dup; h get; if; '.t' else; '.f' then; println; s get; println
+        ",
+        ".t\nasdf"
+    );
+}
+
+#[test]
+fn getopts_long_only_test() {
+    basic_test(
+        "
+getopts import;
+
+--help --sometext asdf
+
+(h(long help
+   type 'bool'
+   default .f
+   doc 'Display help text.')
+ h(long sometext
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts;
+
+drop; dup; help get; if; '.t' else; '.f' then; println; sometext get; println
+        ",
+        ".t\nasdf"
+    );
+}
+
+#[test]
+fn getopts_name_test() {
+    basic_test(
+        "
+getopts import;
+
+--help --sometext asdf
+
+(h(short h
+   long help
+   name has-help
+   type 'bool'
+   default .f
+   doc 'Display help text.')
+ h(long sometext
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts;
+
+drop; dup; has-help get; if; '.t' else; '.f' then; println; sometext get; println
+        ",
+        ".t\nasdf"
+    );
+}
+
+#[test]
+fn getopts_list_test() {
+    basic_test(
+        "
+getopts import;
+
+-s a -s b -s 'c'
+
+(h(short 's'
+   type 'str'
+   is-list .t
+   default (4)
+   doc 'Some text.')) getopts;
+
+drop; s get; , join; println
+        ",
+        "a,b,c"
+    );
+}
+
+#[test]
+fn getopts_int_test() {
+    basic_test(
+        "
+getopts import;
+
+-s 4
+
+(h(short 's'
+   type 'int'
+   default 5
+   doc 'Some text.')) getopts;
+
+drop; s get; println
+        ",
+        "4"
+    );
+}
+
+#[test]
+fn getopts_int_error_test() {
+    basic_failure_test(
+        "
+getopts import;
+
+-s asdf
+
+(h(short 's'
+   type 'int'
+   default 5
+   doc 'Some text.')) getopts;
+        ",
+        "s must be an integer
+Usage:
+  -s	Some text."
+    );
+}
+
+#[test]
+fn getopts_flt_test() {
+    basic_test(
+        "
+getopts import;
+
+-s 4.0
+
+(h(short 's'
+   type 'flt'
+   default 5
+   doc 'Some text.')) getopts;
+
+drop; s get; println
+        ",
+        "4.0"
+    );
+}
+
+#[test]
+fn getopts_flt_error_test() {
+    basic_failure_test(
+        "
+getopts import;
+
+-s asdf
+
+(h(short 's'
+   type 'flt'
+   default 5
+   doc 'Some text.')) getopts;
+        ",
+        "s must be a floating-point number
+Usage:
+  -s	Some text."
+    );
+}
+
+#[test]
+fn getopts_free_test() {
+    basic_test(
+        "
+getopts import;
+
+-s 4.0 -- qwer asdf
+
+(h(short 's'
+   type 'flt'
+   default 5
+   doc 'Some text.')) getopts;
+
+swap; drop; , join; println;
+        ",
+        "qwer,asdf"
+    );
+}
+

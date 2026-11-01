@@ -49,3 +49,10 @@ standalone scripts.
       the option details.  If the arguments did not meet the
       requirements from the options, then this will instead print
       usage details and exit.
+      For all types of options that take values, the option specifier
+      and the value must be separate.  The `-n=5` style is not
+      supported.
+      Multiple short options cannot be combined and included by way of
+      a single hyphen (as with e.g. `ls -al`).
+      If `--` is encountered, everything that follows will be added to
+      the list of free arguments.

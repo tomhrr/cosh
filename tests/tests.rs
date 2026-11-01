@@ -2742,3 +2742,23 @@ Usage:
   -s	Some text."
     );
 }
+
+#[test]
+fn getopts_free_test() {
+    basic_test(
+        "
+getopts import;
+
+-s 4.0 -- qwer asdf
+
+(h(short 's'
+   type 'flt'
+   default 5
+   doc 'Some text.')) getopts;
+
+swap; drop; , join; println;
+        ",
+        "qwer,asdf"
+    );
+}
+

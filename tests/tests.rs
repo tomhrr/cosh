@@ -2646,3 +2646,23 @@ drop; dup; has-help get; if; '.t' else; '.f' then; println; sometext get; printl
         ".t\nasdf"
     );
 }
+
+#[test]
+fn getopts_list_test() {
+    basic_test(
+        "
+getopts import;
+
+-s a -s b -s 'c'
+
+(h(short 's'
+   type 'str'
+   is-list .t
+   default (4)
+   doc 'Some text.')) getopts;
+
+drop; s get; , join; println
+        ",
+        "a,b,c"
+    );
+}

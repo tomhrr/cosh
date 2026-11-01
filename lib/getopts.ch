@@ -50,8 +50,8 @@
 
     h() results var!;
     by-name @; each;
-    [1 get; default exists] grep;
-    [shift-all; default get; results @; rot; rot; set; drop] for;
+    [1 get; is-list get] grep;
+    [0 get; () results @; rot; rot; set; drop] for;
 
     0 i var!;
     myargs @; clone; len; 0 =; not; if;
@@ -75,12 +75,21 @@
                     myargs @; i @; get; dup; is-null; if;
                         options @; "incorrect number of arguments" usage;
                     then;
-                    set; drop;
+                    arg @; is-list get; if;
+                        rot; rot; get; swap; push; drop;
+                    else;
+                        set; drop;
+                    then;
                     i @; 1 +; i !;
                 then;
             then;
             i @; 1 +; myargs @; clone; len; >; until;
     then;
+
+    by-name @; each;
+    [1 get; default exists] grep;
+    [1 get; name get; results @; swap; exists; not] grep;
+    [shift-all; default get; results @; rot; rot; set; drop] for;
 
     options @@;
     [required exists] grep;

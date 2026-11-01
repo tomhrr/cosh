@@ -2575,3 +2575,74 @@ getopts import;
   -s/--sometext\tSome text."
     );
 }
+
+#[test]
+fn getopts_short_only_test() {
+    basic_test(
+        "
+getopts import;
+
+-h -s asdf
+
+(h(short h
+   type 'bool'
+   default .f
+   doc 'Display help text.')
+ h(short 's'
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts;
+
+drop; dup; h get; if; '.t' else; '.f' then; println; s get; println
+        ",
+        ".t\nasdf"
+    );
+}
+
+#[test]
+fn getopts_long_only_test() {
+    basic_test(
+        "
+getopts import;
+
+--help --sometext asdf
+
+(h(long help
+   type 'bool'
+   default .f
+   doc 'Display help text.')
+ h(long sometext
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts;
+
+drop; dup; help get; if; '.t' else; '.f' then; println; sometext get; println
+        ",
+        ".t\nasdf"
+    );
+}
+
+#[test]
+fn getopts_name_test() {
+    basic_test(
+        "
+getopts import;
+
+--help --sometext asdf
+
+(h(short h
+   long help
+   name has-help
+   type 'bool'
+   default .f
+   doc 'Display help text.')
+ h(long sometext
+   type 'str'
+   default 'qwer'
+   doc 'Some text.')) getopts;
+
+drop; dup; has-help get; if; '.t' else; '.f' then; println; sometext get; println
+        ",
+        ".t\nasdf"
+    );
+}

@@ -19,7 +19,7 @@ rdap.chc: target/release/cosh rt.chc lib/rdap.ch
 	./target/release/cosh -o rdap.chc -c lib/rdap.ch
 
 rpkiv.chc: target/release/cosh rt.chc lib/rpkiv.ch
-	./target/release/cosh -o rpkiv.ch -c lib/rpkiv.ch
+	./target/release/cosh -o rpkiv.chc -c lib/rpkiv.ch
 
 rpsl.chc: target/release/cosh rt.chc lib/rpsl.ch
 	./target/release/cosh -o rpsl.chc -c lib/rpsl.ch

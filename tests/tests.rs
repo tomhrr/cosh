@@ -2666,3 +2666,41 @@ drop; s get; , join; println
         "a,b,c"
     );
 }
+
+#[test]
+fn getopts_int_test() {
+    basic_test(
+        "
+getopts import;
+
+-s 4
+
+(h(short 's'
+   type 'int'
+   default 5
+   doc 'Some text.')) getopts;
+
+drop; s get; println
+        ",
+        "4"
+    );
+}
+
+#[test]
+fn getopts_int_error_test() {
+    basic_failure_test(
+        "
+getopts import;
+
+-s asdf
+
+(h(short 's'
+   type 'int'
+   default 5
+   doc 'Some text.')) getopts;
+        ",
+        "s must be an int
+Usage:
+  -s	Some text."
+    );
+}

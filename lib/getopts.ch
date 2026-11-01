@@ -1,8 +1,25 @@
 # Command line option parser.
 
 : getopts._usage-text
+    options var!;
+
+    options @@;
+    [dup; short exists; swap; long exists; not; and] grep;
+    [(doc short) get; shift-all;
+     "  -{}	{}" fmt] map;
+
+    options @@;
+    [dup; long exists; swap; short exists; not; and] grep;
+    [(doc short) get; shift-all;
+     "  --{}	{}" fmt] map;
+
+    options @@;
+    [dup; long exists; swap; short exists; and] grep;
     [(doc long short) get; shift-all;
-     "  -{}/--{}	{}" fmt] map; r;
+     "  -{}/--{}	{}" fmt] map;
+
+    ++; ++; r;
+
     "Usage:" unshift;
     \n join;
     ,,
@@ -74,6 +91,14 @@
                 else;
                     myargs @; i @; get; dup; is-null; if;
                         options @; "incorrect number of arguments" usage;
+                    then;
+                    arg @; type get; int =; if;
+                        dup; ^\d+$ m; not; if;
+                            drop;
+                            arg @; name get; "{} must be an int" fmt;
+                            options @; swap;
+                            usage;
+                        then;
                     then;
                     arg @; is-list get; if;
                         rot; rot; get; swap; push; drop;

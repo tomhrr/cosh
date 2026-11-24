@@ -7,7 +7,6 @@ use std::env;
 use std::fs;
 use std::io::Write;
 use tempfile::NamedTempFile;
-use chrono::{Local, Utc};
 
 #[test]
 fn add_file() {
@@ -2044,8 +2043,6 @@ fn postgres_basic_test() {
     match env::var("COSH_TEST_POSTGRES") {
         Ok(_) => {
             eprintln!("Postgres tests enabled (postgres_basic_test).");
-            let mut utc_now = Utc::now();
-            eprintln!("PGBT start: UTC: {}", utc_now);
             basic_test("
 postgres password test_db COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
@@ -2058,8 +2055,6 @@ postgres password test_basic COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn;
 'SELECT * FROM test' runp;
 shift; id get; 1 =;
 ", ".t");
-            utc_now = Utc::now();
-            eprintln!("PGBT end:   UTC: {}", utc_now);
         }
         _ => {
             eprintln!("Postgres tests disabled (postgres_basic_test).");
@@ -2072,8 +2067,6 @@ fn postgres_fields_test() {
     match env::var("COSH_TEST_POSTGRES") {
         Ok(_) => {
             eprintln!("Postgres tests enabled (postgres_fields_test).");
-            let mut utc_now = Utc::now();
-            eprintln!("PGFT start: UTC: {}", utc_now);
             basic_test("
 postgres password test_db COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
@@ -2141,8 +2134,6 @@ postgres password test_fields COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn
 drop;
 .t
 ", ".t");
-            utc_now = Utc::now();
-            eprintln!("PGFT end:   UTC: {}", utc_now);
         }
         _ => {
             eprintln!("Postgres tests disabled (postgres_fields_test).");

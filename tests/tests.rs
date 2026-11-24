@@ -7,6 +7,7 @@ use std::env;
 use std::fs;
 use std::io::Write;
 use tempfile::NamedTempFile;
+use chrono::{Local, Utc};
 
 #[test]
 fn add_file() {
@@ -1977,13 +1978,27 @@ fn long_json_test() {
 }
 
 #[test]
-fn file_predicate_test() {
+fn file_predicate_read_test() {
     basic_test("src is-r", ".t");
+}
+
+#[test]
+fn file_predicate_write_test() {
     basic_test("src is-w", ".t");
+}
+
+#[test]
+fn file_predicate_execute_test() {
     basic_test("src is-x", ".t");
-    basic_test("tempfile; drop; dup; dup; 0 chmod; is-r; swap; rm", ".f");
-    basic_test("tempfile; drop; dup; dup; 0 chmod; is-w; swap; rm", ".f");
+}
+
+#[test]
+fn file_predicate_no_execute_test() {
     basic_test("tempfile; drop; dup; dup; 0 chmod; is-x; swap; rm", ".f");
+}
+
+#[test]
+fn file_predicate_is_link_test() {
     basic_test(
         "
 tempdir; td var; td !; file touch; file td @; link; td @; /file ++; is-link;
@@ -2029,8 +2044,10 @@ fn postgres_basic_test() {
     match env::var("COSH_TEST_POSTGRES") {
         Ok(_) => {
             eprintln!("Postgres tests enabled (postgres_basic_test).");
+            let mut utc_now = Utc::now();
+            eprintln!("PGBT start: UTC: {}", utc_now);
             basic_test("
-postgres password postgres COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
+postgres password test_db COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
 'DROP DATABASE IF EXISTS test_basic' runp; drop;
 'CREATE DATABASE test_basic' runp; drop;
@@ -2041,6 +2058,8 @@ postgres password test_basic COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn;
 'SELECT * FROM test' runp;
 shift; id get; 1 =;
 ", ".t");
+            utc_now = Utc::now();
+            eprintln!("PGBT end:   UTC: {}", utc_now);
         }
         _ => {
             eprintln!("Postgres tests disabled (postgres_basic_test).");
@@ -2053,8 +2072,10 @@ fn postgres_fields_test() {
     match env::var("COSH_TEST_POSTGRES") {
         Ok(_) => {
             eprintln!("Postgres tests enabled (postgres_fields_test).");
+            let mut utc_now = Utc::now();
+            eprintln!("PGFT start: UTC: {}", utc_now);
             basic_test("
-postgres password postgres COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
+postgres password test_db COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
 'DROP DATABASE IF EXISTS test_fields' runp; drop;
 'CREATE DATABASE test_fields' runp; drop;
@@ -2120,6 +2141,8 @@ postgres password test_fields COSH_TEST_POSTGRES_HOST getenv; postgresql db.conn
 drop;
 .t
 ", ".t");
+            utc_now = Utc::now();
+            eprintln!("PGFT end:   UTC: {}", utc_now);
         }
         _ => {
             eprintln!("Postgres tests disabled (postgres_fields_test).");
@@ -2179,12 +2202,12 @@ fn mysql_basic_test() {
         Ok(_) => {
             eprintln!("MySQL tests enabled (mysql_basic_test).");
             basic_test("
-root root mysql COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+root password test_db COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
 'DROP DATABASE IF EXISTS test_basic' runp; drop;
 'CREATE DATABASE test_basic' runp; drop;
 null dbc !;
-root root test_basic COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+root password test_basic COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
 'CREATE TABLE test (id integer PRIMARY KEY)' runp; drop;
 'INSERT INTO test (id) VALUES (1)' runp; drop;
 'SELECT * FROM test' runp;
@@ -2203,12 +2226,12 @@ fn mysql_fields_test() {
         Ok(_) => {
             eprintln!("MySQL tests enabled (mysql_fields_test).");
             basic_test("
-root root mysql COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+root password test_db COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
 : runp dbc @; swap; db.prep; () db.exec; ,,
 'DROP DATABASE IF EXISTS test_fields' runp; drop;
 'CREATE DATABASE test_fields' runp; drop;
 null dbc !;
-root root test_fields COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
+root password test_fields COSH_TEST_MYSQL_HOST getenv; mysql db.conn; dbc varm; dbc !;
 'CREATE TABLE test (
     id integer PRIMARY KEY,
     fld1 integer,

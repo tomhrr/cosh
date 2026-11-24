@@ -2,27 +2,60 @@ name: build
 on: push
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
+    container: ubuntu:26.04
     services:
       postgres:
-        image: postgres
+        image: postgres:16
         env:
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
+          POSTGRES_DB: test_db
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d test_db"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
         ports:
           - 5432:5432
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+          MYSQL_DATABASE: test_db
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
     steps:
-      - uses: actions/checkout@v1
-      - run: |
-          sudo /etc/init.d/mysql start
-          sudo apt-get update && sudo apt-get install build-essential gcc rustc cargo && make && make test
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Install dependencies
+        run: |
+          apt-get update && apt-get install -y build-essential gcc rustc cargo mysql-client postgresql-client pkg-config libssl-dev
+
+      - name: Verify MySQL connection
+        run: |
+          mysql --host=mysql --port=3306 -u test_user -ptest_password -e "SHOW DATABASES;"
+
+      - name: Verify Postgres connection
+        env:
+          PGPASSWORD: password
+        run: |
+          psql -h postgres -p 5432 -U postgres -d test_db -c "SELECT 1;"
+
+      - name: Run build and tests
+        run: |
+          make && make test
         env:
           COSH_TEST_POSTGRES: 1
-          COSH_TEST_POSTGRES_HOST: localhost
+          COSH_TEST_POSTGRES_HOST: postgres
           COSH_TEST_MYSQL: 1
-          COSH_TEST_MYSQL_HOST: localhost
+          COSH_TEST_MYSQL_HOST: mysql
           COSH_TEST_DNS: 1

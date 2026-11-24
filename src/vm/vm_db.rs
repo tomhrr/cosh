@@ -139,8 +139,8 @@ impl VM {
                         to_str!(user, user_str_opt);
                         match (db_str_opt, user_str_opt, pass_str_opt) {
                             (Some(db_str), Some(user_str), Some(pass_str)) => {
-                                let url = format!("{}://{}:{}@{}/{}",
-                                    dbtype_str, user_str, pass_str, host_str, db_str);
+                                let url = format!("postgres://{}:{}@{}:5432/{}",
+                                    user_str, pass_str, host_str, db_str);
                                 let future = async {
                                     return sqlx::Pool::connect(&url).await;
                                 };
@@ -308,7 +308,7 @@ impl VM {
                 query_obj = query_obj.bind(i);
             }
 
-	    return query_obj.fetch_all(&mut conn).await;
+	    return query_obj.fetch_all(&mut *conn).await;
         };
         let res;
         cancellable_block_on!(self, future, res);
@@ -676,7 +676,7 @@ impl VM {
                 query_obj = query_obj.bind(i);
             }
 
-	    return query_obj.fetch_all(&mut conn).await;
+	    return query_obj.fetch_all(&mut *conn).await;
         };
         let res;
         cancellable_block_on!(self, future, res);
@@ -1089,7 +1089,7 @@ impl VM {
                 query_obj = query_obj.bind(i);
             }
 
-	    return query_obj.fetch_all(&mut conn).await;
+	    return query_obj.fetch_all(&mut *conn).await;
         };
         let res;
         cancellable_block_on!(self, future, res);

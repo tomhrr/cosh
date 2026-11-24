@@ -1,13 +1,31 @@
 Changelog
 
+0.4.2   18 November 2026
+        - Add getopts library.
+        - Add standard error print functions (eprint and eprintln).
+        - Fix stack handling problem when importing libraries.
+        - Fix Vim syntax highlighting problem.
+
+0.4.1   15 October 2026
+        - Support text styling/colouring.
+        - Add custom prompts and supporting user/host functions.
+        - Add Vim syntax highlighting file.
+        - Start up even if no nameservers are available, and allow
+          modification of the nameserver list at runtime.
+        - Update tests so that the complete build is successful on
+          Nix.
+
 0.4.0   4 October 2026
         - Add `var!` form.
-        - Add option for accessing the redirect body for an HTTP response.
+        - Add option for accessing the redirect body for an HTTP
+          response.
         - Handle `>>` in external commands.
         - Support stringification of RPSL objects.
-        - Update `ls` to capture the working directory when it is called.
+        - Update `ls` to capture the working directory when it is
+          called.
         - Add base64-encoding/decoding functions.
-        - Add `beforei` and `afteri` functions (inclusive of condition element).
+        - Add `beforei` and `afteri` functions (inclusive of condition
+          element).
         - Update `b<` and `b>` to produce/consume generators.
         - Update hash functions to accept more types of input.
         - Add RPSL NRTMv3 library.
@@ -20,7 +38,8 @@ Changelog
         - `ifconfig` and `netstat`.
         - YAML encoding/decoding.
         - Libraries for RPKI, RDAP, and RPSL.
-        - Aliases for commonly-used commands (e.g. `ssh`, `git`, `docker`).
+        - Aliases for commonly-used commands (e.g. `ssh`, `git`,
+          `docker`).
         - Background process management (`jobs`).
         - Improved SQL type handling.
         - Various bug fixes.

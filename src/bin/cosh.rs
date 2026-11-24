@@ -30,11 +30,12 @@ use rustyline::{
     At, Cmd, CompletionType, Config, EditMode, Editor, KeyPress, Movement, Word,
 };
 
-
 use cosh::chunk::{Chunk, new_string_value};
 use cosh::compiler::Compiler;
 use cosh::vm::VM;
 use cosh::rl::{RLHelper, ShellCompleter};
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options] [file] [args]", program);
@@ -95,6 +96,7 @@ fn main() {
     opts.optflag("", "disassemble", "disassemble from bytecode");
     opts.optflag("", "no-rt", "run without loading runtime");
     opts.optflag("", "no-cosh-conf", "run without loading cosh.conf");
+    opts.optflag("", "version", "print version");
     opts.optflag("d", "debug", "show debug information");
     opts.optopt("e", "", "run single expression", "EXPR");
     opts.optopt("o", "", "set output file name for compilation", "NAME");
@@ -106,6 +108,10 @@ fn main() {
             std::process::exit(1);
         }
     };
+    if matches.opt_present("version") {
+        println!("cosh {}", VERSION);
+        return;
+    }
     if matches.opt_present("h") {
         print_usage(&program, opts);
         return;

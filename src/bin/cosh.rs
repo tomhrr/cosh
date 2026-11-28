@@ -77,17 +77,12 @@ fn import_cosh_conf(vm: &mut VM, global_functions: Rc<RefCell<HashMap<String, Rc
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let mut program = args[0].clone();
-    let mut program_done = false;
-    let md_opt = fs::metadata(&program);
-    if let Ok(md) = md_opt {
-        if md.is_file() {
-            program_done = true;
-        }
-    }
-    if !program_done {
-        program = format!("/proc/{}/exe", std::process::id());
-    }
+    let program = args[0].clone();
+    /* There used to be logic here to determine whether the program
+     * name was a filename.  If it wasn't, this would use a
+     * formulation like /proc/$pid/exe instead.  It's not clear why
+     * this was needed compared with just using whatever has been
+     * provided as the program name. */
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");

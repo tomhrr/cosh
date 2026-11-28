@@ -11,10 +11,8 @@ default-hasher = []
 
 [dependencies]
 assert_cmd = "2.0.9"
-csv = "1.0.0-beta.5"
 getopts = "0.2"
 regex = "0.2"
-time = "0.1"
 tempfile = "3.1.0"
 serde = { version = "1.0.107", features = ["derive", "rc"] }
 serde_json = "1.0.57"
@@ -55,7 +53,6 @@ sha2 = "0.10.2"
 atty = "0.2.14"
 sqlx = { version = "0.8.6", features = [ "runtime-async-std", "tls-rustls", "mysql", "chrono", "bit-vec", "rust_decimal", "postgres", "sqlite", "ipnetwork", "json", "mac_address", "uuid" ] }
 rust_decimal = "1.36.0"
-futures = "0.3"
 epoll = "4.3.3"
 signal-hook = "0.3.17"
 dirs = "5.0"

@@ -211,7 +211,12 @@ fn main() {
                     }
                     if !res {
                         eprintln!("unable to write to path {}: {}", output_path, err_str);
+                        std::process::exit(1);
                     }
+                } else {
+                    /* An error will have been printed by
+                     * compile(...). */
+                    std::process::exit(1);
                 }
             } else {
                 let mut vm = VM::new(true, debug, Rc::new(RefCell::new(HashMap::new())),
@@ -233,6 +238,9 @@ fn main() {
                 }
 
                 vm.interpret(&mut bufread, "(main)");
+                if vm.error_count > 0 {
+                    std::process::exit(1);
+                }
             }
         }
     } else if !expr_opt.is_none() {
@@ -260,6 +268,9 @@ fn main() {
         }
         let mut bufread: Box<dyn BufRead> = Box::new(Cursor::new(expr.into_bytes()));
         vm.interpret(&mut bufread, "(main)");
+        if vm.error_count > 0 {
+            std::process::exit(1);
+        }
     } else {
         /* A path has not been provided, so start the shell. */
         let global_functions = Rc::new(RefCell::new(HashMap::new()));

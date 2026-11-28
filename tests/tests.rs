@@ -48,7 +48,7 @@ fn basic_error_test(input: &str, output: &str) {
     let mut cmd = Command::cargo_bin("cosh").unwrap();
     let path = file.path();
     let assert = cmd.arg("--no-cosh-conf").arg(path).assert();
-    assert.success().stderr(output.to_owned() + "\n");
+    assert.failure().stderr(output.to_owned() + "\n");
 }
 
 fn basic_error_test_no_rt(input: &str, output: &str) {
@@ -58,7 +58,7 @@ fn basic_error_test_no_rt(input: &str, output: &str) {
     let mut cmd = Command::cargo_bin("cosh").unwrap();
     let path = file.path();
     let assert = cmd.arg("--no-cosh-conf").arg("--no-rt").arg(path).assert();
-    assert.success().stderr(output.to_owned() + "\n");
+    assert.failure().stderr(output.to_owned() + "\n");
 }
 
 fn basic_failure_test(input: &str, output: &str) {

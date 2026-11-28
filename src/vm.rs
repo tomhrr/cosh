@@ -66,6 +66,8 @@ pub struct VM {
     /// Whether to print debug information to standard error while
     /// running.
     debug: bool,
+    /// The number of errors that have occurred.
+    pub error_count: i32,
     /// The stack.
     pub stack: Vec<Value>,
     /// The last stack, i.e. the (possibly partially) reified state of
@@ -486,7 +488,8 @@ impl VM {
             libdir,
             child_processes: IndexMap::new(),
             dns_servers: dns_servers,
-            imported: HashSet::new()
+            imported: HashSet::new(),
+            error_count: 0
         }
     }
 
@@ -518,10 +521,11 @@ impl VM {
     /// Takes a chunk, an instruction index, and an error message as its
     /// arguments.  Prints the error message, including filename, line number
     /// and column number elements (if applicable).
-    pub fn print_error(&self, error: &str) {
+    pub fn print_error(&mut self, error: &str) {
         if !self.print_errors {
             return;
         }
+        self.error_count += 1;
         let point = self.chunk.borrow().get_point(self.i);
         let name = &self.chunk.borrow().name;
         let error_start = if name == "(main)" {
@@ -952,7 +956,7 @@ impl VM {
     }
 
     /// Takes a string and converts it into a regex.
-    pub fn str_to_regex(&self, s_arg: &str) -> Option<(Regex, bool)> {
+    pub fn str_to_regex(&mut self, s_arg: &str) -> Option<(Regex, bool)> {
         let mut global = false;
         let mut s: &str = s_arg;
         let mut s_replacement: String;
@@ -2522,6 +2526,7 @@ impl VM {
         };
         let chunk_opt = compiler.compile(fh, name);
         if chunk_opt.is_none() {
+            self.error_count += 1;
             return None;
         }
         let chunk = Rc::new(RefCell::new(chunk_opt.unwrap()));

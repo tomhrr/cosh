@@ -424,6 +424,7 @@ impl VM {
                                             updated_str.push_str(sc);
                                         }
                                         _ => {
+                                            let mut error_str: Option<&str> = None;
                                             let capture_el_rr_opt = self.stack.get(self.stack.len() - 1 - n);
                                             match capture_el_rr_opt {
                                                 Some(capture_el_rr) => {
@@ -442,15 +443,20 @@ impl VM {
                                                             }
                                                         }
                                                         _ => {
-                                                            self.print_error("fmt string argument cannot be converted to string");
-                                                            return 0;
+                                                            error_str = Some("fmt string argument cannot be converted to string");
                                                         }
                                                     }
                                                 }
                                                 None => {
-                                                    self.print_error("fmt string contains invalid stack element reference");
+                                                    error_str = Some("fmt string contains invalid stack element reference");
+                                                }
+                                            }
+                                            match error_str {
+                                                Some(s) => {
+                                                    self.print_error(s);
                                                     return 0;
                                                 }
+                                                _ => {}
                                             }
                                         }
                                     }
